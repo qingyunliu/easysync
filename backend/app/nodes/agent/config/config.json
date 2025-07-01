@@ -1,0 +1,23 @@
+{
+    "server": {
+        "host": "localhost",
+        "port": 5000
+    },
+    "heartbeat_interval": 30,
+    "monitor": {
+        "interval": 5,
+        "max_history": 1000,
+        "alert_thresholds": {
+            "cpu_percent": 90,
+            "memory_percent": 90,
+            "disk_percent": 90
+        }
+    },
+    "sync": {
+        "max_retries": 3,
+        "retry_delay": 5,
+        "max_concurrent": 1
+    },
+    "state_dir": "state",
+    "log_level": "INFO"
+} 

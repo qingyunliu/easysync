@@ -1,0 +1,41 @@
+# 服务端配置
+server:
+  url: "http://localhost:5001" # 修改为正确的服务器地址和端口
+  ws_path: "/ws/socket.io" # 修改为正确的WebSocket路径
+  heartbeat_interval: 30 # 心跳间隔,秒
+
+# 客户端配置
+client:
+  id: {client_id}
+  user_id: {user_id}
+  version: "1.0.0"
+  name: "Agent Client"
+  description: "Agent client for EasySync"
+
+# 监控配置
+monitor:
+  interval: 5
+  metrics:
+    - cpu
+    - memory
+    - disk
+    - network
+
+# 同步配置
+sync:
+  max_retries: 3 # 最大重试次数
+  retry_interval: 5s # 重试间隔
+  default_timeout: 30s # 默认超时时间
+
+# 日志配置
+log:
+  level: "INFO"
+  directory: "logs"
+  max_size: 10485760 # 10MB
+  backup_count: 5
+  filename: "agent.log"
+
+upgrade:
+  url: "http://localhost:5000/upgrade"
+  backup_dir: "backups"
+  check_interval: 3600 # 1小时检查一次更新

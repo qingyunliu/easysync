@@ -1,0 +1,125 @@
+import { createRouter, createWebHistory } from "vue-router";
+import Login from "../views/Login.vue";
+import Register from "../views/Register.vue";
+import Home from "../views/Home.vue";
+import Dashboard from "../views/Dashboard.vue";
+import Clients from "../views/Clients.vue";
+import Nodes from "../views/Nodes.vue";
+import Storages from "../views/Storages.vue";
+import Tasks from "../views/Tasks.vue";
+import Logs from "../views/Logs.vue";
+import Settings from "../views/Settings.vue";
+import Notifications from "../views/Notifications.vue";
+import NotFound from "../views/NotFound.vue";
+import Profile from "../views/Profile.vue";
+
+const routes = [
+  {
+    path: "/",
+    redirect: "/dashboard",
+  },
+  {
+    path: "/login",
+    name: "Login",
+    component: Login,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/register",
+    name: "Register",
+    component: Register,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/",
+    name: "Home",
+    component: Home,
+    meta: { requiresAuth: true },
+    children: [
+      {
+        path: "dashboard",
+        name: "Dashboard",
+        component: Dashboard,
+      },
+      {
+        path: "clients",
+        name: "Clients",
+        component: Clients,
+      },
+      {
+        path: "nodes",
+        name: "Nodes",
+        component: Nodes,
+      },
+      {
+        path: "storages",
+        name: "Storages",
+        component: Storages,
+      },
+      {
+        path: "tasks",
+        name: "Tasks",
+        component: Tasks,
+      },
+      {
+        path: "logs",
+        name: "Logs",
+        component: Logs,
+      },
+      {
+        path: "notifications",
+        name: "Notifications",
+        component: Notifications,
+      },
+      {
+        path: "settings",
+        name: "Settings",
+        component: Settings,
+        meta: { requiresAuth: true, requiresAdmin: true },
+      },
+      {
+        path: "profile",
+        name: "Profile",
+        component: Profile,
+      },
+    ],
+  },
+  {
+    path: "/:pathMatch(.*)*",
+    name: "NotFound",
+    component: NotFound,
+  },
+];
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes,
+});
+
+// Navigation guard
+router.beforeEach((to, from, next) => {
+  const access_token = localStorage.getItem("access_token");
+  const user = JSON.parse(localStorage.getItem("user") || "null");
+
+  // 如果访问需要认证的页面但没有token
+  if (to.meta.requiresAuth && !access_token) {
+    next("/login");
+    return;
+  }
+
+  // 如果访问需要管理员权限的页面但用户不是管理员
+  if (to.meta.requiresAdmin && user?.role !== "admin") {
+    next("/dashboard");
+    return;
+  }
+
+  // 如果已登录用户访问登录或注册页面
+  if ((to.name === "Login" || to.name === "Register") && access_token) {
+    next("/dashboard");
+    return;
+  }
+
+  next();
+});
+
+export default router;
