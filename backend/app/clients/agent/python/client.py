@@ -4,6 +4,7 @@ import socketio
 import threading
 import time
 import psutil
+import requests
 from datetime import datetime
 from typing import Dict, Any
 
@@ -95,6 +96,10 @@ class AgentClient:
         self._setup_event_handlers()
         
         self.logger.info("客户端初始化完成")
+        
+        # 启动RESTful心跳线程
+        self._restful_heartbeat_thread = threading.Thread(target=self._restful_heartbeat_loop, daemon=True)
+        self._restful_heartbeat_thread.start()
         
     def _on_config_changed(self, old_config: Dict[str, Any], new_config: Dict[str, Any]):
         """处理配置变更"""
@@ -489,6 +494,66 @@ class AgentClient:
             self.config_manager.stop()
             self.sio.disconnect()
             self.logger.info("客户端已关闭")
+            
+    def _restful_heartbeat_loop(self):
+        """定时向主控端RESTful接口上报心跳和资源信息"""
+        config = self.config_manager.get_all()
+        server_url = config['server']['url'].rstrip('/')
+        interval = config['server'].get('heartbeat_interval', 30)
+        client_id = config['client']['id']
+        user_id = config['client'].get('user_id', '')
+        name = config['client'].get('name', '')
+        ip_address = self._get_local_ip()
+        while True:
+            try:
+                resource_info = self._collect_resource_info()
+                payload = {
+                    'client_id': client_id,
+                    'user_id': user_id,
+                    'name': name,
+                    'ip_address': ip_address,
+                    'resource_info': resource_info
+                }
+                url = f"{server_url}/api/clients/heartbeat"
+                resp = requests.post(url, json=payload, timeout=10)
+                if resp.status_code == 200:
+                    self.logger.debug("RESTful心跳上报成功")
+                else:
+                    self.logger.warning(f"RESTful心跳上报失败: {resp.text}")
+            except Exception as e:
+                self.logger.warning(f"RESTful心跳异常: {e}")
+            time.sleep(interval)
+
+    def _collect_resource_info(self):
+        """采集本地资源信息"""
+        try:
+            cpu = psutil.cpu_percent(interval=1)
+            memory = psutil.virtual_memory()._asdict()
+            disk = psutil.disk_usage('/')._asdict()
+            os_type = os.uname().sysname if hasattr(os, 'uname') else sys.platform
+            os_version = os.uname().release if hasattr(os, 'uname') else ''
+            hostname = socketio.os.uname().nodename if hasattr(os, 'uname') else socketio.socket.gethostname()
+            return {
+                'cpu': cpu,
+                'memory': memory,
+                'disk': disk,
+                'os_type': os_type,
+                'os_version': os_version,
+                'hostname': hostname
+            }
+        except Exception as e:
+            self.logger.warning(f"采集资源信息失败: {e}")
+            return {}
+
+    def _get_local_ip(self):
+        try:
+            s = socketio.socket.socket(socketio.socket.AF_INET, socketio.socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            s.close()
+            return ip
+        except Exception:
+            return ""
             
 if __name__ == "__main__":
     config_path = os.path.join(

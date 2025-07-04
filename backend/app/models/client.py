@@ -1,5 +1,6 @@
 from backend import db
 from backend.app.models.base import BaseModel
+from datetime import datetime, timedelta
 
 class Client(BaseModel):
     """服务器模型"""
@@ -51,3 +52,21 @@ class Client(BaseModel):
             'description': self.description
         })
         return data
+
+class InstallToken(db.Model):
+    __tablename__ = 'install_tokens'
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
+    user_id = db.Column(db.String(36), nullable=False, index=True)
+    status = db.Column(db.String(16), default='active')  # active/used/expired/revoked
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=False)
+    used_count = db.Column(db.Integer, default=0)
+    max_uses = db.Column(db.Integer, default=1)
+    description = db.Column(db.String(255))
+    target_ip = db.Column(db.String(64))
+    target_hostname = db.Column(db.String(128))
+    target_mac = db.Column(db.String(64))
+
+    def is_valid(self):
+        return self.status == 'active' and self.expires_at > datetime.utcnow() and (self.max_uses is None or self.used_count < self.max_uses)

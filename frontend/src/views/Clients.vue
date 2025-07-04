@@ -3,6 +3,7 @@
     <div class="header">
       <h2>服务器管理</h2>
       <el-button type="primary" @click="showAddDialog">添加服务器</el-button>
+      <el-button type="warning" @click="showGenTokenDialog">生成安装命令</el-button>
     </div>
 
     <el-table :data="clients" style="width: 100%" v-loading="loading">
@@ -541,6 +542,73 @@
         </el-tab-pane>
       </el-tabs>
     </el-drawer>
+
+    <!-- 生成安装命令弹窗 -->
+    <el-dialog title="生成一键安装命令" v-model="genTokenDialogVisible" width="500px">
+      <el-form :model="genTokenForm" label-width="100px">
+        <el-form-item label="用途">
+          <el-input v-model="genTokenForm.description" placeholder="如：批量部署、测试等" />
+        </el-form-item>
+        <el-form-item label="目标IP">
+          <el-input v-model="genTokenForm.target_ip" placeholder="必填，Agent注册时校验" />
+        </el-form-item>
+        <el-form-item label="有效期(分钟)">
+          <el-input-number v-model="genTokenForm.expires_in" :min="1" :max="1440" />
+        </el-form-item>
+        <el-form-item label="最大使用次数">
+          <el-input-number v-model="genTokenForm.max_uses" :min="1" :max="100" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="genTokenDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleGenToken">生成</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 安装命令展示弹窗 -->
+    <el-dialog title="一键安装命令" v-model="installCmdDialogVisible" width="700px">
+      <el-input
+        type="textarea"
+        :rows="3"
+        v-model="installCmdContent"
+        readonly
+        style="font-family: monospace; font-size: 15px;"
+      />
+      <div style="margin: 10px 0; color: #888;">请将下方命令复制到目标服务器执行，自动完成Agent安装和注册。</div>
+      <template #footer>
+        <el-button @click="installCmdDialogVisible = false">关闭</el-button>
+        <el-button type="primary" @click="copyInstallCmd">复制命令</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- 待上线Agent/命令表格 -->
+    <el-card class="pending-agent-card" style="margin-bottom: 20px;">
+      <template #header>
+        <span>待上线Agent/安装命令</span>
+        <el-button type="default" size="small" @click="fetchInstallTokens" style="float:right;">刷新</el-button>
+      </template>
+      <el-table :data="installTokens" style="width: 100%" size="small">
+        <el-table-column prop="description" label="用途" width="120" />
+        <el-table-column prop="target_ip" label="目标IP" width="120" />
+        <el-table-column prop="created_at" label="生成时间" width="160" />
+        <el-table-column prop="expires_at" label="有效期至" width="160" />
+        <el-table-column prop="max_uses" label="最大次数" width="80" />
+        <el-table-column prop="used_count" label="已用" width="60" />
+        <el-table-column prop="status" label="状态" width="80">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 'active' ? 'info' : (row.status === 'used' ? 'success' : 'danger')">
+              {{ row.status === 'active' ? '待上线' : (row.status === 'used' ? '已上线' : '已失效') }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="220">
+          <template #default="{ row }">
+            <el-button type="primary" size="small" @click="copyCmd(row.curl_cmd)">复制命令</el-button>
+            <el-button type="danger" size="small" @click="revokeToken(row.id)" v-if="row.status === 'active'">作废</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
   </div>
 </template>
 
@@ -557,7 +625,10 @@ import {
   InfoFilled,
   ArrowRight,
   Refresh,
-  Search
+  Search,
+  Clock,
+  Check,
+  Close
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import axios from 'axios'
@@ -1973,9 +2044,109 @@ watch(activeTab, (newVal) => {
   }
 })
 
+const genTokenDialogVisible = ref(false)
+const genTokenForm = ref({
+  description: '',
+  target_ip: '',
+  expires_in: 60, // 分钟
+  max_uses: 1
+})
+const installCmdDialogVisible = ref(false)
+const installCmdContent = ref('')
+
+const showGenTokenDialog = () => {
+  genTokenDialogVisible.value = true
+}
+
+const handleGenToken = async () => {
+  try {
+    if (!genTokenForm.value.target_ip) {
+      ElMessage.error('目标IP必填')
+      return
+    }
+    const payload = {
+      description: genTokenForm.value.description,
+      target_ip: genTokenForm.value.target_ip,
+      expires_in: genTokenForm.value.expires_in * 60, // 转为秒
+      max_uses: genTokenForm.value.max_uses
+    }
+    const response = await axios.post('/api/clients/gen-install-token', payload)
+    if (response.data.status === 'success') {
+      genTokenDialogVisible.value = false
+      fetchInstallTokens()
+      ElMessage.success('生成成功，可在下方表格复制命令')
+    } else {
+      ElMessage.error('生成失败')
+    }
+  } catch (error) {
+    ElMessage.error('生成失败')
+  }
+}
+
+const copyInstallCmd = async () => {
+  try {
+    await navigator.clipboard.writeText(installCmdContent.value)
+    ElMessage.success('命令已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error('复制失败')
+  }
+}
+
+const installTokens = ref([])
+
+const fetchInstallTokens = async () => {
+  try {
+    const response = await axios.get('/api/clients/install-tokens')
+    if (response.data.status === 'success') {
+      installTokens.value = response.data.items
+    }
+  } catch (error) {
+    installTokens.value = []
+  }
+}
+
+const copyCmd = async (cmd) => {
+  try {
+    await navigator.clipboard.writeText(cmd)
+    ElMessage.success('命令已复制到剪贴板')
+  } catch (error) {
+    ElMessage.error('复制失败')
+  }
+}
+
+const revokeToken = async (id) => {
+  try {
+    await axios.post(`/api/clients/install-token/${id}/revoke`)
+    ElMessage.success('已作废')
+    fetchInstallTokens()
+  } catch (error) {
+    ElMessage.error('操作失败')
+  }
+}
+
 onMounted(() => {
   fetchClients()
+  fetchInstallTokens()
 })
+
+const selected = ref([])
+const onSelect = (rows) => { selected.value = rows }
+const batchRevoke = async () => {
+  if (!selected.value.length) return
+  await Promise.all(selected.value.map(row => revokeToken(row.id)))
+  ElMessage.success('批量作废成功')
+  fetchInstallTokens()
+}
+const statusType = (status) => {
+  if (status === 'active') return 'info'
+  if (status === 'used') return 'success'
+  return 'danger'
+}
+const statusText = (status) => {
+  if (status === 'active') return '待上线'
+  if (status === 'used') return '已上线'
+  return '已失效'
+}
 </script>
 
 <style scoped>
@@ -2358,5 +2529,64 @@ onMounted(() => {
   .level-select {
     width: 100%;
   }
+}
+
+.pending-agent-card {
+  margin-bottom: 20px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  padding: 16px;
+}
+
+.pending-agent-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.pending-agent-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.pending-agent-refresh {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pending-agent-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.pending-agent-table th,
+.pending-agent-table td {
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.pending-agent-table th {
+  background-color: #f5f7fa;
+  font-weight: 500;
+}
+
+.pending-agent-status {
+  width: 80px;
+}
+
+.pending-agent-action {
+  width: 220px;
+}
+
+.pending-agent-status .el-tag {
+  margin-right: 8px;
+}
+
+.pending-agent-action .el-button {
+  margin-right: 8px;
 }
 </style> 
