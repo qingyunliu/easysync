@@ -3,10 +3,11 @@ from .user import User, AuditLog, Notification, NotificationSetting
 from .monitor import MonitorData, PerformanceMetric
 from .task import Task, TaskStatus, TaskPriority, TaskLog
 from .storage import Storage
-from .client import Client, InstallToken
+from .client import Client
 from .node import Node, NodeStatus
 from .sync import SyncRule
 from .alert import Alert, AlertRule
+from .command import Command
 
 __all__ = [
     'BaseModel',
@@ -15,7 +16,6 @@ __all__ = [
     'Notification',
     'NotificationSetting',
     'Client',
-    'InstallToken',
     'Node',
     'NodeStatus',
     'Storage',
@@ -27,5 +27,6 @@ __all__ = [
     'TaskPriority',
     'TaskLog',
     'Alert',
-    'AlertRule'
+    'AlertRule',
+    'Command'
 ] 

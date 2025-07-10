@@ -17,35 +17,28 @@ class TaskService:
         self.task_timeout = 3600  # 任务超时时间（秒）
         
     def create_task(self, task_data: Dict[str, Any]) -> Task:
-        """创建任务
-        
-        Args:
-            task_data: 任务数据
-            
-        Returns:
-            Task: 任务对象
-            
-        Raises:
-            TaskValidationError: 任务数据验证失败
-        """
+        """创建任务，支持 type=mount-check"""
         # 验证任务数据
         self._validate_task_data(task_data)
-        
-        # 创建任务
+        # 允许 mount-check 任务不强制要求 target 字段
+        task_type = task_data.get('type')
+        if task_type == 'mount-check':
+            target = task_data.get('target', {})
+        else:
+            target = task_data['target']
         task = Task(
             name=task_data.get('name'),
-            type=task_data['type'],
+            type=task_type,
             source=task_data['source'],
-            target=task_data['target'],
+            target=target,
             options=task_data.get('options', {}),
             status='pending',
             priority=task_data.get('priority', 0),
-            user_id=task_data.get('user_id')
+            user_id=task_data.get('user_id'),
+            node_id=task_data.get('node_id')
         )
-        
         db.session.add(task)
         db.session.commit()
-        
         logger.info(f"Task created: {task.id}")
         return task
         
@@ -67,37 +60,23 @@ class TaskService:
         return task
         
     def update_task_status(self, task_id: str, status: Dict[str, Any]) -> Task:
-        """更新任务状态
-        
-        Args:
-            task_id: 任务ID
-            status: 状态信息
-            
-        Returns:
-            Task: 任务对象
-            
-        Raises:
-            TaskNotFoundError: 任务不存在
-            TaskStateError: 状态更新失败
-        """
+        """更新任务状态，支持 details 字段存储 agent 回传的检测结果"""
         task = self.get_task(task_id)
-        
         # 验证状态更新
         if not self._validate_status_update(task, status):
             raise TaskStateError(f"Invalid status update: {status}")
-            
         # 更新状态
         task.status = status.get('status')
         task.progress = status.get('progress', 0)
         task.error = status.get('error')
         task.updated_at = datetime.utcnow()
-        
+        # 支持 details 字段
+        if 'details' in status:
+            task.details = status['details']
         # 处理任务完成
         if task.status in ['completed', 'failed']:
             task.completed_at = datetime.utcnow()
-            
         db.session.commit()
-        
         logger.info(f"Task status updated: {task_id}, status: {status}")
         return task
         

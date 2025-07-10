@@ -1,127 +1,279 @@
 <template>
-  <div class="clients-container">
-    <div class="header">
-      <h2>服务器管理</h2>
-      <el-button type="primary" @click="showAddDialog">添加服务器</el-button>
-      <el-button type="warning" @click="showGenTokenDialog">生成安装命令</el-button>
+  <div class="clients-page">
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-left">
+          <h1 class="page-title">服务器管理</h1>
+          <p class="page-subtitle">管理您的服务器节点和Agent状态</p>
+        </div>
+        <div class="header-actions">
+          <el-button type="primary" @click="showAddDialog" class="action-btn">
+            <el-icon><Plus /></el-icon>
+            添加服务器
+          </el-button>
+        </div>
+      </div>
     </div>
 
-    <el-table :data="clients" style="width: 100%" v-loading="loading">
-      <el-table-column prop="name" label="名称">
-        <template #default="{ row }">
-          <el-link 
-            type="primary" 
-            @click="handleNameClick(row)"
-            :class="{ 'details-link': row.status !== 'online' }"
+    <!-- 统计卡片 -->
+    <div class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon online">
+            <el-icon><Monitor /></el-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats.online }}</div>
+            <div class="stat-label">在线服务器</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon offline">
+            <el-icon><CircleClose /></el-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats.offline }}</div>
+            <div class="stat-label">离线服务器</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon running">
+            <el-icon><Connection /></el-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats.running }}</div>
+            <div class="stat-label">运行中Agent</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon pending">
+            <el-icon><Clock /></el-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats.pending }}</div>
+            <div class="stat-label">待安装Agent</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 主要内容区域 -->
+    <div class="main-content">
+      <!-- 分组/标签筛选与批量操作 -->
+      <div class="filter-batch-bar" style="display: flex; align-items: center; margin-bottom: 12px; gap: 16px;">
+        <el-select v-model="selectedGroup" placeholder="分组筛选" clearable style="width: 140px">
+          <el-option v-for="group in groupList" :key="group" :label="group" :value="group" />
+        </el-select>
+        <el-select v-model="selectedTag" placeholder="标签筛选" clearable style="width: 140px">
+          <el-option v-for="tag in tagList" :key="tag" :label="tag" :value="tag" />
+        </el-select>
+        <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleSearch" class="filter-select">
+          <el-option label="全部" value="all" />
+          <el-option label="在线" value="online" />
+          <el-option label="离线" value="offline" />
+          <el-option label="已安装Agent" value="agent_installed" />
+          <el-option label="未安装Agent" value="agent_not_installed" />
+        </el-select>
+        <el-button type="danger" :disabled="!(multipleSelection?.length)" @click="handleBatchDelete">批量删除</el-button>
+        <el-button type="primary" :disabled="!(multipleSelection?.length)" @click="showBatchGroupDialog">批量分组</el-button>
+        <el-button type="primary" :disabled="!(multipleSelection?.length)" @click="showBatchTagDialog">批量打标签</el-button>
+      </div>
+      <!-- 服务器列表卡片 -->
+      <el-card class="clients-card" shadow="never">
+        <template #header>
+          <div class="card-header">
+            <div class="header-left">
+              <h3>服务器列表</h3>
+              <el-tag type="info" size="small">{{ clients?.length || 0 }}台服务器</el-tag>
+            </div>
+            <div class="header-right">
+              <el-input
+                v-model="searchQuery"
+                placeholder="搜索服务器..."
+                class="search-input"
+                clearable
+              >
+                <template #prefix>
+                  <el-icon><Search /></el-icon>
+                </template>
+              </el-input>
+              <el-button @click="fetchClients" :loading="loading" class="refresh-btn">
+                <el-icon><Refresh /></el-icon>
+              </el-button>
+            </div>
+          </div>
+        </template>
+
+        <!-- 服务器表格 -->
+        <div class="table-container">
+          <el-table 
+            :data="filteredClients" 
+            style="width: 100%" 
+            v-loading="loading"
+            class="clients-table"
+            @selection-change="handleSelectionChange"
           >
-            {{ row.name }}
-          </el-link>
+            <el-table-column type="selection" width="50" />
+            <el-table-column prop="name" label="服务器名称" min-width="150">
+              <template #default="{ row }">
+                <div class="server-info server-name-link" @click="showClientDetail(row)">
+                  <el-icon class="server-link-icon"><Monitor /></el-icon>
+                  <span>{{ row.name }}</span>
+                  <el-tag v-if="isNewServer(row)" type="success" class="new-tag">NEW</el-tag>
+                </div>
         </template>
       </el-table-column>
-      <el-table-column prop="hostname" label="主机名" />
-      <el-table-column prop="ip_address" label="IP地址" />
-      <el-table-column prop="status" label="状态">
+            <el-table-column prop="group" label="分组" width="100">
         <template #default="{ row }">
-          <el-tag :type="getStatusType(row.status)">
-            {{ getStatusText(row.status) }}
-          </el-tag>
+                <el-tag v-if="row.group">{{ row.group }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="agent_status" label="Agent状态">
+            <el-table-column prop="tags" label="标签" width="140">
         <template #default="{ row }">
-          <el-tag :type="getAgentStatusType(row.agent_status)">
+                <el-tag v-for="tag in (row.tags ? row.tags.split(',') : [])" :key="tag" type="info" style="margin-right: 2px;">{{ tag }}</el-tag>
+              </template>
+            </el-table-column>
+            
+            <el-table-column prop="ip_address" label="IP地址" width="140" />
+            
+            <el-table-column prop="status" label="连接状态" width="120">
+              <template #default="{ row }">
+                <div class="status-indicator">
+                  <div class="status-dot" :class="row.status"></div>
+                  <span>{{ getStatusText(row.status) }}</span>
+                </div>
+              </template>
+            </el-table-column>
+            
+            <el-table-column prop="agent_status" label="Agent状态" width="120">
+              <template #default="{ row }">
+                <el-tag :type="getAgentStatusType(row.agent_status)" size="small">
             {{ getAgentStatusText(row.agent_status) }}
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column prop="os_type" label="操作系统" />
-      <el-table-column prop="last_seen" label="最后在线时间">
+            
+            <el-table-column prop="os_type" label="操作系统" width="120" />
+            
+            <el-table-column prop="last_seen" label="上线时间" width="160">
         <template #default="{ row }">
-          {{ formatDate(row.last_seen) }}
+                <div class="last-seen">
+                  <el-icon><Clock /></el-icon>
+                  <span>{{ formatDate(row.last_seen) }}</span>
+                </div>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="300">
+            
+            <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <el-button-group>
-            <el-button type="primary" size="small" @click="showEditDialog(row)">
-              <el-icon><Edit /></el-icon>编辑
+                <div class="action-buttons">
+                  <el-button 
+                    type="primary" 
+                    size="small" 
+                    @click.stop="showClientDetail(row)"
+                    class="detail-btn"
+                  >
+                    <el-icon><View /></el-icon>
+                    详情
             </el-button>
-            <el-button type="danger" size="small" @click="handleDelete(row)">
-              <el-icon><Delete /></el-icon>删除
-            </el-button>
-            <el-dropdown trigger="click">
-              <el-button type="primary" size="small">
-                更多<el-icon class="el-icon--right"><arrow-down /></el-icon>
+                  <el-dropdown trigger="click" @command="handleCommand">
+                    <el-button size="small">
+                      更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item @click="testConnection(row)">
-                    <el-button type="text" :loading="row.testing">
+                        <el-dropdown-item :command="{ action: 'edit', row }">
+                          <el-icon><Edit /></el-icon>编辑
+                        </el-dropdown-item>
+                        <el-dropdown-item :command="{ action: 'test', row }">
                       <el-icon><Connection /></el-icon>测试连接
-                    </el-button>
                   </el-dropdown-item>
-                  <el-dropdown-item @click="installAgent(row)">
-                    <el-button 
-                      type="text" 
+                        <el-dropdown-item 
+                          :command="{ action: 'install', row }"
                       :disabled="row.status !== 'online' || row.agent_status === 'installed' || row.agent_status === 'running'"
                     >
                       <el-icon><Download /></el-icon>安装Agent
-                    </el-button>
                   </el-dropdown-item>
-                  <el-dropdown-item @click="uninstallAgent(row)">
-                    <el-button 
-                      type="text" 
-                      :disabled="row.agent_status == 'not_installed' || row.agent_status == 'installing'"
+                        <el-dropdown-item 
+                          :command="{ action: 'uninstall', row }"
+                          :disabled="row.agent_status === 'not_installed' || row.agent_status === 'installing'"
                     >
                       <el-icon><Remove /></el-icon>卸载Agent
-                    </el-button>
                   </el-dropdown-item>
-                  <el-dropdown-item @click="getClientInfo(row)">
-                    <el-button type="text" :loading="row.fetching">
+                        <el-dropdown-item :command="{ action: 'info', row }">
                       <el-icon><InfoFilled /></el-icon>获取信息
-                    </el-button>
+                        </el-dropdown-item>
+                        <el-dropdown-item divided :command="{ action: 'delete', row }">
+                          <el-icon><Delete /></el-icon>删除
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-          </el-button-group>
+                </div>
         </template>
       </el-table-column>
     </el-table>
+        </div>
+      </el-card>
+    </div>
 
     <!-- 添加/编辑对话框 -->
     <el-dialog
       :title="dialogType === 'add' ? '添加服务器' : '编辑服务器'"
       v-model="dialogVisible"
-      width="500px"
+      width="600px"
+      class="client-dialog"
     >
       <el-form
         ref="formRef"
         :model="form"
         :rules="rules"
         label-width="100px"
+        class="client-form"
       >
+        <el-row :gutter="20">
+          <el-col :span="12">
         <el-form-item label="名称" prop="name">
           <el-input v-model="form.name" placeholder="请输入服务器名称" />
         </el-form-item>
+          </el-col>
+          <el-col :span="12">
         <el-form-item label="主机名" prop="hostname">
-          <el-input v-model="form.hostname" placeholder="请输入服务器名称" />
+              <el-input v-model="form.hostname" placeholder="请输入主机名" />
         </el-form-item>
+          </el-col>
+        </el-row>
+        
+        <el-row :gutter="20">
+          <el-col :span="12">
         <el-form-item label="IP地址" prop="ip_address">
-          <el-input v-model="form.ip_address" placeholder="请输入服务器地址" />
+              <el-input v-model="form.ip_address" placeholder="请输入IP地址" />
         </el-form-item>
+          </el-col>
+          <el-col :span="12">
         <el-form-item label="SSH端口" prop="port">
-          <el-input-number v-model="form.port" :min="1" :max="65535" />
+              <el-input-number v-model="form.port" :min="1" :max="65535" style="width: 100%" />
         </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="20">
+          <el-col :span="12">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="form.username" placeholder="请输入用户名" />
         </el-form-item>
+          </el-col>
+          <el-col :span="12">
         <el-form-item label="认证方式" prop="auth_type">
           <el-radio-group v-model="form.auth_type">
             <el-radio :value="'password'">密码认证</el-radio>
             <el-radio :value="'key'">密钥认证</el-radio>
           </el-radio-group>
         </el-form-item>
+          </el-col>
+        </el-row>
+
         <el-form-item
           v-if="form.auth_type === 'password'"
           label="密码"
@@ -134,6 +286,7 @@
             show-password
           />
         </el-form-item>
+
         <el-form-item
           v-if="form.auth_type === 'key'"
           label="SSH密钥"
@@ -146,6 +299,7 @@
             placeholder="请输入SSH密钥"
           />
         </el-form-item>
+
         <el-form-item label="备注">
           <el-input
             v-model="form.description"
@@ -155,11 +309,12 @@
           />
         </el-form-item>
       </el-form>
+      
       <template #footer>
-        <span class="dialog-footer">
+        <div class="dialog-footer">
           <el-button @click="dialogVisible = false">取消</el-button>
           <el-button type="primary" @click="handleSubmit">确定</el-button>
-        </span>
+        </div>
       </template>
     </el-dialog>
 
@@ -168,6 +323,7 @@
       title="安装Agent"
       v-model="installDialogVisible"
       width="500px"
+      class="install-dialog"
     >
       <el-form :model="installForm" label-width="120px">
         <el-form-item label="安装路径">
@@ -182,11 +338,12 @@
           />
         </el-form-item>
       </el-form>
+      
       <template #footer>
-        <span class="dialog-footer">
+        <div class="dialog-footer">
           <el-button @click="installDialogVisible = false">取消</el-button>
           <el-button type="primary" @click="confirmInstall">开始安装</el-button>
-        </span>
+        </div>
       </template>
     </el-dialog>
 
@@ -195,13 +352,15 @@
       v-model="drawerVisible"
       title="主机详情"
       direction="rtl"
-      size="60%"
+      size="70%"
       :before-close="handleDrawerClose"
+      class="client-drawer"
     >
-      <el-tabs v-model="activeTab" class="fixed-tabs">
+      <div class="drawer-content">
+        <el-tabs v-model="activeTab" class="detail-tabs">
         <!-- 基本信息标签页 -->
         <el-tab-pane label="基本信息" name="basic">
-          <div class="detail-content scrollable-content">
+            <div class="detail-content">
             <!-- 基本信息卡片 -->
             <el-card class="info-card">
               <template #header>
@@ -309,7 +468,7 @@
 
         <!-- 监控数据标签页 -->
         <el-tab-pane label="监控数据" name="monitor">
-          <div class="monitor-content scrollable-content">
+            <div class="monitor-content">
             <!-- 监控控制面板 -->
             <div class="monitor-control-panel">
               <div class="panel-section time-range-selector">
@@ -453,7 +612,7 @@
 
         <!-- 系统日志标签页 -->
         <el-tab-pane label="系统日志" name="logs">
-          <div class="logs-content scrollable-content">
+            <div class="logs-content">
             <!-- 日志控制面板 -->
             <div class="logs-control-panel">
               <div class="panel-section search-controls">
@@ -541,79 +700,13 @@
           </div>
         </el-tab-pane>
       </el-tabs>
+      </div>
     </el-drawer>
-
-    <!-- 生成安装命令弹窗 -->
-    <el-dialog title="生成一键安装命令" v-model="genTokenDialogVisible" width="500px">
-      <el-form :model="genTokenForm" label-width="100px">
-        <el-form-item label="用途">
-          <el-input v-model="genTokenForm.description" placeholder="如：批量部署、测试等" />
-        </el-form-item>
-        <el-form-item label="目标IP">
-          <el-input v-model="genTokenForm.target_ip" placeholder="必填，Agent注册时校验" />
-        </el-form-item>
-        <el-form-item label="有效期(分钟)">
-          <el-input-number v-model="genTokenForm.expires_in" :min="1" :max="1440" />
-        </el-form-item>
-        <el-form-item label="最大使用次数">
-          <el-input-number v-model="genTokenForm.max_uses" :min="1" :max="100" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="genTokenDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleGenToken">生成</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 安装命令展示弹窗 -->
-    <el-dialog title="一键安装命令" v-model="installCmdDialogVisible" width="700px">
-      <el-input
-        type="textarea"
-        :rows="3"
-        v-model="installCmdContent"
-        readonly
-        style="font-family: monospace; font-size: 15px;"
-      />
-      <div style="margin: 10px 0; color: #888;">请将下方命令复制到目标服务器执行，自动完成Agent安装和注册。</div>
-      <template #footer>
-        <el-button @click="installCmdDialogVisible = false">关闭</el-button>
-        <el-button type="primary" @click="copyInstallCmd">复制命令</el-button>
-      </template>
-    </el-dialog>
-
-    <!-- 待上线Agent/命令表格 -->
-    <el-card class="pending-agent-card" style="margin-bottom: 20px;">
-      <template #header>
-        <span>待上线Agent/安装命令</span>
-        <el-button type="default" size="small" @click="fetchInstallTokens" style="float:right;">刷新</el-button>
-      </template>
-      <el-table :data="installTokens" style="width: 100%" size="small">
-        <el-table-column prop="description" label="用途" width="120" />
-        <el-table-column prop="target_ip" label="目标IP" width="120" />
-        <el-table-column prop="created_at" label="生成时间" width="160" />
-        <el-table-column prop="expires_at" label="有效期至" width="160" />
-        <el-table-column prop="max_uses" label="最大次数" width="80" />
-        <el-table-column prop="used_count" label="已用" width="60" />
-        <el-table-column prop="status" label="状态" width="80">
-          <template #default="{ row }">
-            <el-tag :type="row.status === 'active' ? 'info' : (row.status === 'used' ? 'success' : 'danger')">
-              {{ row.status === 'active' ? '待上线' : (row.status === 'used' ? '已上线' : '已失效') }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="220">
-          <template #default="{ row }">
-            <el-button type="primary" size="small" @click="copyCmd(row.curl_cmd)">复制命令</el-button>
-            <el-button type="danger" size="small" @click="revokeToken(row.id)" v-if="row.status === 'active'">作废</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
-    </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, nextTick, watch, onUnmounted } from 'vue'
+import { ref, onMounted, nextTick, watch, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   ArrowDown,
@@ -622,25 +715,79 @@ import {
   Connection,
   Download,
   Remove,
-  InfoFilled,
-  ArrowRight,
   Refresh,
   Search,
   Clock,
-  Check,
-  Close
+  Plus,
+  Monitor,
+  InfoFilled,
+  CircleClose,
+  View
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import axios from 'axios'
-import { socketManager } from '@/utils/socket'
-import { computed } from 'vue'
 
+// 基础数据
 const clients = ref([])
 const loading = ref(false)
+const statusFilter = ref('all')
+const searchQuery = ref('')
+const handleSearch = () => {}
+
+// 统计数据
+const stats = computed(() => {
+  const online = clients.value.filter(c => c.status === 'online').length
+  const offline = clients.value.filter(c => c.status === 'offline').length
+  const running = clients.value.filter(c => c.agent_status === 'running').length
+  const pending = clients.value.filter(c => c.agent_status === 'not_installed').length
+  
+  return { online, offline, running, pending }
+})
+
+// 过滤后的客户端列表
+const filteredClients = computed(() => {
+  let result = clients.value
+  
+  // 搜索过滤
+  if (searchQuery.value) {
+    result = result.filter(client => 
+      client.name.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      client.hostname.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+      client.ip_address.includes(searchQuery.value)
+    )
+  }
+  
+  // 分组过滤
+  if (selectedGroup.value) {
+    result = result.filter(client => client.group === selectedGroup.value)
+  }
+  
+  // 标签过滤
+  if (selectedTag.value) {
+    result = result.filter(client => {
+      if (!client.tags) return false
+      const tags = client.tags.split(',').map(tag => tag.trim())
+      return tags.includes(selectedTag.value)
+    })
+  }
+
+  if (statusFilter.value === 'online') {
+    result = result.filter(n => n.status === 'online')
+  } else if (statusFilter.value === 'offline') {
+    result = result.filter(n => n.status === 'offline')
+  } else if (statusFilter.value === 'agent_installed') {
+    result = result.filter(n => n.agent_status === 'running')
+  } else if (statusFilter.value === 'agent_not_installed') {
+    result = result.filter(n => n.agent_status !== 'running')
+  }
+  
+  return result
+})
+
+// 对话框相关
 const dialogVisible = ref(false)
 const installDialogVisible = ref(false)
 const dialogType = ref('add')
-const authType = ref('password')
 const form = ref({
   name: '',
   hostname: '',
@@ -650,7 +797,10 @@ const form = ref({
   auth_type: 'password',
   password: '',
   ssh_key: '',
-  description: ''
+  description: '',
+  auto_generate_token: true,
+  token_expires_in: 60,
+  token_max_uses: 1
 })
 
 const installForm = ref({
@@ -758,6 +908,15 @@ const loadingLogs = ref(false)
 const logTimer = ref(null)
 const logs = ref([])
 
+// 新上线服务器高亮（3分钟内显示 NEW 标签）
+const now = ref(Date.now())
+setInterval(() => { now.value = Date.now() }, 60000) // 每分钟刷新一次
+const isNewServer = (server) => {
+  if (!server.last_seen) return false
+  const lastSeen = new Date(server.last_seen).getTime()
+  return now.value - lastSeen < 3 * 60 * 1000 // 3分钟内
+}
+
 // 添加全局错误处理器
 const originalErrorHandler = window.onerror
 window.onerror = function(message, source, lineno, colno, error) {
@@ -772,147 +931,66 @@ window.onerror = function(message, source, lineno, colno, error) {
   return false
 }
 
-const setupWebSocket = () => {
-  // 连接到 WebSocket 服务器
-  socketManager.connect(currentClient.value?.id);
-
-  // 监听监控数据更新
-  socketManager.on('monitor_update', (data) => {
-    console.log('Received monitor update:', data);
-    if (data.client_id === currentClient.value?.id) {
-      // 确保数据格式正确
-      if (data.data) {
-        // 添加时间戳
-        data.data.timestamp = data.timestamp;
-        updateChartData(data.data);
-      } else {
-        console.warn('Monitor data format incorrect:', data);
-      }
-    }
-  });
-
-  // 监听客户端状态更新
-  socketManager.on('client_status', (data) => {
-    console.log('Received client status update:', data);
-    updateClientStatus(data);
-  });
-};
-
-const updateChartData = (data) => {
-  try {
-    console.log('Updating chart data:', data);
-    if (!data || !data.timestamp) {
-      console.warn('Invalid chart data received');
-      return;
-    }
-
-    // 使用数据记录的时间戳
-    const timestamp = new Date(data.timestamp).getTime();
-
-    // 更新CPU数据
-    if (cpuChartInstance.value && data.cpu) {
-      const cpuUsage = parseFloat(data.cpu.percent || 0);
-      if (!monitorData.value.cpu) {
-        monitorData.value.cpu = [];
-      }
-      monitorData.value.cpu.push([timestamp, cpuUsage]);
-      if (monitorData.value.cpu.length > 100) {
-        monitorData.value.cpu.shift();
-      }
-      if (cpuChartInstance.value) {
-        cpuChartInstance.value.setOption({
-          series: [{
-            data: monitorData.value.cpu
-          }]
-        });
-      }
-    }
-
-    // 更新内存数据
-    if (memoryChartInstance.value && data.memory) {
-      const memoryUsage = parseFloat(data.memory.percent || 0);
-      if (!monitorData.value.memory) {
-        monitorData.value.memory = [];
-      }
-      monitorData.value.memory.push([timestamp, memoryUsage]);
-      if (monitorData.value.memory.length > 100) {
-        monitorData.value.memory.shift();
-      }
-      if (memoryChartInstance.value) {
-        memoryChartInstance.value.setOption({
-          series: [{
-            data: monitorData.value.memory
-          }]
-        });
-      }
-    }
-
-    // 更新网络数据
-    if (networkChartInstance.value && data.network) {
-      const recv = parseFloat(data.network.bytes_recv || 0);
-      const sent = parseFloat(data.network.bytes_sent || 0);
-      
-      if (!monitorData.value.network) {
-        monitorData.value.network = {
-          recv: [],
-          sent: []
-        };
-      }
-      
-      monitorData.value.network.recv.push([timestamp, recv]);
-      monitorData.value.network.sent.push([timestamp, sent]);
-      
-      if (monitorData.value.network.recv.length > 100) {
-        monitorData.value.network.recv.shift();
-        monitorData.value.network.sent.shift();
-      }
-      
-      if (networkChartInstance.value) {
-        networkChartInstance.value.setOption({
-          series: [
-            { data: monitorData.value.network.recv },
-            { data: monitorData.value.network.sent }
-          ]
-        });
-      }
-    }
-  } catch (error) {
-    console.error('更新图表数据失败:', error);
+// 处理命令
+const handleCommand = async (command) => {
+  const { action, row } = command
+  
+  switch (action) {
+    case 'edit':
+      showEditDialog(row)
+      break
+    case 'test':
+      await testConnection(row)
+      break
+    case 'install':
+      installAgent(row)
+      break
+    case 'uninstall':
+      await uninstallAgent(row)
+      break
+    case 'info':
+      await getClientInfo(row)
+      break
+    case 'delete':
+      await handleDelete(row)
+      break
   }
-};
-
-const updateClientStatus = (data) => {
-  const client = clients.value.find(c => c.id === data.client_id);
-  if (client) {
-    client.status = data.status;
-    client.last_seen = data.timestamp;
-  }
-};
+}
 
 // 获取监控数据
-const fetchMonitorData = async (clientId, type, timeRange) => {
+const fetchMonitorData = async (clientId) => {
   try {
-    const hours = parseInt(timeRange);
-    const end = new Date();
-    const start = new Date(end.getTime() - hours * 3600 * 1000);
-    
-    const response = await axios.get(`/api/monitor/${clientId}/history`, {
-      params: {
-        type,
-        start: start.toISOString(),
-        end: end.toISOString()
+    const res = await axios.get(`/api/monitor/${clientId}/history`)
+    if (res.data.status === 'success' && res.data.data) {
+      const data = res.data.data
+      monitorData.value = {
+        cpu: data.cpu || [],
+        memory: data.memory || [],
+        network: {
+          recv: data.network?.recv || [],
+          sent: data.network?.sent || []
+        }
       }
-    });
-    
-    if (response.data.status === 'success') {
-      return response.data.data || [];
+      updateCharts && updateCharts()
+    } else {
+      // 若无数据也保证结构
+      monitorData.value = {
+        cpu: [],
+        memory: [],
+        network: { recv: [], sent: [] }
+      }
+      updateCharts && updateCharts()
     }
-    return [];
-  } catch (error) {
-    console.error(`获取${type}监控数据失败:`, error);
-    return [];
+  } catch (e) {
+    monitorData.value = {
+      cpu: [],
+      memory: [],
+      network: { recv: [], sent: [] }
+    }
+    updateCharts && updateCharts()
+    // 可选：ElMessage.error('获取监控数据失败')
   }
-};
+}
 
 // 获取服务器列表
 const fetchClients = async () => {
@@ -1060,15 +1138,37 @@ const showEditDialog = (row) => {
 const handleSubmit = async () => {
   try {
     await formRef.value.validate()
-    if (dialogType.value === 'add') {
-      await axios.post('/api/clients', form.value)
-      ElMessage.success('添加成功')
-    } else {
-      await axios.put(`/api/clients/${form.value.id}`, form.value)
-      ElMessage.success('更新成功')
+    
+    const payload = {
+      name: form.value.name,
+      hostname: form.value.hostname,
+      ip_address: form.value.ip_address,
+      port: form.value.port,
+      username: form.value.username,
+      auth_type: form.value.auth_type,
+      password: form.value.auth_type === 'password' ? form.value.password : undefined,
+      ssh_key: form.value.auth_type === 'key' ? form.value.ssh_key : undefined,
+      description: form.value.description,
     }
+    
+    if (dialogType.value === 'add') {
+      const response = await axios.post('/api/clients', payload)
+      if (response.data.status === 'success') {
+      ElMessage.success('添加成功')
+        dialogVisible.value = false
+        
+        ElMessage.success('服务器添加成功')
+        
+        fetchClients()
+      }
+    } else {
+      const response = await axios.put(`/api/clients/${form.value.id}`, payload)
+      if (response.data.status === 'success') {
+      ElMessage.success('更新成功')
     dialogVisible.value = false
     fetchClients()
+      }
+    }
   } catch (error) {
     if (error.response) {
       // 错误处理已经在拦截器中完成
@@ -1175,24 +1275,10 @@ const showClientDetail = async (client) => {
   try {
     currentClient.value = client;
     drawerVisible.value = true;
-    
-    // 先获取客户端详情
     await fetchClientDetail(client.id);
-
-    // 初始化图表
     await nextTick();
     await initCharts();
-    
-    // 设置 WebSocket 连接
-    setupWebSocket();
-    
-    // 订阅客户端数据
-    if (socketManager.isConnected()) {
-      console.log('Subscribing to client data:', client.id);
-      socketManager.subscribe(client.id);
-    } else {
-      console.warn('WebSocket not connected, cannot subscribe');
-    }
+    fetchMonitorData(client.id)
   } catch (error) {
     console.error('Error showing client detail:', error);
     ElMessage.error('加载客户端详情失败');
@@ -1872,10 +1958,6 @@ const debounce = (fn, delay) => {
 // 组件卸载时清理
 onUnmounted(() => {
   stopAutoRefresh()
-  if (currentClient.value?.id) {
-    socketManager.unsubscribe(currentClient.value.id)
-  }
-  socketManager.disconnect()
   disposeCharts()
   window.removeEventListener('resize', handleResize)
   // 恢复原来的错误处理器
@@ -1884,25 +1966,10 @@ onUnmounted(() => {
 
 // 关闭抽屉时清理
 const handleDrawerClose = () => {
-  stopAutoRefresh()
-  if (currentClient.value?.id) {
-    socketManager.unsubscribe(currentClient.value.id)
-  }
-  socketManager.disconnect()
   disposeCharts()
   drawerVisible.value = false
   activeTab.value = 'basic'
 }
-
-// 处理主机名点击
-const handleNameClick = async (client) => {
-  try {
-    await showClientDetail(client);
-  } catch (error) {
-    console.error('加载监控数据失败:', error);
-    ElMessage.error('加载监控数据失败: ' + error.message);
-  }
-};
 
 // 刷新进程列表
 const refreshProcessList = async () => {
@@ -2044,342 +2111,704 @@ watch(activeTab, (newVal) => {
   }
 })
 
-const genTokenDialogVisible = ref(false)
-const genTokenForm = ref({
-  description: '',
-  target_ip: '',
-  expires_in: 60, // 分钟
-  max_uses: 1
-})
-const installCmdDialogVisible = ref(false)
-const installCmdContent = ref('')
-
-const showGenTokenDialog = () => {
-  genTokenDialogVisible.value = true
-}
-
-const handleGenToken = async () => {
-  try {
-    if (!genTokenForm.value.target_ip) {
-      ElMessage.error('目标IP必填')
-      return
-    }
-    const payload = {
-      description: genTokenForm.value.description,
-      target_ip: genTokenForm.value.target_ip,
-      expires_in: genTokenForm.value.expires_in * 60, // 转为秒
-      max_uses: genTokenForm.value.max_uses
-    }
-    const response = await axios.post('/api/clients/gen-install-token', payload)
-    if (response.data.status === 'success') {
-      genTokenDialogVisible.value = false
-      fetchInstallTokens()
-      ElMessage.success('生成成功，可在下方表格复制命令')
-    } else {
-      ElMessage.error('生成失败')
-    }
-  } catch (error) {
-    ElMessage.error('生成失败')
-  }
-}
-
-const copyInstallCmd = async () => {
-  try {
-    await navigator.clipboard.writeText(installCmdContent.value)
-    ElMessage.success('命令已复制到剪贴板')
-  } catch (error) {
-    ElMessage.error('复制失败')
-  }
-}
-
-const installTokens = ref([])
-
-const fetchInstallTokens = async () => {
-  try {
-    const response = await axios.get('/api/clients/install-tokens')
-    if (response.data.status === 'success') {
-      installTokens.value = response.data.items
-    }
-  } catch (error) {
-    installTokens.value = []
-  }
-}
-
-const copyCmd = async (cmd) => {
-  try {
-    await navigator.clipboard.writeText(cmd)
-    ElMessage.success('命令已复制到剪贴板')
-  } catch (error) {
-    ElMessage.error('复制失败')
-  }
-}
-
-const revokeToken = async (id) => {
-  try {
-    await axios.post(`/api/clients/install-token/${id}/revoke`)
-    ElMessage.success('已作废')
-    fetchInstallTokens()
-  } catch (error) {
-    ElMessage.error('操作失败')
-  }
-}
-
 onMounted(() => {
   fetchClients()
-  fetchInstallTokens()
 })
 
-const selected = ref([])
-const onSelect = (rows) => { selected.value = rows }
-const batchRevoke = async () => {
-  if (!selected.value.length) return
-  await Promise.all(selected.value.map(row => revokeToken(row.id)))
-  ElMessage.success('批量作废成功')
-  fetchInstallTokens()
+const multipleSelection = ref([])
+
+// 分组/标签相关变量
+const groupList = ref([])
+const tagList = ref([])
+const selectedGroup = ref('')
+const selectedTag = ref('')
+
+// 批量选择处理
+const handleSelectionChange = (selection) => {
+  multipleSelection.value = selection
 }
-const statusType = (status) => {
-  if (status === 'active') return 'info'
-  if (status === 'used') return 'success'
-  return 'danger'
+
+// 批量删除
+const handleBatchDelete = async () => {
+  if (!multipleSelection.value.length) {
+    ElMessage.warning('请选择要删除的服务器')
+      return
+    }
+  
+  try {
+    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 台服务器吗？`, '批量删除', {
+      type: 'warning'
+    })
+    
+    const clientIds = multipleSelection.value.map(item => item.id)
+    await axios.post('/api/clients/batch_delete', { client_ids: clientIds })
+    
+    ElMessage.success('批量删除成功')
+    fetchClients()
+    multipleSelection.value = []
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('批量删除失败')
+    }
+  }
 }
-const statusText = (status) => {
-  if (status === 'active') return '待上线'
-  if (status === 'used') return '已上线'
-  return '已失效'
+
+// 批量分组对话框
+const showBatchGroupDialog = async () => {
+  if (!multipleSelection.value.length) {
+    ElMessage.warning('请选择要分组的服务器')
+    return
+  }
+  
+  // 分析当前选中服务器的分组情况
+  const groupStats = {}
+  multipleSelection.value.forEach(client => {
+    const group = client.group || '未分组'
+    groupStats[group] = (groupStats[group] || 0) + 1
+  })
+  
+  const groupInfo = Object.entries(groupStats)
+    .map(([group, count]) => `${group}: ${count}台`)
+    .join('\n')
+  
+  try {
+    const { value: groupName } = await ElMessageBox.prompt(
+      `当前选中 ${multipleSelection.value.length} 台服务器\n\n分组分布：\n${groupInfo}\n\n请输入新的分组名称（留空则清空分组）：`, 
+      '批量分组', 
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputValue: '',
+        inputPlaceholder: '请输入分组名称'
+      }
+    )
+    
+    const clientIds = multipleSelection.value.map(item => item.id)
+    await axios.post('/api/clients/batch_group', { client_ids: clientIds, group: groupName || '' })
+    
+    ElMessage.success('批量分组成功')
+    fetchClients()
+    fetchGroups()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('批量分组失败')
+    }
+  }
 }
+
+// 批量打标签对话框
+const showBatchTagDialog = async () => {
+  if (!multipleSelection.value.length) {
+    ElMessage.warning('请选择要打标签的服务器')
+    return
+  }
+  
+  // 分析当前选中服务器的标签情况
+  const tagStats = {}
+  const allTags = new Set()
+  
+  multipleSelection.value.forEach(client => {
+    if (client.tags) {
+      const tags = client.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+      tags.forEach(tag => {
+        tagStats[tag] = (tagStats[tag] || 0) + 1
+        allTags.add(tag)
+      })
+    }
+  })
+  
+  const tagInfo = Object.entries(tagStats)
+    .map(([tag, count]) => `${tag}: ${count}台`)
+    .join('\n')
+  
+  const currentTags = Array.from(allTags).join(', ')
+  
+  try {
+    const { value: tags } = await ElMessageBox.prompt(
+      `当前选中 ${multipleSelection.value.length} 台服务器\n\n现有标签分布：\n${tagInfo}\n\n请输入新标签（逗号分隔，留空则清空标签）：`, 
+      '批量打标签', 
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputValue: currentTags,
+        inputPlaceholder: '请输入标签，多个标签用逗号分隔'
+      }
+    )
+    
+    const clientIds = multipleSelection.value.map(item => item.id)
+    await axios.post('/api/clients/batch_tags', { client_ids: clientIds, tags: tags || '' })
+    
+    ElMessage.success('批量打标签成功')
+    fetchClients()
+    fetchTags()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('批量打标签失败')
+    }
+  }
+}
+
+// 获取所有分组
+const fetchGroups = async () => {
+  try {
+    const response = await axios.get('/api/clients/groups')
+    if (response.data.status === 'success') {
+      groupList.value = response.data.data || []
+    }
+  } catch (error) {
+    console.error('获取分组列表失败:', error)
+  }
+}
+
+// 获取所有标签
+const fetchTags = async () => {
+  try {
+    const response = await axios.get('/api/clients/tags')
+    if (response.data.status === 'success') {
+      tagList.value = response.data.data || []
+    }
+  } catch (error) {
+    console.error('获取标签列表失败:', error)
+  }
+}
+
+// 在组件挂载时获取分组和标签列表
+onMounted(() => {
+  fetchClients()
+  fetchGroups()
+  fetchTags()
+})
 </script>
 
 <style scoped>
-.clients-container {
+.clients-page {
   padding: 20px;
+  background-color: #f5f7fa;
+  min-height: 100vh;
 }
 
-.header {
+.page-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+  margin-bottom: 24px;
+  color: white;
+}
+
+.header-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
 }
 
-.dialog-footer {
+.page-title {
+  font-size: 28px;
+  font-weight: 600;
+  margin: 0;
+  color: white;
+}
+
+.page-subtitle {
+  font-size: 16px;
+  opacity: 0.9;
+  margin: 0;
+}
+
+.header-actions {
   display: flex;
-  justify-content: flex-end;
-  gap: 10px;
+  gap: 12px;
 }
 
-.detail-content {
-  height: calc(100vh - 120px);
-  overflow-y: auto;
-  padding: 20px;
-  flex-direction: column;
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.stats-section {
+  margin-bottom: 24px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
 }
 
-.info-card {
-  margin-bottom: 20px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+.stat-card {
+  display: flex;
+  justify-content: space-between;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.stat-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+.stat-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+}
+
+.stat-icon.online {
+  background: linear-gradient(135deg, #67C23A, #85ce61);
+}
+
+.stat-icon.offline {
+  background: linear-gradient(135deg, #F56C6C, #f78989);
+}
+
+.stat-icon.running {
+  background: linear-gradient(135deg, #409EFF, #66b1ff);
+}
+
+.stat-icon.pending {
+  background: linear-gradient(135deg, #E6A23C, #ebb563);
+}
+
+.stat-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: #303133;
+  line-height: 1;
+}
+
+.stat-label {
+  font-size: 14px;
+  color: #909399;
+  font-weight: 500;
+}
+
+.main-content {
+  display: block;
+}
+
+.clients-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 16px;
-  font-weight: bold;
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.header-left h3 {
+  font-size: 18px;
+  font-weight: 600;
   color: #303133;
-  padding: 12px 20px;
+  margin: 0;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.search-input {
+  width: 240px;
+}
+
+.refresh-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+.table-container {
+  padding: 0;
+}
+
+.clients-table {
+  width: 100%;
+}
+
+.clients-table :deep(.el-table__header) {
+  background: #fafafa;
+}
+
+.clients-table :deep(.el-table__header th) {
+  background: #fafafa;
+  color: #606266;
+  font-weight: 600;
   border-bottom: 1px solid #ebeef5;
 }
 
-.cpu-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 16px;
+.clients-table :deep(.el-table__row) {
+  transition: all 0.3s ease;
 }
 
-.cpu-item {
+.server-info {
+  display: flex;
+  flex-direction: row;
+  gap: 4px;
+}
+
+.server-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.status-indicator {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
-  min-width: 200px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-dot.online {
+  background: #67C23A;
+  box-shadow: 0 0 0 2px rgba(103, 194, 58, 0.2);
+}
+
+.status-dot.offline {
+  background: #F56C6C;
+  box-shadow: 0 0 0 2px rgba(245, 108, 108, 0.2);
+}
+
+.status-dot.error {
+  background: #E6A23C;
+  box-shadow: 0 0 0 2px rgba(230, 162, 60, 0.2);
+}
+
+.last-seen {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.detail-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+/* 对话框样式 */
+.client-dialog :deep(.el-dialog__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 8px 8px 0 0;
+}
+
+.client-dialog :deep(.el-dialog__title) {
+  color: white;
+  font-weight: 600;
+}
+
+.client-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
+  color: white;
+}
+
+.client-dialog :deep(.el-dialog__body) {
+  padding: 24px;
+}
+
+.client-form :deep(.el-form-item__label) {
+  font-weight: 600;
+  color: #606266;
+}
+
+.client-form :deep(.el-input__wrapper) {
+  border-radius: 6px;
+  box-shadow: 0 0 0 1px #dcdfe6 inset;
+}
+
+.client-form :deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #c0c4cc inset;
+}
+
+.client-form :deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px #409eff inset;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #f0f0f0;
+  background: #fafafa;
+}
+
+/* 抽屉样式 */
+.client-drawer :deep(.el-drawer__header) {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 20px 24px;
+  margin: 0;
+}
+
+.client-drawer :deep(.el-drawer__title) {
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.client-drawer :deep(.el-drawer__headerbtn .el-drawer__close) {
+  color: white;
+}
+
+.drawer-content {
+  height: 100%;
+  display: flex;
+    flex-direction: column;
+}
+
+.detail-tabs {
+  flex: 1;
+  display: flex;
+}
+
+.detail-tabs :deep(.el-tabs__header) {
+  background: #fafafa;
+  margin: 0;
+  padding: 0 24px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detail-tabs :deep(.el-tabs__nav-wrap) {
+  padding: 0;
+}
+
+.detail-tabs :deep(.el-tabs__item) {
+  padding: 16px 24px;
+  font-weight: 500;
+  color: #606266;
+  border-bottom: 2px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.detail-tabs :deep(.el-tabs__item.is-active) {
+  color: #409eff;
+  border-bottom-color: #409eff;
+}
+
+.detail-tabs :deep(.el-tabs__content) {
+  flex: 1;
+  padding: 0;
+}
+
+.detail-tabs :deep(.el-tab-pane) {
+  height: 100%;
+  padding: 24px;
+  overflow-y: auto;
+}
+
+.detail-content, .monitor-content, .logs-content {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.info-card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+}
+
+.info-card :deep(.el-card__header) {
+  background: #fafafa;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.info-card :deep(.el-card__header span) {
+  font-weight: 600;
+  color: #303133;
+  font-size: 16px;
+}
+
+.info-card :deep(.el-card__body) {
+  padding: 20px;
+}
+
+.cpu-info {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.cpu-item {
+    display: flex;
+    align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
 }
 
 .cpu-cores {
-  color: #606266;
+  color: #6c757d;
   font-size: 14px;
+      font-weight: 500;
 }
 
 .memory-info {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px;
 }
 
 .memory-details {
-  display: flex;
-  justify-content: space-between;
-  color: #606266;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.memory-details span {
+  text-align: center;
+  padding: 8px;
+  background: #f8f9fa;
+    border-radius: 4px;
   font-size: 14px;
+  color: #6c757d;
 }
 
 .disk-info {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 16px;
+  gap: 16px;
 }
 
 .disk-item {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 12px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
 }
 
 .disk-header {
   display: flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 12px;
 }
 
 .disk-mount {
-  color: #606266;
   font-size: 14px;
+  color: #6c757d;
 }
 
 .disk-details {
-  display: flex;
-  justify-content: space-between;
-  color: #606266;
-  font-size: 14px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.disk-details span {
+  text-align: center;
+  padding: 6px;
+  background: white;
+  border-radius: 4px;
+  font-size: 13px;
+  color: #6c757d;
 }
 
 .network-info {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 12px;
 }
 
 .nic-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
-  min-width: 300px;
+  padding: 12px;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e9ecef;
   flex-wrap: wrap;
 }
 
 .nic-ip, .nic-ip6, .nic-mac, .nic-mtu, .nic-status {
-  color: #606266;
-  font-size: 14px;
-  margin-right: 8px;
+  font-size: 13px;
+  color: #6c757d;
+  padding: 2px 6px;
+  background: white;
+  border-radius: 3px;
 }
 
-:deep(.el-descriptions) {
-  padding: 16px;
-}
-
-:deep(.el-descriptions__label) {
-  width: 100px;
-  color: #909399;
-}
-
-:deep(.el-descriptions__content) {
-  color: #303133;
-}
-
-:deep(.el-progress) {
-  margin: 0;
-}
-
-@media screen and (max-width: 768px) {
-  .detail-content {
-    padding: 10px;
-  }
-
-  .cpu-item, .nic-item {
-    min-width: 100%;
-  }
-
-  .memory-details, .disk-details {
-    flex-direction: column;
-    gap: 8px;
-  }
-}
-
-.monitor-content {
-  padding: 20px;
-}
-
-.chart-container {
-  margin-bottom: 24px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  padding: 20px;
-
-  .chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #ebeef5;
-
-    h3 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 500;
-      color: #303133;
-    }
-  }
-
-  .chart {
-    height: 300px;
-    width: 100%;
-  }
-
-  :deep(.el-table) {
-    --el-table-border-color: #ebeef5;
-    --el-table-header-bg-color: #f5f7fa;
-    border-radius: 4px;
-    margin-top: 8px;
-  }
-
-  :deep(.el-table th) {
-    background-color: var(--el-table-header-bg-color);
-    font-weight: 500;
-  }
-
-  :deep(.el-table--border) {
-    border: 1px solid var(--el-table-border-color);
-  }
-
-  :deep(.el-progress) {
-    margin: 0;
-  }
-}
-
+/* 监控面板样式 */
 .monitor-control-panel {
-  display: flex;
-  align-items: center;
-  margin-bottom: 24px;
-  padding: 16px 20px;
-  background-color: #ffffff;
+  background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   gap: 24px;
   flex-wrap: wrap;
 }
@@ -2391,16 +2820,9 @@ const statusText = (status) => {
 }
 
 .section-label {
-  font-size: 14px;
-  font-weight: 500;
+  font-weight: 600;
   color: #606266;
   white-space: nowrap;
-}
-
-.time-range-selector {
-  display: flex;
-  align-items: center;
-  gap: 12px;
 }
 
 .time-select {
@@ -2411,12 +2833,6 @@ const statusText = (status) => {
   width: 360px;
 }
 
-.refresh-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .refresh-group {
   display: flex;
   align-items: center;
@@ -2424,9 +2840,9 @@ const statusText = (status) => {
 }
 
 .refresh-button {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .auto-refresh-control {
@@ -2435,66 +2851,46 @@ const statusText = (status) => {
   gap: 12px;
 }
 
-.refresh-switch {
-  margin-right: 8px;
-}
-
 .interval-select {
   width: 100px;
 }
 
-@media screen and (max-width: 768px) {
-  .monitor-control-panel {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-  }
-
-  .panel-section {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .time-range-selector {
-    flex-wrap: wrap;
-  }
-
-  .date-picker {
-    width: 100%;
-  }
-
-  .refresh-controls {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-}
-
-.fixed-tabs {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background-color: #fff;
-  padding: 0 20px;
-  margin: 0 -20px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.scrollable-content {
-  height: calc(100vh - 180px);
-  overflow-y: auto;
-  padding: 20px;
-}
-
-.logs-content {
-  padding: 20px;
-}
-
-.logs-control-panel {
-  margin-bottom: 20px;
-  padding: 16px;
-  background-color: #ffffff;
+.chart-container {
+  background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+}
+
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.chart-header h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  margin: 0;
+}
+
+.chart {
+  height: 300px;
+    width: 100%;
+  }
+
+/* 日志面板样式 */
+.logs-control-panel {
+  background: white;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
 }
 
 .search-controls {
@@ -2513,13 +2909,68 @@ const statusText = (status) => {
 }
 
 .logs-list {
-  background-color: #ffffff;
+  background: white;
   border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  padding: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+}
+
+.logs-list :deep(.el-table) {
+  font-size: 13px;
+}
+
+.logs-list :deep(.el-table__header th) {
+  background: #fafafa;
+  color: #606266;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* 响应式设计 */
+@media screen and (max-width: 1200px) {
+  .main-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media screen and (max-width: 768px) {
+  .clients-page {
+    padding: 12px;
+  }
+  
+  .page-header {
+    padding: 20px;
+  }
+  
+  .header-content {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .header-actions {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .monitor-control-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .panel-section {
+    justify-content: space-between;
+  }
+  
   .search-controls {
     flex-direction: column;
     align-items: stretch;
@@ -2529,64 +2980,105 @@ const statusText = (status) => {
   .level-select {
     width: 100%;
   }
+  
+  .time-select,
+  .date-picker {
+    width: 100%;
+  }
+  
+  .memory-details,
+  .disk-details {
+    grid-template-columns: 1fr;
+  }
+  
+  .cpu-info,
+  .network-info {
+    grid-template-columns: 1fr;
+  }
 }
 
-.pending-agent-card {
-  margin-bottom: 20px;
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
-  padding: 16px;
+/* 动画效果 */
+.clients-card,
+.info-card,
+.chart-container,
+.logs-control-panel,
+.logs-list {
+  animation: fadeInUp 0.6s ease-out;
 }
 
-.pending-agent-header {
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 滚动条样式 */
+.detail-content::-webkit-scrollbar,
+.monitor-content::-webkit-scrollbar,
+.logs-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-content::-webkit-scrollbar-track,
+.monitor-content::-webkit-scrollbar-track,
+.logs-content::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.detail-content::-webkit-scrollbar-thumb,
+.monitor-content::-webkit-scrollbar-thumb,
+.logs-content::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.detail-content::-webkit-scrollbar-thumb:hover,
+.monitor-content::-webkit-scrollbar-thumb:hover,
+.logs-content::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+.server-name-link {
+  cursor: pointer;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  gap: 6px;
+  color: #409eff;
+  font-weight: 600;
+  font-size: 15px;
+  border-radius: 4px;
+  padding: 2px 6px;
+  transition: background 0.2s, color 0.2s;
 }
-
-.pending-agent-title {
+.server-name-link:hover {
+  background: #e6f0fa;
+  color: #1769aa;
+  text-decoration: underline;
+}
+.server-link-icon {
   font-size: 16px;
-  font-weight: 500;
-  color: #303133;
+  color: #409eff;
+  transition: color 0.2s;
+}
+.server-name-link:hover .server-link-icon {
+  color: #1769aa;
 }
 
-.pending-agent-refresh {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.pending-agent-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-.pending-agent-table th,
-.pending-agent-table td {
-  padding: 8px 12px;
-  text-align: left;
-}
-
-.pending-agent-table th {
-  background-color: #f5f7fa;
-  font-weight: 500;
-}
-
-.pending-agent-status {
-  width: 80px;
-}
-
-.pending-agent-action {
-  width: 220px;
-}
-
-.pending-agent-status .el-tag {
-  margin-right: 8px;
-}
-
-.pending-agent-action .el-button {
-  margin-right: 8px;
+.new-tag {
+  margin-left: 8px;
+  font-size: 12px;
+  font-weight: bold;
+  background: #eaffea;
+  color: #21ba45;
+  border: 1px solid #b7e4c7;
+  border-radius: 4px;
+  padding: 0 6px;
+  vertical-align: middle;
 }
 </style> 

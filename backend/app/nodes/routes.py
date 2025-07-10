@@ -49,6 +49,8 @@ def create_node():
     password = data.get('password')
     ssh_key = data.get('ssh_key')
     port = data.get('port')
+    group = data.get('group', 'default')
+    tags = data.get('tags', '')
     user_id = get_jwt_identity()
 
     node = Node(name=name,
@@ -58,6 +60,8 @@ def create_node():
                 password=password,
                 auth_key=ssh_key,
                 port=port,
+                group=group,
+                tags=tags,
                 user_id=user_id)
     db.session.add(node)
     db.session.commit()
@@ -88,7 +92,7 @@ def test_connection(node_id):
             return jsonify({'error': '无权访问此服务器'}), 403
 
         # 测试SSH连接
-        with SSHClient(node) as ssh:
+        with SSHClient(node=node) as ssh:
             # 连接成功即可
             node.status = 'online'
             node.last_seen = datetime.utcnow()
@@ -200,10 +204,16 @@ def update_node(node_id):
     current_user_id = get_jwt_identity()
     data = request.get_json()
     name = data.get('name')
-    host = data.get('host')
+    ipaddress = data.get('ipaddress')
+    username = data.get('username')
     port = data.get('port')
-    type = data.get('type')
+    auth_type = data.get('auth_type')
+    password = data.get('password')
+    auth_key = data.get('key')
     config = data.get('config', {})
+    group = data.get('group')
+    tags = data.get('tags')
+    description = data.get('description')
 
     node = Node.query.filter_by(id=node_id, user_id=current_user_id).first()
     if not node:
@@ -214,14 +224,26 @@ def update_node(node_id):
 
     if name:
         node.name = name
-    if host:
-        node.host = host
+    if ipaddress:
+        node.ipaddress = ipaddress
+    if username:
+        node.username = username
+    if password:
+        node.password = password
     if port:
         node.port = port
-    if type:
-        node.type = type
+    if auth_type:
+        node.auth_type = auth_type
+    if auth_key:
+        node.auth_key = auth_key
     if config:
         node.config = config
+    if description:
+        node.description = description
+    if group is not None:
+        node.group = group
+    if tags is not None:
+        node.tags = tags
 
     db.session.commit()
     return jsonify({
@@ -387,3 +409,78 @@ def unmount_storage(node_id):
             'status': 'error',
             'message': str(e)
         }), 400
+
+@nodes_bp.route('/<string:node_id>/mount-check', methods=['POST'])
+@jwt_required()
+def node_mount_check(node_id):
+    """
+    挂载检测转发：主控收到请求后，转发给对应 Node（Proxy），返回检测结果
+    """
+    current_user_id = get_jwt_identity()
+    node = Node.query.filter_by(id=node_id, user_id=current_user_id).first()
+    if not node:
+        return jsonify({'status': 'error', 'message': '节点不存在'}), 404
+
+    data = request.get_json()
+    storage_config = data.get('storage_config')
+    if not storage_config:
+        return jsonify({'status': 'error', 'message': '缺少存储配置'}), 400
+
+    try:
+        # 通过 SSH 或 RPC 调用 Node 本地的挂载检测接口
+        # 这里以 SSH 为例，实际可根据你的 Node agent 实现调整
+        import json as pyjson
+        with SSHClient(node) as ssh:
+            cmd = f"easysync-agent mount-check '{pyjson.dumps(storage_config)}'"
+            stdout, stderr, exit_code = ssh.execute_command(cmd)
+            if exit_code != 0:
+                return jsonify({'status': 'error', 'message': stderr}), 500
+            result = pyjson.loads(stdout)
+            return jsonify({'status': 'success', 'data': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'节点挂载检测失败: {str(e)}'}), 500
+
+@nodes_bp.route('/groups', methods=['GET'])
+@jwt_required()
+def get_node_groups():
+    """获取所有节点分组列表"""
+    current_user_id = get_jwt_identity()
+    groups = db.session.query(Node.group).filter_by(user_id=current_user_id).distinct().all()
+    group_list = [g[0] for g in groups if g[0]]
+    return jsonify({'status': 'success', 'data': group_list})
+
+@nodes_bp.route('/tags', methods=['GET'])
+@jwt_required()
+def get_node_tags():
+    """获取所有节点标签列表"""
+    current_user_id = get_jwt_identity()
+    tags = db.session.query(Node.tags).filter_by(user_id=current_user_id).all()
+    tag_set = set()
+    for t in tags:
+        if t[0]:
+            tag_set.update([tag.strip() for tag in t[0].split(',') if tag.strip()])
+    return jsonify({'status': 'success', 'data': list(tag_set)})
+
+@nodes_bp.route('/batch_group', methods=['POST'])
+@jwt_required()
+def batch_group_nodes():
+    """批量分组节点"""
+    data = request.get_json()
+    node_ids = data.get('node_ids', [])
+    group = data.get('group', '')
+    current_user_id = get_jwt_identity()
+    Node.query.filter(Node.id.in_(node_ids), Node.user_id == current_user_id).update({'group': group}, synchronize_session=False)
+    db.session.commit()
+    return jsonify({'status': 'success', 'message': '批量分组成功'})
+
+@nodes_bp.route('/batch_tags', methods=['POST'])
+@jwt_required()
+def batch_tag_nodes():
+    """批量打标签节点"""
+    data = request.get_json()
+    node_ids = data.get('node_ids', [])
+    tags = data.get('tags', '')
+    current_user_id = get_jwt_identity()
+    Node.query.filter(Node.id.in_(node_ids), Node.user_id == current_user_id).update({'tags': tags}, synchronize_session=False)
+    db.session.commit()
+    return jsonify({'status': 'success', 'message': '批量打标签成功'})

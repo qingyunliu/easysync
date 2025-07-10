@@ -3,7 +3,7 @@ import json
 import logging
 import subprocess
 import tempfile
-from typing import Dict, Any, Optional, Tuple
+from typing import Dict, Any, Optional, Tuple, Callable
 from datetime import datetime
 from .progress import ProgressMonitor
 from ..utils.retry import RetryHandler
@@ -72,7 +72,6 @@ class StorageManager:
             self.logger.error(f"Error creating rclone config: {e}")
             raise
             
-    @RetryHandler.retry
     def mount(self, storage_config: Dict[str, Any]) -> str:
         """挂载存储（仅用于NFS/NAS）
         
@@ -94,36 +93,39 @@ class StorageManager:
         Returns:
             str: 挂载点路径
         """
-        try:
-            storage_type = storage_config['type']
-            if storage_type != 'nfs':
-                raise ValueError(f"Only NFS/NAS storage can be mounted: {storage_type}")
+        @RetryHandler.retry
+        def _mount():
+            try:
+                storage_type = storage_config['type']
+                if storage_type != 'nfs':
+                    raise ValueError(f"Only NFS/NAS storage can be mounted: {storage_type}")
+                    
+                source = storage_config['source']
+                mount_point = storage_config['mount_point']
+                options = storage_config.get('options', {})
                 
-            source = storage_config['source']
-            mount_point = storage_config['mount_point']
-            options = storage_config.get('options', {})
+                # 确保挂载点存在
+                os.makedirs(mount_point, exist_ok=True)
+                
+                # 执行NFS挂载
+                self._mount_nfs(source, mount_point, options)
+                
+                # 记录挂载信息
+                self.mounts[mount_point] = {
+                    'type': storage_type,
+                    'source': source,
+                    'options': options,
+                    'mounted_at': datetime.utcnow().isoformat()
+                }
+                
+                return mount_point
+                
+            except Exception as e:
+                self.logger.error(f"Error mounting storage: {e}")
+                raise
+
+        return _mount()
             
-            # 确保挂载点存在
-            os.makedirs(mount_point, exist_ok=True)
-            
-            # 执行NFS挂载
-            self._mount_nfs(source, mount_point, options)
-            
-            # 记录挂载信息
-            self.mounts[mount_point] = {
-                'type': storage_type,
-                'source': source,
-                'options': options,
-                'mounted_at': datetime.utcnow().isoformat()
-            }
-            
-            return mount_point
-            
-        except Exception as e:
-            self.logger.error(f"Error mounting storage: {e}")
-            raise
-            
-    @RetryHandler.retry
     def unmount(self, mount_point: str) -> bool:
         """卸载存储
         
@@ -133,25 +135,29 @@ class StorageManager:
         Returns:
             bool: 是否成功卸载
         """
-        try:
-            if mount_point not in self.mounts:
-                raise ValueError(f"Mount point not found: {mount_point}")
+        @RetryHandler.retry
+        def _unmount():
+            try:
+                if mount_point not in self.mounts:
+                    raise ValueError(f"Mount point not found: {mount_point}")
+                    
+                # 执行卸载命令
+                subprocess.run(['umount', mount_point], check=True)
                 
-            # 执行卸载命令
-            subprocess.run(['umount', mount_point], check=True)
+                # 删除挂载点
+                os.rmdir(mount_point)
+                
+                # 移除挂载记录
+                del self.mounts[mount_point]
+                
+                return True
+                
+            except Exception as e:
+                self.logger.error(f"Error unmounting storage: {e}")
+                raise
             
-            # 删除挂载点
-            os.rmdir(mount_point)
-            
-            # 移除挂载记录
-            del self.mounts[mount_point]
-            
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"Error unmounting storage: {e}")
-            raise
-            
+        return _unmount()
+
     def _mount_nfs(self, source: str, mount_point: str, options: Dict[str, Any]):
         """挂载NFS/NAS"""
         try:

@@ -125,3 +125,23 @@ class StorageService:
         """删除对象"""
         provider = self.get_provider(storage)
         return provider.delete_object(bucket, key)
+
+    def get_nas_stats(self, storage: Storage) -> Dict[str, Any]:
+        """获取 NAS 存储统计信息"""
+        provider = self.get_provider(storage)
+        return provider.get_stats()
+
+    def list_nas_files(self, storage: Storage, path: str = '', page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        """获取 NAS 文件列表"""
+        provider = self.get_provider(storage)
+        return provider.list_objects('', path, page, page_size)
+
+    def download_nas_file(self, storage: Storage, path: str) -> bytes:
+        """下载 NAS 文件"""
+        provider = self.get_provider(storage)
+        return provider.download_object('', path)
+
+    def mount_check(self, storage: Storage) -> dict:
+        """检测 NAS/NFS 挂载状态"""
+        provider = self.get_provider(storage)
+        return provider.mount_check()

@@ -49,13 +49,58 @@ class ResourceManager:
         Returns:
             Dict[str, Any]: 资源使用情况
         """
-        return {
-            'timestamp': datetime.utcnow().isoformat(),
-            'cpu': psutil.cpu_percent(),
-            'memory': psutil.virtual_memory().percent,
-            'disk': psutil.disk_usage('/').percent,
-            'network': psutil.net_io_counters().bytes_recv
-        }
+        try:
+            # 获取CPU信息
+            cpu_percent = psutil.cpu_percent(interval=1)
+            cpu_count = psutil.cpu_count()
+            
+            # 获取内存信息
+            memory = psutil.virtual_memory()
+            
+            # 获取磁盘信息
+            disk = psutil.disk_usage('/')
+            
+            # 获取网络信息
+            network = psutil.net_io_counters()
+            
+            return {
+                'cpu': {
+                    'percent': cpu_percent,
+                    'count': cpu_count,
+                    'load_avg': list(psutil.getloadavg())
+                },
+                'memory': {
+                    'total': memory.total,
+                    'available': memory.available,
+                    'used': memory.used,
+                    'free': memory.free,
+                    'percent': memory.percent
+                },
+                'disk': {
+                    'total': disk.total,
+                    'used': disk.used,
+                    'free': disk.free,
+                    'percent': disk.percent
+                },
+                'network': {
+                    'bytes_sent': network.bytes_sent,
+                    'bytes_recv': network.bytes_recv,
+                    'packets_sent': network.packets_sent,
+                    'packets_recv': network.packets_recv
+                },
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Error getting resource usage: {e}")
+            # 返回默认值
+            return {
+                'cpu': {'percent': 0, 'count': 0, 'load_avg': [0, 0, 0]},
+                'memory': {'total': 0, 'available': 0, 'used': 0, 'free': 0, 'percent': 0},
+                'disk': {'total': 0, 'used': 0, 'free': 0, 'percent': 0},
+                'network': {'bytes_sent': 0, 'bytes_recv': 0, 'packets_sent': 0, 'packets_recv': 0},
+                'timestamp': datetime.utcnow().isoformat()
+            }
     
     def limit_bandwidth(self, process: subprocess.Popen, bandwidth_limit: int):
         """限制带宽

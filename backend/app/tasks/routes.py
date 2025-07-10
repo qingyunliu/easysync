@@ -72,7 +72,7 @@ def get_task(task_id):
 @tasks_bp.route('', methods=['POST'])
 @jwt_required()
 def create_task():
-    """创建任务"""
+    """创建任务，支持 type=mount-check（如挂载检测），允许 node_id/source/options 字段"""
     user_id = get_jwt_identity()
     data = request.get_json()
     data['user_id'] = user_id

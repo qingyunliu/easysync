@@ -26,6 +26,10 @@ class Client(BaseModel):
     network_info = db.Column(db.Text)
     description = db.Column(db.Text)
     
+    # 新增分组和标签字段
+    group = db.Column(db.String(64), default='default', comment='分组')
+    tags = db.Column(db.Text, comment='标签，逗号分隔')
+    
     # 外键关系
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     
@@ -49,24 +53,8 @@ class Client(BaseModel):
             'memory_info': self.memory_info,
             'disk_info': self.disk_info,
             'network_info': self.network_info,
-            'description': self.description
+            'description': self.description,
+            'group': self.group,
+            'tags': self.tags
         })
         return data
-
-class InstallToken(db.Model):
-    __tablename__ = 'install_tokens'
-    id = db.Column(db.Integer, primary_key=True)
-    token = db.Column(db.String(64), unique=True, nullable=False, index=True)
-    user_id = db.Column(db.String(36), nullable=False, index=True)
-    status = db.Column(db.String(16), default='active')  # active/used/expired/revoked
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    expires_at = db.Column(db.DateTime, nullable=False)
-    used_count = db.Column(db.Integer, default=0)
-    max_uses = db.Column(db.Integer, default=1)
-    description = db.Column(db.String(255))
-    target_ip = db.Column(db.String(64))
-    target_hostname = db.Column(db.String(128))
-    target_mac = db.Column(db.String(64))
-
-    def is_valid(self):
-        return self.status == 'active' and self.expires_at > datetime.utcnow() and (self.max_uses is None or self.used_count < self.max_uses)

@@ -66,7 +66,7 @@
           <el-table-column prop="config.is_mounted" label="挂载状态" min-width="100" :resizable="true">
             <template #default="{ row }">
                   <el-tag :type="row.config.is_mounted ? 'success' : 'info'">
-                    {{ row.is_mounted ? '已挂载' : '未挂载' }}
+                    {{ row.config.is_mounted ? '已挂载' : '未挂载' }}
               </el-tag>
             </template>
           </el-table-column>
@@ -246,7 +246,7 @@
                       <Icon icon="mdi:file" :width="24" />
                     </div>
                     <div class="stat-content">
-                      <div class="stat-value">{{ nasStats.file_count }}</div>
+                      <div class="stat-value">{{ nasStats.total_files || 0 }}</div>
                       <div class="stat-label">文件数量</div>
                     </div>
                   </div>
@@ -255,8 +255,8 @@
                       <Icon icon="mdi:folder" :width="24" />
                     </div>
                     <div class="stat-content">
-                      <div class="stat-value">{{ nasStats.folder_count }}</div>
-                      <div class="stat-label">文件夹数量</div>
+                      <div class="stat-value">{{ nasStats.total_objects || 0 }}</div>
+                      <div class="stat-label">对象数量</div>
                     </div>
                   </div>
                 </div>
@@ -678,6 +678,12 @@
           </el-form-item>
           <!-- 继续渲染 S3/OBS 相关项 -->
         </template>
+
+        <el-form-item label="测试节点" prop="test_node_id">
+          <el-select v-model="testNodeId" placeholder="请选择节点">
+            <el-option v-for="node in availableNodes" :key="node.id" :label="node.name + '（' + node.ipaddress + '）'" :value="node.id" />
+          </el-select>
+        </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
@@ -719,8 +725,8 @@ const nasStats = ref({
   total_size: 0,
   used_size: 0,
   free_size: 0,
-  file_count: 0,
-  folder_count: 0,
+  total_files: 0,
+  total_objects: 0,
   last_modified: null
 })
 
@@ -733,14 +739,14 @@ const selectedFiles = ref([])
 const form = ref({
   name: '',
   type: 'nas',
-  provider: 'aws',
   config: {
     // S3 配置
+    provider: 'aws',
     access_key: '',
     secret_key: '',
     endpoint: '',
     region: '',
-    path_type: false,
+    path_style: false,
     bucket: '',
 
     // NAS 配置
@@ -832,12 +838,15 @@ const refreshingStats = ref(false)
 // 添加高级选项的响应式变量
 const advancedOptions = ref([])  // 默认不展开
 
+const testNodeId = ref('')
+const availableNodes = ref([])
+
 // 获取存储列表
 const fetchStorages = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/storages')
-      storages.value = response.data.storages
+    const response = await axios.get('/api/storages');
+    storages.value = response.data.storages
   } catch (error) {
     ElMessage.error('获取存储列表失败')
   } finally {
@@ -939,10 +948,9 @@ const showEditDialog = (row) => {
       region: row.config?.region || '',
       bucket: row.config?.bucket || '',
       path_style: row.config?.path_style || false,
-      protocol: row.config?.protocol || 'https',
+      protocol: row.type === 's3' ? (row.config?.protocol || 'https') : (row.config?.protocol || 'cifs'),
       // NAS 配置
       server: row.config?.server || '',
-      protocol: row.config.protocol || '',
       path: row.config?.path || '',
       version: row.config?.version || '',
       options: row.config?.options || '',
@@ -1000,7 +1008,6 @@ const handleFileClick = (row) => {
     fetchFiles()
   }
 }
-
 
 // 获取 nas 存储信息
 const fetchNASDetails = async () => {
@@ -1168,13 +1175,21 @@ const handleNASBreadcrumbClick = (path) => {
 const handleSizeChange = (val) => {
   pageSize.value = val
   currentPage.value = 1  // 重置到第一页
-  fetchObjects()
+  if (currentStorage.value.type === 'nas') {
+    fetchFiles()
+  } else {
+    fetchObjects()
+  }
 }
 
 // 处理页码变化
 const handleCurrentChange = (val) => {
   currentPage.value = val
-  fetchObjects()
+  if (currentStorage.value.type === 'nas') {
+    fetchFiles()
+  } else {
+    fetchObjects()
+  }
 }
 
 // 处理下载
@@ -1257,10 +1272,9 @@ const handleAddStorage = (type) => {
       region: '',
       bucket: '',
       path_style: false,
-      protocol: 'https',
+      protocol: type === 's3' ? 'https' : 'cifs', // 根据类型设置默认协议
 
       // NAS 配置
-      protocol: 'cifs', // 默认选中 CIFS
       server: '',
       path: '',
       permission: 'rw',
@@ -1278,39 +1292,65 @@ const handleAddStorage = (type) => {
 }
 
 // 表单验证规则
-const formRules = {
-  name: [
-    { required: true, message: '请输入存储名称', trigger: 'blur' }
-  ],
-  'config.provider': [
-    { required: true, message: '请选择提供商', trigger: 'change' }
-  ],
-  'config.access_key': [
-    { required: true, message: '请输入Access Key', trigger: 'blur' }
-  ],
-  'config.secret_key': [
-    { required: true, message: '请输入Secret Key', trigger: 'blur' }
-  ],
-  'config.endpoint': [
-    { required: true, message: '请输入Endpoint', trigger: 'blur' }
-  ],
-  'config.region': [
-    { 
-      required: true, 
-      message: '请输入区域', 
-      trigger: 'blur',
-      validator: (rule, value, callback) => {
-        if (form.value.config.provider === 'minio') {
-          callback()
-        } else if (!value) {
-          callback(new Error('请输入区域'))
-        } else {
-          callback()
+const formRules = computed(() => {
+  const rules = {
+    name: [
+      { required: true, message: '请输入存储名称', trigger: 'blur' }
+    ]
+  }
+  
+  if (form.value.type === 's3') {
+    rules['config.provider'] = [
+      { required: true, message: '请选择提供商', trigger: 'change' }
+    ]
+    rules['config.access_key'] = [
+      { required: true, message: '请输入Access Key', trigger: 'blur' }
+    ]
+    rules['config.secret_key'] = [
+      { required: true, message: '请输入Secret Key', trigger: 'blur' }
+    ]
+    rules['config.endpoint'] = [
+      { required: true, message: '请输入Endpoint', trigger: 'blur' }
+    ]
+    rules['config.region'] = [
+      { 
+        required: true, 
+        message: '请输入区域', 
+        trigger: 'blur',
+        validator: (rule, value, callback) => {
+          if (form.value.config.provider === 'minio') {
+            callback()
+          } else if (!value) {
+            callback(new Error('请输入区域'))
+          } else {
+            callback()
+          }
         }
       }
-    }
-  ]
-}
+    ]
+    rules['config.bucket'] = [
+      { required: true, message: '请输入存储桶名称', trigger: 'blur' }
+    ]
+  } else if (form.value.type === 'nas') {
+    rules['config.server'] = [
+      { required: true, message: '请输入服务器地址', trigger: 'blur' }
+    ]
+    rules['config.path'] = [
+      { required: true, message: '请输入共享目录路径', trigger: 'blur' }
+    ]
+    rules['config.protocol'] = [
+      { required: true, message: '请选择协议类型', trigger: 'change' }
+    ]
+    rules['config.permission'] = [
+      { required: true, message: '请选择读写权限', trigger: 'change' }
+    ]
+    rules['config.version'] = [
+      { required: true, message: '请选择协议版本', trigger: 'change' }
+    ]
+  }
+  
+  return rules
+})
 
 const formRef = ref(null)
 
@@ -1321,18 +1361,21 @@ const handleDialogClose = () => {
     name: '',
     type: 'nas',
     config: {
+      // S3 配置
+      provider: 'aws',
       access_key: '',
       secret_key: '',
       endpoint: '',
       region: '',
       bucket: '',
-      path_type: false,
-      provider: 'aws',
+      path_style: false,
+      // NAS 配置
       protocol: 'cifs',
-      permission: '',
       server: '',
       path: '',
+      permission: 'rw',
       version: '',
+      port: '',
       options: '',
       workgroup: '',
       username: '',
@@ -1400,11 +1443,32 @@ const handleSubmit = async () => {
   }
 }
 
-// 处理表单提交
+// 获取可用节点列表（只显示在线且Agent已安装的节点）
+const fetchAvailableNodes = async () => {
+  try {
+    const response = await axios.get('/api/nodes')
+    // 只保留在线且Agent已安装的节点
+    availableNodes.value = (response.data.data || []).filter(
+      node => node.status === 'online' && node.agent_status === 'running'
+    )
+  } catch (error) {
+    ElMessage.error('获取节点列表失败')
+  }
+}
+
+// 打开对话框时拉取节点
+watch(dialogVisible, (val) => {
+  if (val) fetchAvailableNodes()
+})
+
+// 处理测试连接
 const handleTestConnect = async () => {
   try {
     await formRef.value.validate()
-    
+    if (!testNodeId.value) {
+      ElMessage.warning('请先选择一个测试节点')
+      return
+    }
     // 根据存储类型构建配置对象
     let config = {}
     if (form.value.type === 's3') {
@@ -1416,7 +1480,7 @@ const handleTestConnect = async () => {
         region: form.value.config.provider === 'minio' ? 'cn-north-1' : (form.value.config.region || ''),
         bucket: form.value.config.bucket || '',
         path_style: form.value.config.path_style || false,
-        protocol: 'https'  // 默认使用https协议
+        protocol: 'https'
       }
     } else if (form.value.type === 'nas') {
       config = {
@@ -1431,20 +1495,19 @@ const handleTestConnect = async () => {
         password: form.value.config.password || ''
       }
     }
-
     const submitData = {
       type: form.value.type,
-      config: config
+      config: config,
+      node_id: testNodeId.value
     }
-    
     const response = await axios.post('/api/storages/test-connection', submitData)
-    if (response.data.status == "success") { 
-      ElMessage.success("测试连接成功")
+    if (response.data.status == "success") {
+      ElMessage.success("测试连接成功: " + (response.data.data?.message || ''))
+    } else {
+      ElMessage.error(response.data.message || '测试连接失败')
     }
-    } catch (error) {
-    console.error('提交错误:', error)
+  } catch (error) {
     if (error.response) {
-      console.error('错误响应:', error.response.data)
       ElMessage.error(error.response.data.message || '操作失败')
     } else if (error.message) {
       ElMessage.error(error.message)

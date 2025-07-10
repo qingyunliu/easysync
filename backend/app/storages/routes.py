@@ -307,3 +307,153 @@ def download_object(storage_id):
             'status': 'error',
             'message': f'下载对象失败: {str(e)}'
         }), 500
+
+# NAS 存储相关 API
+@storages_bp.route('/<string:storage_id>/nas/stats', methods=['GET'])
+@require_user
+def get_nas_stats(storage_id):
+    """获取 NAS 存储统计信息"""
+    try:
+        storage = storage_service.get_storage(storage_id)
+        if not storage:
+            return jsonify({
+                'status': 'error',
+                'message': '存储节点不存在'
+            }), 404
+            
+        if storage.type != 'nas':
+            return jsonify({
+                'status': 'error',
+                'message': '该存储不是 NAS 类型'
+            }), 400
+            
+        stats = storage_service.get_nas_stats(storage)
+        return jsonify({
+            'status': 'success',
+            'data': stats
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取 NAS 统计信息失败: {str(e)}'
+        }), 500
+
+@storages_bp.route('/<string:storage_id>/nas/files', methods=['GET'])
+@require_user
+def get_nas_files(storage_id):
+    """获取 NAS 文件列表"""
+    try:
+        storage = storage_service.get_storage(storage_id)
+        if not storage:
+            return jsonify({
+                'status': 'error',
+                'message': '存储节点不存在'
+            }), 404
+            
+        if storage.type != 'nas':
+            return jsonify({
+                'status': 'error',
+                'message': '该存储不是 NAS 类型'
+            }), 400
+            
+        path = request.args.get('path', '')
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 20))
+        
+        result = storage_service.list_nas_files(storage, path, page, page_size)
+        return jsonify({
+            'status': 'success',
+            'data': result
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取文件列表失败: {str(e)}'
+        }), 500
+
+@storages_bp.route('/<string:storage_id>/nas/download', methods=['GET'])
+@require_user
+def download_nas_file(storage_id):
+    """下载 NAS 文件"""
+    try:
+        storage = storage_service.get_storage(storage_id)
+        if not storage:
+            return jsonify({
+                'status': 'error',
+                'message': '存储节点不存在'
+            }), 404
+            
+        if storage.type != 'nas':
+            return jsonify({
+                'status': 'error',
+                'message': '该存储不是 NAS 类型'
+            }), 400
+            
+        path = request.args.get('path')
+        if not path:
+            return jsonify({
+                'status': 'error',
+                'message': '文件路径不能为空'
+            }), 400
+        
+        data = storage_service.download_nas_file(storage, path)
+        filename = path.split('/')[-1]
+        
+        return send_file(
+            io.BytesIO(data),
+            mimetype='application/octet-stream',
+            as_attachment=True,
+            download_name=filename
+        )
+    except ValueError as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'下载文件失败: {str(e)}'
+        }), 500
+
+@storages_bp.route('/<string:storage_id>/info', methods=['GET'])
+@require_user
+def get_storage_info(storage_id):
+    """获取存储信息（兼容前端）"""
+    try:
+        storage = storage_service.get_storage(storage_id)
+        if not storage:
+            return jsonify({
+                'status': 'error',
+                'message': '存储节点不存在'
+            }), 404
+            
+        if storage.type == 'nas':
+            stats = storage_service.get_nas_stats(storage)
+        else:
+            stats = storage_service.get_stats(storage)
+            
+        return jsonify({
+            'status': 'success',
+            'data': stats
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取存储信息失败: {str(e)}'
+        }), 500
+
+@storages_bp.route('/<string:storage_id>/mount-check', methods=['POST'])
+@require_user
+def mount_check(storage_id):
+    """检测 NAS/NFS 存储挂载状态"""
+    try:
+        storage = storage_service.get_storage(storage_id)
+        if not storage:
+            return jsonify({'status': 'error', 'message': '存储节点不存在'}), 404
+        if storage.type not in ['nas', 'nfs']:
+            return jsonify({'status': 'error', 'message': '仅支持 NAS/NFS 挂载检测'}), 400
+        result = storage_service.mount_check(storage)
+        return jsonify({'status': 'success', 'data': result})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': f'挂载检测失败: {str(e)}'}), 500

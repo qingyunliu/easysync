@@ -1,23 +1,19 @@
 from flask import request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.app.models import Client, AuditLog, MonitorData, InstallToken
+from backend.app.models import Client, AuditLog, MonitorData
 from backend import db
-from datetime import datetime, timedelta
+from datetime import datetime
 from . import clients_bp
-import paramiko
 import os
 import logging
 import tempfile
-import io
 import yaml
 import uuid
 from ..websocket import socketio
 from ..utils.ssh_utils import SSHClient
 from ..utils import utils
-import secrets
 
 logger = logging.getLogger(__name__)
-
 
 @clients_bp.route('', methods=['GET'])
 @jwt_required()
@@ -890,100 +886,82 @@ def client_heartbeat():
     db.session.commit()
     return jsonify({'status': 'success', 'message': '心跳上报成功'})
 
-@clients_bp.route('/gen-install-token', methods=['POST'])
+@clients_bp.route('/batch_delete', methods=['POST'])
 @jwt_required()
-def gen_install_token():
-    """生成Agent安装token和一键curl命令，支持目标IP/主机名/MAC"""
+def batch_delete_clients():
+    """批量删除服务器"""
     current_user_id = get_jwt_identity()
-    data = request.get_json() or {}
-    expires_in = int(data.get('expires_in', 3600))  # 有效期秒，默认1小时
-    max_uses = int(data.get('max_uses', 1))
-    description = data.get('description', '')
-    target_ip = data.get('target_ip', '')
-    target_hostname = data.get('target_hostname', '')
-    target_mac = data.get('target_mac', '')
-    token = secrets.token_urlsafe(32)
-    expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
-    install_token = InstallToken(
-        token=token,
-        user_id=current_user_id,
-        expires_at=expires_at,
-        max_uses=max_uses,
-        description=description,
-        target_ip=target_ip,
-        target_hostname=target_hostname,
-        target_mac=target_mac
-    )
-    db.session.add(install_token)
-    db.session.commit()
-    server = request.host_url.rstrip('/')
-    curl_cmd = f"curl -sSL '{server}/api/clients/auto-install?token={token}&user_id={current_user_id}' | bash"
-    return jsonify({
-        'status': 'success',
-        'token': token,
-        'expires_at': expires_at.isoformat(),
-        'curl_cmd': curl_cmd
-    })
+    data = request.get_json()
+    client_ids = data.get('client_ids', [])
+    if not client_ids:
+        return jsonify({'status': 'error', 'message': '缺少client_ids'}), 400
+    try:
+        clients = Client.query.filter(Client.id.in_(client_ids), Client.user_id == current_user_id).all()
+        for client in clients:
+            db.session.delete(client)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': f'批量删除{len(clients)}台服务器成功'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@clients_bp.route('/auto-install', methods=['GET'])
-def auto_install():
-    """自动安装入口，校验token和用户ID，返回带参数的安装脚本"""
-    token = request.args.get('token')
-    user_id = request.args.get('user_id')
-    if not token or not user_id:
-        return '参数缺失', 400
-    install_token = InstallToken.query.filter_by(token=token, user_id=user_id).first()
-    if not install_token or not install_token.is_valid():
-        return 'Token无效或已过期', 403
-    # IP校验
-    if install_token.target_ip:
-        remote_ip = request.headers.get('X-Real-IP') or request.remote_addr
-        if remote_ip != install_token.target_ip:
-            return f'IP校验失败，当前IP: {remote_ip}，目标IP: {install_token.target_ip}', 403
-    # 其他唯一性校验（如主机名、MAC）可在Agent注册时补充
-    # 增加已用次数
-    install_token.used_count += 1
-    if install_token.max_uses and install_token.used_count >= install_token.max_uses:
-        install_token.status = 'used'
-    db.session.commit()
-    server_url = request.host_url.rstrip('/')
-    script = f'''#!/bin/bash\nset -e\n# 安装依赖\nif command -v apt-get >/dev/null 2>&1; then\n    sudo apt-get update && sudo apt-get install -y python3 python3-pip git\nelif command -v yum >/dev/null 2>&1; then\n    sudo yum install -y python3 python3-pip git\nfi\n# 下载Agent代码\nAGENT_DIR="/opt/easysync-agent"\nsudo rm -rf $AGENT_DIR\nsudo git clone https://github.com/your-org/EasySync.git $AGENT_DIR\ncd $AGENT_DIR/backend/app/clients/agent/python\nsudo pip3 install -r requirements.txt\n# 生成配置文件\ncat <<EOF | sudo tee config.yaml\nclient:\n  id: "$(uuidgen)"\n  user_id: "{user_id}"\n  name: "Agent-$(hostname)"\n  version: "1.0.0"\n  description: "Auto installed agent"\n  install_token: "{token}"\nserver:\n  url: "{server_url}"\n  ws_path: "/ws/socket.io"\n  heartbeat_interval: 30\nmonitor:\n  interval: 5\n  metrics: ["cpu", "memory", "disk", "network"]\nlog:\n  level: "INFO"\n  file: "/var/log/easysync/agent.log"\n  max_size: 10485760\n  backup_count: 5\nupgrade:\n  url: "{server_url}/api/clients/upgrade"\n  backup_dir: "/opt/easysync/backups"\n  check_interval: 3600\nEOF\n# 启动Agent\nnohup python3 client.py --config config.yaml > /var/log/easysync/agent.log 2>&1 &\necho "Agent已安装并启动。"\n'''
-    return script, 200, {'Content-Type': 'text/x-shellscript; charset=utf-8'}
-
-@clients_bp.route('/install-tokens', methods=['GET'])
+@clients_bp.route('/batch_group', methods=['POST'])
 @jwt_required()
-def list_install_tokens():
-    """获取当前用户所有未过期/未作废的安装命令"""
+def batch_group_clients():
+    """批量分组"""
     current_user_id = get_jwt_identity()
-    now = datetime.utcnow()
-    tokens = InstallToken.query.filter(
-        InstallToken.user_id == current_user_id,
-        InstallToken.status == 'active',
-        InstallToken.expires_at > now
-    ).order_by(InstallToken.created_at.desc()).all()
-    result = []
-    for t in tokens:
-        result.append({
-            'id': t.id,
-            'description': t.description,
-            'created_at': t.created_at.isoformat(),
-            'expires_at': t.expires_at.isoformat(),
-            'max_uses': t.max_uses,
-            'used_count': t.used_count,
-            'target_ip': t.target_ip,
-            'target_hostname': t.target_hostname,
-            'target_mac': t.target_mac,
-            'status': t.status,
-            'curl_cmd': f"curl -sSL '{request.host_url.rstrip('/')}/api/clients/auto-install?token={t.token}&user_id={current_user_id}' | bash"
-        })
-    return jsonify({'status': 'success', 'items': result})
+    data = request.get_json()
+    client_ids = data.get('client_ids', [])
+    group = data.get('group', 'default')
+    if not client_ids:
+        return jsonify({'status': 'error', 'message': '缺少client_ids'}), 400
+    try:
+        clients = Client.query.filter(Client.id.in_(client_ids), Client.user_id == current_user_id).all()
+        for client in clients:
+            client.group = group
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': f'批量分组{len(clients)}台服务器到{group}'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@clients_bp.route('/install-token/<int:token_id>/revoke', methods=['POST'])
+@clients_bp.route('/batch_tags', methods=['POST'])
 @jwt_required()
-def revoke_install_token(token_id):
-    """作废/删除安装命令"""
+def batch_tag_clients():
+    """批量打标签（覆盖式）"""
     current_user_id = get_jwt_identity()
-    token = InstallToken.query.filter_by(id=token_id, user_id=current_user_id).first_or_404()
-    token.status = 'revoked'
-    db.session.commit()
-    return jsonify({'status': 'success', 'message': '已作废'})
+    data = request.get_json()
+    client_ids = data.get('client_ids', [])
+    tags = data.get('tags', '')
+    if not client_ids:
+        return jsonify({'status': 'error', 'message': '缺少client_ids'}), 400
+    try:
+        clients = Client.query.filter(Client.id.in_(client_ids), Client.user_id == current_user_id).all()
+        for client in clients:
+            client.tags = tags
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': f'批量打标签成功'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@clients_bp.route('/groups', methods=['GET'])
+@jwt_required()
+def get_all_groups():
+    """获取所有分组列表"""
+    current_user_id = get_jwt_identity()
+    groups = db.session.query(Client.group).filter_by(user_id=current_user_id).distinct().all()
+    group_list = [g[0] for g in groups if g[0]]
+    return jsonify({'status': 'success', 'data': group_list, 'message': '分组列表获取成功'})
+
+@clients_bp.route('/tags', methods=['GET'])
+@jwt_required()
+def get_all_tags():
+    """获取所有标签列表（去重）"""
+    current_user_id = get_jwt_identity()
+    tags = db.session.query(Client.tags).filter_by(user_id=current_user_id).all()
+    tag_set = set()
+    for tag_str in tags:
+        if tag_str[0]:
+            tag_set.update([t.strip() for t in tag_str[0].split(',') if t.strip()])
+    return jsonify({'status': 'success', 'data': list(tag_set), 'message': '标签列表获取成功'})

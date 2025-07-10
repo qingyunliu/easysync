@@ -91,50 +91,50 @@ class NFSProvider(StorageProvider):
     def list_objects(self, bucket: str, prefix: str = '', page: int = 1, page_size: int = 20) -> Dict[str, Any]:
         """获取文件列表"""
         try:
-            bucket_path = os.path.join(self.mount_point, bucket)
-            if not os.path.exists(bucket_path):
-                raise ValueError(f"目录 {bucket} 不存在")
+            # 构建完整路径
+            full_path = os.path.join(self.mount_point, prefix)
+            if not os.path.exists(full_path):
+                raise ValueError(f"路径 {prefix} 不存在")
 
             # 获取所有对象
             objects = []
             total = 0
             
-            for root, dirs, files in os.walk(bucket_path):
-                rel_path = os.path.relpath(root, bucket_path)
-                if rel_path == '.':
-                    rel_path = ''
+            # 获取当前目录下的文件和文件夹
+            try:
+                items = os.listdir(full_path)
+            except PermissionError:
+                raise ValueError(f"没有权限访问路径 {prefix}")
+            
+            for item in items:
+                item_path = os.path.join(full_path, item)
+                rel_path = os.path.join(prefix, item) if prefix else item
                 
-                # 处理目录
-                for dir_name in dirs:
-                    dir_path = os.path.join(rel_path, dir_name)
-                    if prefix and not dir_path.startswith(prefix):
-                        continue
+                try:
+                    stat = os.stat(item_path)
                     total += 1
+                    
                     if total > (page - 1) * page_size and len(objects) < page_size:
-                        objects.append({
-                            'name': dir_name,
-                            'prefix': dir_path,
-                            'type': 'directory'
-                        })
-                
-                # 处理文件
-                for file_name in files:
-                    file_path = os.path.join(rel_path, file_name)
-                    if prefix and not file_path.startswith(prefix):
-                        continue
-                    total += 1
-                    if total > (page - 1) * page_size and len(objects) < page_size:
-                        stat = os.stat(os.path.join(root, file_name))
-                        objects.append({
-                            'name': file_name,
-                            'key': file_path,
-                            'size': stat.st_size,
-                            'lastModified': datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                            'type': 'file'
-                        })
+                        if os.path.isdir(item_path):
+                            objects.append({
+                                'name': item,
+                                'path': rel_path,
+                                'type': 'directory',
+                                'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat()
+                            })
+                        else:
+                            objects.append({
+                                'name': item,
+                                'path': rel_path,
+                                'size': stat.st_size,
+                                'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                                'type': 'file'
+                            })
+                except (OSError, PermissionError):
+                    continue
 
             return {
-                'objects': objects,
+                'files': objects,
                 'total': total,
                 'page': page,
                 'page_size': page_size
@@ -145,9 +145,12 @@ class NFSProvider(StorageProvider):
     def download_object(self, bucket: str, key: str) -> bytes:
         """下载文件"""
         try:
-            file_path = os.path.join(self.mount_point, bucket, key)
+            file_path = os.path.join(self.mount_point, key)
             if not os.path.exists(file_path):
                 raise ValueError(f"文件 {key} 不存在")
+            
+            if not os.path.isfile(file_path):
+                raise ValueError(f"{key} 不是一个文件")
             
             with open(file_path, 'rb') as f:
                 return f.read()
@@ -157,19 +160,18 @@ class NFSProvider(StorageProvider):
     def upload_object(self, bucket: str, key: str, data: bytes) -> Dict[str, Any]:
         """上传文件"""
         try:
-            bucket_path = os.path.join(self.mount_point, bucket)
-            if not os.path.exists(bucket_path):
-                os.makedirs(bucket_path)
+            file_path = os.path.join(self.mount_point, key)
             
-            file_path = os.path.join(bucket_path, key)
+            # 确保目录存在
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             
             with open(file_path, 'wb') as f:
                 f.write(data)
             
             return {
-                "status": "success",
-                "message": "上传成功"
+                'key': key,
+                'size': len(data),
+                'uploaded_at': datetime.utcnow().isoformat()
             }
         except Exception as e:
             raise ValueError(f"上传文件失败: {str(e)}")
@@ -177,14 +179,39 @@ class NFSProvider(StorageProvider):
     def delete_object(self, bucket: str, key: str) -> bool:
         """删除文件"""
         try:
-            file_path = os.path.join(self.mount_point, bucket, key)
+            file_path = os.path.join(self.mount_point, key)
             if not os.path.exists(file_path):
-                raise ValueError(f"文件 {key} 不存在")
+                return False
             
-            if os.path.isdir(file_path):
-                shutil.rmtree(file_path)
-            else:
+            if os.path.isfile(file_path):
                 os.remove(file_path)
+            else:
+                import shutil
+                shutil.rmtree(file_path)
+            
             return True
         except Exception as e:
-            raise ValueError(f"删除文件失败: {str(e)}") 
+            raise ValueError(f"删除文件失败: {str(e)}")
+
+    def mount_check(self) -> dict:
+        """检测挂载点是否存在、是否可读写"""
+        result = {
+            'mount_point': self.mount_point,
+            'exists': False,
+            'readable': False,
+            'writable': False,
+            'message': ''
+        }
+        try:
+            if os.path.exists(self.mount_point):
+                result['exists'] = True
+                # 检查可读
+                result['readable'] = os.access(self.mount_point, os.R_OK)
+                # 检查可写
+                result['writable'] = os.access(self.mount_point, os.W_OK)
+                result['message'] = '挂载点存在'
+            else:
+                result['message'] = '挂载点不存在'
+        except Exception as e:
+            result['message'] = f'检测异常: {str(e)}'
+        return result 
