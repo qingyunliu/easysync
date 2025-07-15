@@ -22,8 +22,8 @@ def agent_token_required(f):
     return decorated
 
 # 1. 注册节点
-@agent_bp.route('/register', methods=['POST'])
-def agent_register():
+@agent_bp.route('/<string:node_id>/register', methods=['POST'])
+def agent_register(node_id):
     data = request.get_json()
     name = data.get('name')
     ipaddress = data.get('ipaddress')
@@ -32,7 +32,7 @@ def agent_register():
     system_info = data.get('system_info', {})
 
     # 先查找是否已注册（根据IP地址和用户ID判断）
-    existing_node = Node.query.filter_by(ipaddress=ipaddress, user_id=user_id).first()
+    existing_node = Node.query.filter_by(id=node_id, ipaddress=ipaddress, user_id=user_id).first()
     if existing_node:
         # 已注册，直接返回原有信息
         token = existing_node.config.get('agent_token') if existing_node.config else generate_token()
@@ -51,7 +51,11 @@ def agent_register():
         return jsonify({
             'status': 'success', 
             'message': '节点已注册，直接返回', 
-            'data': {'node_id': existing_node.id, 'token': token}
+            'data': {
+                'node_id': existing_node.id,
+                'user_id': existing_node.user_id,
+                'token': token
+                }
         })
 
     # 未注册，创建新节点

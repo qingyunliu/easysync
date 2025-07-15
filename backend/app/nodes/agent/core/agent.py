@@ -89,6 +89,7 @@ class ProxyAgent:
         self.command_thread = None
         self.heartbeat_interval = self.config.get('heartbeat_interval', 30)
         self.task_poll_interval = self.config.get('task_poll_interval', 10)
+        self.user_id = None
         self.node_id = None
         self.token = None
         self.version = self.config.get('version', '1.0.0')
@@ -152,14 +153,15 @@ class ProxyAgent:
             'python_version': platform.python_version(),
             'machine': platform.machine(),
             'processor': platform.processor(),
+            'user_id': self.server_comm.user_id,
             'version': self.version
         }
         node_id = self.server_comm.register_node(node_info)
         if not node_id:
             raise Exception("Failed to register node")
         self.node_id = node_id
+        self.user_id = self.server_comm.user_id
         self.token = self.server_comm.token
-        self.config['node_id'] = node_id
         self.logger.info(f"Node registered with ID: {node_id}")
 
     def _heartbeat_loop(self):

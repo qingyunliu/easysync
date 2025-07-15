@@ -110,7 +110,7 @@ def create_app(config_name=None):
     app.register_blueprint(clients_bp, url_prefix='/api/clients')
     app.register_blueprint(monitor_bp, url_prefix='/api/monitor')
     app.register_blueprint(nodes_bp, url_prefix='/api/nodes')
-    app.register_blueprint(agent_bp, url_prefix='/api/agent/v1/nodes/')
+    app.register_blueprint(agent_bp, url_prefix='/api/proxy/v1/nodes/')
 
     # 注册错误处理
     from .app.errors import register_error_handlers

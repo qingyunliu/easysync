@@ -13,15 +13,24 @@ class ServerCommunication:
         self.logger = logging.getLogger('ServerCommunication')
         self.server_url = self._get_server_url()
         self.session = requests.Session()
+        self.user_id = None
         self.node_id = None
-        self.token = self.config.get('agent_token')
+        self.token = None
+        self.node = self._get_node_config
         
     def _get_server_url(self) -> str:
         """获取服务器URL"""
         server_config = self.config.get('server', {})
         host = server_config.get('host', 'localhost')
         port = server_config.get('port', 5000)
-        return f"http://{host}:{port}/api/agent/v1/nodes"
+        return f"http://{host}:{port}/api/proxy/v1/nodes"
+    
+    def _get_node_config(self) -> str:
+        """获取Node认证信息"""
+        node_config = self.config.get('node', {})
+        self.user_id = node_config.get('user', '')
+        self.node_id = node_config.get('id', '')
+        self.token = node_config.get('token', '')
         
     def _auth_headers(self):
         if not self.token:
@@ -38,13 +47,14 @@ class ServerCommunication:
             Optional[str]: 节点ID
         """
         try:
-            url = f"{self.server_url}/register"
+            url = f"{self.server_url}/{self.node_id}/register"
             response = self.session.post(url, json=node_info)
             response.raise_for_status()
             data = response.json().get('data', {})
             self.node_id = data.get('node_id')
+            self.user_id = data.get('user_id')
             self.token = data.get('token')
-            self.config['agent_token'] = self.token
+            self.config['node']['token'] = self.token
             return self.node_id
             
         except Exception as e:

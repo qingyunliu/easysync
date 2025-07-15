@@ -120,17 +120,17 @@ class NASProvider(StorageProvider):
                     if total > (page - 1) * page_size and len(objects) < page_size:
                         if os.path.isdir(item_path):
                             objects.append({
-                                'name': item,
-                                'path': rel_path,
-                                'type': 'directory',
-                                'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat()
-                            })
+                                    'name': item,
+                                    'path': rel_path,
+                                    'type': 'directory',
+                                    'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat()
+                                })
                         else:
                             objects.append({
-                                'name': item,
-                                'path': rel_path,
-                                'size': stat.st_size,
-                                'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                                    'name': item,
+                                    'path': rel_path,
+                                    'size': stat.st_size,
+                                    'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat(),
                                 'type': 'file'
                             })
                 except (OSError, PermissionError):

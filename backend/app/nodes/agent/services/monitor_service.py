@@ -1,6 +1,8 @@
 import requests
 import time
+from typing import Dict, Any, Callable
 from datetime import datetime
+from ..core.communication import ServerCommunication
 import psutil
 
 class MonitorService:
@@ -9,10 +11,11 @@ class MonitorService:
         self.config = config
         self.node_id = node_id
         self.token = token
+        self.callbacks = []
         self.running = False
-        self.server_url = self.config['server']['url'] if 'server' in self.config and 'url' in self.config['server'] else self.config.get('server_url')
+        self.server_comm = ServerCommunication(config)
         self.interval = self.config.get('monitor', {}).get('interval', 5)
-
+        
     def start(self):
         self.running = True
         while self.running:
@@ -23,7 +26,7 @@ class MonitorService:
             except Exception as e:
                 print(f"Monitor error: {e}")
                 time.sleep(5)
-
+                
     def stop(self):
         self.running = False
 
@@ -61,11 +64,24 @@ class MonitorService:
             },
             'timestamp': datetime.utcnow().isoformat()
         }
-
+        
     def report_metrics(self, metrics):
-        url = f"{self.server_url}/api/agent/v1/nodes/{self.node_id}/metrics"
-        headers = {"Authorization": f"Bearer {self.token}"}
-        try:
-            requests.post(url, json={'metrics': metrics}, headers=headers, timeout=5)
-        except Exception as e:
-            print(f"上报监控数据失败: {e}") 
+        if self.server_comm.report_metrics(metrics):
+            self.logger.info(f"Report metrics Success, metrics: {metrics}")
+    
+    def add_callback(self, callback: Callable[[Dict[str, Any]], None]):
+        """添加监控回调
+        
+        Args:
+            callback: 回调函数
+        """
+        self.callbacks.append(callback)
+        
+    def remove_callback(self, callback: Callable[[Dict[str, Any]], None]):
+        """移除监控回调
+        
+        Args:
+            callback: 回调函数
+        """
+        if callback in self.callbacks:
+            self.callbacks.remove(callback)

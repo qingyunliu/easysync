@@ -39,6 +39,11 @@ class Settings:
                 'port': 5000,
                 'api_version': 'v1'
             },
+            'node': {
+                'id': '',
+                'user': '',
+                'token': ''
+            },
             'heartbeat_interval': 30,
             'monitor': {
                 'interval': 5,

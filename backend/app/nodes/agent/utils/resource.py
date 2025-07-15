@@ -94,13 +94,13 @@ class ResourceManager:
         except Exception as e:
             self.logger.error(f"Error getting resource usage: {e}")
             # 返回默认值
-            return {
+        return {
                 'cpu': {'percent': 0, 'count': 0, 'load_avg': [0, 0, 0]},
                 'memory': {'total': 0, 'available': 0, 'used': 0, 'free': 0, 'percent': 0},
                 'disk': {'total': 0, 'used': 0, 'free': 0, 'percent': 0},
                 'network': {'bytes_sent': 0, 'bytes_recv': 0, 'packets_sent': 0, 'packets_recv': 0},
                 'timestamp': datetime.utcnow().isoformat()
-            }
+        }
     
     def limit_bandwidth(self, process: subprocess.Popen, bandwidth_limit: int):
         """限制带宽

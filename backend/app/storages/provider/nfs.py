@@ -117,18 +117,18 @@ class NFSProvider(StorageProvider):
                     if total > (page - 1) * page_size and len(objects) < page_size:
                         if os.path.isdir(item_path):
                             objects.append({
-                                'name': item,
-                                'path': rel_path,
-                                'type': 'directory',
-                                'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat()
-                            })
+                                    'name': item,
+                                    'path': rel_path,
+                                    'type': 'directory',
+                                    'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat()
+                                })
                         else:
                             objects.append({
-                                'name': item,
-                                'path': rel_path,
-                                'size': stat.st_size,
-                                'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                                'type': 'file'
+                                    'name': item,
+                                    'path': rel_path,
+                                    'size': stat.st_size,
+                                    'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                                    'type': 'file'
                             })
                 except (OSError, PermissionError):
                     continue
@@ -191,7 +191,7 @@ class NFSProvider(StorageProvider):
             
             return True
         except Exception as e:
-            raise ValueError(f"删除文件失败: {str(e)}")
+            raise ValueError(f"删除文件失败: {str(e)}") 
 
     def mount_check(self) -> dict:
         """检测挂载点是否存在、是否可读写"""

@@ -4,17 +4,116 @@
     <div class="page-header">
       <div class="header-content">
         <div class="header-left">
-          <h1 class="page-title">节点管理</h1>
-          <p class="page-subtitle">管理您的节点和SyncProxy状态</p>
+          <h1 class="page-title">同步代理节点管理</h1>
+          <p class="page-subtitle">管理您的EasySync-Proxy代理节点，用于执行数据同步任务</p>
         </div>
         <div class="header-actions">
           <el-button type="primary" @click="showAddDialog" class="action-btn">
             <el-icon><Plus /></el-icon>
-            添加节点
+            添加代理节点
+          </el-button>
+          <el-button 
+            type="info" 
+            @click="toggleArchitecture"
+            class="guide-btn"
+            :title="showArchitecture ? '隐藏流程引导' : '显示流程引导'"
+          >
+            <el-icon>
+              <View v-if="showArchitecture" />
+              <Hide v-else />
+            </el-icon>
+            流程引导
           </el-button>
         </div>
       </div>
     </div>
+
+    <!-- 架构说明卡片 -->
+    <transition name="fade-arch">
+      <div class="architecture-section" v-show="showArchitecture">
+        <el-card class="architecture-card" shadow="never">
+          <template #header>
+            <div class="card-header">
+              <div class="header-left">
+                <h3>数据同步架构说明</h3>
+                <el-tag type="info">代理节点中枢式同步流程</el-tag>
+              </div>
+            </div>
+          </template>
+          <div class="architecture-content">
+            <div class="architecture-central-diagram">
+              <div class="storage-side">
+                <div class="storage-icon">
+                  <el-icon><FolderOpened /></el-icon>
+                </div>
+                <div class="storage-label">存储资源A<br/>(NAS/OBS/NFS/本地)</div>
+              </div>
+              <div class="sync-arrows">
+                <el-icon class="arrow-left"><ArrowLeft /></el-icon>
+                <el-icon class="arrow-right"><ArrowRight /></el-icon>
+              </div>
+              <div class="proxy-center">
+                <div class="proxy-icon">
+                  <el-icon><Connection /></el-icon>
+                </div>
+                <div class="proxy-label">同步代理节点<br/>(SyncProxy)</div>
+                <div class="proxy-desc">负责挂载两端存储，执行数据同步任务<br/>支持双向同步、任务分发、状态监控</div>
+              </div>
+              <div class="sync-arrows">
+                <el-icon class="arrow-left"><ArrowLeft /></el-icon>
+                <el-icon class="arrow-right"><ArrowRight /></el-icon>
+              </div>
+              <div class="storage-side">
+                <div class="storage-icon">
+                  <el-icon><FolderOpened /></el-icon>
+                </div>
+                <div class="storage-label">存储资源B<br/>(NAS/OBS/NFS/本地)</div>
+              </div>
+            </div>
+            <div class="central-arch-notes">
+              <el-alert type="info" show-icon :closable="false" style="margin-bottom: 18px;">
+                <template #title>
+                  <strong>说明：</strong> 同步代理节点作为中枢，挂载/连接两端存储资源，支持任意方向的数据同步与转发。任务可灵活分配到多台代理节点，实现高可用与负载均衡。
+                </template>
+              </el-alert>
+            </div>
+            <div class="usage-guide">
+              <h4>使用指南</h4>
+              <div class="guide-steps">
+                <div class="guide-step">
+                  <div class="step-number">1</div>
+                  <div class="step-content">
+                    <strong>添加代理节点</strong>
+                    <p>注册一台或多台服务器作为SyncProxy，作为同步中枢</p>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div class="step-number">2</div>
+                  <div class="step-content">
+                    <strong>挂载存储资源</strong>
+                    <p>确保代理节点能访问并挂载两端存储（如NAS、OBS、NFS等）</p>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div class="step-number">3</div>
+                  <div class="step-content">
+                    <strong>配置同步任务</strong>
+                    <p>选择任意两端存储和代理节点，系统自动分配任务，支持双向同步</p>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div class="step-number">4</div>
+                  <div class="step-content">
+                    <strong>执行与监控</strong>
+                    <p>代理节点负责数据搬运、同步、状态上报，支持多节点高可用</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </el-card>
+      </div>
+    </transition>
 
     <!-- 统计卡片 -->
     <div class="stats-section">
@@ -57,27 +156,7 @@
         </div>
       </div>
     </div>
-    <div class="nodes-container">
-      <div class="header">
-        <div class="header-actions">
-          <el-select v-model="selectedGroup" placeholder="分组筛选" clearable style="width: 120px">
-            <el-option v-for="group in groupList" :key="group" :label="group" :value="group" />
-          </el-select>
-          <el-select v-model="selectedTag" placeholder="标签筛选" clearable style="width: 120px">
-            <el-option v-for="tag in tagList" :key="tag" :label="tag" :value="tag" />
-          </el-select>
-          <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleSearch" class="filter-select">
-            <el-option label="全部" value="all" />
-            <el-option label="在线" value="online" />
-            <el-option label="离线" value="offline" />
-            <el-option label="已安装Agent" value="agent_installed" />
-            <el-option label="未安装Agent" value="agent_not_installed" />
-          </el-select>
-          <el-button type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">批量删除</el-button>
-          <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchGroupDialog">批量分组</el-button>
-          <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchTagDialog">批量打标签</el-button>
-        </div>
-      </div>
+  <div class="nodes-container">
       <el-card class="nodes-card" shadow="never">
         <template #header>
           <div class="card-header">
@@ -86,12 +165,32 @@
               <el-tag type="info" size="small">{{ nodes.length }}台节点</el-tag>
             </div>
             <div class="header-right">
+    <div class="header">
+                <div class="header-actions">
+                  <el-select v-model="selectedGroup" placeholder="分组筛选" clearable style="width: 120px">
+                    <el-option v-for="group in groupList" :key="group" :label="group" :value="group" />
+                  </el-select>
+                  <el-select v-model="selectedTag" placeholder="标签筛选" clearable style="width: 120px">
+                    <el-option v-for="tag in tagList" :key="tag" :label="tag" :value="tag" />
+                  </el-select>
+                  <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleSearch" class="filter-select">
+                    <el-option label="全部" value="all" />
+                    <el-option label="在线" value="online" />
+                    <el-option label="离线" value="offline" />
+                    <el-option label="已安装Agent" value="agent_installed" />
+                    <el-option label="未安装Agent" value="agent_not_installed" />
+                  </el-select>
+                  <el-button type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">批量删除</el-button>
+                  <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchGroupDialog">批量分组</el-button>
+                  <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchTagDialog">批量打标签</el-button>
+    </div>
+              </div>
               <el-input v-model="searchQuery" placeholder="搜索名称/IP" class="search-input" clearable @input="handleSearch">
                 <template #prefix>
                   <el-icon><Search /></el-icon>
                 </template>
               </el-input>
-              <el-button @click="fetchNodes" :loading="loading" class="refresh-btn">
+              <el-button @click="fetchNodes" class="refresh-btn">
                 <el-icon><Refresh /></el-icon>
               </el-button>
             </div>
@@ -101,23 +200,23 @@
           <el-table :data="filteredNodes" v-loading="loading" @selection-change="handleSelectionChange" style="width: 100%" border class="nodes-table">
             <el-table-column type="selection" width="55" />
             <el-table-column prop="name" label="名称" min-width="120">
-              <template #default="{ row }">
+        <template #default="{ row }">
                 <div class="server-info server-name-link" @click="handleNameClick(row)">
                   <el-icon class="server-link-icon"><Monitor /></el-icon>
                   <span>{{ row.name }}</span>
                 </div>
-              </template>
-            </el-table-column>
+        </template>
+      </el-table-column>
             <el-table-column prop="group" label="分组" width="100">
-              <template #default="{ row }">
+        <template #default="{ row }">
                 <el-tag v-if="row.group">{{ row.group }}</el-tag>
-              </template>
-            </el-table-column>
+        </template>
+      </el-table-column>
             <el-table-column prop="tags" label="标签" width="140">
-              <template #default="{ row }">
+        <template #default="{ row }">
                 <el-tag v-for="tag in (row.tags ? row.tags.split(',') : [])" :key="tag" type="info" style="margin-right: 2px;">{{ tag }}</el-tag>
-              </template>
-            </el-table-column>
+        </template>
+      </el-table-column>
             <el-table-column prop="ipaddress" label="IP地址" min-width="120" />
             <el-table-column prop="username" label="用户名" min-width="120" />
             <el-table-column prop="port" label="端口" min-width="80" />
@@ -132,13 +231,13 @@
               </template>
             </el-table-column>
             <el-table-column prop="last_heartbeat" label="最后心跳" min-width="160">
-              <template #default="{ row }">
-                {{ formatDate(row.last_heartbeat) }}
-              </template>
-            </el-table-column>
+        <template #default="{ row }">
+          {{ formatDate(row.last_heartbeat) }}
+        </template>
+      </el-table-column>
             <el-table-column prop="description" label="备注" min-width="120" />
             <el-table-column label="操作" min-width="200" fixed="right">
-              <template #default="{ row }">
+        <template #default="{ row }">
                 <div class="action-buttons">
                   <el-button 
                     type="primary" 
@@ -148,38 +247,38 @@
                   >
                     <el-icon><View /></el-icon>
                     详情
-                  </el-button>
+            </el-button>
                   <el-dropdown trigger="click" @command="handleNodeCommand">
                     <el-button size="small">
                       更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-                    </el-button>
-                    <template #dropdown>
-                      <el-dropdown-menu>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
                         <el-dropdown-item :command="{ action: 'edit', row }">
                           <el-icon><Edit /></el-icon>编辑
                         </el-dropdown-item>
                         <el-dropdown-item :command="{ action: 'test', row }">
-                          <el-icon><Connection /></el-icon>测试连接
-                        </el-dropdown-item>
+                      <el-icon><Connection /></el-icon>测试连接
+                  </el-dropdown-item>
                         <el-dropdown-item :command="{ action: 'install', row }" :disabled="row.agent_status==='running'">
-                          <el-icon><Download /></el-icon>安装Agent
-                        </el-dropdown-item>
+                      <el-icon><Download /></el-icon>安装Agent
+                  </el-dropdown-item>
                         <el-dropdown-item :command="{ action: 'uninstall', row }" :disabled="row.agent_status!=='running'">
-                          <el-icon><Remove /></el-icon>卸载Agent
-                        </el-dropdown-item>
+                      <el-icon><Remove /></el-icon>卸载Agent
+                  </el-dropdown-item>
                         <el-dropdown-item :command="{ action: 'info', row }">
-                          <el-icon><InfoFilled /></el-icon>获取信息
+                      <el-icon><InfoFilled /></el-icon>获取信息
                         </el-dropdown-item>
                         <el-dropdown-item divided :command="{ action: 'delete', row }">
                           <el-icon><Delete /></el-icon>删除
-                        </el-dropdown-item>
-                      </el-dropdown-menu>
-                    </template>
-                  </el-dropdown>
-                </div>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
               </template>
-            </el-table-column>
-          </el-table>
+            </el-dropdown>
+                </div>
+        </template>
+      </el-table-column>
+    </el-table>
         </div>
       </el-card>
       <!-- 节点添加/编辑弹窗 -->
@@ -189,309 +288,309 @@
           <el-form-item label="IP地址" prop="ipaddress"><el-input v-model="form.ipaddress" placeholder="请输入IP地址" /></el-form-item>
           <el-form-item label="用户名" prop="username"><el-input v-model="form.username" placeholder="请输入用户名" /></el-form-item>
           <el-form-item label="端口" prop="port"><el-input-number v-model="form.port" :min="1" :max="65535" /></el-form-item>
-          <el-form-item label="认证方式" prop="auth_type">
-            <el-radio-group v-model="form.auth_type">
-              <el-radio :value="'password'">密码认证</el-radio>
-              <el-radio :value="'key'">密钥认证</el-radio>
-            </el-radio-group>
-          </el-form-item>
+        <el-form-item label="认证方式" prop="auth_type">
+          <el-radio-group v-model="form.auth_type">
+            <el-radio :value="'password'">密码认证</el-radio>
+            <el-radio :value="'key'">密钥认证</el-radio>
+          </el-radio-group>
+        </el-form-item>
           <el-form-item v-if="form.auth_type === 'password'" label="密码" prop="password"><el-input v-model="form.password" type="password" placeholder="请输入密码" show-password /></el-form-item>
           <el-form-item v-if="form.auth_type === 'key'" label="SSH密钥" prop="ssh_key"><el-input v-model="form.ssh_key" type="textarea" :rows="4" placeholder="请输入SSH密钥" /></el-form-item>
           <el-form-item label="备注"><el-input v-model="form.description" type="textarea" :rows="2" placeholder="请输入备注信息" /></el-form-item>
-        </el-form>
-        <template #footer>
-          <span class="dialog-footer">
-            <el-button @click="dialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="handleSubmit">确定</el-button>
-          </span>
-        </template>
-      </el-dialog>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="dialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="handleSubmit">确定</el-button>
+        </span>
+      </template>
+    </el-dialog>
       <!-- 安装/卸载Agent弹窗 -->
       <el-dialog title="安装/卸载Agent" v-model="installDialogVisible" width="500px">
-        <el-form :model="installForm" label-width="120px">
+      <el-form :model="installForm" label-width="120px">
           <el-form-item label="安装路径"><el-input v-model="installForm.install_path" placeholder="/opt/easysync" /></el-form-item>
           <el-form-item label="配置参数"><el-input v-model="installForm.config" type="textarea" :rows="4" placeholder="请输入JSON格式的配置参数" /></el-form-item>
-        </el-form>
-        <template #footer>
-          <span class="dialog-footer">
-            <el-button @click="installDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="confirmInstall">开始安装</el-button>
-          </span>
-        </template>
-      </el-dialog>
-      <!-- 节点详情抽屉 -->
-      <el-drawer
-        v-model="drawerVisible"
-        title="节点详情"
-        direction="rtl"
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="installDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="confirmInstall">开始安装</el-button>
+        </span>
+      </template>
+    </el-dialog>
+    <!-- 节点详情抽屉 -->
+    <el-drawer
+      v-model="drawerVisible"
+      title="节点详情"
+      direction="rtl"
         size="70%"
-        :before-close="handleDrawerClose"
+      :before-close="handleDrawerClose"
         class="client-drawer"
-      >
+    >
         <div class="drawer-content">
           <el-tabs v-model="activeTab" class="detail-tabs">
-            <!-- 基本信息标签页 -->
-            <el-tab-pane label="基本信息" name="basic">
+        <!-- 基本信息标签页 -->
+        <el-tab-pane label="基本信息" name="basic">
               <div class="detail-content">
-                <!-- 基本信息卡片 -->
-                <el-card class="info-card">
-                  <template #header>
-                    <div class="card-header">
-                      <span>基本信息</span>
-                    </div>
-                  </template>
-                  <el-descriptions :column="2" border>
-                    <el-descriptions-item label="节点名称">
-                      <el-tag type="info">{{ currentNode.name }}</el-tag>
-                    </el-descriptions-item>
+            <!-- 基本信息卡片 -->
+            <el-card class="info-card">
+              <template #header>
+                <div class="card-header">
+                  <span>基本信息</span>
+                </div>
+              </template>
+              <el-descriptions :column="2" border>
+                <el-descriptions-item label="节点名称">
+                  <el-tag type="info">{{ currentNode.name }}</el-tag>
+                </el-descriptions-item>
                     <el-descriptions-item label="分组">
                       <el-tag v-if="currentNode.group">{{ currentNode.group }}</el-tag>
                     </el-descriptions-item>
                     <el-descriptions-item label="标签">
                       <el-tag v-for="tag in (currentNode.tags ? currentNode.tags.split(',') : [])" :key="tag" type="info" style="margin-right: 2px;">{{ tag }}</el-tag>
                     </el-descriptions-item>
-                    <el-descriptions-item label="IP地址">
-                      <el-tag type="success">{{ currentNode.ipaddress }}</el-tag>
-                    </el-descriptions-item>
-                    <el-descriptions-item label="状态">
+                <el-descriptions-item label="IP地址">
+                  <el-tag type="success">{{ currentNode.ipaddress }}</el-tag>
+                </el-descriptions-item>
+                <el-descriptions-item label="状态">
                       <el-tag :type="getStatusType(currentNode.status)">{{ getStatusText(currentNode.status) }}</el-tag>
                     </el-descriptions-item>
                     <el-descriptions-item label="Agent状态">
                       <el-tag :type="getAgentStatusType(currentNode.agent_status)">{{ getAgentStatusText(currentNode.agent_status) }}</el-tag>
-                    </el-descriptions-item>
-                    <el-descriptions-item label="操作系统">
-                      <el-tag type="success">{{ nodeDetail.os_type }}</el-tag>
-                    </el-descriptions-item>
+                </el-descriptions-item>
+                <el-descriptions-item label="操作系统">
+                  <el-tag type="success">{{ nodeDetail.os_type }}</el-tag>
+                </el-descriptions-item>
                     <el-descriptions-item label="备注">{{ currentNode.description }}</el-descriptions-item>
-                  </el-descriptions>
-                </el-card>
-                <!-- CPU信息卡片 -->
-                <el-card class="info-card">
-                  <template #header>
-                    <div class="card-header">
-                      <span>CPU信息</span>
-                    </div>
-                  </template>
-                  <div class="cpu-info">
-                    <div v-for="(cpu, index) in nodeDetail.cpu_info" :key="index" class="cpu-item">
-                      <el-tag type="primary">{{ cpu.model }}</el-tag>
-                      <span class="cpu-cores">{{ cpu.cores }}核</span>
-                    </div>
-                  </div>
-                </el-card>
-                <!-- 内存信息卡片 -->
-                <el-card class="info-card">
-                  <template #header>
-                    <div class="card-header">
-                      <span>内存信息</span>
-                    </div>
-                  </template>
-                  <div class="memory-info">
-                    <el-progress 
-                      :percentage="(nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100).toFixed(1)"
-                      :status="getUsageStatus((nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100))"
-                    />
-                    <div class="memory-details">
-                      <span>总内存: {{ formatSize(nodeDetail.memory_info.total) }}</span>
-                      <span>已使用: {{ formatSize(nodeDetail.memory_info.used) }}</span>
-                      <span>可用: {{ formatSize(nodeDetail.memory_info.total - nodeDetail.memory_info.used) }}</span>
-                    </div>
-                  </div>
-                </el-card>
-                <!-- 磁盘信息卡片 -->
-                <el-card class="info-card">
-                  <template #header>
-                    <div class="card-header">
-                      <span>磁盘信息</span>
-                    </div>
-                  </template>
-                  <div class="disk-info">
-                    <div v-for="(disk, index) in nodeDetail.disk_info" :key="index" class="disk-item">
-                      <div class="disk-header">
-                        <el-tag type="info">{{ disk.device }}</el-tag>
-                        <span class="disk-mount">{{ disk.mount }}</span>
-                      </div>
-                      <el-progress 
-                        :percentage="disk.usage"
-                        :status="getUsageStatus(disk.usage)"
-                      />
-                      <div class="disk-details">
-                        <span>总容量: {{ formatSize(disk.total) }}</span>
-                        <span>已使用: {{ formatSize(disk.used) }}</span>
-                        <span>可用: {{ formatSize(disk.total - disk.used) }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </el-card>
-                <!-- 网卡信息卡片 -->
-                <el-card class="info-card">
-                  <template #header>
-                    <div class="card-header">
-                      <span>网卡信息</span>
-                    </div>
-                  </template>
-                  <div class="network-info">
-                    <div v-for="(nic, index) in nodeDetail.network_info" :key="index" class="nic-item">
-                      <el-tag type="success">{{ nic.name }}</el-tag>
-                      <span class="nic-ip">{{ nic.ip }}</span>
-                      <span class="nic-ip6">{{ nic.ip6 }}</span>
-                      <span class="nic-mac">{{ nic.mac }}</span>
-                      <span class="nic-mtu">{{ nic.mtu }}</span>
-                      <span class="nic-status">{{ nic.status }}</span>
-                    </div>
-                  </div>
-                </el-card>
+              </el-descriptions>
+            </el-card>
+            <!-- CPU信息卡片 -->
+            <el-card class="info-card">
+              <template #header>
+                <div class="card-header">
+                  <span>CPU信息</span>
+                </div>
+              </template>
+              <div class="cpu-info">
+                <div v-for="(cpu, index) in nodeDetail.cpu_info" :key="index" class="cpu-item">
+                  <el-tag type="primary">{{ cpu.model }}</el-tag>
+                  <span class="cpu-cores">{{ cpu.cores }}核</span>
+                </div>
               </div>
-            </el-tab-pane>
+            </el-card>
+            <!-- 内存信息卡片 -->
+            <el-card class="info-card">
+              <template #header>
+                <div class="card-header">
+                  <span>内存信息</span>
+                </div>
+              </template>
+              <div class="memory-info">
+                <el-progress 
+                  :percentage="(nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100).toFixed(1)"
+                  :status="getUsageStatus((nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100))"
+                />
+                <div class="memory-details">
+                  <span>总内存: {{ formatSize(nodeDetail.memory_info.total) }}</span>
+                  <span>已使用: {{ formatSize(nodeDetail.memory_info.used) }}</span>
+                  <span>可用: {{ formatSize(nodeDetail.memory_info.total - nodeDetail.memory_info.used) }}</span>
+                </div>
+              </div>
+            </el-card>
+            <!-- 磁盘信息卡片 -->
+            <el-card class="info-card">
+              <template #header>
+                <div class="card-header">
+                  <span>磁盘信息</span>
+                </div>
+              </template>
+              <div class="disk-info">
+                <div v-for="(disk, index) in nodeDetail.disk_info" :key="index" class="disk-item">
+                  <div class="disk-header">
+                    <el-tag type="info">{{ disk.device }}</el-tag>
+                    <span class="disk-mount">{{ disk.mount }}</span>
+                  </div>
+                  <el-progress 
+                    :percentage="disk.usage"
+                    :status="getUsageStatus(disk.usage)"
+                  />
+                  <div class="disk-details">
+                    <span>总容量: {{ formatSize(disk.total) }}</span>
+                    <span>已使用: {{ formatSize(disk.used) }}</span>
+                    <span>可用: {{ formatSize(disk.total - disk.used) }}</span>
+                  </div>
+                </div>
+              </div>
+            </el-card>
+            <!-- 网卡信息卡片 -->
+            <el-card class="info-card">
+              <template #header>
+                <div class="card-header">
+                  <span>网卡信息</span>
+                </div>
+              </template>
+              <div class="network-info">
+                <div v-for="(nic, index) in nodeDetail.network_info" :key="index" class="nic-item">
+                  <el-tag type="success">{{ nic.name }}</el-tag>
+                  <span class="nic-ip">{{ nic.ip }}</span>
+                  <span class="nic-ip6">{{ nic.ip6 }}</span>
+                  <span class="nic-mac">{{ nic.mac }}</span>
+                  <span class="nic-mtu">{{ nic.mtu }}</span>
+                  <span class="nic-status">{{ nic.status }}</span>
+                </div>
+              </div>
+            </el-card>
+          </div>
+        </el-tab-pane>
 
-            <!-- 监控数据标签页 -->
-            <el-tab-pane label="监控数据" name="monitor">
+        <!-- 监控数据标签页 -->
+        <el-tab-pane label="监控数据" name="monitor">
               <div class="monitor-content">
                 <!-- 监控控制面板、图表等，参考Clients.vue -->
-                <div class="monitor-control-panel">
-                  <div class="panel-section time-range-selector">
-                    <span class="section-label">时间范围</span>
-                    <el-select 
-                      v-model="timeRange" 
-                      placeholder="选择时间范围" 
-                      @change="handleTimeRangeChange"
-                      size="default"
-                      class="time-select"
-                    >
-                      <el-option label="近10分钟" value="10m" />
-                      <el-option label="近15分钟" value="15m" />
-                      <el-option label="近1小时" value="1h" />
-                      <el-option label="近2小时" value="2h" />
-                      <el-option label="自定义" value="custom" />
-                    </el-select>
-                    <el-date-picker
-                      v-if="timeRange === 'custom'"
-                      v-model="customTimeRange"
-                      type="datetimerange"
-                      range-separator="至"
-                      start-placeholder="开始时间"
-                      end-placeholder="结束时间"
-                      size="default"
-                      class="date-picker"
-                      :default-time="[
-                        new Date(2000, 1, 1, 0, 0, 0),
-                        new Date(2000, 1, 1, 23, 59, 59),
-                      ]"
-                      @change="handleCustomTimeRangeChange"
+            <div class="monitor-control-panel">
+              <div class="panel-section time-range-selector">
+                <span class="section-label">时间范围</span>
+                <el-select 
+                  v-model="timeRange" 
+                  placeholder="选择时间范围" 
+                  @change="handleTimeRangeChange"
+                  size="default"
+                  class="time-select"
+                >
+                  <el-option label="近10分钟" value="10m" />
+                  <el-option label="近15分钟" value="15m" />
+                  <el-option label="近1小时" value="1h" />
+                  <el-option label="近2小时" value="2h" />
+                  <el-option label="自定义" value="custom" />
+                </el-select>
+                <el-date-picker
+                  v-if="timeRange === 'custom'"
+                  v-model="customTimeRange"
+                  type="datetimerange"
+                  range-separator="至"
+                  start-placeholder="开始时间"
+                  end-placeholder="结束时间"
+                  size="default"
+                  class="date-picker"
+                  :default-time="[
+                    new Date(2000, 1, 1, 0, 0, 0),
+                    new Date(2000, 1, 1, 23, 59, 59),
+                  ]"
+                  @change="handleCustomTimeRangeChange"
+                />
+              </div>
+              <div class="panel-section refresh-controls">
+                <span class="section-label">刷新设置</span>
+                <div class="refresh-group">
+                  <el-button 
+                    type="primary" 
+                    :loading="refreshing" 
+                    @click="handleManualRefresh"
+                    size="default"
+                    class="refresh-button"
+                  >
+                    <el-icon><Refresh /></el-icon>
+                    <span>刷新</span>
+                  </el-button>
+                  <div class="auto-refresh-control">
+                    <el-switch
+                      v-model="autoRefresh"
+                      active-text="自动刷新"
+                      inactive-text=""
+                      class="refresh-switch"
+                      @change="handleAutoRefreshChange"
                     />
+                    <el-select
+                      v-if="autoRefresh"
+                      v-model="refreshInterval"
+                      placeholder="刷新间隔"
+                      @change="handleRefreshIntervalChange"
+                      size="default"
+                      class="interval-select"
+                    >
+                      <el-option label="3秒" value="3" />
+                      <el-option label="5秒" value="5" />
+                      <el-option label="10秒" value="10" />
+                      <el-option label="30秒" value="30" />
+                      <el-option label="1分钟" value="60" />
+                      <el-option label="5分钟" value="300" />
+                    </el-select>
                   </div>
-                  <div class="panel-section refresh-controls">
-                    <span class="section-label">刷新设置</span>
-                    <div class="refresh-group">
-                      <el-button 
-                        type="primary" 
-                        :loading="refreshing" 
-                        @click="handleManualRefresh"
-                        size="default"
-                        class="refresh-button"
-                      >
-                        <el-icon><Refresh /></el-icon>
-                        <span>刷新</span>
-                      </el-button>
-                      <div class="auto-refresh-control">
-                        <el-switch
-                          v-model="autoRefresh"
-                          active-text="自动刷新"
-                          inactive-text=""
-                          class="refresh-switch"
-                          @change="handleAutoRefreshChange"
-                        />
-                        <el-select
-                          v-if="autoRefresh"
-                          v-model="refreshInterval"
-                          placeholder="刷新间隔"
-                          @change="handleRefreshIntervalChange"
-                          size="default"
-                          class="interval-select"
-                        >
-                          <el-option label="3秒" value="3" />
-                          <el-option label="5秒" value="5" />
-                          <el-option label="10秒" value="10" />
-                          <el-option label="30秒" value="30" />
-                          <el-option label="1分钟" value="60" />
-                          <el-option label="5分钟" value="300" />
-                        </el-select>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <!-- CPU使用率图表 -->
-                <div class="chart-container">
-                  <div class="chart-header">
-                    <h3>CPU使用率</h3>
-                  </div>
-                  <div class="chart" ref="cpuChart"></div>
-                </div>
-                <!-- 内存使用率图表 -->
-                <div class="chart-container">
-                  <div class="chart-header">
-                    <h3>内存使用率</h3>
-                  </div>
-                  <div class="chart" ref="memoryChart"></div>
-                </div>
-                <!-- 磁盘使用率 -->
-                <div class="chart-container">
-                  <div class="chart-header">
-                    <h3>磁盘使用率</h3>
-                  </div>
-                  <el-table :data="nodeDetail.disk_info" style="width: 100%">
-                    <el-table-column prop="device" label="设备" />
-                    <el-table-column prop="mount" label="挂载点" />
-                    <el-table-column prop="total" label="总容量">
-                      <template #default="{ row }">
-                        {{ formatSize(row.total) }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column prop="used" label="已使用">
-                      <template #default="{ row }">
-                        {{ formatSize(row.used) }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column prop="usage" label="使用率">
-                      <template #default="{ row }">
-                        <el-progress :percentage="row.usage" :status="getUsageStatus(row.usage)" />
-                      </template>
-                    </el-table-column>
-                  </el-table>
-                </div>
-                <!-- 网络流量 -->
-                <div class="chart-container">
-                  <div class="chart-header">
-                    <h3>网络流量</h3>
-                  </div>
-                  <div class="chart" ref="networkChart"></div>
-                </div>
-                <!-- 进程列表 -->
-                <div class="chart-container">
-                  <div class="chart-header">
-                    <h3>进程列表</h3>
-                    <el-button type="primary" size="small" @click="refreshProcessList">刷新</el-button>
-                  </div>
-                  <el-table :data="nodeDetail.process_list" style="width: 100%" :max-height="300">
-                    <el-table-column prop="pid" label="PID" width="80" />
-                    <el-table-column prop="user" label="用户" width="100" />
-                    <el-table-column prop="cpu_percent" label="CPU%" width="100" />
-                    <el-table-column prop="memory_percent" label="内存%" width="100" />
-                    <el-table-column prop="command" label="命令" show-overflow-tooltip />
-                  </el-table>
                 </div>
               </div>
-            </el-tab-pane>
+            </div>
+            <!-- CPU使用率图表 -->
+            <div class="chart-container">
+              <div class="chart-header">
+                <h3>CPU使用率</h3>
+              </div>
+              <div class="chart" ref="cpuChart"></div>
+            </div>
+            <!-- 内存使用率图表 -->
+            <div class="chart-container">
+              <div class="chart-header">
+                <h3>内存使用率</h3>
+              </div>
+              <div class="chart" ref="memoryChart"></div>
+            </div>
+            <!-- 磁盘使用率 -->
+            <div class="chart-container">
+              <div class="chart-header">
+                <h3>磁盘使用率</h3>
+              </div>
+              <el-table :data="nodeDetail.disk_info" style="width: 100%">
+                <el-table-column prop="device" label="设备" />
+                <el-table-column prop="mount" label="挂载点" />
+                <el-table-column prop="total" label="总容量">
+                  <template #default="{ row }">
+                    {{ formatSize(row.total) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="used" label="已使用">
+                  <template #default="{ row }">
+                    {{ formatSize(row.used) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="usage" label="使用率">
+                  <template #default="{ row }">
+                    <el-progress :percentage="row.usage" :status="getUsageStatus(row.usage)" />
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+            <!-- 网络流量 -->
+            <div class="chart-container">
+              <div class="chart-header">
+                <h3>网络流量</h3>
+              </div>
+              <div class="chart" ref="networkChart"></div>
+            </div>
+            <!-- 进程列表 -->
+            <div class="chart-container">
+              <div class="chart-header">
+                <h3>进程列表</h3>
+                <el-button type="primary" size="small" @click="refreshProcessList">刷新</el-button>
+              </div>
+              <el-table :data="nodeDetail.process_list" style="width: 100%" :max-height="300">
+                <el-table-column prop="pid" label="PID" width="80" />
+                <el-table-column prop="user" label="用户" width="100" />
+                <el-table-column prop="cpu_percent" label="CPU%" width="100" />
+                <el-table-column prop="memory_percent" label="内存%" width="100" />
+                <el-table-column prop="command" label="命令" show-overflow-tooltip />
+              </el-table>
+            </div>
+          </div>
+        </el-tab-pane>
 
-            <!-- 系统日志标签页 -->
-            <el-tab-pane label="系统日志" name="logs">
+        <!-- 系统日志标签页 -->
+        <el-tab-pane label="系统日志" name="logs">
               <div class="logs-content">
                 <!-- 日志检索、分页、自动刷新等，参考Clients.vue实现 -->
                 <!-- 这里可根据实际需求补充日志表格、搜索、刷新等功能 -->
               </div>
             </el-tab-pane>
           </el-tabs>
-        </div>
+            </div>
       </el-drawer>
       <!-- 批量分组弹窗 -->
       <el-dialog title="批量分组" v-model="batchGroupDialogVisible" width="400px">
@@ -501,7 +600,7 @@
             <el-button @click="batchGroupDialogVisible = false">取消</el-button>
             <el-button type="primary" @click="confirmBatchGroup">确定</el-button>
           </span>
-        </template>
+                  </template>
       </el-dialog>
       <!-- 批量打标签弹窗 -->
       <el-dialog title="批量打标签" v-model="batchTagDialogVisible" width="400px">
@@ -511,10 +610,10 @@
             <el-button @click="batchTagDialogVisible = false">取消</el-button>
             <el-button type="primary" @click="confirmBatchTag">确定</el-button>
           </span>
-        </template>
+                  </template>
       </el-dialog>
-    </div>
-  </div> 
+            </div>
+  </div>
 </template>
 
 <script setup>
@@ -534,7 +633,11 @@ import {
   Refresh,
   Search,
   View,
-  Plus
+  Plus,
+  ArrowRight,
+  FolderOpened,
+  Hide,
+  ArrowLeft
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import axios from 'axios'
@@ -676,6 +779,12 @@ const groupList = ref([])
 const tagList = ref([])
 const selectedGroup = ref('')
 const selectedTag = ref('')
+
+// 切换架构说明显示
+const showArchitecture = ref(false)
+const toggleArchitecture = () => {
+  showArchitecture.value = !showArchitecture.value
+}
 
 const filteredNodes = computed(() => {
   let result = nodes.value
@@ -1977,6 +2086,191 @@ onMounted(() => {
   min-height: 100vh;
 }
 
+.architecture-section {
+  margin-bottom: 24px;
+}
+
+.architecture-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
+}
+
+.architecture-content {
+  padding: 20px;
+}
+
+.architecture-central-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+}
+
+.storage-side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  max-width: 280px;
+}
+
+.storage-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+
+.storage-icon.current-step {
+  background: linear-gradient(135deg, #409EFF 0%, #67C23A 100%);
+  box-shadow: 0 4px 20px rgba(64, 158, 255, 0.3);
+}
+
+.storage-label {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.sync-arrows {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: #409EFF;
+  margin: 0 20px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.proxy-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  max-width: 280px;
+}
+
+.proxy-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  color: white;
+  margin-bottom: 16px;
+  transition: all 0.3s ease;
+}
+
+.proxy-icon.current-step {
+  background: linear-gradient(135deg, #409EFF 0%, #67C23A 100%);
+  box-shadow: 0 4px 20px rgba(64, 158, 255, 0.3);
+}
+
+.proxy-label {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.proxy-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.4;
+}
+
+.central-arch-notes {
+  margin-bottom: 30px;
+}
+
+.usage-guide {
+  margin-bottom: 30px;
+}
+
+.usage-guide h4 {
+  margin: 0 0 20px 0;
+  color: #303133;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.guide-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.guide-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.guide-step:hover {
+  background: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.step-content strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #303133;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.step-content p {
+  margin: 0;
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
 .page-header {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   border-radius: 12px;
@@ -2105,7 +2399,6 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
 }
 
 .header-actions {
@@ -2636,5 +2929,31 @@ onMounted(() => {
 }
 .table-container::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+.guide-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.guide-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 在style中添加动画 */
+.fade-arch-enter-active, .fade-arch-leave-active {
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fade-arch-enter-from, .fade-arch-leave-to {
+  opacity: 0;
+}
+.fade-arch-enter-to, .fade-arch-leave-from {
+  opacity: 1;
 }
 </style> 

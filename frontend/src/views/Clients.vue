@@ -4,17 +4,134 @@
     <div class="page-header">
       <div class="header-content">
         <div class="header-left">
-          <h1 class="page-title">服务器管理</h1>
-          <p class="page-subtitle">管理您的服务器节点和Agent状态</p>
+          <h1 class="page-title">源端服务器管理</h1>
+          <p class="page-subtitle">管理您的源端服务器，安装Agent后可将本地数据同步到目标存储</p>
         </div>
         <div class="header-actions">
           <el-button type="primary" @click="showAddDialog" class="action-btn">
             <el-icon><Plus /></el-icon>
-            添加服务器
+            添加源端服务器
+          </el-button>
+          <el-button 
+            type="info" 
+            @click="toggleArchitecture"
+            class="guide-btn"
+            :title="showArchitecture ? '隐藏流程引导' : '显示流程引导'"
+          >
+            <el-icon>
+              <View v-if="showArchitecture" />
+              <Hide v-else />
+            </el-icon>
+            流程引导
           </el-button>
         </div>
       </div>
     </div>
+
+    <!-- 架构说明卡片 -->
+    <transition name="fade-arch">
+      <div class="architecture-section" v-show="showArchitecture">
+        <el-card class="architecture-card" shadow="never">
+          <template #header>
+            <div class="card-header">
+              <h3>数据同步架构说明</h3>
+              <el-tag type="info">EasySync 数据同步流程</el-tag>
+            </div>
+          </template>
+          <div class="architecture-content">
+            <div class="architecture-diagram">
+              <div class="flow-step">
+                <div class="step-icon">
+                  <el-icon><Monitor /></el-icon>
+                </div>
+                <div class="step-content">
+                  <h4>1. 源端服务器 (Clients)</h4>
+                  <p>用户的数据源服务器，安装Agent后可获取本地分区、目录、文件信息</p>
+                  <ul>
+                    <li>支持Windows/Linux系统</li>
+                    <li>通过SSH连接管理</li>
+                    <li>Agent自动采集系统资源信息</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div class="flow-arrow">
+                <el-icon><ArrowRight /></el-icon>
+              </div>
+              
+              <div class="flow-step">
+                <div class="step-icon">
+                  <el-icon><Connection /></el-icon>
+                </div>
+                <div class="step-content">
+                  <h4>2. 同步代理 (Nodes)</h4>
+                  <p>数据同步的中间节点，负责数据传输和转换</p>
+                  <ul>
+                    <li>接收源端数据</li>
+                    <li>处理数据格式转换</li>
+                    <li>转发到目标存储</li>
+                  </ul>
+                </div>
+              </div>
+              
+              <div class="flow-arrow">
+                <el-icon><ArrowRight /></el-icon>
+              </div>
+              
+              <div class="flow-step">
+                <div class="step-icon">
+                  <el-icon><FolderOpened /></el-icon>
+                </div>
+                <div class="step-content">
+                  <h4>3. 目标存储 (Storages)</h4>
+                  <p>数据同步的目标位置，支持多种存储类型</p>
+                  <ul>
+                    <li>NAS网络存储</li>
+                    <li>OBS对象存储</li>
+                    <li>NFS文件系统</li>
+                    <li>本地存储</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+            
+            <div class="usage-guide">
+              <h4>使用指南</h4>
+              <div class="guide-steps">
+                <div class="guide-step">
+                  <div class="step-number">1</div>
+                  <div class="step-text">
+                    <strong>添加源端服务器</strong>
+                    <p>点击"添加源端服务器"按钮，填写服务器信息（IP、用户名、密码等）</p>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div class="step-number">2</div>
+                  <div class="step-text">
+                    <strong>测试连接</strong>
+                    <p>确保能够通过SSH连接到源端服务器</p>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div class="step-number">3</div>
+                  <div class="step-text">
+                    <strong>安装Agent</strong>
+                    <p>在源端服务器上安装EasySync Agent，用于数据采集和传输</p>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div class="step-number">4</div>
+                  <div class="step-text">
+                    <strong>配置同步任务</strong>
+                    <p>在任务管理中创建同步任务，指定源端路径和目标存储</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </el-card>
+      </div>
+    </transition>
 
     <!-- 统计卡片 -->
     <div class="stats-section">
@@ -60,25 +177,6 @@
 
     <!-- 主要内容区域 -->
     <div class="main-content">
-      <!-- 分组/标签筛选与批量操作 -->
-      <div class="filter-batch-bar" style="display: flex; align-items: center; margin-bottom: 12px; gap: 16px;">
-        <el-select v-model="selectedGroup" placeholder="分组筛选" clearable style="width: 140px">
-          <el-option v-for="group in groupList" :key="group" :label="group" :value="group" />
-        </el-select>
-        <el-select v-model="selectedTag" placeholder="标签筛选" clearable style="width: 140px">
-          <el-option v-for="tag in tagList" :key="tag" :label="tag" :value="tag" />
-        </el-select>
-        <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleSearch" class="filter-select">
-          <el-option label="全部" value="all" />
-          <el-option label="在线" value="online" />
-          <el-option label="离线" value="offline" />
-          <el-option label="已安装Agent" value="agent_installed" />
-          <el-option label="未安装Agent" value="agent_not_installed" />
-        </el-select>
-        <el-button type="danger" :disabled="!(multipleSelection?.length)" @click="handleBatchDelete">批量删除</el-button>
-        <el-button type="primary" :disabled="!(multipleSelection?.length)" @click="showBatchGroupDialog">批量分组</el-button>
-        <el-button type="primary" :disabled="!(multipleSelection?.length)" @click="showBatchTagDialog">批量打标签</el-button>
-      </div>
       <!-- 服务器列表卡片 -->
       <el-card class="clients-card" shadow="never">
         <template #header>
@@ -88,9 +186,28 @@
               <el-tag type="info" size="small">{{ clients?.length || 0 }}台服务器</el-tag>
             </div>
             <div class="header-right">
+              <!-- 分组/标签筛选与批量操作 -->
+              <div class="filter-batch-bar" style="display: flex; align-items: center; gap: 16px;">
+                <el-button type="danger" :disabled="!(multipleSelection?.length)" @click="handleBatchDelete">批量删除</el-button>
+                <el-button type="primary" :disabled="!(multipleSelection?.length)" @click="showBatchGroupDialog">批量分组</el-button>
+                <el-button type="primary" :disabled="!(multipleSelection?.length)" @click="showBatchTagDialog">批量打标签</el-button>
+                <el-select v-model="selectedGroup" placeholder="分组筛选" clearable style="width: 140px">
+                  <el-option v-for="group in groupList" :key="group" :label="group" :value="group" />
+                </el-select>
+                <el-select v-model="selectedTag" placeholder="标签筛选" clearable style="width: 140px">
+                  <el-option v-for="tag in tagList" :key="tag" :label="tag" :value="tag" />
+                </el-select>
+                <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleSearch" class="filter-select">
+                  <el-option label="全部" value="all" />
+                  <el-option label="在线" value="online" />
+                  <el-option label="离线" value="offline" />
+                  <el-option label="已安装Agent" value="agent_installed" />
+                  <el-option label="未安装Agent" value="agent_not_installed" />
+                </el-select>
+              </div>
               <el-input
                 v-model="searchQuery"
-                placeholder="搜索服务器..."
+                placeholder="搜索客户端..."
                 class="search-input"
                 clearable
               >
@@ -98,7 +215,7 @@
                   <el-icon><Search /></el-icon>
                 </template>
               </el-input>
-              <el-button @click="fetchClients" :loading="loading" class="refresh-btn">
+              <el-button @click="fetchClients" class="refresh-btn">
                 <el-icon><Refresh /></el-icon>
               </el-button>
             </div>
@@ -115,7 +232,7 @@
             @selection-change="handleSelectionChange"
           >
             <el-table-column type="selection" width="50" />
-            <el-table-column prop="name" label="服务器名称" min-width="150">
+            <el-table-column prop="name" label="客户端名称" min-width="150">
               <template #default="{ row }">
                 <div class="server-info server-name-link" @click="showClientDetail(row)">
                   <el-icon class="server-link-icon"><Monitor /></el-icon>
@@ -220,7 +337,7 @@
 
     <!-- 添加/编辑对话框 -->
     <el-dialog
-      :title="dialogType === 'add' ? '添加服务器' : '编辑服务器'"
+      :title="dialogType === 'add' ? '添加客户端' : '编辑客户端'"
       v-model="dialogVisible"
       width="600px"
       class="client-dialog"
@@ -235,7 +352,7 @@
         <el-row :gutter="20">
           <el-col :span="12">
         <el-form-item label="名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入服务器名称" />
+          <el-input v-model="form.name" placeholder="请输入客户端名称" />
         </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -722,7 +839,10 @@ import {
   Monitor,
   InfoFilled,
   CircleClose,
-  View
+  View,
+  ArrowRight,
+  FolderOpened,
+  Hide
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import axios from 'axios'
@@ -955,7 +1075,7 @@ const handleCommand = async (command) => {
       await handleDelete(row)
       break
   }
-}
+    }
 
 // 获取监控数据
 const fetchMonitorData = async (clientId) => {
@@ -2192,8 +2312,8 @@ const showBatchGroupDialog = async () => {
   } catch (error) {
     if (error !== 'cancel') {
       ElMessage.error('批量分组失败')
-    }
   }
+}
 }
 
 // 批量打标签对话框
@@ -2278,6 +2398,12 @@ onMounted(() => {
   fetchGroups()
   fetchTags()
 })
+
+// 切换架构图显示/隐藏
+const showArchitecture = ref(false)
+const toggleArchitecture = () => {
+  showArchitecture.value = !showArchitecture.value
+}
 </script>
 
 <style scoped>
@@ -2715,14 +2841,14 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
+  }
 
 .memory-details {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 16px;
   margin-top: 12px;
-}
+  }
 
 .memory-details span {
   text-align: center;
@@ -2737,7 +2863,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
+  }
 
 .disk-item {
   padding: 16px;
@@ -2756,7 +2882,7 @@ onMounted(() => {
 .disk-mount {
   font-size: 14px;
   color: #6c757d;
-}
+  }
 
 .disk-details {
   display: grid;
@@ -2772,7 +2898,7 @@ onMounted(() => {
   border-radius: 4px;
   font-size: 13px;
   color: #6c757d;
-}
+  }
 
 .network-info {
   display: grid;
@@ -2870,14 +2996,14 @@ onMounted(() => {
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid #f0f0f0;
-}
+  }
 
 .chart-header h3 {
   font-size: 16px;
   font-weight: 600;
   color: #303133;
   margin: 0;
-}
+  }
 
 .chart {
   height: 300px;
@@ -2984,8 +3110,8 @@ onMounted(() => {
   .time-select,
   .date-picker {
     width: 100%;
-  }
-  
+}
+
   .memory-details,
   .disk-details {
     grid-template-columns: 1fr;
@@ -3080,5 +3206,217 @@ onMounted(() => {
   border-radius: 4px;
   padding: 0 6px;
   vertical-align: middle;
+}
+
+.architecture-section {
+  margin-bottom: 24px;
+}
+
+.architecture-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
+}
+
+.architecture-content {
+  padding: 20px;
+}
+
+.architecture-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border: 1px solid #dee2e6;
+}
+
+.flow-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  flex: 1;
+  max-width: 280px;
+}
+
+.step-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: white;
+  font-size: 24px;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.step-content h4 {
+  margin: 0 0 8px 0;
+  color: #303133;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.step-content p {
+  margin: 0 0 12px 0;
+  color: #606266;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.step-content ul {
+  display: inline-block;
+  margin: 0;
+  padding-left: 20px;
+  text-align: left;
+}
+
+.step-content li {
+  color: #606266;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.flow-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #409eff;
+  font-size: 24px;
+  margin: 0 20px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.usage-guide {
+  border-top: 1px solid #ebeef5;
+  padding-top: 24px;
+}
+
+.usage-guide h4 {
+  margin: 0 0 20px 0;
+  color: #303133;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.guide-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.guide-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.guide-step:hover {
+  background: #e9ecef;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.step-number {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.step-text strong {
+  display: block;
+  margin-bottom: 8px;
+  color: #303133;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.step-text p {
+  margin: 0;
+  color: #606266;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+@media screen and (max-width: 768px) {
+  .architecture-diagram {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .flow-arrow {
+    transform: rotate(90deg);
+    margin: 10px 0;
+  }
+  
+  .guide-steps {
+    grid-template-columns: 1fr;
+  }
+}
+
+.toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.toggle-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.guide-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.guide-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 在style中添加动画 */
+.fade-arch-enter-active, .fade-arch-leave-active {
+  transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.fade-arch-enter-from, .fade-arch-leave-to {
+  opacity: 0;
+}
+.fade-arch-enter-to, .fade-arch-leave-from {
+  opacity: 1;
 }
 </style> 

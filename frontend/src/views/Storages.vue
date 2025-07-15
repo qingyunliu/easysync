@@ -846,7 +846,7 @@ const fetchStorages = async () => {
   try {
     loading.value = true
     const response = await axios.get('/api/storages');
-    storages.value = response.data.storages
+      storages.value = response.data.storages
   } catch (error) {
     ElMessage.error('获取存储列表失败')
   } finally {
@@ -1178,7 +1178,7 @@ const handleSizeChange = (val) => {
   if (currentStorage.value.type === 'nas') {
     fetchFiles()
   } else {
-    fetchObjects()
+  fetchObjects()
   }
 }
 
@@ -1188,7 +1188,7 @@ const handleCurrentChange = (val) => {
   if (currentStorage.value.type === 'nas') {
     fetchFiles()
   } else {
-    fetchObjects()
+  fetchObjects()
   }
 }
 
@@ -1294,40 +1294,40 @@ const handleAddStorage = (type) => {
 // 表单验证规则
 const formRules = computed(() => {
   const rules = {
-    name: [
-      { required: true, message: '请输入存储名称', trigger: 'blur' }
+  name: [
+    { required: true, message: '请输入存储名称', trigger: 'blur' }
     ]
   }
   
   if (form.value.type === 's3') {
     rules['config.provider'] = [
-      { required: true, message: '请选择提供商', trigger: 'change' }
+    { required: true, message: '请选择提供商', trigger: 'change' }
     ]
     rules['config.access_key'] = [
-      { required: true, message: '请输入Access Key', trigger: 'blur' }
+    { required: true, message: '请输入Access Key', trigger: 'blur' }
     ]
     rules['config.secret_key'] = [
-      { required: true, message: '请输入Secret Key', trigger: 'blur' }
+    { required: true, message: '请输入Secret Key', trigger: 'blur' }
     ]
     rules['config.endpoint'] = [
-      { required: true, message: '请输入Endpoint', trigger: 'blur' }
+    { required: true, message: '请输入Endpoint', trigger: 'blur' }
     ]
     rules['config.region'] = [
-      { 
-        required: true, 
-        message: '请输入区域', 
-        trigger: 'blur',
-        validator: (rule, value, callback) => {
-          if (form.value.config.provider === 'minio') {
-            callback()
-          } else if (!value) {
-            callback(new Error('请输入区域'))
-          } else {
-            callback()
-          }
+    { 
+      required: true, 
+      message: '请输入区域', 
+      trigger: 'blur',
+      validator: (rule, value, callback) => {
+        if (form.value.config.provider === 'minio') {
+          callback()
+        } else if (!value) {
+          callback(new Error('请输入区域'))
+        } else {
+          callback()
         }
       }
-    ]
+    }
+  ]
     rules['config.bucket'] = [
       { required: true, message: '请输入存储桶名称', trigger: 'blur' }
     ]
@@ -1501,12 +1501,12 @@ const handleTestConnect = async () => {
       node_id: testNodeId.value
     }
     const response = await axios.post('/api/storages/test-connection', submitData)
-    if (response.data.status == "success") {
+    if (response.data.status == "success") { 
       ElMessage.success("测试连接成功: " + (response.data.data?.message || ''))
     } else {
       ElMessage.error(response.data.message || '测试连接失败')
     }
-  } catch (error) {
+    } catch (error) {
     if (error.response) {
       ElMessage.error(error.response.data.message || '操作失败')
     } else if (error.message) {

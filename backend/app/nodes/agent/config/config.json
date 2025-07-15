@@ -3,6 +3,11 @@
         "host": "localhost",
         "port": 5000
     },
+    "node": {
+        "id": "NODE_ID",
+        "user": "USER_ID",
+        "token": ""
+    },
     "heartbeat_interval": 30,
     "monitor": {
         "interval": 5,

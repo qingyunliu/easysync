@@ -1,15 +1,17 @@
+import os
 import logging
 from datetime import datetime
-from flask import request, jsonify
+from flask import request, jsonify, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from flask import request, jsonify
-from . import nodes_bp
 from backend import db
 from backend.app.models import Node, AuditLog
 from backend.app.utils.ssh_utils import SSHClient
 from backend.app.utils import utils
+from . import nodes_bp
 from .service import NodeService
 from .errors import NodeError, NodeNotFoundError, NodeUnhealthyError, NodeOperationError
+
+logger = logging.getLogger(__name__)
 
 node_service = NodeService()
 
@@ -271,55 +273,6 @@ def delete_node(node_id):
         'message': '节点删除成功'
     })
 
-@nodes_bp.route('/register', methods=['POST'])
-def register_node():
-    """注册节点"""
-    data = request.get_json()
-    name = data.get('name')
-    version = data.get('version')
-    host = data.get('host')
-    system_info = data.get('system_info', {})
-    
-    # 创建节点
-    node = Node(
-        name=name,
-        host=host,
-        port=0,  # 端口由节点自行管理
-        status='active',
-        version=version,
-        config={},
-        system_info=system_info
-    )
-    
-    db.session.add(node)
-    db.session.commit()
-    
-    return jsonify({
-        'status': 'success',
-        'message': '节点注册成功',
-        'data': {
-            'node_id': node.id
-        }
-    }), 201
-
-@nodes_bp.route('/<string:node_id>/heartbeat', methods=['POST'])
-def heartbeat(node_id):
-    """节点心跳"""
-    data = request.get_json()
-    system_info = data.get('system_info', {})
-    
-    try:
-        node_service.update_node_heartbeat(node_id, system_info)
-        return jsonify({
-            'status': 'success',
-            'message': '心跳更新成功'
-        })
-    except NodeNotFoundError as e:
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 404
-
 @nodes_bp.route('/<string:node_id>/tasks', methods=['GET'])
 def get_node_tasks(node_id):
     """获取节点待执行的任务"""
@@ -484,3 +437,294 @@ def batch_tag_nodes():
     Node.query.filter(Node.id.in_(node_ids), Node.user_id == current_user_id).update({'tags': tags}, synchronize_session=False)
     db.session.commit()
     return jsonify({'status': 'success', 'message': '批量打标签成功'})
+
+@nodes_bp.route('/<string:node_id>/install', methods=['POST'])
+@jwt_required()
+def install_node_agent(node_id):
+    """安装Proxy Agent"""
+    current_user_id = get_jwt_identity()
+    try:
+        node = Node.query.filter_by(id=node_id, user_id=current_user_id).first_or_404()
+        
+        # 获取请求参数
+        data = request.get_json()
+        install_path = data.get('install_path', '/opt/easysync/proxy')
+        backup_path = '/opt/easysync/backups'
+        log_path = '/opt/easysync/logs'
+        
+        # 更新节点状态
+        node.agent_status = 'installing'
+        db.session.commit()
+        
+        with SSHClient(node=node) as ssh:
+            # 创建远程目录
+            ssh.create_directory(install_path)
+            ssh.create_directory(backup_path)
+            ssh.create_directory(log_path)
+            
+            # 上传Proxy Agent文件
+            proxy_dir = os.path.join(current_app.root_path, 'app/nodes/agent')
+            logger.debug(f'上传文件: {proxy_dir}')
+
+            # 上传主文件
+            ssh.upload_file(
+                os.path.join(proxy_dir, 'easysync-proxy.tar.gz'),
+                f'{install_path}/easysync-proxy.tar.gz'
+            )
+            logger.debug(f'上传文件: {install_path}/easysync-proxy.tar.gz')
+
+            # 解压文件
+            stdout, stderr, exit_code = ssh.execute_command(
+                f'tar -xzvf {install_path}/easysync-proxy.tar.gz -C {install_path}'
+            )
+            if exit_code != 0:
+                raise Exception(f'解压失败: {stderr}')
+            logger.debug(f'解压文件: {install_path}/easysync-proxy.tar.gz')
+
+            # 获取服务器IP地址
+            server_ip = request.host.split(':')[0]
+            
+            # 增加脚本可执行权限
+            cmd = f'chmod +x {install_path}/install.sh'
+            ssh.execute_command(cmd)
+            
+            # 执行安装脚本，传递三个参数
+            install_cmd = f'{install_path}/install.sh {server_ip} {node_id} {current_user_id}'
+            stdout, stderr, exit_code = ssh.execute_command(install_cmd)
+            if exit_code != 0:
+                raise Exception(f'安装失败: {stderr}')
+            logger.debug(f'安装脚本执行结果: {stdout}')
+            
+            # 检查服务运行状态
+            stdout, stderr, exit_code = ssh.execute_command('systemctl is-active easysync-proxy')
+            if stdout.strip() != 'active':
+                raise Exception('安装成功，但服务未启动')
+            logger.debug(f'服务运行状态: {stdout}')
+
+            # 更新节点状态
+            node.agent_status = 'running'
+            node.agent_version = '1.0.0'
+            db.session.commit()
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'EasySync Proxy Agent安装成功'
+            })
+            
+    except Exception as e:
+        logger.error(f"安装Proxy Agent失败: {str(e)}")
+        node.agent_status = 'install_error'
+        db.session.commit()
+        return jsonify({
+            'status': 'error',
+            'message': f'安装失败: {str(e)}'
+        }), 500
+
+@nodes_bp.route('/<string:node_id>/uninstall', methods=['POST'])
+@jwt_required()
+def uninstall_node_agent(node_id):
+    """卸载Proxy Agent"""
+    current_user_id = get_jwt_identity()
+    try:
+        node = Node.query.filter_by(id=node_id, user_id=current_user_id).first_or_404()
+        
+        # 更新节点状态
+        node.agent_status = 'uninstalling'
+        db.session.commit()
+        
+        with SSHClient(node=node) as ssh:
+            # 停止服务
+            ssh.execute_command('systemctl stop easysync-proxy')
+            ssh.execute_command('systemctl disable easysync-proxy')
+            
+            # 删除服务文件
+            ssh.execute_command('rm -f /etc/systemd/system/easysync-proxy.service')
+            ssh.execute_command('systemctl daemon-reload')
+            
+            # 删除安装目录
+            install_path = '/opt/easysync/proxy'
+            backup_path = '/opt/easysync/backups'
+            log_path = '/opt/easysync/logs'
+            
+            ssh.execute_command(f'rm -rf {install_path}')
+            ssh.execute_command(f'rm -rf {backup_path}')
+            ssh.execute_command(f'rm -rf {log_path}')
+            
+            # 更新节点状态
+            node.agent_status = 'not_installed'
+            node.agent_version = None
+            db.session.commit()
+            
+            return jsonify({
+                'status': 'success',
+                'message': 'Proxy Agent卸载成功'
+            })
+            
+    except Exception as e:
+        logger.error(f"卸载Proxy Agent失败: {str(e)}")
+        node.agent_status = 'uninstall_error'
+        db.session.commit()
+        return jsonify({
+            'status': 'error',
+            'message': f'卸载失败: {str(e)}'
+        }), 500
+
+@nodes_bp.route('/<string:node_id>/status', methods=['POST'])
+@jwt_required()
+def get_node_status(node_id):
+    """获取节点状态"""
+    current_user_id = get_jwt_identity()
+    try:
+        node = Node.query.filter_by(id=node_id, user_id=current_user_id).first_or_404()
+        
+        with SSHClient(node=node) as ssh:
+            # 检查服务状态
+            stdout, stderr, exit_code = ssh.execute_command('systemctl is-active easysync-proxy')
+            service_status = stdout.strip()
+            
+            # 检查进程状态
+            stdout, stderr, exit_code = ssh.execute_command('ps aux | grep "python3.*proxy.py" | grep -v grep')
+            process_status = stdout.strip()
+            
+            # 检查日志文件
+            log_path = '/opt/easysync/logs/proxy.log'
+            stdout, stderr, exit_code = ssh.execute_command(f'tail -n 100 {log_path}')
+            log_content = stdout
+            
+            # 检查配置文件
+            config_path = '/opt/easysync/proxy/config/config.json'
+            stdout, stderr, exit_code = ssh.execute_command(f'cat {config_path}')
+            config_content = stdout
+            
+            # 获取版本信息
+            stdout, stderr, exit_code = ssh.execute_command('hostname')
+            hostname = stdout.strip()
+
+            stdout, stderr, exit_code = ssh.execute_command('uname -s')
+            os_type = stdout.strip()
+        
+            stdout, stderr, exit_code = ssh.execute_command('uname -r')
+            os_version = stdout.strip()
+
+            # 更新节点状态
+            if service_status == 'active' and process_status:
+                node.agent_status = 'running'
+                node.status = 'online'
+            else:
+                node.agent_status = 'stopped'
+                node.status = 'offline'
+            
+            node.last_heartbeat = datetime.utcnow()
+            db.session.commit()
+            
+            return jsonify({
+                'status': 'success',
+                'data': {
+                    'service_status': service_status,
+                    'process_status': bool(process_status),
+                    'log_content': log_content,
+                    'config_content': config_content,
+                    'agent_status': node.agent_status,
+                    'agent_version': node.agent_version,
+                    'hostname': hostname,
+                    'os_type': os_type,
+                    'os_version': os_version,
+                    'last_check': node.last_heartbeat.isoformat() if node.last_heartbeat else None
+                }
+            })
+            
+    except Exception as e:
+        logger.error(f"获取节点状态失败: {str(e)}")
+        node.agent_status = 'error'
+        node.status = 'offline'
+        node.last_heartbeat = datetime.utcnow()
+        db.session.commit()
+        return jsonify({
+            'status': 'error',
+            'message': f'获取状态失败: {str(e)}'
+        }), 500
+
+@nodes_bp.route('/<string:node_id>/logs', methods=['GET'])
+@jwt_required()
+def get_node_logs(node_id):
+    """获取节点日志"""
+    current_user_id = get_jwt_identity()
+    try:
+        node = Node.query.filter_by(id=node_id, user_id=current_user_id).first_or_404()
+        
+        # 获取请求参数
+        lines = request.args.get('lines', 100, type=int)
+        level = request.args.get('level', 'INFO')
+        
+        with SSHClient(node=node) as ssh:
+            # 获取日志内容
+            log_path = '/opt/easysync/logs/proxy.log'
+            if level == 'ALL':
+                command = f'tail -n {lines} {log_path}'
+            else:
+                command = f'grep -i "{level}" {log_path} | tail -n {lines}'
+                
+            stdout, stderr, exit_code = ssh.execute_command(command)
+            log_content = stdout
+            
+            return jsonify({
+                'status': 'success',
+                'data': {
+                    'log_content': log_content,
+                    'level': level,
+                    'lines': lines
+                }
+            })
+            
+    except Exception as e:
+        logger.error(f"获取节点日志失败: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取日志失败: {str(e)}'
+        }), 500
+
+@nodes_bp.route('/<string:node_id>/processes', methods=['GET'])
+@jwt_required()
+def get_node_processes(node_id):
+    """获取节点进程列表"""
+    current_user_id = get_jwt_identity()
+    try:
+        node = Node.query.filter_by(id=node_id, user_id=current_user_id).first_or_404()
+        
+        with SSHClient(node=node) as ssh:
+            # 获取进程列表
+            stdout, stderr, exit_code = ssh.execute_command('ps aux --sort=-%cpu | head -n 20')
+            process_list = utils.parse_process_list(stdout)
+            
+            return jsonify({
+                'status': 'success',
+                'message': '获取进程列表成功',
+                'data': process_list
+            })
+            
+    except Exception as e:
+        logger.error(f"获取进程列表失败: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': '获取进程列表失败'
+        }), 500
+
+@nodes_bp.route('/batch_delete', methods=['POST'])
+@jwt_required()
+def batch_delete_nodes():
+    """批量删除节点"""
+    current_user_id = get_jwt_identity()
+    data = request.get_json()
+    node_ids = data.get('node_ids', [])
+    if not node_ids:
+        return jsonify({'status': 'error', 'message': '缺少node_ids'}), 400
+    
+    try:
+        nodes = Node.query.filter(Node.id.in_(node_ids), Node.user_id == current_user_id).all()
+        for node in nodes:
+            db.session.delete(node)
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': f'批量删除{len(nodes)}个节点成功'}), 200
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': str(e)}), 500

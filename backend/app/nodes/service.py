@@ -4,6 +4,11 @@ from datetime import datetime, timedelta
 from backend import db
 from backend.app.models import Node, Task
 from .errors import NodeNotFoundError, NodeUnhealthyError, NodeOperationError
+import threading
+import uuid
+from backend.app.utils.ssh_utils import SSHClient
+
+INSTALL_TASKS = {}
 
 logger = logging.getLogger(__name__)
 
@@ -203,5 +208,3 @@ class NodeService:
             Dict[str, Any]: 节点信息
         """
         node = self.get_node(node_id)
-        
-

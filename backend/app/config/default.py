@@ -73,14 +73,14 @@ class Config:
     EASYSYNC_AGENT_VERSION = os.environ.get('EASYSYNC_AGENT_VERSION', '1.0.0')
     EASYSYNC_AGENT_INSTALL_PATH = os.environ.get('EASYSYNC_AGENT_INSTALL_PATH', '/opt/easysync/agent')
     EASYSYNC_AGENT_CONFIG_PATH = os.environ.get('EASYSYNC_AGENT_CONFIG_PATH', '/opt/easysync/agent/config.yaml')
-    EASYSYNC_AGENT_LOG_PATH = os.environ.get('EASYSYNC_AGENT_LOG_PATH', '/var/log/easysync/agent.log')
+    EASYSYNC_AGENT_LOG_PATH = os.environ.get('EASYSYNC_AGENT_LOG_PATH', '/var/log/easysync/')
     EASYSYNC_AGENT_BACKUP_PATH = os.environ.get('EASYSYNC_AGENT_BACKUP_PATH', '/opt/easysync/agent/backup')
     
     # EasySync Proxy 配置
     EASYSYNC_PROXY_VERSION = os.environ.get('EASYSYNC_PROXY_VERSION', '1.0.0')
     EASYSYNC_PROXY_INSTALL_PATH = os.environ.get('EASYSYNC_PROXY_INSTALL_PATH', '/opt/easysync/proxy')
-    EASYSYNC_PROXY_CONFIG_PATH = os.environ.get('EASYSYNC_PROXY_CONFIG_PATH', '/opt/easysync/proxy/config.yaml')
-    EASYSYNC_PROXY_LOG_PATH = os.environ.get('EASYSYNC_PROXY_LOG_PATH', '/var/log/easysync/proxy.log')
+    EASYSYNC_PROXY_CONFIG_PATH = os.environ.get('EASYSYNC_PROXY_CONFIG_PATH', '/opt/easysync/proxy/config/config.json')
+    EASYSYNC_PROXY_LOG_PATH = os.environ.get('EASYSYNC_PROXY_LOG_PATH', '/var/log/easysync/')
     EASYSYNC_PROXY_BACKUP_PATH = os.environ.get('EASYSYNC_PROXY_BACKUP_PATH', '/opt/easysync/proxy/backup')
     
     # 监控配置
