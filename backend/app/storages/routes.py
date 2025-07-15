@@ -49,7 +49,7 @@ def get_storages():
         return jsonify({
             'status': 'success',
             'message': '存储节点列表获取成功',
-            'storages': [storage.to_dict() for storage in storages]
+            'data': [storage.to_dict() for storage in storages]
         })
     except Exception as e:
         return jsonify({

@@ -846,7 +846,7 @@ const fetchStorages = async () => {
   try {
     loading.value = true
     const response = await axios.get('/api/storages');
-      storages.value = response.data.storages
+      storages.value = response.data.data
   } catch (error) {
     ElMessage.error('获取存储列表失败')
   } finally {

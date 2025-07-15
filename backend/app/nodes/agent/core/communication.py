@@ -16,14 +16,14 @@ class ServerCommunication:
         self.user_id = None
         self.node_id = None
         self.token = None
-        self.node = self._get_node_config
+        self._get_node_config()
         
     def _get_server_url(self) -> str:
         """获取服务器URL"""
         server_config = self.config.get('server', {})
         host = server_config.get('host', 'localhost')
         port = server_config.get('port', 5000)
-        return f"http://{host}:{port}/api/proxy/v1/nodes"
+        return f"http://{host}:{port}/api/agent"
     
     def _get_node_config(self) -> str:
         """获取Node认证信息"""
@@ -47,13 +47,15 @@ class ServerCommunication:
             Optional[str]: 节点ID
         """
         try:
-            url = f"{self.server_url}/{self.node_id}/register"
+            url = f"{self.server_url}/register"
             response = self.session.post(url, json=node_info)
             response.raise_for_status()
             data = response.json().get('data', {})
-            self.node_id = data.get('node_id')
+            self.node_id = data.get('id')
             self.user_id = data.get('user_id')
             self.token = data.get('token')
+            if 'node' not in self.config:
+                self.config['node'] = {}
             self.config['node']['token'] = self.token
             return self.node_id
             
@@ -65,7 +67,7 @@ class ServerCommunication:
         """发送心跳
         
         Args:
-            system_info: 系统信息
+            heartbeat_info: 心跳信息
             
         Returns:
             bool: 是否成功
@@ -76,8 +78,7 @@ class ServerCommunication:
             
         try:
             url = f"{self.server_url}/{self.node_id}/heartbeat"
-            data = {'heartbeat': heartbeat_info}
-            response = self.session.post(url, json=data, headers=self._auth_headers())
+            response = self.session.post(url, json=heartbeat_info, headers=self._auth_headers())
             response.raise_for_status()
             
             return True
@@ -146,7 +147,7 @@ class ServerCommunication:
             return None
             
         try:
-            url = f"{self.server_url}/nodes/{self.node_id}/tasks/{task_id}/status"
+            url = f"{self.server_url}/{self.node_id}/tasks/{task_id}"
             response = self.session.get(url)
             response.raise_for_status()
             
@@ -170,7 +171,7 @@ class ServerCommunication:
             return False
             
         try:
-            url = f"{self.server_url}/nodes/{self.node_id}/storage/mount"
+            url = f"{self.server_url}/{self.node_id}/storage/mount"
             data = {
                 'node_id': self.node_id,
                 'storage_config': storage_config
@@ -199,7 +200,7 @@ class ServerCommunication:
             return False
             
         try:
-            url = f"{self.server_url}/nodes/{self.node_id}/storage/unmount"
+            url = f"{self.server_url}/{self.node_id}/storage/unmount"
             data = {
                 'node_id': self.node_id,
                 'mount_point': mount_point
@@ -238,4 +239,26 @@ class ServerCommunication:
             return True
         except Exception as e:
             self.logger.error(f"Error reporting error: {e}")
+            return False
+
+    def send_alert(self, alert_data: Dict[str, Any]) -> bool:
+        """发送告警信息
+        
+        Args:
+            alert_data: 告警数据
+            
+        Returns:
+            bool: 是否成功
+        """
+        if not self.node_id or not self.token:
+            self.logger.error("Node not registered or token missing")
+            return False
+            
+        try:
+            url = f"{self.server_url}/{self.node_id}/alerts"
+            response = self.session.post(url, json=alert_data, headers=self._auth_headers())
+            response.raise_for_status()
+            return True
+        except Exception as e:
+            self.logger.error(f"Error sending alert: {e}")
             return False 

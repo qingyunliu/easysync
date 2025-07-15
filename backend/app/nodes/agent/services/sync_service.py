@@ -144,16 +144,67 @@ class SyncService:
         Args:
             task: 任务信息
         """
-        task_id = task['task_id']
-        source_config = task['source']
-        target_config = task['destination']
+        task_id = task.get('id', task.get('task_id'))
+        task_type = task.get('type', 'sync')
+        
+        # 先更新任务状态为running
+        self.server_comm.update_task_status(task_id, {
+            'status': 'running',
+            'progress': 0,
+            'error': None
+        })
+        
+        # 根据任务类型处理
+        if task_type == 'mount-check':
+            self._execute_mount_check_task(task)
+        elif task_type == 'sync':
+            self._execute_sync_task(task)
+        elif task_type == 'copy':
+            self._execute_copy_task(task)
+        else:
+            self.logger.warning(f"Unknown task type: {task_type}")
+            self.server_comm.update_task_status(task_id, {
+                'status': 'failed',
+                'error': f'Unknown task type: {task_type}'
+            })
+            
+    def _execute_mount_check_task(self, task: Dict[str, Any]):
+        """执行挂载检查任务"""
+        task_id = task.get('id', task.get('task_id'))
+        source_config = task.get('source', {})
+        
+        try:
+            # 检查存储是否可用
+            mount_result = self.storage_manager.check_mount(source_config)
+            
+            # 更新任务状态和详情
+            self.server_comm.update_task_status(task_id, {
+                'status': 'completed',
+                'progress': 100,
+                'details': mount_result
+            })
+            
+            self.logger.info(f"Mount check task {task_id} completed")
+            
+        except Exception as e:
+            self.logger.error(f"Error executing mount check task {task_id}: {e}")
+            self.server_comm.update_task_status(task_id, {
+                'status': 'failed',
+                'error': str(e)
+            })
+            
+    def _execute_sync_task(self, task: Dict[str, Any]):
+        """执行同步任务"""
+        task_id = task.get('id', task.get('task_id'))
+        source_config = task.get('source', {})
+        target_config = task.get('target', {})
         options = task.get('options', {})
         
         # 初始化任务状态
         self.task_state.save_state(task_id, {
             'status': 'running',
             'source': source_config,
-            'destination': target_config,
+            'target': target_config,
             'options': options,
             'start_time': datetime.utcnow().isoformat(),
             'progress': 0,
@@ -171,12 +222,17 @@ class SyncService:
         # 执行同步命令
         for retry in range(self.max_retries):
             try:
+                # 创建带task_id的回调函数
+                def progress_callback(status):
+                    status['task_id'] = task_id
+                    self._on_progress_update(status)
+                
                 # 使用StorageManager执行同步
                 success = self.storage_manager.sync_data(
                     source_config,
                     target_config,
                     options,
-                    self._on_progress_update
+                    progress_callback
                 )
                 
                 if success:
@@ -184,7 +240,61 @@ class SyncService:
                     return
                     
             except Exception as e:
-                self.logger.error(f"Error executing task {task_id}: {e}")
+                self.logger.error(f"Error executing sync task {task_id}: {e}")
+                if retry < self.max_retries - 1:
+                    time.sleep(self.retry_delay)
+                    continue
+                    
+            self._update_task_status(task_id, 'failed', str(e))
+            
+    def _execute_copy_task(self, task: Dict[str, Any]):
+        """执行复制任务"""
+        task_id = task.get('id', task.get('task_id'))
+        source_config = task.get('source', {})
+        target_config = task.get('target', {})
+        options = task.get('options', {})
+        
+        # 初始化任务状态
+        self.task_state.save_state(task_id, {
+            'status': 'running',
+            'source': source_config,
+            'target': target_config,
+            'options': options,
+            'start_time': datetime.utcnow().isoformat(),
+            'progress': 0,
+            'error': None
+        })
+        
+        # 检查存储
+        if not self._check_storage(source_config, target_config):
+            self._update_task_status(task_id, 'failed', 'Storage check failed')
+            return
+            
+        # 开始复制
+        self.progress_monitor.start()
+        
+        # 执行复制命令
+        for retry in range(self.max_retries):
+            try:
+                # 创建带task_id的回调函数
+                def progress_callback(status):
+                    status['task_id'] = task_id
+                    self._on_progress_update(status)
+                
+                # 使用StorageManager执行复制
+                success = self.storage_manager.copy_data(
+                    source_config,
+                    target_config,
+                    options,
+                    progress_callback
+                )
+                
+                if success:
+                    self._update_task_status(task_id, 'completed')
+                    return
+                    
+            except Exception as e:
+                self.logger.error(f"Error executing copy task {task_id}: {e}")
                 if retry < self.max_retries - 1:
                     time.sleep(self.retry_delay)
                     continue
@@ -227,17 +337,20 @@ class SyncService:
             error: 错误信息
         """
         # 更新本地状态
-        self.task_state.save_state(task_id, {
+        state_data = {
             'status': status,
             'end_time': datetime.utcnow().isoformat(),
             'error': error
-        })
+        }
+        self.task_state.save_state(task_id, state_data)
         
         # 通知服务器
-        self.server_comm.update_task_status(
-            task_id,
-            {'status': status, 'error': error}
-        )
+        server_data = {
+            'status': status,
+            'error': error,
+            'progress': 100 if status == 'completed' else 0
+        }
+        self.server_comm.update_task_status(task_id, server_data)
         
     def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
         """获取任务状态
@@ -260,20 +373,30 @@ class SyncService:
         except Exception as e:
             self.logger.error(f"Error getting task status: {e}")
             return None
-            
+        
     def _on_progress_update(self, status: Dict[str, Any]):
         """处理进度更新
         
         Args:
             status: 进度状态
         """
+        task_id = status.get('task_id')
+        if not task_id:
+            return
+            
         # 更新本地状态
-        self.task_state.save_state(status['task_id'], {
-            'progress': status['progress'],
-            'transferred_files': status['transferred_files'],
-            'total_files': status['total_files'],
-            'transferred_size': status['transferred_size'],
-            'total_size': status['total_size']
+        self.task_state.save_state(task_id, {
+            'progress': status.get('progress', 0),
+            'transferred_files': status.get('transferred_files', 0),
+            'total_files': status.get('total_files', 0),
+            'transferred_size': status.get('transferred_size', 0),
+            'total_size': status.get('total_size', 0)
+        })
+        
+        # 通知服务器
+        self.server_comm.update_task_status(task_id, {
+            'progress': status.get('progress', 0),
+            'status': 'running'
         })
         
         # 记录日志

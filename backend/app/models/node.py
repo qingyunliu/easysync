@@ -33,14 +33,14 @@ class Node(BaseModel):
     agent_last_update = db.Column(db.DateTime)  # ProxyAgent最后更新时间
     system_info = db.Column(db.JSON)  # 系统信息（OS、CPU、内存等）
     description = db.Column(db.String(255)) # 描述信息
-    group = db.Column(db.String(64), default='default', comment='分组')  # 节点分组
-    tags = db.Column(db.Text, comment='标签，逗号分隔')  # 节点标签
+    group = db.Column(db.String(64), default='default', comment='groups')  # 节点分组
+    tags = db.Column(db.Text, comment='tags and comma separated')  # 节点标签
 
     tasks = db.relationship('Task', backref=db.backref('node', lazy=True))
     storage = db.relationship('Storage', backref=db.backref('node', lazy=True))
 
     __table_args__ = {
-        'comment': '节点表，含分组、标签等运维属性'
+        'comment': 'Node table, including operational attributes such as grouping and tags'
     }
 
     def to_dict(self):

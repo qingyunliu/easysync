@@ -22,17 +22,18 @@ def agent_token_required(f):
     return decorated
 
 # 1. 注册节点
-@agent_bp.route('/<string:node_id>/register', methods=['POST'])
-def agent_register(node_id):
+@agent_bp.route('/register', methods=['POST'])
+def agent_register():
     data = request.get_json()
     name = data.get('name')
+    hostname = data.get('hostname')
     ipaddress = data.get('ipaddress')
     version = data.get('version')
-    user_id = data.get('user_id')
+    user_id = data.get('user_id') or 1  # 默认用户ID为1
     system_info = data.get('system_info', {})
 
-    # 先查找是否已注册（根据IP地址和用户ID判断）
-    existing_node = Node.query.filter_by(id=node_id, ipaddress=ipaddress, user_id=user_id).first()
+    # 先查找是否已注册（根据IP地址和hostname判断）
+    existing_node = Node.query.filter_by(hostname=hostname, ipaddress=ipaddress).first()
     if existing_node:
         # 已注册，直接返回原有信息
         token = existing_node.config.get('agent_token') if existing_node.config else generate_token()
@@ -52,7 +53,7 @@ def agent_register(node_id):
             'status': 'success', 
             'message': '节点已注册，直接返回', 
             'data': {
-                'node_id': existing_node.id,
+                'id': existing_node.id,
                 'user_id': existing_node.user_id,
                 'token': token
                 }
@@ -62,21 +63,27 @@ def agent_register(node_id):
     token = generate_token()
     node = Node(
         name=name, 
+        hostname=hostname,
         ipaddress=ipaddress, 
         port=0, 
-        status='active', 
+        status='online',  # 新注册的节点状态为在线
         username="", 
         password="",
         user_id=user_id,
         config={'agent_token': token}, 
-        system_info=system_info
+        system_info=system_info,
+        last_heartbeat=datetime.datetime.utcnow()
     )
     db.session.add(node)
     db.session.commit()
     return jsonify({
         'status': 'success', 
         'message': '注册成功', 
-        'data': {'node_id': node.id, 'token': token}
+        'data': {
+            'id': node.id, 
+            'user_id': node.user_id,
+            'token': token
+        }
     })
 
 # 2. 心跳
@@ -91,14 +98,33 @@ def agent_heartbeat(node_id):
     db.session.commit()
     return jsonify({'status': 'success', 'message': '心跳成功'})
 
-# 3. 拉取任务
+# 3. 拉取任务（包含存储配置信息）
 @agent_bp.route('/<string:node_id>/tasks', methods=['GET'])
 @agent_token_required
 def agent_get_tasks(node_id):
-    tasks = Task.query.filter_by(node_id=node_id, status='pending').all()
-    return jsonify({'status': 'success', 'data': [t.to_dict() for t in tasks]})
+    # 获取分配给此节点的任务（assigned状态和running状态的任务）
+    tasks = Task.query.filter_by(node_id=node_id).filter(
+        Task.status.in_(['assigned', 'running'])
+    ).all()
+    return jsonify({
+        'status': 'success', 
+        'data': [t.to_dict_with_storage_config() for t in tasks]
+    })
 
-# 4. 上报任务状态
+# 4. 获取单个任务详情（包含存储配置）
+@agent_bp.route('/<string:node_id>/tasks/<string:task_id>', methods=['GET'])
+@agent_token_required
+def agent_get_task_detail(node_id, task_id):
+    task = Task.query.filter_by(id=task_id, node_id=node_id).first()
+    if not task:
+        return jsonify({'status': 'error', 'message': '任务不存在或不属于该节点'}), 404
+    
+    return jsonify({
+        'status': 'success',
+        'data': task.to_dict_with_storage_config()
+    })
+
+# 5. 上报任务状态
 @agent_bp.route('/<string:node_id>/tasks/<string:task_id>/status', methods=['PUT'])
 @agent_token_required
 def agent_update_task_status(node_id, task_id):
@@ -106,14 +132,73 @@ def agent_update_task_status(node_id, task_id):
     task = Task.query.get(task_id)
     if not task or task.node_id != node_id:
         return jsonify({'status': 'error', 'message': '任务不存在或不属于该节点'}), 404
+    
+    # 更新任务状态
     task.status = data.get('status', task.status)
     task.progress = data.get('progress', task.progress)
     task.error = data.get('error', task.error)
     task.updated_at = datetime.datetime.utcnow()
+    
+    # 支持details字段
+    if 'details' in data:
+        task.details = data['details']
+    
+    # 处理任务完成时间
+    if task.status in ['completed', 'failed', 'cancelled']:
+        task.completed_at = datetime.datetime.utcnow()
+    elif task.status == 'running' and not task.started_at:
+        task.started_at = datetime.datetime.utcnow()
+    
     db.session.commit()
     return jsonify({'status': 'success', 'message': '任务状态已更新'})
 
-# 5. 上报监控
+# 6. 上报任务进度日志
+@agent_bp.route('/<string:node_id>/tasks/<string:task_id>/logs', methods=['POST'])
+@agent_token_required
+def agent_report_task_log(node_id, task_id):
+    data = request.get_json()
+    task = Task.query.filter_by(id=task_id, node_id=node_id).first()
+    if not task:
+        return jsonify({'status': 'error', 'message': '任务不存在或不属于该节点'}), 404
+    
+    # 创建任务日志
+    from backend.app.models.task import TaskLog
+    log = TaskLog(
+        task_id=task_id,
+        user_id=task.user_id,
+        status=data.get('status', 'info'),
+        message=data.get('message', ''),
+        details=data.get('details', {})
+    )
+    db.session.add(log)
+    db.session.commit()
+    
+    return jsonify({'status': 'success', 'message': '任务日志已记录'})
+
+# 7. 测试存储连接
+@agent_bp.route('/<string:node_id>/storage/<string:storage_id>/test', methods=['POST'])
+@agent_token_required
+def agent_test_storage_connection(node_id, storage_id):
+    from backend.app.models.storage import Storage
+    
+    storage = Storage.query.get(storage_id)
+    if not storage:
+        return jsonify({'status': 'error', 'message': '存储不存在'}), 404
+    
+    # 返回存储配置供Agent测试
+    return jsonify({
+        'status': 'success',
+        'data': {
+            'storage_config': {
+                'id': storage.id,
+                'name': storage.name,
+                'type': storage.type,
+                'config': storage.config
+            }
+        }
+    })
+
+# 8. 上报监控
 @agent_bp.route('/<string:node_id>/metrics', methods=['POST'])
 @agent_token_required
 def agent_report_metrics(node_id):
@@ -141,4 +226,39 @@ def agent_report_error(node_id):
     data = request.get_json()
     # 可扩展为写入专门的错误表
     current_app.logger.error(f'Agent节点{node_id}错误: {data}')
-    return jsonify({'status': 'success', 'message': '错误已上报'}) 
+    return jsonify({'status': 'success', 'message': '错误已上报'})
+
+# 7. 上报告警
+@agent_bp.route('/<string:node_id>/alerts', methods=['POST'])
+@agent_token_required
+def agent_send_alert(node_id):
+    data = request.get_json()
+    node = Node.query.get(node_id)
+    if not node:
+        return jsonify({'status': 'error', 'message': '节点不存在'}), 404
+    
+    try:
+        # 创建告警记录
+        from backend.app.models.alert import Alert
+        alert = Alert(
+            node_id=node_id,
+            user_id=node.user_id,
+            alert_type=data.get('alert_type'),
+            level=data.get('level', 'warning'),
+            message=data.get('message'),
+            value=data.get('value'),
+            threshold=data.get('threshold'),
+            timestamp=datetime.datetime.fromisoformat(data.get('timestamp', datetime.datetime.utcnow().isoformat())),
+            status='active'
+        )
+        db.session.add(alert)
+        db.session.commit()
+        
+        # 记录日志
+        current_app.logger.warning(f'Alert from node {node_id}: {data.get("message")}')
+        
+        return jsonify({'status': 'success', 'message': '告警已接收'})
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f'Failed to save alert: {e}')
+        return jsonify({'status': 'error', 'message': f'告警保存失败: {e}'}), 500 

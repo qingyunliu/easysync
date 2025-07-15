@@ -585,9 +585,91 @@
         <!-- 系统日志标签页 -->
         <el-tab-pane label="系统日志" name="logs">
               <div class="logs-content">
-                <!-- 日志检索、分页、自动刷新等，参考Clients.vue实现 -->
-                <!-- 这里可根据实际需求补充日志表格、搜索、刷新等功能 -->
+            <!-- 日志控制面板 -->
+            <div class="logs-control-panel">
+              <div class="panel-section search-controls">
+                <el-input
+                  v-model="logSearchQuery"
+                  placeholder="搜索日志"
+                  clearable
+                  @clear="handleLogSearch"
+                  @input="handleLogSearch"
+                  class="search-input"
+                >
+                  <template #prefix>
+                    <el-icon><Search /></el-icon>
+                  </template>
+                </el-input>
+                <el-select
+                  v-model="logLevelFilter"
+                  placeholder="日志级别"
+                  clearable
+                  @change="handleLogSearch"
+                  class="level-select"
+                >
+                  <el-option label="全部" value="" />
+                  <el-option label="DEBUG" value="DEBUG" />
+                  <el-option label="INFO" value="INFO" />
+                  <el-option label="WARNING" value="WARNING" />
+                  <el-option label="ERROR" value="ERROR" />
+                  <el-option label="CRITICAL" value="CRITICAL" />
+                </el-select>
+                <el-button
+                  type="primary"
+                  :loading="refreshingLogs"
+                  @click="handleManualLogRefresh"
+                  class="refresh-button"
+                >
+                  <el-icon><Refresh /></el-icon>
+                  <span>刷新</span>
+                </el-button>
+                <el-switch
+                  v-model="autoRefreshLogs"
+                  active-text="自动刷新"
+                  inactive-text=""
+                  class="refresh-switch"
+                  @change="handleAutoLogRefreshChange"
+                />
+                <el-select
+                  v-if="autoRefreshLogs"
+                  v-model="logRefreshInterval"
+                  placeholder="刷新间隔"
+                  @change="handleLogRefreshIntervalChange"
+                  class="interval-select"
+                >
+                  <el-option label="3秒" value="3" />
+                  <el-option label="5秒" value="5" />
+                  <el-option label="10秒" value="10" />
+                  <el-option label="30秒" value="30" />
+                </el-select>
               </div>
+            </div>
+
+            <!-- 日志列表 -->
+            <div class="logs-list">
+              <el-table
+                :data="filteredLogs"
+                style="width: 100%"
+                height="calc(100vh - 300px)"
+                v-loading="loadingLogs"
+              >
+                <el-table-column prop="timestamp" label="时间" width="180">
+                  <template #default="{ row }">
+                    {{ row.timestamp }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="level" label="级别" width="100">
+                  <template #default="{ row }">
+                    <el-tag :type="getLogLevelType(row.level)">
+                      {{ row.level }}
+                    </el-tag>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="module" label="模块" width="150" />
+                <el-table-column prop="message" label="消息" show-overflow-tooltip />
+              </el-table>
+            </div>
+          </div>
             </el-tab-pane>
           </el-tabs>
             </div>
@@ -1174,9 +1256,11 @@ const testConnection = async (row) => {
 const getNodeInfo = async (row) => {
   try {
     row.fetching = true
-    await axios.post(`/api/nodes/${row.id}/status`)
-    ElMessage.success('获取信息成功')
-    fetchNodes()  // 刷新列表以更新信息
+    const response = await axios.post(`/api/nodes/${row.id}/status`)
+    if (response.data.status === 'success') {
+      ElMessage.success('获取信息成功')
+      fetchNodes()  // 刷新列表以更新信息
+    }
   } catch (error) {
     ElMessage.error('获取信息失败')
   } finally {
@@ -1916,7 +2000,9 @@ const handleDrawerClose = () => {
 const refreshProcessList = async () => {
   try {
     const response = await axios.get(`/api/nodes/${currentNode.value.id}/processes`)
-    nodeDetail.value.process_list = response.data.data
+    if (response.data.status === 'success') {
+      nodeDetail.value.process_list = response.data.data
+    }
   } catch (error) {
     ElMessage.error('获取进程列表失败')
   }
@@ -2008,7 +2094,12 @@ const fetchLogs = async () => {
   
   try {
     loadingLogs.value = true
-    const response = await axios.get(`/api/nodes/${currentNode.value.id}/logs`)
+    const response = await axios.get(`/api/nodes/${currentNode.value.id}/logs`, {
+      params: {
+        lines: 100,
+        level: logLevelFilter.value || 'ALL'
+      }
+    })
     if (response.data.status === 'success') {
       // 解析日志字符串为数组
       const logEntries = response.data.data.log_content.split('\n')
@@ -2799,6 +2890,17 @@ onMounted(() => {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   padding: 16px;
+}
+
+.logs-list :deep(.el-table) {
+  font-size: 13px;
+}
+
+.logs-list :deep(.el-table__header th) {
+  background: #fafafa;
+  color: #606266;
+  font-weight: 600;
+  font-size: 13px;
 }
 
 @media screen and (max-width: 768px) {

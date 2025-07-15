@@ -1380,9 +1380,11 @@ const testConnection = async (row) => {
 const getClientInfo = async (row) => {
   try {
     row.fetching = true
-    await axios.post(`/api/clients/${row.id}/status`)
-    ElMessage.success('获取信息成功')
-    fetchClients()  // 刷新列表以更新信息
+    const response = await axios.post(`/api/clients/${row.id}/status`)
+    if (response.data.status === 'success') {
+      ElMessage.success('获取信息成功')
+      fetchClients()  // 刷新列表以更新信息
+    }
   } catch (error) {
     ElMessage.error('获取信息失败')
   } finally {
@@ -2095,7 +2097,9 @@ const handleDrawerClose = () => {
 const refreshProcessList = async () => {
   try {
     const response = await axios.get(`/api/clients/${currentClient.value.id}/processes`)
-    clientDetail.value.process_list = response.data.data
+    if (response.data.status === 'success') {
+      clientDetail.value.process_list = response.data.data
+    }
   } catch (error) {
     ElMessage.error('获取进程列表失败')
   }
@@ -2187,7 +2191,12 @@ const fetchLogs = async () => {
   
   try {
     loadingLogs.value = true
-    const response = await axios.get(`/api/clients/${currentClient.value.id}/logs`)
+    const response = await axios.get(`/api/clients/${currentClient.value.id}/logs`, {
+      params: {
+        lines: 100,
+        level: logLevelFilter.value || 'ALL'
+      }
+    })
     if (response.data.status === 'success') {
       // 解析日志字符串为数组
       const logEntries = response.data.data.log_content.split('\n')

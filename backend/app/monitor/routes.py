@@ -320,12 +320,78 @@ def delete_alert_rule(rule_id):
 @jwt_required()
 def get_alerts():
     """获取告警列表"""
-    alerts = Alert.query.order_by(Alert.created_at.desc()).all()
+    user_id = get_jwt_identity()
+    node_id = request.args.get('node_id')
+    status = request.args.get('status', 'active')
+    limit = int(request.args.get('limit', 100))
+    
+    if status == 'active':
+        alerts = Alert.get_active_alerts(user_id=user_id, node_id=node_id, limit=limit)
+    else:
+        query = Alert.query.filter_by(user_id=user_id)
+        if node_id:
+            query = query.filter_by(node_id=node_id)
+        if status != 'all':
+            query = query.filter_by(status=status)
+        alerts = query.order_by(Alert.timestamp.desc()).limit(limit).all()
+    
     return jsonify({
         'status': 'success',
         'message': '告警列表获取成功',
         'data': [alert.to_dict() for alert in alerts]
     })
+
+@monitor_bp.route('/alerts/summary', methods=['GET'])
+@jwt_required()
+def get_alerts_summary():
+    """获取告警汇总信息"""
+    user_id = get_jwt_identity()
+    summary = Alert.get_alert_summary(user_id=user_id)
+    
+    return jsonify({
+        'status': 'success',
+        'message': '告警汇总获取成功',
+        'data': summary
+    })
+
+@monitor_bp.route('/alerts/<int:alert_id>/resolve', methods=['PUT'])
+@jwt_required()
+def resolve_alert(alert_id):
+    """解决告警"""
+    user_id = get_jwt_identity()
+    success = Alert.resolve_alert(alert_id, user_id=user_id)
+    
+    if success:
+        return jsonify({
+            'status': 'success',
+            'message': '告警已解决'
+        })
+    else:
+        return jsonify({
+            'status': 'error',
+            'message': '告警解决失败'
+        }), 400
+
+@monitor_bp.route('/alerts/<int:alert_id>/acknowledge', methods=['PUT'])
+@jwt_required()
+def acknowledge_alert(alert_id):
+    """确认告警"""
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    acknowledged_by = data.get('acknowledged_by', user_id)
+    
+    success = Alert.acknowledge_alert(alert_id, acknowledged_by, user_id=user_id)
+    
+    if success:
+        return jsonify({
+            'status': 'success',
+            'message': '告警已确认'
+        })
+    else:
+        return jsonify({
+            'status': 'error',
+            'message': '告警确认失败'
+        }), 400
 
 @monitor_bp.route('/alerts/<int:alert_id>', methods=['PUT'])
 @jwt_required()

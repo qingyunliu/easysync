@@ -27,8 +27,8 @@ class Client(BaseModel):
     description = db.Column(db.Text)
     
     # 新增分组和标签字段
-    group = db.Column(db.String(64), default='default', comment='分组')
-    tags = db.Column(db.Text, comment='标签，逗号分隔')
+    group = db.Column(db.String(64), default='default', comment='groups')
+    tags = db.Column(db.Text, comment='tags and comma separated')
     
     # 外键关系
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
