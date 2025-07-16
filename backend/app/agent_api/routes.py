@@ -102,13 +102,34 @@ def agent_heartbeat(node_id):
 @agent_bp.route('/<string:node_id>/tasks', methods=['GET'])
 @agent_token_required
 def agent_get_tasks(node_id):
-    # 获取分配给此节点的任务（assigned状态和running状态的任务）
+    # 获取分配给此节点的任务，包括所有需要处理的状态
     tasks = Task.query.filter_by(node_id=node_id).filter(
-        Task.status.in_(['assigned', 'running'])
+        Task.status.in_([
+            'assigned',           # 新分配的任务
+            'running',           # 运行中的任务
+            'cancel_requested',  # 取消请求
+            'pause_requested',   # 暂停请求
+            'resume_requested'   # 恢复请求
+        ])
     ).all()
+    
+    # 确保返回完整的任务信息，包括存储配置
+    task_data = []
+    for task in tasks:
+        task_dict = task.to_dict_with_storage_config()
+        
+        # 为特殊任务类型添加额外信息
+        if task.type == 'test-connection':
+            task_dict['storage_config'] = task.options.get('storage_config', {})
+        elif task.type == 'mount-check':
+            task_dict['mount_point'] = task.options.get('mount_point', '')
+            task_dict['storage_config'] = task.options.get('storage_config', {})
+        
+        task_data.append(task_dict)
+    
     return jsonify({
         'status': 'success', 
-        'data': [t.to_dict_with_storage_config() for t in tasks]
+        'data': task_data
     })
 
 # 4. 获取单个任务详情（包含存储配置）

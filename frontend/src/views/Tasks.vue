@@ -7,12 +7,64 @@
         <p class="page-description">管理和监控同步任务的创建、执行和状态</p>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="showCreateDialog">
+      <el-button type="primary" @click="showCreateDialog">
           <el-icon><Plus /></el-icon>
-          创建任务
-        </el-button>
+        创建任务
+      </el-button>
       </div>
     </div>
+    
+    <!-- 统计面板 -->
+    <el-row :gutter="20" style="margin-bottom: 20px;">
+      <el-col :span="4">
+        <el-card class="stat-card">
+          <div class="stat-content">
+            <div class="stat-number">{{ taskStats.total || 0 }}</div>
+            <div class="stat-label">总任务数</div>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card class="stat-card running">
+          <div class="stat-content">
+            <div class="stat-number">{{ taskStats.running || 0 }}</div>
+            <div class="stat-label">运行中</div>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card class="stat-card pending">
+          <div class="stat-content">
+            <div class="stat-number">{{ taskStats.pending || 0 }}</div>
+            <div class="stat-label">等待中</div>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card class="stat-card completed">
+          <div class="stat-content">
+            <div class="stat-number">{{ taskStats.completed || 0 }}</div>
+            <div class="stat-label">已完成</div>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card class="stat-card failed">
+          <div class="stat-content">
+            <div class="stat-number">{{ taskStats.failed || 0 }}</div>
+            <div class="stat-label">已失败</div>
+          </div>
+        </el-card>
+      </el-col>
+      <el-col :span="4">
+        <el-card class="stat-card">
+          <div class="stat-content">
+            <div class="stat-number">{{ OnlineNodeStats || 0 }}</div>
+            <div class="stat-label">在线节点</div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
 
     <!-- 操作栏 -->
     <div class="toolbar">
@@ -64,7 +116,7 @@
           <el-button
             :type="autoRefresh ? 'primary' : 'default'"
             @click="toggleAutoRefresh"
-            :icon="autoRefresh ? Pause : Refresh"
+            :icon="autoRefresh ? VideoPause : Refresh"
           >
             {{ autoRefresh ? '暂停刷新' : '开启刷新' }}
           </el-button>
@@ -100,9 +152,9 @@
         <el-table-column type="selection" width="55" />
         
         <el-table-column prop="name" label="任务名称" min-width="150" show-overflow-tooltip>
-          <template #default="{ row }">
+        <template #default="{ row }">
             <div class="task-name">
-              <el-link type="primary" @click="showTaskDetail(row)">
+              <el-link type="primary" @click="handleViewDetail(row)">
                 {{ row.name }}
               </el-link>
               <div class="task-description">{{ row.description || '无描述' }}</div>
@@ -121,13 +173,13 @@
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)" size="small">
-              {{ getStatusText(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
+            {{ getStatusText(row.status) }}
+          </el-tag>
+        </template>
+      </el-table-column>
 
         <el-table-column prop="progress" label="进度" width="120">
-          <template #default="{ row }">
+        <template #default="{ row }">
             <el-progress
               :percentage="row.progress || 0"
               :status="getProgressStatus(row.status)"
@@ -161,67 +213,115 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="250" fixed="right">
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="{ row }">
             <el-button-group size="small">
-              <el-button
-                :type="row.status === 'running' ? 'danger' : 'success'"
-                @click="handleTaskAction(row)"
-                :disabled="['completed', 'cancelled'].includes(row.status)"
-                :icon="row.status === 'running' ? VideoPlay : VideoPause"
+              <!-- 启动/停止按钮 -->
+            <el-button
+                v-if="['pending', 'failed'].includes(row.status)"
+                type="success"
+                @click="handleStartTask(row)"
+                :icon="VideoPlay"
+                :loading="loadingTasks.has(row.id)"
               >
-                {{ row.status === 'running' ? '停止' : '启动' }}
+                启动
+            </el-button>
+              
+              <!-- 暂停/恢复按钮 -->
+            <el-button
+                v-if="row.status === 'running'"
+                type="warning"
+                @click="handlePauseTask(row)"
+                :icon="VideoPause"
+                :loading="loadingTasks.has(row.id)"
+              >
+                暂停
+            </el-button>
+              
+            <el-button
+                v-if="row.status === 'paused'"
+                type="success"
+                @click="handleResumeTask(row)"
+                :icon="VideoPlay"
+                :loading="loadingTasks.has(row.id)"
+              >
+                恢复
+            </el-button>
+              
+              <!-- 取消按钮 -->
+            <el-button
+                v-if="['running', 'assigned', 'paused'].includes(row.status)"
+              type="danger"
+                @click="handleCancelTask(row)"
+                :icon="Close"
+                :loading="loadingTasks.has(row.id)"
+              >
+                取消
               </el-button>
               
+              <!-- 重试按钮 -->
               <el-button
+                v-if="row.status === 'failed'"
                 type="warning"
                 @click="handleRetryTask(row)"
-                :disabled="row.status !== 'failed'"
                 :icon="RefreshRight"
+                :loading="loadingTasks.has(row.id)"
               >
                 重试
+            </el-button>
+          </el-button-group>
+            
+            <!-- 更多操作下拉菜单 -->
+            <el-dropdown @command="(command) => handleDropdownCommand(command, row)" style="margin-left: 8px;">
+              <el-button type="primary" :icon="More" size="small">
+                更多
               </el-button>
-              
-              <el-dropdown @command="(command) => handleDropdownCommand(command, row)">
-                <el-button type="primary" :icon="More">
-                  更多
-                </el-button>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item command="edit" :disabled="row.status === 'running'">
-                      编辑
-                    </el-dropdown-item>
-                    <el-dropdown-item command="logs">
-                      查看日志
-                    </el-dropdown-item>
-                    <el-dropdown-item command="detail">
-                      详情
-                    </el-dropdown-item>
-                    <el-dropdown-item command="delete" :disabled="row.status === 'running'">
-                      <span style="color: #f56c6c">删除</span>
-                    </el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
-            </el-button-group>
-          </template>
-        </el-table-column>
-      </el-table>
-      
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="logs">
+                    <el-icon><Document /></el-icon>查看日志
+                  </el-dropdown-item>
+                  <el-dropdown-item command="detail">
+                    <el-icon><InfoFilled /></el-icon>详情
+                  </el-dropdown-item>
+                  <el-dropdown-item command="test-connection" v-if="canTestConnection(row)">
+                    <el-icon><Connection /></el-icon>测试连接
+                  </el-dropdown-item>
+                  <el-dropdown-item command="test-mount" v-if="canTestMount(row)">
+                    <el-icon><Connection /></el-icon>测试挂载
+                  </el-dropdown-item>
+                  <el-dropdown-item command="duplicate">
+                    <el-icon><CopyDocument /></el-icon>复制任务
+                  </el-dropdown-item>
+                  <el-dropdown-item 
+                    command="delete" 
+                    :disabled="['running', 'assigned'].includes(row.status)"
+                    style="color: #f56c6c;"
+                  >
+                    <el-icon><Delete /></el-icon>删除
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+        </template>
+      </el-table-column>
+    </el-table>
+
       <!-- 分页 -->
       <div class="pagination-container">
         <el-pagination
           v-model:current-page="currentPage"
           v-model:page-size="pageSize"
-          :total="totalTasks"
           :page-sizes="[10, 20, 50, 100]"
+          :total="totalTasks"
           layout="total, sizes, prev, pager, next, jumper"
           @size-change="handleSizeChange"
           @current-change="handleCurrentChange"
+          style="margin-top: 20px; text-align: right;"
         />
       </div>
     </div>
-
+    
     <!-- 创建/编辑任务对话框 -->
     <el-dialog
       :title="dialogType === 'create' ? '创建任务' : '编辑任务'"
@@ -238,9 +338,9 @@
       >
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="任务名称" prop="name">
+        <el-form-item label="任务名称" prop="name">
               <el-input v-model="taskForm.name" placeholder="请输入任务名称" />
-            </el-form-item>
+        </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="任务类型" prop="type">
@@ -440,7 +540,7 @@
 
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="taskDialogVisible = false">取消</el-button>
+        <el-button @click="taskDialogVisible = false">取消</el-button>
           <el-button type="primary" @click="handleSubmitTask" :loading="submitting">
             {{ dialogType === 'create' ? '创建' : '更新' }}
           </el-button>
@@ -449,68 +549,122 @@
     </el-dialog>
 
     <!-- 任务详情对话框 -->
-    <el-dialog
-      title="任务详情"
+    <el-drawer
       v-model="detailDialogVisible"
-      width="900px"
+      title="任务详情"
+      direction="rtl"
+      :size="isFullscreen ? '80vw' : '45vw'"
+      :with-header="false"
+      custom-class="task-detail-drawer"
+      :close-on-click-modal="false"
     >
-      <div v-if="selectedTask" class="task-detail">
-        <el-descriptions :column="2" border>
-          <el-descriptions-item label="任务名称">{{ selectedTask.name }}</el-descriptions-item>
-          <el-descriptions-item label="任务类型">
-            <el-tag :type="getTaskTypeColor(selectedTask.type)">
-              {{ getTaskTypeText(selectedTask.type) }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag :type="getStatusType(selectedTask.status)">
-              {{ getStatusText(selectedTask.status) }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="进度">
-            <el-progress
-              :percentage="selectedTask.progress || 0"
-              :status="getProgressStatus(selectedTask.status)"
-              :stroke-width="6"
-            />
-          </el-descriptions-item>
-          <el-descriptions-item label="优先级">
-            <el-tag :type="getPriorityType(selectedTask.priority)">
-              {{ getPriorityText(selectedTask.priority) }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="执行节点">
-            {{ selectedTask.node_id ? getNodeName(selectedTask.node_id) : '未分配' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ formatDateTime(selectedTask.created_at) }}</el-descriptions-item>
-          <el-descriptions-item label="开始时间">
-            {{ selectedTask.started_at ? formatDateTime(selectedTask.started_at) : '未开始' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="完成时间">
-            {{ selectedTask.completed_at ? formatDateTime(selectedTask.completed_at) : '未完成' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="错误信息" v-if="selectedTask.error">
-            <el-text type="danger">{{ selectedTask.error }}</el-text>
-          </el-descriptions-item>
-        </el-descriptions>
-        
-        <div class="task-config" style="margin-top: 20px">
-          <h4>配置信息</h4>
-          <el-tabs>
-            <el-tab-pane label="源配置" name="source">
-              <pre>{{ JSON.stringify(selectedTask.source, null, 2) }}</pre>
-            </el-tab-pane>
-            <el-tab-pane label="目标配置" name="target">
-              <pre>{{ JSON.stringify(selectedTask.target, null, 2) }}</pre>
-            </el-tab-pane>
-            <el-tab-pane label="同步选项" name="options">
-              <pre>{{ JSON.stringify(selectedTask.options, null, 2) }}</pre>
-            </el-tab-pane>
-          </el-tabs>
+      <div class="drawer-header">
+        <span>任务详情</span>
+        <div>
+          <el-button :icon="FullScreen" @click="isFullscreen = !isFullscreen" circle />
+          <el-button :icon="Close" @click="detailDialogVisible = false" circle />
         </div>
       </div>
-    </el-dialog>
-
+      <div class="task-detail-content">
+        <el-card shadow="never" header="基础信息" class="mb-16">
+          <el-descriptions :column="3" border>
+            <el-descriptions-item label="任务名称">{{ selectedTask.name }}</el-descriptions-item>
+            <el-descriptions-item label="类型">
+              <el-tag :type="getTaskTypeColor(selectedTask.type)">
+                {{ getTaskTypeText(selectedTask.type) }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="状态">
+              <el-tag :type="getStatusType(selectedTask.status)">
+                {{ getStatusText(selectedTask.status) }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="进度">
+              <el-progress :percentage="selectedTask.progress || 0" :status="getProgressStatus(selectedTask.status)" :stroke-width="6" />
+            </el-descriptions-item>
+            <el-descriptions-item label="优先级">
+              <el-tag :type="getPriorityType(selectedTask.priority)">
+                {{ getPriorityText(selectedTask.priority) }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="执行节点">
+              {{ selectedTask.node_id ? getNodeName(selectedTask.node_id) : '未分配' }}
+            </el-descriptions-item>
+            <el-descriptions-item label="创建时间">{{ formatDateTime(selectedTask.created_at) }}</el-descriptions-item>
+            <el-descriptions-item label="开始时间">{{ selectedTask.started_at ? formatDateTime(selectedTask.started_at) : '未开始' }}</el-descriptions-item>
+            <el-descriptions-item label="完成时间">{{ selectedTask.completed_at ? formatDateTime(selectedTask.completed_at) : '未完成' }}</el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+        <el-card shadow="never" header="源端信息" class="mb-16">
+          <template v-if="selectedTask.source_type === 'storage' && selectedTask.source_storage_config">
+            <el-descriptions :column="1" border>
+              <el-descriptions-item label="名称">{{ selectedTask.source_storage_config.name }}</el-descriptions-item>
+              <el-descriptions-item label="类型">{{ getStorageTypeText(selectedTask.source_storage_config.type) }}</el-descriptions-item>
+              <el-descriptions-item label="状态">
+                <el-tag :type="getStatusType(selectedTask.source_storage_config.status)">
+                  {{ getStatusText(selectedTask.source_storage_config.status) }}
+                </el-tag>
+              </el-descriptions-item>
+              <el-descriptions-item label="配置">
+                <pre v-if="selectedTask.source_storage_config.config">{{ JSON.stringify(selectedTask.source_storage_config.config, null, 2) }}</pre>
+                <span v-else>无</span>
+              </el-descriptions-item>
+            </el-descriptions>
+          </template>
+          <template v-else-if="selectedTask.source_type === 'client' && selectedTask.source_client_config">
+            <el-descriptions :column="1" border>
+              <el-descriptions-item label="名称">{{ selectedTask.source_client_config.name }}</el-descriptions-item>
+              <el-descriptions-item label="主机名">{{ selectedTask.source_client_config.hostname }}</el-descriptions-item>
+              <el-descriptions-item label="IP">{{ selectedTask.source_client_config.ip_address }}</el-descriptions-item>
+              <el-descriptions-item label="端口">{{ selectedTask.source_client_config.port }}</el-descriptions-item>
+              <el-descriptions-item label="用户名">{{ selectedTask.source_client_config.username }}</el-descriptions-item>
+              <el-descriptions-item label="认证方式">{{ selectedTask.source_client_config.auth_type }}</el-descriptions-item>
+              <el-descriptions-item label="状态">
+                <el-tag :type="getStatusType(selectedTask.source_client_config.status)">
+                  {{ getStatusText(selectedTask.source_client_config.status) }}
+                </el-tag>
+              </el-descriptions-item>
+            </el-descriptions>
+          </template>
+          <template v-else>
+            <div>无</div>
+          </template>
+        </el-card>
+        <el-card shadow="never" header="目标存储" class="mb-16">
+          <el-descriptions v-if="selectedTask.target_storage_config" :column="1" border>
+            <el-descriptions-item label="名称">{{ selectedTask.target_storage_config.name }}</el-descriptions-item>
+            <el-descriptions-item label="类型">{{ getStorageTypeText(selectedTask.target_storage_config.type) }}</el-descriptions-item>
+            <el-descriptions-item label="状态">
+              <el-tag :type="getStatusType(selectedTask.target_storage_config.status)">
+                {{ getStatusText(selectedTask.target_storage_config.status) }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="配置">
+              <pre v-if="selectedTask.target_storage_config.config">{{ JSON.stringify(selectedTask.target_storage_config.config, null, 2) }}</pre>
+              <span v-else>无</span>
+            </el-descriptions-item>
+          </el-descriptions>
+          <div v-else>无</div>
+        </el-card>
+        <el-card shadow="never" header="同步选项">
+          <el-descriptions v-if="selectedTask.options" :column="3" border>
+            <el-descriptions-item label="删除目标多余文件">
+              <el-tag :type="selectedTask.options.delete ? 'success' : 'info'">{{ selectedTask.options.delete ? '是' : '否' }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="启用压缩传输">
+              <el-tag :type="selectedTask.options.compress ? 'success' : 'info'">{{ selectedTask.options.compress ? '是' : '否' }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="校验文件完整性">
+              <el-tag :type="selectedTask.options.checksum ? 'success' : 'info'">{{ selectedTask.options.checksum ? '是' : '否' }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="带宽限制(MB/s)">{{ selectedTask.options.bandwidth_limit || 0 }}</el-descriptions-item>
+            <el-descriptions-item label="并发连接数">{{ selectedTask.options.max_connections || 1 }}</el-descriptions-item>
+          </el-descriptions>
+          <div v-else>无</div>
+        </el-card>
+      </div>
+    </el-drawer>
+    
     <!-- 任务日志对话框 -->
     <el-dialog
       title="任务日志"
@@ -549,23 +703,23 @@
           style="width: 100%"
         >
           <el-table-column prop="created_at" label="时间" width="180">
-            <template #default="{ row }">
+          <template #default="{ row }">
               {{ formatDateTime(row.created_at) }}
-            </template>
-          </el-table-column>
+          </template>
+        </el-table-column>
           <el-table-column prop="status" label="状态" width="100">
-            <template #default="{ row }">
+          <template #default="{ row }">
               <el-tag :type="getLogStatusType(row.status)" size="small">
                 {{ row.status }}
-              </el-tag>
-            </template>
-          </el-table-column>
+            </el-tag>
+          </template>
+        </el-table-column>
           <el-table-column prop="message" label="消息" show-overflow-tooltip>
-            <template #default="{ row }">
+          <template #default="{ row }">
               <span :class="getLogMessageClass(row.status)">{{ row.message }}</span>
-            </template>
-          </el-table-column>
-        </el-table>
+          </template>
+        </el-table-column>
+      </el-table>
       </div>
     </el-dialog>
   </div>
@@ -576,7 +730,8 @@ import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Search, Refresh, VideoPlay, VideoPause,
-  RefreshRight, More, InfoFilled
+  RefreshRight, More, InfoFilled, Close, FullScreen,
+  Edit, Document, Connection, CopyDocument, Delete
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 
@@ -589,6 +744,11 @@ const clients = ref([])
 const storages = ref([])
 const selectedTasks = ref([])
 const selectedTask = ref(null)
+const loadingTasks = ref(new Set()) // 用于跟踪正在执行操作的任务
+
+// 统计数据
+const taskStats = ref({})
+const OnlineNodeStats = ref(0)
 
 // 搜索和筛选
 const searchQuery = ref('')
@@ -598,6 +758,11 @@ const typeFilter = ref('')
 // 分页
 const currentPage = ref(1)
 const pageSize = ref(20)
+
+// 自动刷新
+const autoRefresh = ref(true)
+const refreshInterval = ref(null)
+const refreshCountdown = ref(30)
 const totalTasks = ref(0)
 
 // 对话框状态
@@ -605,10 +770,7 @@ const taskDialogVisible = ref(false)
 const detailDialogVisible = ref(false)
 const logsDialogVisible = ref(false)
 const dialogType = ref('create')
-
-// 自动刷新
-const autoRefresh = ref(false)
-const refreshInterval = ref(null)
+const isFullscreen = ref(false)
 
 // 日志
 const taskLogs = ref([])
@@ -710,6 +872,44 @@ const onlineNodes = computed(() => {
 })
 
 // API 方法
+// 获取统计数据
+const fetchStatistics = async () => {
+  try {
+    const response = await axios.get('/api/tasks/statistics')
+    taskStats.value = response.data.data
+    
+    // 获取在线节点数
+    const nodesResponse = await axios.get('/api/nodes')
+    OnlineNodeStats.value = nodesResponse.data.data.filter(node => node.status === 'online').length
+  } catch (error) {
+    console.error('获取统计数据失败:', error)
+  }
+}
+
+// 自动刷新功能
+const startAutoRefresh = () => {
+  if (refreshInterval.value) {
+    clearInterval(refreshInterval.value)
+  }
+  
+  refreshCountdown.value = 30
+  refreshInterval.value = setInterval(() => {
+    refreshCountdown.value--
+    
+    if (refreshCountdown.value <= 0) {
+      fetchTasks()
+      refreshCountdown.value = 30
+    }
+  }, 1000)
+}
+
+const stopAutoRefresh = () => {
+  if (refreshInterval.value) {
+    clearInterval(refreshInterval.value)
+    refreshInterval.value = null
+  }
+}
+
 const fetchTasks = async () => {
   loading.value = true
   try {
@@ -719,10 +919,11 @@ const fetchTasks = async () => {
         page_size: pageSize.value
       }
     })
-    if (response.data.status === 'success') {
+    if (response.data.status === 'success') { 
       tasks.value = response.data.data || []
       totalTasks.value = response.data.total || 0
     }
+    fetchStatistics()
   } catch (error) {
     ElMessage.error('获取任务列表失败')
   } finally {
@@ -808,53 +1009,10 @@ const showCreateDialog = () => {
   taskDialogVisible.value = true
 }
 
-const showEditDialog = (task) => {
-  dialogType.value = 'edit'
-  taskForm.value = {
-    ...task,
-    source_type: task.source_client_id ? 'client' : 'storage',
-    source_client_id: task.source_client_id || '',
-    source_storage_id: task.source_storage_id || '',
-    source_path: task.source_path || '',
-    target_storage_id: task.target_storage_id || '',
-    target_path: task.target_path || '',
-    options: task.options || {
-      delete: false,
-      compress: false,
-      checksum: true,
-      bandwidth_limit: 0,
-      max_connections: 1
-    }
-  }
-  taskDialogVisible.value = true
-}
-
-const showTaskDetail = (task) => {
-  selectedTask.value = task
-  detailDialogVisible.value = true
-}
-
-const showLogsDialog = (task) => {
+const handleViewLogs = (task) => {
   currentTaskId.value = task.id
   logsDialogVisible.value = true
   fetchTaskLogs()
-}
-
-const handleDropdownCommand = (command, task) => {
-  switch (command) {
-    case 'edit':
-      showEditDialog(task)
-      break
-    case 'logs':
-      showLogsDialog(task)
-      break
-    case 'detail':
-      showTaskDetail(task)
-      break
-    case 'delete':
-      handleDeleteTask(task)
-      break
-  }
 }
 
 const handleDialogClose = () => {
@@ -944,18 +1102,229 @@ const handleSubmitTask = async () => {
   }
 }
 
-const handleTaskAction = async (task) => {
+// 新增任务管理方法
+const handleStartTask = async (task) => {
+  if (loadingTasks.value.has(task.id)) return
+  
+  loadingTasks.value.add(task.id)
   try {
-    if (task.status === 'running') {
-      await axios.put(`/api/tasks/${task.id}/cancel`)
-      ElMessage.success('取消任务成功')
-    } else {
-      await axios.post(`/api/tasks/${task.id}/start`)
-      ElMessage.success('启动任务成功')
-    }
+    await axios.post(`/api/tasks/${task.id}/start`)
+    ElMessage.success('任务启动成功')
     fetchTasks()
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '操作失败')
+    ElMessage.error(error.response?.data?.message || '启动失败')
+  } finally {
+    loadingTasks.value.delete(task.id)
+  }
+}
+
+const handlePauseTask = async (task) => {
+  if (loadingTasks.value.has(task.id)) return
+  
+  loadingTasks.value.add(task.id)
+  try {
+    await axios.post(`/api/tasks/${task.id}/pause`)
+    ElMessage.success('任务暂停请求已发送')
+    fetchTasks()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '暂停失败')
+  } finally {
+    loadingTasks.value.delete(task.id)
+  }
+}
+
+const handleResumeTask = async (task) => {
+  if (loadingTasks.value.has(task.id)) return
+  
+  loadingTasks.value.add(task.id)
+  try {
+    await axios.post(`/api/tasks/${task.id}/resume`)
+    ElMessage.success('任务恢复请求已发送')
+    fetchTasks()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '恢复失败')
+  } finally {
+    loadingTasks.value.delete(task.id)
+  }
+}
+
+const handleCancelTask = async (task) => {
+  if (loadingTasks.value.has(task.id)) return
+  
+  try {
+    await ElMessageBox.confirm('确定要取消此任务吗？', '提示', {
+      type: 'warning'
+    })
+    
+    loadingTasks.value.add(task.id)
+    await axios.post(`/api/tasks/${task.id}/cancel`)
+    ElMessage.success('任务取消请求已发送')
+    fetchTasks()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '取消失败')
+    }
+  } finally {
+    loadingTasks.value.delete(task.id)
+  }
+}
+
+const handleDeleteTask = async (task) => {
+  try {
+    await ElMessageBox.confirm('确定要删除此任务吗？此操作不可恢复。', '危险操作', {
+      type: 'error',
+      confirmButtonText: '确定删除',
+      cancelButtonText: '取消'
+    })
+    
+    const force = ['running', 'assigned'].includes(task.status)
+    await axios.delete(`/api/tasks/${task.id}${force ? '?force=true' : ''}`)
+    ElMessage.success('删除任务成功')
+    fetchTasks()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || '删除失败')
+    }
+  }
+}
+
+const handleTestConnection = async (task) => {
+  try {
+    // 从任务中提取存储配置
+    const storageConfig = getStorageConfigFromTask(task)
+    console.log(task)
+    if (!storageConfig) {
+      ElMessage.error('无法获取存储配置信息')
+      return
+    }
+    
+    const response = await axios.post('/api/tasks/test-connection', {
+      storage_config: storageConfig
+    })
+    
+    ElMessage.success('连接测试任务已创建并启动')
+    fetchTasks()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '创建连接测试失败')
+  }
+}
+
+const handleTestMount = async (task) => {
+  try {
+    // 从任务中提取存储配置和挂载点
+    const storageConfig = getStorageConfigFromTask(task)
+    const mountPoint = task.target_path || '/tmp/test_mount'
+    
+    if (!storageConfig) {
+      ElMessage.error('无法获取存储配置信息')
+      return
+    }
+    
+    const response = await axios.post('/api/tasks/test-mount', {
+      mount_point: mountPoint,
+      storage_config: storageConfig
+    })
+    
+    ElMessage.success('挂载测试任务已创建并启动')
+    fetchTasks()
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '创建挂载测试失败')
+  }
+}
+
+const handleDuplicateTask = (task) => {
+  // 复制任务逻辑
+  const duplicatedTask = {
+    ...task,
+    id: undefined,
+    name: `${task.name} - 副本`,
+    status: 'pending',
+    created_at: undefined,
+    updated_at: undefined,
+    started_at: undefined,
+    completed_at: undefined
+  }
+  
+  // 设置表单数据并打开创建对话框
+  taskForm.value = duplicatedTask
+  dialogType.value = 'create'
+  taskDialogVisible.value = true
+}
+
+// 辅助方法
+const canTestConnection = (task) => {
+  if (task.status != 'cancelled' && task.status != 'cancel_requested' && task.status != 'failed') {
+    return task.source_type === 'storage' && task.source_storage_id
+  }
+  return false
+}
+
+const canTestMount = (task) => {
+  if (task.status != 'cancelled' && task.status != 'cancel_requested' && task.status != 'failed') {
+    return task.source_type === 'storage' && task.source_storage_id && !isS3Storage(task.source_storage)
+  }
+  return false
+}
+
+const getStorageConfigFromTask = (task) => {
+  // 根据任务类型获取存储配置
+  if (task.source_type === 'storage') {
+    return {
+      id: task.source_storage_id,
+      name: task.source_storage_name,
+      type: task.source_storage_type,
+      config: task.source_storage_config
+    }
+  }
+
+  if (task.source_storage) {
+    return {
+      id: task.source_storage.id,
+      name: task.source_storage.name,
+      type: task.source_storage.type,
+      config: task.source_storage.config
+    }
+  }
+  return null
+}
+
+const handleDropdownCommand = (command, task) => {
+  switch (command) {
+    case 'logs':
+      handleViewLogs(task)
+      break
+    case 'detail':
+      handleViewDetail(task)
+      break
+    case 'test-connection':
+      handleTestConnection(task)
+      break
+    case 'test-mount':
+      handleTestMount(task)
+      break
+    case 'duplicate':
+      handleDuplicateTask(task)
+      break
+    case 'delete':
+      handleDeleteTask(task)
+      break
+    default:
+      console.warn('Unknown command:', command)
+  }
+}
+
+const handleViewDetail = async (task) => {
+  try {
+    const response = await axios.get(`/api/tasks/${task.id}`)
+    if (response.data.status === 'success') {
+      selectedTask.value = response.data.data
+    } else {
+      ElMessage.error(response.data.message || '获取任务详情失败')
+      return
+    }
+    detailDialogVisible.value = true
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '获取任务详情失败')
   }
 }
 
@@ -966,22 +1335,6 @@ const handleRetryTask = async (task) => {
     fetchTasks()
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '重试失败')
-  }
-}
-
-const handleDeleteTask = async (task) => {
-  try {
-    await ElMessageBox.confirm('确定要删除此任务吗？', '提示', {
-      type: 'warning'
-    })
-    
-    await axios.delete(`/api/tasks/${task.id}`)
-    ElMessage.success('删除任务成功')
-    fetchTasks()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '删除失败')
-    }
   }
 }
 
@@ -1053,41 +1406,31 @@ const toggleAutoRefresh = () => {
   }
 }
 
-const startAutoRefresh = () => {
-  if (refreshInterval.value) {
-    clearInterval(refreshInterval.value)
-  }
-  refreshInterval.value = setInterval(fetchTasks, 5000)
-}
-
-const stopAutoRefresh = () => {
-  if (refreshInterval.value) {
-    clearInterval(refreshInterval.value)
-    refreshInterval.value = null
-  }
-}
-
 // 工具函数
 const getStatusType = (status) => {
   const types = {
+    active: 'success',
     pending: 'info',
     assigned: 'warning',
     running: 'success',
     completed: 'success',
     failed: 'danger',
-    cancelled: 'info'
+    cancelled: 'info',
+    cancel_requested: 'info'
   }
   return types[status] || 'info'
 }
 
 const getStatusText = (status) => {
   const texts = {
+    active: '活跃',
     pending: '等待中',
     assigned: '已分配',
     running: '运行中',
     completed: '已完成',
     failed: '失败',
-    cancelled: '已取消'
+    cancelled: '已取消',
+    cancel_requested: '取消中'
   }
   return texts[status] || status
 }
@@ -1248,6 +1591,7 @@ onMounted(() => {
   fetchNodes()
   fetchClients()
   fetchStorages()
+  fetchStatistics()
   if (autoRefresh.value) {
     startAutoRefresh()
   }
@@ -1286,6 +1630,61 @@ onUnmounted(() => {
   margin: 0;
   color: #909399;
   font-size: 14px;
+}
+
+/* 统计卡片样式 */
+.stat-card {
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.stat-card.running {
+  background: linear-gradient(135deg, #67c23a, #85ce61);
+  color: white;
+}
+
+.stat-card.pending {
+  background: linear-gradient(135deg, #e6a23c, #f0a020);
+  color: white;
+}
+
+.stat-card.completed {
+  background: linear-gradient(135deg, #409eff, #66b1ff);
+  color: white;
+}
+
+.stat-card.failed {
+  background: linear-gradient(135deg, #f56c6c, #f89898);
+  color: white;
+}
+
+.stat-content {
+  text-align: center;
+  padding: 10px 0;
+}
+
+.stat-number {
+  font-size: 36px;
+  font-weight: bold;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.stat-label {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.refresh-timer {
+  color: #909399;
+  font-size: 12px;
+  margin-left: 8px;
 }
 
 .toolbar {
@@ -1412,6 +1811,65 @@ onUnmounted(() => {
   color: #e6a23c;
 }
 
+.task-detail-drawer :deep(.el-drawer__header) {
+  padding: 15px 20px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.task-detail-drawer :deep(.el-drawer__body) {
+  padding: 0;
+  overflow-y: auto;
+  max-height: calc(100vh - 200px); /* Adjust for header and footer */
+}
+
+.task-detail-drawer :deep(.el-drawer__footer) {
+  padding: 15px 20px;
+  background: #f5f5f5;
+  border-top: 1px solid #ebeef5;
+}
+
+.task-detail-content {
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 20px 10px 10px 10px;
+}
+
+.config-section {
+  margin-top: 20px;
+  min-height: 320px;
+}
+
+.config-row {
+  min-height: 320px;
+}
+
+.config-section .el-card {
+  margin-bottom: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ellipsis {
+  display: inline-block;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
+}
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px 10px 24px;
+  font-size: 20px;
+  font-weight: 500;
+  border-bottom: 1px solid #ebeef5;
+  background: #f5f5f5;
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
   .page-header {
@@ -1432,4 +1890,7 @@ onUnmounted(() => {
     margin-top: 15px;
   }
 }
-</style>
+.mb-16 {
+  margin-bottom: 16px;
+}
+</style> 

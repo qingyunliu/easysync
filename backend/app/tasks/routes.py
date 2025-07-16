@@ -223,38 +223,6 @@ def assign_task(task_id):
             'message': str(e)
         }), 400
 
-@tasks_bp.route('/<string:task_id>/run', methods=['POST'])
-@jwt_required()
-def run_task(task_id):
-    """立即运行任务"""
-    user_id = get_jwt_identity()
-    task = Task.query.filter_by(id=task_id, user_id=user_id).first_or_404()
-    
-    # 创建临时调度
-    schedule = TaskSchedule(
-        task_id=task.id,
-        schedule_type='once',
-        schedule_time=datetime.utcnow().isoformat()
-    )
-    
-    # 运行任务
-    scheduler.add_task(task, schedule)
-    
-    return jsonify({
-        'id': task.id,
-        'status': 'running'
-    })
-
-@tasks_bp.route('/<string:task_id>/status', methods=['GET'])
-@jwt_required()
-def get_task_status(task_id):
-    """获取任务运行状态"""
-    user_id = get_jwt_identity()
-    task = Task.query.filter_by(id=task_id, user_id=user_id).first_or_404()
-    
-    status = scheduler.get_task_status(task.id)
-    return jsonify(status)
-
 @tasks_bp.route('/logs', methods=['GET'])
 @jwt_required()
 def get_all_task_logs():
@@ -267,36 +235,6 @@ def get_all_task_logs():
         'logs': [log.to_dict() for log in logs]
     })
 
-@tasks_bp.route('/<string:task_id>/schedule', methods=['POST'])
-@jwt_required()
-def schedule_task(task_id):
-    """调度任务"""
-    current_user_id = get_jwt_identity()
-    task = Task.query.get_or_404(task_id)
-    if task.user_id != current_user_id:
-        return jsonify({'error': '任务不属于当前用户'}), 403
-    scheduler_service = SchedulerService()
-    scheduler_service.schedule_task(task_id, request.json)
-    return jsonify({
-        'status': 'success',
-        'message': '任务已调度'
-    })
-
-@tasks_bp.route('/<string:task_id>/unschedule', methods=['POST'])
-@jwt_required()
-def unschedule_task(task_id):
-    """取消任务调度"""
-    current_user_id = get_jwt_identity()
-    task = Task.query.get_or_404(task_id)
-    if task.user_id != current_user_id:
-        return jsonify({'error': '任务不属于当前用户'}), 403
-    scheduler_service = SchedulerService()
-    scheduler_service.unschedule_task(task_id)
-    return jsonify({
-        'status': 'success',
-        'message': '任务调度已取消'
-    })
-
 @tasks_bp.route('/<string:task_id>/start', methods=['POST'])
 @jwt_required()
 def start_task(task_id):
@@ -305,8 +243,7 @@ def start_task(task_id):
     task = Task.query.get_or_404(task_id)
     if task.user_id != current_user_id:
         return jsonify({'error': '任务不属于当前用户'}), 403
-    scheduler_service = SchedulerService()
-    if scheduler_service.start_task(task_id):
+    if task_service.start_task(task_id):
         return jsonify({
             'status': 'success',
             'message': '任务已启动'
@@ -314,25 +251,6 @@ def start_task(task_id):
     return jsonify({
         'status': 'error',
         'message': '任务启动失败'
-    }), 500
-
-@tasks_bp.route('/<string:task_id>/stop', methods=['POST'])
-@jwt_required()
-def stop_task(task_id):
-    """停止任务"""
-    current_user_id = get_jwt_identity()
-    task = Task.query.get_or_404(task_id)
-    if task.user_id != current_user_id:
-        return jsonify({'error': '任务不属于当前用户'}), 403
-    scheduler_service = SchedulerService()
-    if scheduler_service.stop_task(task_id):
-        return jsonify({
-            'status': 'success',
-            'message': '任务已停止'
-        })
-    return jsonify({
-        'status': 'error',
-        'message': '任务停止失败'
     }), 500
 
 @tasks_bp.route('/<string:task_id>/logs', methods=['GET'])
@@ -498,6 +416,140 @@ def add_task_error_log(task_id):
         return jsonify({
             'status': 'error',
             'message': f'添加错误日志失败: {str(e)}'
+        }), 500
+
+@tasks_bp.route('/<string:task_id>/pause', methods=['POST'])
+@jwt_required()
+def pause_task(task_id):
+    """暂停任务"""
+    try:
+        task = task_service.pause_task(task_id)
+        return jsonify({
+            'status': 'success',
+            'message': f'Task {task_id} pause requested',
+            'data': task.to_dict()
+        })
+    except Exception as e:
+        logger.error(f"Error pausing task {task_id}: {e}")
+        raise e
+
+@tasks_bp.route('/<string:task_id>/resume', methods=['POST'])
+@jwt_required()
+def resume_task(task_id):
+    """恢复任务"""
+    try:
+        task = task_service.resume_task(task_id)
+        return jsonify({
+            'status': 'success',
+            'message': f'Task {task_id} resume requested',
+            'data': task.to_dict()
+        })
+    except Exception as e:
+        logger.error(f"Error resuming task {task_id}: {e}")
+        raise e
+
+@tasks_bp.route('/<string:task_id>', methods=['DELETE'])
+@jwt_required()
+def delete_task(task_id):
+    """删除任务"""
+    try:
+        force = request.args.get('force', 'false').lower() == 'true'
+        success = task_service.delete_task(task_id, force=force)
+        
+        if success:
+            return jsonify({
+                'status': 'success',
+                'message': f'Task {task_id} deleted successfully'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': f'Failed to delete task {task_id}'
+            }), 500
+    except Exception as e:
+        logger.error(f"Error deleting task {task_id}: {e}")
+        raise e
+
+@tasks_bp.route('/test-connection', methods=['POST'])
+@jwt_required()
+def test_storage_connection():
+    """测试存储连接"""
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        storage_config = data.get('storage_config')
+        if not storage_config:
+            raise TaskValidationError("Missing storage_config")
+        
+        # 创建连接测试任务
+        task = task_service.create_connection_test_task(storage_config, user_id)
+        
+        # 自动启动任务
+        started_task = task_service.start_task(task.id)
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Connection test task created and started',
+            'data': started_task.to_dict_with_storage_config()
+        })
+    except Exception as e:
+        logger.error(f"Error creating connection test: {e}")
+        raise e
+
+@tasks_bp.route('/test-mount', methods=['POST'])
+@jwt_required()
+def test_mount():
+    """测试挂载"""
+    try:
+        user_id = get_jwt_identity()
+        data = request.get_json()
+        
+        mount_point = data.get('mount_point')
+        storage_config = data.get('storage_config')
+        
+        if not mount_point:
+            raise TaskValidationError("Missing mount_point")
+        if not storage_config:
+            raise TaskValidationError("Missing storage_config")
+        
+        # 创建挂载测试任务
+        task = task_service.create_mount_test_task(mount_point, storage_config, user_id)
+        
+        # 自动启动任务
+        started_task = task_service.start_task(task.id)
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Mount test task created and started',
+            'data': started_task.to_dict_with_storage_config()
+        })
+    except Exception as e:
+        logger.error(f"Error creating mount test: {e}")
+        raise e
+
+@tasks_bp.route('/statistics', methods=['GET'])
+@jwt_required()
+def get_task_statistics():
+    """获取任务统计信息"""
+    try:
+        user_id = get_jwt_identity()
+        include_all = request.args.get('include_all', 'false').lower() == 'true'
+        
+        # 如果是管理员用户，可以查看所有统计
+        stats_user_id = None if include_all else user_id
+        
+        stats = task_service.get_task_statistics(stats_user_id)
+        
+        return jsonify({
+            'status': 'success',
+            'data': stats
+        })
+    except Exception as e:
+        logger.error(f"Error getting task statistics: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
         }), 500
 
 @tasks_bp.route('/batch', methods=['POST'])

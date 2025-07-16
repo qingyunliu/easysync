@@ -204,6 +204,281 @@ class TaskService:
         logger.info(f"Task retried: {task_id}, retry count: {task.retry_count}")
         return task
         
+    def start_task(self, task_id: str, node_id: str = None) -> Task:
+        """启动任务
+        
+        Args:
+            task_id: 任务ID
+            node_id: 节点ID（可选，如果不指定则自动分配）
+            
+        Returns:
+            Task: 任务对象
+            
+        Raises:
+            TaskNotFoundError: 任务不存在
+            TaskOperationError: 操作失败
+        """
+        task = self.get_task(task_id)
+        
+        if task.status not in ['pending', 'failed']:
+            raise TaskOperationError(f"Task cannot be started: {task_id}, current status: {task.status}")
+        
+        # 如果指定了节点，分配给该节点
+        if node_id:
+            # 检查节点是否在线
+            node = Node.query.get(node_id)
+            if not node or node.status != 'online':
+                raise TaskOperationError(f"Node is not available: {node_id}")
+                
+            task.node_id = node_id
+        elif not task.node_id:
+            # 自动分配节点
+            available_node = self._find_available_node()
+            if not available_node:
+                raise TaskOperationError("No available nodes to execute the task")
+            task.node_id = available_node.id
+        
+        # 更新任务状态
+        task.status = 'assigned'
+        task.updated_at = datetime.utcnow()
+        task.started_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # 记录启动日志
+        self._add_task_log(task.id, 'assigned', f"Task '{task.name}' assigned to node {task.node_id}", {
+            'node_id': task.node_id,
+            'started_at': task.started_at.isoformat()
+        })
+        
+        logger.info(f"Task started: {task_id}, assigned to node: {task.node_id}")
+        return task
+    
+    def pause_task(self, task_id: str) -> Task:
+        """暂停任务
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            Task: 任务对象
+            
+        Raises:
+            TaskNotFoundError: 任务不存在
+            TaskOperationError: 操作失败
+        """
+        task = self.get_task(task_id)
+        
+        if task.status != 'running':
+            raise TaskOperationError(f"Task cannot be paused: {task_id}, current status: {task.status}")
+        
+        # 更新任务状态为暂停请求
+        task.status = 'pause_requested'
+        task.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # 记录暂停日志
+        self._add_task_log(task.id, 'pause_requested', f"Task '{task.name}' pause requested", {
+            'pause_requested_at': task.updated_at.isoformat()
+        })
+        
+        logger.info(f"Task pause requested: {task_id}")
+        return task
+    
+    def resume_task(self, task_id: str) -> Task:
+        """恢复任务
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            Task: 任务对象
+            
+        Raises:
+            TaskNotFoundError: 任务不存在
+            TaskOperationError: 操作失败
+        """
+        task = self.get_task(task_id)
+        
+        if task.status != 'paused':
+            raise TaskOperationError(f"Task cannot be resumed: {task_id}, current status: {task.status}")
+        
+        # 更新任务状态为恢复请求
+        task.status = 'resume_requested'
+        task.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # 记录恢复日志
+        self._add_task_log(task.id, 'resume_requested', f"Task '{task.name}' resume requested", {
+            'resume_requested_at': task.updated_at.isoformat()
+        })
+        
+        logger.info(f"Task resume requested: {task_id}")
+        return task
+    
+    def delete_task(self, task_id: str, force: bool = False) -> bool:
+        """删除任务
+        
+        Args:
+            task_id: 任务ID
+            force: 是否强制删除（删除运行中的任务）
+            
+        Returns:
+            bool: 是否成功删除
+            
+        Raises:
+            TaskNotFoundError: 任务不存在
+            TaskOperationError: 操作失败
+        """
+        task = self.get_task(task_id)
+        
+        if not force and task.status in ['running', 'assigned']:
+            raise TaskOperationError(f"Cannot delete running task: {task_id}. Use force=True to force delete.")
+        
+        # 如果任务正在运行，先取消
+        if task.status in ['running', 'assigned']:
+            task.status = 'cancel_requested'
+            db.session.commit()
+            
+            # 记录取消日志
+            self._add_task_log(task.id, 'cancel_requested', f"Task '{task.name}' cancel requested before deletion", {
+                'cancel_requested_at': datetime.utcnow().isoformat(),
+                'reason': 'Task deletion'
+            })
+        
+        # 删除相关日志
+        TaskLog.query.filter_by(task_id=task_id).delete()
+        
+        # 删除任务
+        db.session.delete(task)
+        db.session.commit()
+        
+        logger.info(f"Task deleted: {task_id}")
+        return True
+    
+    def create_connection_test_task(self, storage_config: Dict[str, Any], user_id: int) -> Task:
+        """创建连接测试任务
+        
+        Args:
+            storage_config: 存储配置
+            user_id: 用户ID
+            
+        Returns:
+            Task: 任务对象
+        """
+        task_data = {
+            'name': f"连接测试 - {storage_config.get('name', 'Unknown')}",
+            'description': f"测试存储连接: {storage_config.get('type', 'Unknown')}",
+            'type': 'test-connection',
+            'priority': 1,  # 高优先级
+            'user_id': user_id,
+            'source_type': 'storage',
+            'options': {
+                'storage_config': storage_config,
+                'test_type': 'connection'
+            }
+        }
+        
+        task = self.create_task(task_data)
+        logger.info(f"Connection test task created: {task.id}")
+        return task
+    
+    def create_mount_test_task(self, mount_point: str, storage_config: Dict[str, Any], user_id: int) -> Task:
+        """创建挂载测试任务
+        
+        Args:
+            mount_point: 挂载点
+            storage_config: 存储配置
+            user_id: 用户ID
+            
+        Returns:
+            Task: 任务对象
+        """
+        task_data = {
+            'name': f"挂载测试 - {mount_point}",
+            'description': f"测试挂载点: {mount_point}",
+            'type': 'mount-check',
+            'priority': 1,  # 高优先级
+            'user_id': user_id,
+            'source_type': 'storage',
+            'options': {
+                'mount_point': mount_point,
+                'storage_config': storage_config,
+                'test_type': 'mount'
+            }
+        }
+        
+        task = self.create_task(task_data)
+        logger.info(f"Mount test task created: {task.id}")
+        return task
+    
+    def get_task_statistics(self, user_id: int = None) -> Dict[str, Any]:
+        """获取任务统计信息
+        
+        Args:
+            user_id: 用户ID（可选，如果不指定则获取全部）
+            
+        Returns:
+            Dict[str, Any]: 统计信息
+        """
+        query = Task.query
+        if user_id:
+            query = query.filter_by(user_id=user_id)
+        
+        tasks = query.all()
+        
+        stats = {
+            'total': len(tasks),
+            'pending': len([t for t in tasks if t.status == 'pending']),
+            'assigned': len([t for t in tasks if t.status == 'assigned']),
+            'running': len([t for t in tasks if t.status == 'running']),
+            'completed': len([t for t in tasks if t.status == 'completed']),
+            'failed': len([t for t in tasks if t.status == 'failed']),
+            'cancelled': len([t for t in tasks if t.status == 'cancelled']),
+            'paused': len([t for t in tasks if t.status == 'paused']),
+            'by_type': {},
+            'by_priority': {}
+        }
+        
+        # 按类型统计
+        for task in tasks:
+            task_type = task.type or 'unknown'
+            stats['by_type'][task_type] = stats['by_type'].get(task_type, 0) + 1
+        
+        # 按优先级统计
+        for task in tasks:
+            priority = task.priority or 0
+            stats['by_priority'][priority] = stats['by_priority'].get(priority, 0) + 1
+        
+        return stats
+    
+    def _find_available_node(self) -> Optional[Node]:
+        """查找可用节点
+        
+        Returns:
+            Optional[Node]: 可用节点
+        """
+        # 查找在线且负载不高的节点
+        available_nodes = Node.query.filter_by(status='online').all()
+        
+        if not available_nodes:
+            return None
+        
+        # 简单的负载均衡：选择任务数最少的节点
+        node_task_counts = {}
+        for node in available_nodes:
+            running_tasks = Task.query.filter_by(
+                node_id=node.id, 
+                status='running'
+            ).count()
+            node_task_counts[node.id] = running_tasks
+        
+        # 选择任务数最少的节点
+        best_node_id = min(node_task_counts, key=node_task_counts.get)
+        return Node.query.get(best_node_id)
+
     def cancel_task(self, task_id: str) -> Task:
         """取消任务
         
@@ -220,22 +495,37 @@ class TaskService:
         task = self.get_task(task_id)
         
         if task.status in ['completed', 'failed', 'cancelled']:
-            raise TaskOperationError(f"Task cannot be cancelled: {task_id}")
+            raise TaskOperationError(f"Task cannot be cancelled: {task_id}, current status: {task.status}")
+        
+        # 如果任务正在运行，设置为取消请求状态，让agent处理
+        if task.status in ['running', 'assigned']:
+            task.status = 'cancel_requested'
+            task.updated_at = datetime.utcnow()
             
-        # 取消任务
-        task.status = 'cancelled'
-        task.updated_at = datetime.utcnow()
-        task.completed_at = datetime.utcnow()
+            # 记录取消请求日志
+            self._add_task_log(task.id, 'cancel_requested', f"Task '{task.name}' cancel requested", {
+                'cancel_requested_at': task.updated_at.isoformat(),
+                'reason': 'User requested cancellation'
+            })
+            
+            db.session.commit()
+            logger.info(f"Task cancel requested: {task_id}")
+            
+        else:
+            # 对于未启动的任务，直接取消
+            task.status = 'cancelled'
+            task.updated_at = datetime.utcnow()
+            task.completed_at = datetime.utcnow()
+            
+            # 记录取消日志
+            self._add_task_log(task.id, 'cancelled', f"Task '{task.name}' was cancelled", {
+                'cancelled_at': task.completed_at.isoformat(),
+                'reason': 'User cancelled'
+            })
+            
+            db.session.commit()
+            logger.info(f"Task cancelled: {task_id}")
         
-        db.session.commit()
-        
-        # 记录取消日志
-        self._add_task_log(task.id, 'cancelled', f"Task '{task.name}' was cancelled", {
-            'cancelled_at': task.completed_at.isoformat(),
-            'reason': 'User cancelled'
-        })
-        
-        logger.info(f"Task cancelled: {task_id}")
         return task
         
     def _validate_task_data(self, data: Dict[str, Any]) -> None:

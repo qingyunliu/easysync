@@ -1382,8 +1382,8 @@ const getClientInfo = async (row) => {
     row.fetching = true
     const response = await axios.post(`/api/clients/${row.id}/status`)
     if (response.data.status === 'success') {
-      ElMessage.success('获取信息成功')
-      fetchClients()  // 刷新列表以更新信息
+    ElMessage.success('获取信息成功')
+    fetchClients()  // 刷新列表以更新信息
     }
   } catch (error) {
     ElMessage.error('获取信息失败')
@@ -2098,7 +2098,7 @@ const refreshProcessList = async () => {
   try {
     const response = await axios.get(`/api/clients/${currentClient.value.id}/processes`)
     if (response.data.status === 'success') {
-      clientDetail.value.process_list = response.data.data
+    clientDetail.value.process_list = response.data.data
     }
   } catch (error) {
     ElMessage.error('获取进程列表失败')

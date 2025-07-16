@@ -254,23 +254,23 @@
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                        <el-dropdown-item :command="{ action: 'edit', row }">
-                          <el-icon><Edit /></el-icon>编辑
-                        </el-dropdown-item>
-                        <el-dropdown-item :command="{ action: 'test', row }">
-                      <el-icon><Connection /></el-icon>测试连接
+                  <el-dropdown-item :command="{ action: 'edit', row }" :disabled="row.status==='offline'">
+                    <el-icon><Edit /></el-icon>编辑
                   </el-dropdown-item>
-                        <el-dropdown-item :command="{ action: 'install', row }" :disabled="row.agent_status==='running'">
-                      <el-icon><Download /></el-icon>安装Agent
+                  <el-dropdown-item :command="{ action: 'test', row }" :disabled="row.status==='offline'">
+                    <el-icon><Connection /></el-icon>测试连接
                   </el-dropdown-item>
-                        <el-dropdown-item :command="{ action: 'uninstall', row }" :disabled="row.agent_status!=='running'">
-                      <el-icon><Remove /></el-icon>卸载Agent
+                    <el-dropdown-item :command="{ action: 'install', row }" :disabled="row.status==='offline'">
+                    <el-icon><Download /></el-icon>安装Agent
                   </el-dropdown-item>
-                        <el-dropdown-item :command="{ action: 'info', row }">
-                      <el-icon><InfoFilled /></el-icon>获取信息
-                        </el-dropdown-item>
-                        <el-dropdown-item divided :command="{ action: 'delete', row }">
-                          <el-icon><Delete /></el-icon>删除
+                    <el-dropdown-item :command="{ action: 'uninstall', row }" :disabled="row.status==='offline'">
+                    <el-icon><Remove /></el-icon>卸载Agent
+                  </el-dropdown-item>
+                  <el-dropdown-item :command="{ action: 'info', row }" :disabled="row.status==='offline'">
+                    <el-icon><InfoFilled /></el-icon>获取信息
+                  </el-dropdown-item>
+                  <el-dropdown-item divided :command="{ action: 'delete', row }" :disabled="row.status==='offline'">
+                    <el-icon><Delete /></el-icon>删除
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
