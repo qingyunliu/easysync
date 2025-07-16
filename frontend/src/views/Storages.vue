@@ -1,30 +1,35 @@
 <template>
   <div class="storages-container">
     <div class="header">
-      <h2>存储管理</h2>
-      <div class="header-actions">
-        <el-input
-          v-model="searchQuery"
-          placeholder="搜索存储"
-          clearable
-          class="search-input"
-        >
-          <template #prefix>
-            <Icon icon="mdi:magnify" />
-          </template>
-        </el-input>
-        <el-dropdown @command="handleAddStorage" trigger="click">
-          <el-button type="primary">
-            <Icon icon="mdi:plus" />&nbsp;添加存储
-            <Icon icon="mdi:chevron-down" class="el-icon--right" />
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="nas">添加 NAS 存储</el-dropdown-item>
-              <el-dropdown-item command="s3">添加 OBS 存储</el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+      <div class="header-left">
+        <h2>存储管理</h2>
+        <p class="page-description">管理和监控存储的创建、配置和使用</p>
+      </div>
+      <div class="header-right">
+        <div class="header-actions">
+          <el-input
+            v-model="searchQuery"
+            placeholder="搜索存储"
+            clearable
+            class="search-input"
+          >
+            <template #prefix>
+              <Icon icon="mdi:magnify" />
+            </template>
+          </el-input>
+          <el-dropdown @command="handleAddStorage" trigger="click">
+            <el-button type="primary">
+              <Icon icon="mdi:plus" />&nbsp;添加存储
+              <Icon icon="mdi:chevron-down" class="el-icon--right" />
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="nas">添加 NAS 存储</el-dropdown-item>
+                <el-dropdown-item command="s3">添加 OBS 存储</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
       </div>
     </div>
     
@@ -1608,7 +1613,11 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-actions {
@@ -1622,7 +1631,11 @@ onUnmounted(() => {
 }
 
 .storage-sections {
-  border: none;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .section-header {
@@ -1631,6 +1644,18 @@ onUnmounted(() => {
   gap: 8px;
   font-size: 16px;
   font-weight: 500;
+}
+
+.header-left h1 {
+  margin: 0 0 5px 0;
+  color: #303133;
+  font-size: 24px;
+}
+
+.page-description {
+  margin: 0;
+  color: #909399;
+  font-size: 14px;
 }
 
 .count-tag {
@@ -1680,6 +1705,10 @@ onUnmounted(() => {
   .header-actions {
     flex-direction: column;
     width: 100%;
+  }
+
+  .header-right {
+    margin-top: 15px;
   }
 
   .search-input {

@@ -163,7 +163,6 @@ const handleAvatarError = () => {
 .home-container {
   display: flex;
   height: 100vh;
-  background: linear-gradient(135deg, #f0f2f5 0%, #e6e9f0 100%);
   color: #2c3e50;
 }
 
@@ -264,7 +263,6 @@ const handleAvatarError = () => {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
-  background: #f0f2f5;
 }
 
 :deep(.el-dropdown-menu) {

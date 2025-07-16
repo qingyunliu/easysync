@@ -2173,7 +2173,6 @@ onMounted(() => {
 <style scoped>
 .nodes-page {
   padding: 20px;
-  background-color: #f5f7fa;
   min-height: 100vh;
 }
 
