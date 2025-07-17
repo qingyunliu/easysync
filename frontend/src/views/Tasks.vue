@@ -206,10 +206,10 @@
               <el-icon style="vertical-align: middle; margin-right: 4px;">
                 <component :is="getStatusIcon(row.status)" />
               </el-icon>
-              {{ getStatusText(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
+            {{ getStatusText(row.status) }}
+          </el-tag>
+        </template>
+      </el-table-column>
 
         <el-table-column prop="progress" label="进度" width="120">
         <template #default="{ row }">
@@ -553,7 +553,7 @@
                     placeholder="0表示无限制"
                     style="width: 100%"
                   />
-                </el-form-item>
+        </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item label="并发连接数" style="margin-bottom: 0">
@@ -1142,7 +1142,7 @@ const handleStartTask = async (task) => {
   
   loadingTasks.value.add(task.id)
   try {
-    await axios.post(`/api/tasks/${task.id}/start`)
+      await axios.post(`/api/tasks/${task.id}/start`)
     ElMessage.success('任务启动成功')
     fetchTasks()
   } catch (error) {

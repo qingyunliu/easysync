@@ -3,9 +3,9 @@
     <div class="sidebar" :class="{ collapsed: isCollapsed }">
       <div class="logo">
         <img v-if="isCollapsed" src="/src/assets/logo/easysync-small-logo.svg">
-        <img v-else src="/src/assets/logo/easysync-master-logo.svg" style="margin-left:-10px;">
+        <img v-else src="/src/assets/logo/easysync-master-logo.svg" style="margin-left:-10px;width:165px;">
       </div>
-      <div class="collapse-btn" @click="isCollapsed = !isCollapsed">
+      <div class="collapse-btn" @click="toggleSidebar">
         <el-icon>
           <component :is="isCollapsed ? Expand : Fold" />
         </el-icon>
@@ -132,7 +132,7 @@ import {
 import axios from 'axios'
 import defaultAvatar from '@/assets/avatar/default-avatar.jpeg'
 
-const isCollapsed = ref(false)
+const isCollapsed = ref(localStorage.getItem('isCollapsedSideBar') === 'true')
 
 const router = useRouter()
 const user = ref(null)
@@ -152,6 +152,11 @@ onMounted(() => {
     router.push('/login')
   }
 })
+
+function toggleSidebar() {
+  isCollapsed.value = !isCollapsed.value
+  localStorage.setItem('isCollapsedSideBar', isCollapsed.value)
+}
 
 const username = computed(() => {
   return user.value ? user.value.username : '用户'
@@ -195,15 +200,13 @@ const handleAvatarError = () => {
 }
 
 .sidebar {
-  width: 240px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(10px);
-  border-right: 1px solid rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
-  transition: width 0.2s cubic-bezier(.4,0,.2,1);
+  width: 200px;
+  background: linear-gradient(135deg, #fafdff 0%, #fff 100%);
+  border-right: 1px solid #e6ecf3;
+  box-shadow: 2px 0 16px 0 rgba(24, 144, 255, 0.06);
+  transition: width 0.3s cubic-bezier(.4,0,.2,1), background 0.3s;
   position: relative;
+  backdrop-filter: blur(8px);
 }
 .sidebar.collapsed {
   width: 60px;
@@ -211,12 +214,13 @@ const handleAvatarError = () => {
 .logo {
   padding: 10px;
   text-align: center;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-bottom: 1px solid #e6ecf3;
   height: 60px;
   transition: height 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: transparent;
 }
 
 .collapse-btn {
@@ -226,25 +230,33 @@ const handleAvatarError = () => {
   justify-content: center;
   cursor: pointer;
   transition: background 0.2s;
+  margin-bottom: 2px;
 }
 .collapse-btn:hover {
-  background: rgba(24, 144, 255, 0.08);
+  background: linear-gradient(90deg, #e6f7ff 0%, #f0faff 100%);
 }
 .el-menu {
+  background: transparent;
   border-right: none;
-  padding: 20px 0;
-  transition: padding 0.2s;
+  padding: 18px 0;
 }
 .sidebar.collapsed .el-menu {
   padding: 8px 0;
 }
 .el-menu-item {
-  height: 50px;
-  line-height: 50px;
-  margin: 4px 0;
-  border-radius: 8px;
-  transition: all 0.3s ease;
-  color: #2c3e50;
+  height: 48px;
+  line-height: 48px;
+  margin: 8px 0;
+  border-radius: 16px;
+  color: #606266;
+  font-size: 15px;
+  transition: background 0.25s, color 0.25s, box-shadow 0.25s, border 0.25s;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: none;
+  border: 2px solid transparent;
+  position: relative;
 }
 .el-menu-item span {
   transition: opacity 0.2s;
@@ -255,11 +267,43 @@ const handleAvatarError = () => {
   display: inline-block;
 }
 .el-menu-item:hover {
-  background: rgba(24, 144, 255, 0.1) !important;
+  background: linear-gradient(90deg, #eef3f5 0%, #f0faff 100%);
+  color: #1890ff;
+  box-shadow: 0 2px 8px 0 rgba(24, 144, 255, 0.10);
+  border: 1px solid #b2e2ff;
 }
 .el-menu-item.is-active {
-  background: linear-gradient(135deg, rgba(24, 144, 255, 0.1) 0%, rgba(54, 207, 201, 0.1) 100%) !important;
+  background: linear-gradient(90deg, #eef3f5 0%, #f7f9fc 100%);
   color: #1890ff !important;
+  font-weight: 600;
+  box-shadow: 0 2px 12px 0 rgba(24, 144, 255, 0.10);
+  border: 1px solid #91caff;
+}
+
+.el-menu-item .el-icon {
+  font-size: 22px;
+  color: #7ab8ff;
+  transition: color 0.25s, transform 0.25s;
+}
+
+.el-menu-item.is-active .el-icon,
+.el-menu-item:hover .el-icon {
+  color: #1890ff;
+  transform: scale(1.18);
+  text-shadow: 0 0 8px #b2e2ff;
+}
+
+.sidebar.collapsed .el-menu-item {
+  justify-content: center;
+  padding: 0;
+}
+
+.sidebar.collapsed .el-menu-item .el-icon {
+  margin: 0;
+}
+
+.sidebar.collapsed .el-menu-item span {
+  display: none;
 }
 
 .main-content {
