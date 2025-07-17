@@ -18,49 +18,79 @@
     <el-row :gutter="20" style="margin-bottom: 20px;">
       <el-col :span="4">
         <el-card class="stat-card">
-          <div class="stat-content">
-            <div class="stat-number">{{ taskStats.total || 0 }}</div>
-            <div class="stat-label">总任务数</div>
+          <div class="stat-content stat-flex">
+            <div class="stat-icon total">
+              <el-icon><Document /></el-icon>
+            </div>
+            <div>
+              <div class="stat-number">{{ taskStats.total || 0 }}</div>
+              <div class="stat-label">总任务数</div>
+            </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="4">
         <el-card class="stat-card running">
-          <div class="stat-content">
-            <div class="stat-number">{{ taskStats.running || 0 }}</div>
-            <div class="stat-label">运行中</div>
+          <div class="stat-content stat-flex">
+            <div class="stat-icon running">
+              <el-icon><Loading /></el-icon>
+            </div>
+            <div>
+              <div class="stat-number">{{ taskStats.running || 0 }}</div>
+              <div class="stat-label">运行中</div>
+            </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="4">
         <el-card class="stat-card pending">
-          <div class="stat-content">
-            <div class="stat-number">{{ taskStats.pending || 0 }}</div>
-            <div class="stat-label">等待中</div>
+          <div class="stat-content stat-flex">
+            <div class="stat-icon pending">
+              <el-icon><Clock /></el-icon>
+            </div>
+            <div>
+              <div class="stat-number">{{ taskStats.pending || 0 }}</div>
+              <div class="stat-label">等待中</div>
+            </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="4">
         <el-card class="stat-card completed">
-          <div class="stat-content">
-            <div class="stat-number">{{ taskStats.completed || 0 }}</div>
-            <div class="stat-label">已完成</div>
+          <div class="stat-content stat-flex">
+            <div class="stat-icon completed">
+              <el-icon><CircleCheck /></el-icon>
+            </div>
+            <div>
+              <div class="stat-number">{{ taskStats.completed || 0 }}</div>
+              <div class="stat-label">已完成</div>
+            </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="4">
         <el-card class="stat-card failed">
-          <div class="stat-content">
-            <div class="stat-number">{{ taskStats.failed || 0 }}</div>
-            <div class="stat-label">已失败</div>
+          <div class="stat-content stat-flex">
+            <div class="stat-icon failed">
+              <el-icon><CircleClose /></el-icon>
+            </div>
+            <div>
+              <div class="stat-number">{{ taskStats.failed || 0 }}</div>
+              <div class="stat-label">已失败</div>
+            </div>
           </div>
         </el-card>
       </el-col>
       <el-col :span="4">
-        <el-card class="stat-card">
-          <div class="stat-content">
-            <div class="stat-number">{{ OnlineNodeStats || 0 }}</div>
-            <div class="stat-label">在线节点</div>
+        <el-card class="stat-card online-node">
+          <div class="stat-content stat-flex">
+            <div class="stat-icon online">
+              <el-icon><Connection /></el-icon>
+            </div>
+            <div>
+              <div class="stat-number">{{ OnlineNodeStats || 0 }}</div>
+              <div class="stat-label">在线节点</div>
+            </div>
           </div>
         </el-card>
       </el-col>
@@ -173,10 +203,13 @@
         <el-table-column prop="status" label="状态" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)" size="small">
-            {{ getStatusText(row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
+              <el-icon style="vertical-align: middle; margin-right: 4px;">
+                <component :is="getStatusIcon(row.status)" />
+              </el-icon>
+              {{ getStatusText(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
 
         <el-table-column prop="progress" label="进度" width="120">
         <template #default="{ row }">
@@ -731,7 +764,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Search, Refresh, VideoPlay, VideoPause,
   RefreshRight, More, InfoFilled, Close, FullScreen,
-  Edit, Document, Connection, CopyDocument, Delete
+  Edit, Document, Connection, CopyDocument, Delete,
+  CircleCheck, Clock, Loading, Warning, CircleClose
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 
@@ -1435,6 +1469,21 @@ const getStatusText = (status) => {
   return texts[status] || status
 }
 
+// 新增：获取状态对应的图标
+const getStatusIcon = (status) => {
+  const icons = {
+    active: CircleCheck,
+    pending: Clock,
+    assigned: Loading,
+    running: Loading,
+    completed: CircleCheck,
+    failed: CircleClose,
+    cancelled: Warning,
+    cancel_requested: Warning
+  }
+  return icons[status] || Clock
+}
+
 const getTaskTypeColor = (type) => {
   const colors = {
     sync: 'primary',
@@ -1891,5 +1940,45 @@ onUnmounted(() => {
 }
 .mb-16 {
   margin-bottom: 16px;
+}
+.stat-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.stat-icon {
+  width: 55px;
+  height: 55px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: 22px;
+  margin-right: 14px;
+  background: #f5f7fa;
+}
+.stat-icon.total {
+  color: #409EFF;
+  background: #e8f3ff;
+}
+.stat-icon.running {
+  color: #67C23A;
+  background: #f0f9eb;
+}
+.stat-icon.pending {
+  color: #E6A23C;
+  background: #fdf6ec;
+}
+.stat-icon.completed {
+  color: #409EFF;
+  background: #e8f3ff;
+}
+.stat-icon.failed {
+  color: #F56C6C;
+  background: #fef0f0;
+}
+.stat-icon.online {
+  color: #909399;
+  background: #f4f4f5;
 }
 </style> 

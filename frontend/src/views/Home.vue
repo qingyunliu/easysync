@@ -1,8 +1,14 @@
 <template>
   <div class="home-container">
-    <div class="sidebar">
+    <div class="sidebar" :class="{ collapsed: isCollapsed }">
       <div class="logo">
-        <img src="/src/assets/logo/easysync-master-logo.svg">
+        <img v-if="isCollapsed" src="/src/assets/logo/easysync-small-logo.svg">
+        <img v-else src="/src/assets/logo/easysync-master-logo.svg" style="margin-left:-10px;">
+      </div>
+      <div class="collapse-btn" @click="isCollapsed = !isCollapsed">
+        <el-icon>
+          <component :is="isCollapsed ? Expand : Fold" />
+        </el-icon>
       </div>
       <el-menu
         default-active="1"
@@ -11,39 +17,57 @@
         text-color="#fff"
         active-text-color="#00f2fe"
         router
+        :collapse="isCollapsed"
+        :collapse-transition="true"
       >
-        <el-menu-item index="/dashboard">
-          <el-icon><HomeFilled /></el-icon>
-          <span>首页</span>
-        </el-menu-item>
-        <el-menu-item index="/clients">
-          <el-icon><Monitor /></el-icon>
-          <span>客户端管理</span>
-        </el-menu-item>
-        <el-menu-item index="/nodes">
-          <el-icon><Connection /></el-icon>
-          <span>节点管理</span>
-        </el-menu-item>
-        <el-menu-item index="/storages">
-          <el-icon><Folder /></el-icon>
-          <span>存储管理</span>
-        </el-menu-item>
-        <el-menu-item index="/tasks">
-          <el-icon><List /></el-icon>
-          <span>任务管理</span>
-        </el-menu-item>
-        <el-menu-item index="/logs">
-          <el-icon><Document /></el-icon>
-          <span>日志管理</span>
-        </el-menu-item>
-        <el-menu-item index="/notifications">
-          <el-icon><Bell /></el-icon>
-          <span>通知设置</span>
-        </el-menu-item>
-        <el-menu-item index="/settings" v-if="isAdmin">
-          <el-icon><Setting /></el-icon>
-          <span>系统设置</span>
-        </el-menu-item>
+        <el-tooltip content="首页" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/dashboard">
+            <el-icon><HomeFilled /></el-icon>
+            <span v-if="!isCollapsed">首页</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="客户端管理" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/clients">
+            <el-icon><Monitor /></el-icon>
+            <span v-if="!isCollapsed">客户端管理</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="节点管理" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/nodes">
+            <el-icon><Connection /></el-icon>
+            <span v-if="!isCollapsed">节点管理</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="存储管理" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/storages">
+            <el-icon><Folder /></el-icon>
+            <span v-if="!isCollapsed">存储管理</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="任务管理" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/tasks">
+            <el-icon><List /></el-icon>
+            <span v-if="!isCollapsed">任务管理</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="日志管理" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/logs">
+            <el-icon><Document /></el-icon>
+            <span v-if="!isCollapsed">日志管理</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="通知设置" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/notifications">
+            <el-icon><Bell /></el-icon>
+            <span v-if="!isCollapsed">通知设置</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="系统设置" placement="right" :disabled="!isCollapsed" v-if="isAdmin">
+          <el-menu-item index="/settings" v-if="isAdmin">
+            <el-icon><Setting /></el-icon>
+            <span v-if="!isCollapsed">系统设置</span>
+          </el-menu-item>
+        </el-tooltip>
       </el-menu>
     </div>
     
@@ -101,10 +125,14 @@ import {
   Setting, 
   ArrowDown,
   User,
-  SwitchButton
+  SwitchButton,
+  Fold,
+  Expand
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import defaultAvatar from '@/assets/avatar/default-avatar.jpeg'
+
+const isCollapsed = ref(false)
 
 const router = useRouter()
 const user = ref(null)
@@ -174,25 +202,42 @@ const handleAvatarError = () => {
   display: flex;
   flex-direction: column;
   box-shadow: 2px 0 8px rgba(0, 0, 0, 0.05);
+  transition: width 0.2s cubic-bezier(.4,0,.2,1);
+  position: relative;
 }
-
+.sidebar.collapsed {
+  width: 60px;
+}
 .logo {
   padding: 10px;
   text-align: center;
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   height: 60px;
+  transition: height 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.logo img {
-  height: 50px;
-  margin-left: 20px;
+.collapse-btn {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s;
 }
-
+.collapse-btn:hover {
+  background: rgba(24, 144, 255, 0.08);
+}
 .el-menu {
   border-right: none;
   padding: 20px 0;
+  transition: padding 0.2s;
 }
-
+.sidebar.collapsed .el-menu {
+  padding: 8px 0;
+}
 .el-menu-item {
   height: 50px;
   line-height: 50px;
@@ -201,11 +246,17 @@ const handleAvatarError = () => {
   transition: all 0.3s ease;
   color: #2c3e50;
 }
-
+.el-menu-item span {
+  transition: opacity 0.2s;
+}
+.sidebar.collapsed .el-menu-item span {
+  opacity: 0;
+  width: 0;
+  display: inline-block;
+}
 .el-menu-item:hover {
   background: rgba(24, 144, 255, 0.1) !important;
 }
-
 .el-menu-item.is-active {
   background: linear-gradient(135deg, rgba(24, 144, 255, 0.1) 0%, rgba(54, 207, 201, 0.1) 100%) !important;
   color: #1890ff !important;

@@ -229,7 +229,7 @@ const handleRegister = async () => {
 }
 
 .register-logo img {
-  margin-bottom: -110px;
+   width: 280px;
 }
 
 .register-header p {
