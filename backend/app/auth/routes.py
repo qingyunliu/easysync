@@ -44,7 +44,12 @@ def login():
     if not username or not password:
         return jsonify({'error': '用户名和密码不能为空'}), 400
         
-    user = auth_service.authenticate(username, password)
+    # 支持用户名或邮箱登录
+    user = None
+    if '@' in username:
+        user = auth_service.authenticate_by_email(email=username, password=password)
+    else:
+        user = auth_service.authenticate(username, password)
     if not user:
         return jsonify({'error': '用户名或密码错误'}), 401
     if not user.email_verified:

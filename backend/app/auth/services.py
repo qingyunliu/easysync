@@ -12,6 +12,13 @@ class AuthService:
             return user
         return None
         
+    def authenticate_by_email(self, email: str, password: str) -> 'User':
+        """通过邮箱验证用户凭据"""
+        user = User.query.filter_by(email=email).first()
+        if user and check_password_hash(user.password_hash, password):
+            return user
+        return None
+        
     def change_password(self, user_id: int, old_password: str, new_password: str) -> bool:
         """修改用户密码"""
         user = User.query.get(user_id)
