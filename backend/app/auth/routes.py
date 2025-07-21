@@ -1,17 +1,45 @@
-from flask import request, jsonify
+from flask import Blueprint, request, jsonify, session, send_file
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 from . import auth_bp
 from .services import AuthService
 from backend.app.models import User
+from captcha.image import ImageCaptcha
+import io
+import random
+import string
+import uuid
+from backend.app.utils.email_utils import send_email
+from datetime import datetime, timedelta
+import os
 
 auth_service = AuthService()
+
+@auth_bp.route('/captcha', methods=['GET'])
+def get_captcha():
+    code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    captcha_id = str(uuid.uuid4())
+    session['captcha_' + captcha_id] = code.lower()
+    image = ImageCaptcha(width=150, height=50)
+    data = image.generate(code)
+    resp = send_file(data, mimetype='image/png')
+    resp.headers['Captcha-Id'] = captcha_id
+    resp.headers['Access-Control-Expose-Headers'] = 'Captcha-Id'
+    return resp
 
 @auth_bp.route('', methods=['POST'])
 def login():
     """用户登录"""
-    data = request.get_json()
+    data = request.json
     username = data.get('username')
     password = data.get('password')
+    captcha = data.get('captcha', '').lower()
+    captcha_id = data.get('captcha_id')
+    # 校验验证码
+    if not captcha_id or not captcha:
+        return jsonify({'status': 'fail', 'msg': '验证码不能为空'}), 400
+    real_code = session.get('captcha_' + captcha_id)
+    if not real_code or captcha != real_code:
+        return jsonify({'status': 'fail', 'msg': '验证码错误'}), 400
     
     if not username or not password:
         return jsonify({'error': '用户名和密码不能为空'}), 400
@@ -19,9 +47,14 @@ def login():
     user = auth_service.authenticate(username, password)
     if not user:
         return jsonify({'error': '用户名或密码错误'}), 401
+    if not user.email_verified:
+        return jsonify({'status': 'fail', 'msg': '请先完成邮箱验证'}), 403
         
     access_token = create_access_token(identity=str(user.id))
     refresh_token = create_refresh_token(identity=str(user.id))
+    
+    # 登录成功后可删除验证码
+    session.pop('captcha_' + captcha_id, None)
     
     return jsonify({
         'status': 'success',
@@ -63,3 +96,43 @@ def get_profile():
         'role': user.role,
         'created_at': user.created_at.isoformat()
     }) 
+
+@auth_bp.route('/forgot_password', methods=['POST'])
+def forgot_password():
+    data = request.get_json()
+    email = data.get('email')
+    if not email:
+        return jsonify({'status': 'fail', 'msg': '邮箱不能为空'}), 400
+    user = User.query.filter_by(email=email).first()
+    if not user:
+        return jsonify({'status': 'fail', 'msg': '该邮箱未注册'}), 404
+    token = str(uuid.uuid4())
+    user.reset_password_token = token
+    user.reset_password_expire = datetime.utcnow() + timedelta(hours=1)
+    from backend import db
+    db.session.commit()
+    frontend_url = os.environ.get('FRONTEND_URL', 'localhost:5173')
+    reset_url = f"{frontend_url}/reset_password?token={token}"
+    send_email(
+        email,
+        "重置密码",
+        f"请点击以下链接重置您的密码（1小时内有效）：<a href='{reset_url}'>{reset_url}</a>"
+    )
+    return jsonify({'status': 'success', 'msg': '重置密码邮件已发送，请查收邮箱'})
+
+@auth_bp.route('/reset_password', methods=['POST'])
+def reset_password():
+    data = request.get_json()
+    token = data.get('token')
+    new_password = data.get('password')
+    if not token or not new_password:
+        return jsonify({'status': 'fail', 'msg': '参数不完整'}), 400
+    user = User.query.filter_by(reset_password_token=token).first()
+    if not user or not user.reset_password_expire or user.reset_password_expire < datetime.utcnow():
+        return jsonify({'status': 'fail', 'msg': '重置链接无效或已过期'}), 400
+    user.set_password(new_password)
+    user.reset_password_token = None
+    user.reset_password_expire = None
+    from backend import db
+    db.session.commit()
+    return jsonify({'status': 'success', 'msg': '密码重置成功'}) 

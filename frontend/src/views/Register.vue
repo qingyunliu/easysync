@@ -156,15 +156,15 @@ const handleRegister = async () => {
         
         if (response.data.status === 'success') {
           ElMessage.success({
-            message: '注册成功，3秒后自动跳转到登录页面',
-            duration: 3000
+            message: '注册成功，已发送激活邮件',
+            duration: 1500
           })
           setTimeout(() => {
-            router.push('/login')
-          }, 3000)
+            router.push({ name: 'RegisterMailSent', query: { email: registerForm.email } })
+          }, 1500)
         }
       } catch (error) {
-        ElMessage.error(error.response?.data?.message || '注册失败，请稍后再试')
+        ElMessage.error(error.response?.data?.msg || error.response?.data?.message || '注册失败，请稍后再试')
       } finally {
         loading.value = false
       }

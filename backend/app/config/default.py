@@ -16,7 +16,7 @@ class Config:
     JWT_REFRESH_TOKEN_EXPIRES = 604800  # 7天
     
     # CORS配置
-    CORS_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
+    CORS_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '*')
     CORS_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
     CORS_ALLOW_HEADERS = ['Content-Type', 'Authorization']
     
@@ -26,7 +26,7 @@ class Config:
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     
     # 安全配置
-    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = 'Lax'
     PERMANENT_SESSION_LIFETIME = 3600  # 1小时
@@ -85,6 +85,14 @@ class Config:
     
     # 监控配置
     PROMETHEUS_METRICS_PORT = int(os.environ.get('PROMETHEUS_METRICS_PORT', 9090))
+    
+    # 邮件SMTP配置
+    SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtpdm.aliyun.com')
+    SMTP_PORT = int(os.environ.get('SMTP_PORT', 465))
+    SMTP_USER = os.environ.get('SMTP_USER', 'support@email.oneprocloud.com')
+    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '5gYwbReCqB3wQbXf24MJ')
+    SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', True)
+    SMTP_FROM = os.environ.get('SMTP_FROM', 'support@email.oneprocloud.com')
     
     @staticmethod
     def init_app(app):

@@ -78,6 +78,7 @@ def create_app(config_name=None):
                  "supports_credentials": True
              }
          },
+         supports_credentials=True,
          automatic_options=True)  # 自动处理 OPTIONS 请求
     
     # 初始化Celery

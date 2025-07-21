@@ -1,0 +1,183 @@
+<template>
+  <div class="forgot-container">
+    <div class="forgot-background">
+      <div class="forgot-content">
+        <div class="forgot-header">
+          <div class="forgot-logo">
+            <img src="/src/assets/logo/easysync-login-page.svg">
+            <p>数据同步管理平台</p>
+          </div>
+        </div>
+        <el-card class="forgot-card" shadow="hover">
+          <h2>找回密码</h2>
+          <el-form :model="form" :rules="rules" ref="formRef" label-width="0">
+            <el-form-item prop="email">
+              <el-input v-model="form.email" placeholder="请输入注册邮箱">
+                <template #prefix>
+                  <el-icon><Message /></el-icon>
+                </template>
+              </el-input>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="handleSubmit" :loading="loading" class="forgot-btn">发送重置邮件</el-button>
+            </el-form-item>
+            <div class="login-link">
+              <router-link to="/login">返回登录</router-link>
+            </div>
+          </el-form>
+        </el-card>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { Message } from '@element-plus/icons-vue'
+import axios from 'axios'
+
+const router = useRouter()
+const formRef = ref(null)
+const loading = ref(false)
+const form = ref({ email: '' })
+const rules = {
+  email: [
+    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+  ]
+}
+const handleSubmit = async () => {
+  if (!formRef.value) return
+  await formRef.value.validate(async (valid) => {
+    if (valid) {
+      loading.value = true
+      try {
+        const res = await axios.post('/api/auth/forgot_password', { email: form.value.email })
+        if (res.data.status === 'success') {
+          router.push({ name: 'ResetMailSent', query: { email: form.value.email } })
+        } else {
+          ElMessage.error(res.data.msg || '发送失败')
+        }
+      } catch (e) {
+        ElMessage.error(e.response?.data?.msg || '发送失败')
+      } finally {
+        loading.value = false
+      }
+    }
+  })
+}
+</script>
+
+<style scoped>
+.forgot-container {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  overflow: hidden;
+}
+.forgot-background {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.forgot-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('@/assets/login-bg.jpg') center/cover;
+  opacity: 0.1;
+  z-index: 0;
+}
+.forgot-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 400px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.forgot-header {
+  width: 100%;
+  text-align: center;
+  margin-bottom: 40px;
+  color: white;
+  animation: fadeInDown 1s ease;
+}
+.forgot-logo {
+  width: 80%;
+  margin: 0 auto;
+}
+.forgot-logo img {
+  width: 280px;
+}
+.forgot-logo p {
+  font-size: 18px;
+  opacity: 0.9;
+}
+.forgot-card {
+  width: 100%;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.97);
+  backdrop-filter: blur(10px);
+  animation: fadeInUp 1s ease;
+  text-align: center;
+  padding: 40px 20px 32px 20px;
+}
+.forgot-card h2 {
+  margin: 16px 0 12px 0;
+  color: #409EFF;
+}
+.forgot-btn {
+  width: 100%;
+  height: 44px;
+  font-size: 16px;
+  border-radius: 8px;
+}
+.login-link {
+  text-align: center;
+  margin-top: 20px;
+  color: #666;
+}
+.login-link a {
+  color: #409EFF;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+.login-link a:hover {
+  color: #66b1ff;
+  text-decoration: underline;
+}
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+</style> 

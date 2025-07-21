@@ -17,6 +17,10 @@ class User(BaseModel):
     last_login_ip = db.Column(db.String(45))  # 最后登录IP
     login_count = db.Column(db.Integer, default=0)  # 登录次数
     last_login_location = db.Column(db.String(100))  # 最后登录位置
+    email_verified = db.Column(db.Boolean, default=False)
+    email_verification_token = db.Column(db.String(128), nullable=True)
+    reset_password_token = db.Column(db.String(128), nullable=True)
+    reset_password_expire = db.Column(db.DateTime, nullable=True)
 
     # 关系
     storages = db.relationship('Storage', backref='owner', lazy='dynamic')

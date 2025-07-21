@@ -12,6 +12,11 @@ import Settings from "../views/Settings.vue";
 import Notifications from "../views/Notifications.vue";
 import NotFound from "../views/NotFound.vue";
 import Profile from "../views/Profile.vue";
+import VerifyEmail from "../views/VerifyEmail.vue";
+import RegisterMailSent from "../views/RegisterMailSent.vue";
+import ForgotPassword from "../views/ForgotPassword.vue";
+import ResetPassword from "../views/ResetPassword.vue";
+import ResetMailSent from "../views/ResetMailSent.vue";
 
 const routes = [
   {
@@ -28,6 +33,36 @@ const routes = [
     path: "/register",
     name: "Register",
     component: Register,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/register_mail_sent",
+    name: "RegisterMailSent",
+    component: RegisterMailSent,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/verify_email",
+    name: "VerifyEmail",
+    component: VerifyEmail,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/forgot_password",
+    name: "ForgotPassword",
+    component: ForgotPassword,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/reset_password",
+    name: "ResetPassword",
+    component: ResetPassword,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: "/reset_mail_sent",
+    name: "ResetMailSent",
+    component: ResetMailSent,
     meta: { requiresAuth: false },
   },
   {

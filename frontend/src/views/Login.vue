@@ -39,6 +39,21 @@
                 </template>
               </el-input>
             </el-form-item>
+            <el-form-item prop="captcha">
+              <el-row :gutter="8">
+                <el-col :span="12">
+                  <el-input v-model="loginForm.captcha" maxlength="4" placeholder="请输入验证码" />
+                </el-col>
+                <el-col :span="12">
+                  <img
+                    :src="captchaImg"
+                    @click="refreshCaptcha"
+                    style="height: 40px; cursor: pointer; border-radius: 4px; border:1px solid #eee; background:#f8f8f8;"
+                    :title="'点击刷新验证码'"
+                  />
+                </el-col>
+              </el-row>
+            </el-form-item>
             <el-form-item>
               <el-button 
                 type="primary" 
@@ -52,6 +67,8 @@
             <div class="register-link">
               <span>还没有账号？</span>
               <router-link to="/register">立即注册</router-link>
+              <span class="forgot-link-sep">|</span>
+              <router-link to="/forgot_password" class="forgot-link">忘记密码？</router-link>
             </div>
           </el-form>
         </el-card>
@@ -61,7 +78,7 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
@@ -73,9 +90,24 @@ const userStore = useUserStore()
 const loginFormRef = ref(null)
 const loading = ref(false)
 
+const captchaId = ref('')
+const captchaImg = ref('')
+
+function refreshCaptcha() {
+  axios.get('/api/auth/captcha', { responseType: 'blob', withCredentials: true }).then(res => {
+    captchaId.value = res.headers['captcha-id']
+    captchaImg.value = URL.createObjectURL(res.data)
+  })
+}
+
+onMounted(() => {
+  refreshCaptcha()
+})
+
 const loginForm = reactive({
   username: '',
-  password: ''
+  password: '',
+  captcha: ''
 })
 
 const rules = {
@@ -86,17 +118,25 @@ const rules = {
   password: [
     { required: true, message: '请输入密码', trigger: 'blur' },
     { min: 6, max: 20, message: '密码长度应在6-20个字符之间', trigger: 'blur' }
+  ],
+  captcha: [
+    { required: true, message: '请输入验证码', trigger: 'blur' },
+    { len: 4, message: '验证码为4位字符', trigger: 'blur' }
   ]
 }
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return
-  
   await loginFormRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
       try {
-        const response = await axios.post('/api/auth', loginForm)
+        const response = await axios.post('/api/auth', {
+          username: loginForm.username,
+          password: loginForm.password,
+          captcha: loginForm.captcha,
+          captcha_id: captchaId.value
+        }, { withCredentials: true })
         if (response.data.status === 'success') {
           // 保存用户信息和token
           userStore.user = response.data.data.user
@@ -117,7 +157,9 @@ const handleLogin = async () => {
           }, 3000)
         }
       } catch (error) {
-        ElMessage.error(error.response?.data?.message || '登录失败，请检查用户名和密码')
+        ElMessage.error(error.response?.data?.msg || error.response?.data?.message || '登录失败，请检查用户名、密码和验证码')
+        refreshCaptcha()
+        loginForm.captcha = ''
       } finally {
         loading.value = false
       }
@@ -256,6 +298,22 @@ const handleLogin = async () => {
   text-decoration: underline;
 }
 
+.forgot-link {
+  color: #409EFF;
+  margin-left: 8px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+.forgot-link:hover {
+  color: #66b1ff;
+  text-decoration: underline;
+}
+.forgot-link-sep {
+  margin: 0 6px;
+  color: #bbb;
+}
+
 @keyframes fadeInDown {
   from {
     opacity: 0;
@@ -276,5 +334,9 @@ const handleLogin = async () => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+.el-form-item .el-row {
+  width: 100%;
 }
 </style> 

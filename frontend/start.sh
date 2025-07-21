@@ -21,5 +21,5 @@ echo "🌐 启动开发服务器..."
 npm run dev
 
 echo "✅ 前端应用已启动！"
-echo "🔗 访问地址：http://localhost:5173"
+echo "🔗 访问地址：http://localhost:3000"
 echo "📄 确保后端服务运行在：http://localhost:5000"
