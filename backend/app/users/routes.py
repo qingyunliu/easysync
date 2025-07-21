@@ -9,6 +9,7 @@ import uuid
 import imghdr
 from PIL import Image
 import io
+from backend import db
 from backend.app.utils.email_utils import send_email
 
 user_service = UserService()
@@ -56,19 +57,22 @@ def create_user():
     
     # 生成邮箱验证token
     email_token = str(uuid.uuid4())
-    user = user_service.create_user(username, password, email, role)
-    user.email_verification_token = email_token
-    user.email_verified = False
-    from backend import db
-    db.session.commit()
+    try:
+        user = user_service.create_user(username, password, email, role)
+        user.email_verification_token = email_token
+        user.email_verified = False
 
-    # 发送验证邮件
-    verify_url = f"{os.environ.get('FRONTEND_URL')}/verify_email?token={email_token}"
-    send_email(
-        email,
-        "邮箱验证",
-        f"请点击以下链接验证您的邮箱：<a href='{verify_url}'>{verify_url}</a>"
-    )
+        verify_url = f"{os.environ.get('FRONTEND_URL')}/verify_email?token={email_token}"
+        send_email(
+            email,
+            "邮箱验证",
+            f"请点击以下链接验证您的邮箱：<a href='{verify_url}'>{verify_url}</a>"
+        )
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        current_app.logger.error(f"注册或发送验证邮件失败: {str(e)}")
+        return jsonify({'error': '注册或发送验证邮件失败'}), 502
 
     return jsonify({
         'status': 'success',
@@ -238,6 +242,5 @@ def verify_email():
         return jsonify({'status': 'fail', 'msg': '无效的验证链接'}), 400
     user.email_verified = True
     user.email_verification_token = None
-    from backend import db
     db.session.commit()
     return jsonify({'status': 'success', 'msg': '邮箱验证成功'}) 

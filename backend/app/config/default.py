@@ -91,7 +91,8 @@ class Config:
     SMTP_PORT = int(os.environ.get('SMTP_PORT', 465))
     SMTP_USER = os.environ.get('SMTP_USER', 'support@email.oneprocloud.com')
     SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '5gYwbReCqB3wQbXf24MJ')
-    SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', True)
+    # 是否使用TLS
+    SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
     SMTP_FROM = os.environ.get('SMTP_FROM', 'support@email.oneprocloud.com')
     
     @staticmethod
