@@ -188,9 +188,6 @@
             <div class="header-right">
               <!-- 分组/标签筛选与批量操作 -->
               <div class="filter-batch-bar" style="display: flex; align-items: center; gap: 16px;">
-                <el-button type="danger" :disabled="!(multipleSelection?.length)" @click="handleBatchDelete">批量删除</el-button>
-                <el-button type="primary" :disabled="!(multipleSelection?.length)" @click="showBatchGroupDialog">批量分组</el-button>
-                <el-button type="primary" :disabled="!(multipleSelection?.length)" @click="showBatchTagDialog">批量打标签</el-button>
                 <el-select v-model="selectedGroup" placeholder="分组筛选" clearable style="width: 140px">
                   <el-option v-for="group in groupList" :key="group" :label="group" :value="group" />
                 </el-select>
@@ -204,6 +201,9 @@
                   <el-option label="已安装Agent" value="agent_installed" />
                   <el-option label="未安装Agent" value="agent_not_installed" />
                 </el-select>
+                <el-button type="danger" :disabled="!(multipleSelection?.length)" @click="handleBatchDelete">批量删除</el-button>
+                <el-button type="primary" :disabled="!(multipleSelection?.length)" @click="showBatchGroupDialog">批量分组</el-button>
+                <el-button type="primary" :disabled="!(multipleSelection?.length)" @click="showBatchTagDialog">批量打标签</el-button>
               </div>
               <el-input
                 v-model="searchQuery"
@@ -239,21 +239,19 @@
                   <span>{{ row.name }}</span>
                   <el-tag v-if="isNewServer(row)" type="success" class="new-tag">NEW</el-tag>
                 </div>
-        </template>
-      </el-table-column>
+              </template>
+            </el-table-column>
             <el-table-column prop="group" label="分组" width="100">
-        <template #default="{ row }">
+              <template #default="{ row }">
                 <el-tag v-if="row.group">{{ row.group }}</el-tag>
-        </template>
-      </el-table-column>
+              </template>
+            </el-table-column>
             <el-table-column prop="tags" label="标签" width="140">
-        <template #default="{ row }">
+              <template #default="{ row }">
                 <el-tag v-for="tag in (row.tags ? row.tags.split(',') : [])" :key="tag" type="info" style="margin-right: 2px;">{{ tag }}</el-tag>
               </template>
             </el-table-column>
-            
             <el-table-column prop="ip_address" label="IP地址" width="140" />
-            
             <el-table-column prop="status" label="连接状态" width="120">
               <template #default="{ row }">
                 <div class="status-indicator">
@@ -262,7 +260,6 @@
                 </div>
               </template>
             </el-table-column>
-            
             <el-table-column prop="agent_status" label="Agent状态" width="120">
               <template #default="{ row }">
                 <el-tag :type="getAgentStatusType(row.agent_status)" size="small">
@@ -270,47 +267,46 @@
           </el-tag>
         </template>
       </el-table-column>
-            
-            <el-table-column prop="os_type" label="操作系统" width="120" />
-            
-            <el-table-column prop="last_seen" label="上线时间" width="160">
+      
+      <el-table-column prop="os_type" label="操作系统" width="120" />
+      <el-table-column prop="last_seen" label="上线时间" width="160">
         <template #default="{ row }">
-                <div class="last-seen">
-                  <el-icon><Clock /></el-icon>
-                  <span>{{ formatDate(row.last_seen) }}</span>
-                </div>
+          <div class="last-seen">
+            <el-icon><Clock /></el-icon>
+            <span>{{ formatDate(row.last_seen) }}</span>
+          </div>
         </template>
       </el-table-column>
             
-            <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-                <div class="action-buttons">
-                  <el-button 
-                    type="primary" 
-                    size="small" 
-                    @click.stop="showClientDetail(row)"
-                    class="detail-btn"
-                  >
-                    <el-icon><View /></el-icon>
-                    详情
+          <div class="action-buttons">
+            <el-button 
+              type="primary" 
+              size="small" 
+              @click.stop="showClientDetail(row)"
+              class="detail-btn"
+              >
+              <el-icon><View /></el-icon>
+              详情
             </el-button>
-                  <el-dropdown trigger="click" @command="handleCommand">
-                    <el-button size="small">
-                      更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                        <el-dropdown-item :command="{ action: 'edit', row }">
-                          <el-icon><Edit /></el-icon>编辑
-                        </el-dropdown-item>
-                        <el-dropdown-item :command="{ action: 'test', row }">
-                      <el-icon><Connection /></el-icon>测试连接
-                  </el-dropdown-item>
-                        <el-dropdown-item 
-                          :command="{ action: 'install', row }"
-                      :disabled="row.status !== 'online' || row.agent_status === 'installed' || row.agent_status === 'running'"
-                    >
-                      <el-icon><Download /></el-icon>安装Agent
+            <el-dropdown trigger="click" @command="handleCommand">
+              <el-button size="small">
+              更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item :command="{ action: 'edit', row }">
+                  <el-icon><Edit /></el-icon>编辑
+                </el-dropdown-item>
+                <el-dropdown-item :command="{ action: 'test', row }">
+                  <el-icon><Connection /></el-icon>测试连接
+                </el-dropdown-item>
+                  <el-dropdown-item 
+                    :command="{ action: 'install', row }"
+                    :disabled="row.status !== 'online' || row.agent_status === 'installed' || row.agent_status === 'running'"
+                  >
+                    <el-icon><Download /></el-icon>安装Agent
                   </el-dropdown-item>
                         <el-dropdown-item 
                           :command="{ action: 'uninstall', row }"
@@ -2482,12 +2478,12 @@ const toggleArchitecture = () => {
 .stat-card {
   display: flex;
   justify-content: space-between;
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
 }
 
 .stat-card:hover {
@@ -2531,13 +2527,13 @@ const toggleArchitecture = () => {
 .stat-value {
   font-size: 32px;
   font-weight: 700;
-  color: #303133;
+  color: var(--text-color);
   line-height: 1;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -2546,10 +2542,10 @@ const toggleArchitecture = () => {
 }
 
 .clients-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
   overflow: hidden;
 }
 
@@ -2558,8 +2554,7 @@ const toggleArchitecture = () => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  background: var(--bg-secondary);
 }
 
 .header-left {
@@ -2571,7 +2566,7 @@ const toggleArchitecture = () => {
 .header-left h3 {
   font-size: 18px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-color);
   margin: 0;
 }
 
@@ -2602,14 +2597,14 @@ const toggleArchitecture = () => {
 }
 
 .clients-table :deep(.el-table__header) {
-  background: #fafafa;
+  background: var(--bg-secondary);
 }
 
 .clients-table :deep(.el-table__header th) {
-  background: #fafafa;
-  color: #606266;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   font-weight: 600;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .clients-table :deep(.el-table__row) {
@@ -2625,7 +2620,7 @@ const toggleArchitecture = () => {
 .server-name {
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-color);
 }
 
 .status-indicator {
@@ -2663,7 +2658,7 @@ const toggleArchitecture = () => {
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
 }
 
 .action-buttons {
@@ -2703,7 +2698,7 @@ const toggleArchitecture = () => {
 
 .client-form :deep(.el-form-item__label) {
   font-weight: 600;
-  color: #606266;
+  color: var(--text-secondary);
 }
 
 .client-form :deep(.el-input__wrapper) {
@@ -2725,7 +2720,7 @@ const toggleArchitecture = () => {
   gap: 12px;
   padding: 20px 24px;
   border-top: 1px solid #f0f0f0;
-  background: #fafafa;
+  background: var(--bg-secondary);
 }
 
 /* 抽屉样式 */
@@ -2758,7 +2753,7 @@ const toggleArchitecture = () => {
 }
 
 .detail-tabs :deep(.el-tabs__header) {
-  background: #fafafa;
+  background: var(--bg-secondary);
   margin: 0;
   padding: 0 24px;
   border-bottom: 1px solid #f0f0f0;
@@ -2771,7 +2766,7 @@ const toggleArchitecture = () => {
 .detail-tabs :deep(.el-tabs__item) {
   padding: 16px 24px;
   font-weight: 500;
-  color: #606266;
+  color: var(--text-secondary);
   border-bottom: 2px solid transparent;
   transition: all 0.3s ease;
 }
@@ -2800,22 +2795,22 @@ const toggleArchitecture = () => {
 }
 
 .info-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
   overflow: hidden;
 }
 
 .info-card :deep(.el-card__header) {
-  background: #fafafa;
+  background: var(--bg-secondary);
   padding: 16px 20px;
   border-bottom: 1px solid #f0f0f0;
 }
 
 .info-card :deep(.el-card__header span) {
   font-weight: 600;
-  color: #303133;
+  color: var(--text-color);
   font-size: 16px;
 }
 
@@ -2902,7 +2897,7 @@ const toggleArchitecture = () => {
 .disk-details span {
   text-align: center;
   padding: 6px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 4px;
   font-size: 13px;
   color: #6c757d;
@@ -2929,17 +2924,17 @@ const toggleArchitecture = () => {
   font-size: 13px;
   color: #6c757d;
   padding: 2px 6px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 3px;
 }
 
 /* 监控面板样式 */
 .monitor-control-panel {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2955,7 +2950,7 @@ const toggleArchitecture = () => {
 
 .section-label {
   font-weight: 600;
-  color: #606266;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -2990,11 +2985,11 @@ const toggleArchitecture = () => {
 }
 
 .chart-container {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
 }
 
 .chart-header {
@@ -3009,7 +3004,7 @@ const toggleArchitecture = () => {
 .chart-header h3 {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-color);
   margin: 0;
   }
 
@@ -3020,11 +3015,11 @@ const toggleArchitecture = () => {
 
 /* 日志面板样式 */
 .logs-control-panel {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   padding: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
 }
 
 .search-controls {
@@ -3043,10 +3038,10 @@ const toggleArchitecture = () => {
 }
 
 .logs-list {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
   overflow: hidden;
 }
 
@@ -3055,8 +3050,8 @@ const toggleArchitecture = () => {
 }
 
 .logs-list :deep(.el-table__header th) {
-  background: #fafafa;
-  color: #606266;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 13px;
 }
@@ -3221,10 +3216,10 @@ const toggleArchitecture = () => {
 }
 
 .architecture-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
 }
 
 .architecture-content {
@@ -3267,14 +3262,14 @@ const toggleArchitecture = () => {
 
 .step-content h4 {
   margin: 0 0 8px 0;
-  color: #303133;
+  color: var(--text-color);
   font-size: 16px;
   font-weight: 600;
 }
 
 .step-content p {
   margin: 0 0 12px 0;
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -3287,7 +3282,7 @@ const toggleArchitecture = () => {
 }
 
 .step-content li {
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 13px;
   margin-bottom: 4px;
 }
@@ -3308,13 +3303,13 @@ const toggleArchitecture = () => {
 }
 
 .usage-guide {
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--border-color);
   padding-top: 24px;
 }
 
 .usage-guide h4 {
   margin: 0 0 20px 0;
-  color: #303133;
+  color: var(--text-color);
   font-size: 18px;
   font-weight: 600;
 }
@@ -3359,14 +3354,14 @@ const toggleArchitecture = () => {
 .step-text strong {
   display: block;
   margin-bottom: 8px;
-  color: #303133;
+  color: var(--text-color);
   font-size: 14px;
   font-weight: 600;
 }
 
 .step-text p {
   margin: 0;
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.5;
 }

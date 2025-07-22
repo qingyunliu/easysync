@@ -15,7 +15,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: #f5f7fa;
+  background-color: var(--bg-color);
 }
 
 .content {
@@ -31,12 +31,12 @@ h1 {
 h2 {
   font-size: 30px;
   margin: 20px 0;
-  color: #303133;
+  color: var(--text-color);
 }
 
 p {
   font-size: 16px;
-  color: #606266;
+  color: var(--text-secondary);
   margin-bottom: 30px;
 }
 </style> 

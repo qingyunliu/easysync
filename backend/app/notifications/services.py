@@ -11,7 +11,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import current_app
 from backend import db
-from backend.app.models import User, NotificationSetting, TaskLog, Notification
+from backend.app.models import User, NotificationSetting, TaskLog, Notification, NotificationConfig
 from backend.app.utils.encryption import encrypt_data, decrypt_data
 from typing import Dict, Any, List
 from datetime import datetime

@@ -275,6 +275,55 @@ class EasySyncTester:
                 
         except Exception as e:
             self.log_result(f"❌ Agent API测试异常: {e}", False)
+            
+    def test_notification_apis(self):
+        """测试通知功能API"""
+        print("\n📢 测试通知功能API...")
+        
+        # 1. 测试获取通知设置
+        try:
+            response = requests.get(
+                f"{self.server_url}/api/notifications/settings",
+                headers=self.get_headers()
+            )
+            
+            if response.status_code == 200:
+                self.log_result("✅ 获取通知设置成功", True)
+            else:
+                self.log_result(f"❌ 获取通知设置失败: {response.status_code}", False)
+                
+        except Exception as e:
+            self.log_result(f"❌ 通知设置API异常: {e}", False)
+            
+        # 2. 测试获取通知配置
+        try:
+            response = requests.get(
+                f"{self.server_url}/api/notifications/config",
+                headers=self.get_headers()
+            )
+            
+            if response.status_code == 200:
+                self.log_result("✅ 获取通知配置成功", True)
+            else:
+                self.log_result(f"❌ 获取通知配置失败: {response.status_code}", False)
+                
+        except Exception as e:
+            self.log_result(f"❌ 通知配置API异常: {e}", False)
+            
+        # 3. 测试获取通知列表
+        try:
+            response = requests.get(
+                f"{self.server_url}/api/notifications/list",
+                headers=self.get_headers()
+            )
+            
+            if response.status_code == 200:
+                self.log_result("✅ 获取通知列表成功", True)
+            else:
+                self.log_result(f"❌ 获取通知列表失败: {response.status_code}", False)
+                
+        except Exception as e:
+            self.log_result(f"❌ 通知列表API异常: {e}", False)
     
     def run_all_tests(self):
         """运行所有测试"""
@@ -295,6 +344,7 @@ class EasySyncTester:
         self.test_task_crud()
         self.test_connection_test()
         self.test_agent_apis()
+        self.test_notification_apis()
         
         # 测试结果汇总
         end_time = time.time()

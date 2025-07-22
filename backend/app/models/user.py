@@ -139,3 +139,22 @@ class NotificationSetting(BaseModel):
             'dingtalk_webhook': self.dingtalk_webhook
         })
         return data
+
+class NotificationConfig(BaseModel):
+    """通知配置模型"""
+    __tablename__ = 'notification_configs'
+    
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
+    config_data = db.Column(db.Text, nullable=False)  # JSON格式的配置数据
+    
+    # 关联
+    user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('notification_config', lazy=True))
+    
+    def to_dict(self):
+        """转换为字典"""
+        data = super().to_dict()
+        data.update({
+            'user_id': self.user_id,
+            'config_data': self.config_data
+        })
+        return data

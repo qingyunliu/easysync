@@ -74,6 +74,7 @@
     <div class="main-content">
       <div class="header">
         <div class="header-right">
+          <ThemeToggle />
           <el-dropdown @command="handleCommand" trigger="click">
             <div class="user-info">
               <el-avatar 
@@ -114,6 +115,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 import { 
   HomeFilled, 
   Folder, 
@@ -196,13 +198,14 @@ const handleAvatarError = () => {
 .home-container {
   display: flex;
   height: 100vh;
-  color: #2c3e50;
+  color: var(--text-color);
+  background: var(--bg-color);
 }
 
 .sidebar {
   width: 200px;
-  background: linear-gradient(135deg, #fafdff 0%, #fff 100%);
-  border-right: 1px solid #e6ecf3;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
   box-shadow: 2px 0 16px 0 rgba(24, 144, 255, 0.06);
   transition: width 0.3s cubic-bezier(.4,0,.2,1), background 0.3s;
   position: relative;
@@ -212,9 +215,8 @@ const handleAvatarError = () => {
   width: 60px;
 }
 .logo {
-  padding: 10px;
   text-align: center;
-  border-bottom: 1px solid #e6ecf3;
+  border-bottom: 1px solid var(--border-color);
   height: 60px;
   transition: height 0.2s;
   display: flex;
@@ -233,7 +235,7 @@ const handleAvatarError = () => {
   margin-bottom: 2px;
 }
 .collapse-btn:hover {
-  background: linear-gradient(90deg, #e6f7ff 0%, #f0faff 100%);
+  background: var(--bg-secondary);
 }
 .el-menu {
   background: transparent;
@@ -248,7 +250,7 @@ const handleAvatarError = () => {
   line-height: 48px;
   margin: 8px 0;
   border-radius: 16px;
-  color: #606266;
+  color: var(--sidebar-text);
   font-size: 15px;
   transition: background 0.25s, color 0.25s, box-shadow 0.25s, border 0.25s;
   display: flex;
@@ -267,17 +269,17 @@ const handleAvatarError = () => {
   display: inline-block;
 }
 .el-menu-item:hover {
-  background: linear-gradient(90deg, #eef3f5 0%, #f0faff 100%);
-  color: #1890ff;
-  box-shadow: 0 2px 8px 0 rgba(24, 144, 255, 0.10);
-  border: 1px solid #b2e2ff;
+  background: var(--bg-secondary);
+  color: #409eff;
+  box-shadow: 0 2px 8px 0 rgba(64, 158, 255, 0.10);
+  border: 1px solid var(--border-color);
 }
 .el-menu-item.is-active {
-  background: linear-gradient(90deg, #eef3f5 0%, #f7f9fc 100%);
-  color: #1890ff !important;
+  background: var(--bg-secondary);
+  color: #409eff !important;
   font-weight: 600;
-  box-shadow: 0 2px 12px 0 rgba(24, 144, 255, 0.10);
-  border: 1px solid #91caff;
+  box-shadow: 0 2px 12px 0 rgba(64, 158, 255, 0.10);
+  border: 1px solid var(--border-color);
 }
 
 .el-menu-item .el-icon {
@@ -319,9 +321,13 @@ const handleAvatarError = () => {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  background: rgba(255, 255, 255, 0.9);
+  border-bottom: 1px solid var(--border-color);
+  background: var(--header-bg);
   backdrop-filter: blur(10px);
+}
+
+.header-right {
+  display: flex;
 }
 
 .user-info {
@@ -332,11 +338,11 @@ const handleAvatarError = () => {
   padding: 8px 12px;
   border-radius: 8px;
   transition: all 0.3s ease;
-  color: #2c3e50;
+  color: var(--text-color);
 }
 
 .user-info:hover {
-  background: rgba(24, 144, 255, 0.1);
+  background: var(--bg-secondary);
 }
 
 .username {
@@ -347,7 +353,7 @@ const handleAvatarError = () => {
 .arrow-down {
   font-size: 12px;
   transition: transform 0.3s ease;
-  color: #2c3e50;
+  color: var(--text-secondary);
 }
 
 .el-dropdown:hover .arrow-down {
@@ -358,19 +364,20 @@ const handleAvatarError = () => {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
+  background: var(--bg-color);
 }
 
 :deep(.el-dropdown-menu) {
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--card-bg);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 8px 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--card-shadow-hover);
 }
 
 :deep(.el-dropdown-menu__item) {
-  color: #2c3e50;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -378,11 +385,11 @@ const handleAvatarError = () => {
 }
 
 :deep(.el-dropdown-menu__item:hover) {
-  background: rgba(24, 144, 255, 0.1);
+  background: var(--bg-secondary);
 }
 
 :deep(.el-dropdown-menu__item--divided) {
-  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid var(--border-lighter);
 }
 
 :deep(.el-dropdown-menu__item .el-icon) {

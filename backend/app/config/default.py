@@ -95,6 +95,10 @@ class Config:
     SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
     SMTP_FROM = os.environ.get('SMTP_FROM', 'support@email.oneprocloud.com')
     
+    # 通知配置文件
+    NOTIFICATION_CONFIG_FILE = os.environ.get('NOTIFICATION_CONFIG_FILE', os.path.join(CONFIG_DIR, 'notification_config.json'))
+    SYSTEM_NOTIFICATION_SETTINGS_FILE = os.environ.get('SYSTEM_NOTIFICATION_SETTINGS_FILE', os.path.join(CONFIG_DIR, 'system_notification_settings.json'))
+    
     @staticmethod
     def init_app(app):
         pass

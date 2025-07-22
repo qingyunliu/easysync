@@ -1615,7 +1615,7 @@ onUnmounted(() => {
   align-items: center;
   margin-bottom: 30px;
   padding: 20px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -1633,7 +1633,7 @@ onUnmounted(() => {
 .storage-sections {
   margin-bottom: 30px;
   padding: 20px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -1648,13 +1648,13 @@ onUnmounted(() => {
 
 .header-left h1 {
   margin: 0 0 5px 0;
-  color: #303133;
+  color: var(--text-color);
   font-size: 24px;
 }
 
 .page-description {
   margin: 0;
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 

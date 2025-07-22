@@ -216,33 +216,135 @@
     </el-card>
 
     <!-- 系统通知卡片 -->
-    <el-card class="notification-card">
+    <el-card class="notification-card modern-card">
       <template #header>
         <div class="card-header">
-          <span>系统通知</span>
+          <div class="header-left">
+            <el-icon class="header-icon"><Bell /></el-icon>
+            <span class="header-title">系统通知</span>
+            <el-badge 
+              v-if="unreadNotificationCount > 0" 
+              :value="unreadNotificationCount" 
+              class="notification-badge"
+            />
+          </div>
+          <div class="header-actions">
+            <el-button 
+              type="text" 
+              @click="markAllAsRead" 
+              v-if="unreadNotificationCount > 0"
+              size="small"
+            >
+              全部已读
+            </el-button>
+            <el-button 
+              type="text" 
+              @click="$router.push('/notifications')" 
+              size="small"
+            >
+              查看全部
+            </el-button>
+          </div>
         </div>
       </template>
-      <el-timeline>
-        <el-timeline-item
-          v-for="(notification, index) in recentNotifications"
-          :key="index"
-          :type="getNotificationType(notification.type)"
-          :timestamp="formatDateTime(notification.created_at)"
-        >
-          {{ notification.message }}
-        </el-timeline-item>
-      </el-timeline>
+      
+      <div class="notification-content">
+        <div v-if="recentNotifications.length === 0" class="empty-notifications">
+          <el-icon class="empty-icon"><ChatDotSquare /></el-icon>
+          <p class="empty-text">暂无通知消息</p>
+          <p class="empty-desc">系统消息将在此处显示</p>
+        </div>
+        
+        <div v-else class="notification-list">
+          <div
+            v-for="(notification, index) in recentNotifications"
+            :key="index"
+            class="notification-item"
+            :class="{ 'unread': !notification.is_read }"
+            @click="handleNotificationClick(notification)"
+          >
+            <div class="notification-icon">
+              <el-icon 
+                :class="getNotificationIconClass(notification.type)"
+                :style="{ color: getNotificationColor(notification.level) }"
+              >
+                <component :is="getNotificationIcon(notification.type)" />
+              </el-icon>
+            </div>
+            
+            <div class="notification-body">
+              <div class="notification-header">
+                <h4 class="notification-title">{{ notification.title }}</h4>
+                <span class="notification-time">{{ formatRelativeTime(notification.created_at) }}</span>
+              </div>
+              <p class="notification-message">{{ notification.content || notification.message }}</p>
+              <div class="notification-meta">
+                <el-tag 
+                  :type="getNotificationTagType(notification.level)" 
+                  size="small"
+                >
+                  {{ getNotificationLevelText(notification.level) }}
+                </el-tag>
+                <span class="notification-type">{{ getNotificationTypeText(notification.type) }}</span>
+              </div>
+            </div>
+            
+            <div class="notification-actions">
+              <el-button 
+                v-if="!notification.is_read"
+                type="text" 
+                size="small" 
+                @click.stop="markAsRead(notification.id)"
+                class="mark-read-btn"
+              >
+                标记已读
+              </el-button>
+              <el-dropdown @command="handleNotificationAction" trigger="click">
+                <el-button type="text" size="small">
+                  <el-icon><MoreFilled /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item :command="{ action: 'delete', id: notification.id }">
+                      删除通知
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
+          </div>
+        </div>
+        
+        <div v-if="recentNotifications.length > 0" class="notification-footer">
+          <el-button 
+            type="text" 
+            @click="loadMoreNotifications" 
+            :loading="loadingMore"
+            class="load-more-btn"
+          >
+            加载更多
+          </el-button>
+        </div>
+      </div>
     </el-card>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage } from 'element-plus'
 import { 
   Cpu,
   Monitor,
-  Connection
+  Connection,
+  Bell,
+  ChatDotSquare,
+  MoreFilled,
+  Warning,
+  InfoFilled,
+  CircleCheck,
+  CircleClose,
+  Notification
 } from '@element-plus/icons-vue'
 import { 
   DataLine as Memory
@@ -294,6 +396,12 @@ const recentTasks = ref([])
 
 // 最近通知
 const recentNotifications = ref([])
+const loadingMore = ref(false)
+
+// 计算属性
+const unreadNotificationCount = computed(() => {
+  return recentNotifications.value.filter(n => !n.is_read).length
+})
 
 // 获取仪表盘数据
 const fetchDashboardData = async () => {
@@ -360,6 +468,156 @@ const formatDateTime = (dateStr) => {
   })
 }
 
+// 格式化相对时间
+const formatRelativeTime = (dateStr) => {
+  if (!dateStr) return '-'
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffMs = now - date
+  const diffMins = Math.floor(diffMs / (1000 * 60))
+  const diffHours = Math.floor(diffMins / 60)
+  const diffDays = Math.floor(diffHours / 24)
+
+  if (diffMins < 1) return '刚刚'
+  if (diffMins < 60) return `${diffMins}分钟前`
+  if (diffHours < 24) return `${diffHours}小时前`
+  if (diffDays < 7) return `${diffDays}天前`
+  return formatDateTime(dateStr)
+}
+
+// 通知相关方法
+const getNotificationIcon = (type) => {
+  const iconMap = {
+    'task_completed': CircleCheck,
+    'task_failed': CircleClose,
+    'task_started': Notification,
+    'system_error': Warning,
+    'storage_mounted': InfoFilled,
+    'storage_unmounted': Warning,
+    default: InfoFilled
+  }
+  return iconMap[type] || iconMap.default
+}
+
+const getNotificationIconClass = (type) => {
+  return `notification-icon-${type}`
+}
+
+const getNotificationColor = (level) => {
+  const colorMap = {
+    'info': '#409eff',
+    'success': '#67c23a',
+    'warning': '#e6a23c',
+    'error': '#f56c6c',
+    'critical': '#f56c6c'
+  }
+  return colorMap[level] || colorMap.info
+}
+
+const getNotificationTagType = (level) => {
+  const typeMap = {
+    'info': '',
+    'success': 'success',
+    'warning': 'warning',
+    'error': 'danger',
+    'critical': 'danger'
+  }
+  return typeMap[level] || ''
+}
+
+const getNotificationLevelText = (level) => {
+  const textMap = {
+    'info': '信息',
+    'success': '成功',
+    'warning': '警告',
+    'error': '错误',
+    'critical': '严重'
+  }
+  return textMap[level] || '信息'
+}
+
+const getNotificationTypeText = (type) => {
+  const textMap = {
+    'task_completed': '任务完成',
+    'task_failed': '任务失败',
+    'task_started': '任务开始',
+    'system_error': '系统错误',
+    'storage_mounted': '存储挂载',
+    'storage_unmounted': '存储卸载'
+  }
+  return textMap[type] || '系统通知'
+}
+
+// 通知操作方法
+const handleNotificationClick = async (notification) => {
+  if (!notification.is_read) {
+    await markAsRead(notification.id)
+  }
+}
+
+const markAsRead = async (notificationId) => {
+  try {
+    await axios.post(`/api/notifications/${notificationId}/read`)
+    const notification = recentNotifications.value.find(n => n.id === notificationId)
+    if (notification) {
+      notification.is_read = true
+    }
+    ElMessage.success('标记已读成功')
+  } catch (error) {
+    ElMessage.error('标记已读失败')
+  }
+}
+
+const markAllAsRead = async () => {
+  try {
+    const unreadIds = recentNotifications.value
+      .filter(n => !n.is_read)
+      .map(n => n.id)
+    
+    await Promise.all(unreadIds.map(id => axios.post(`/api/notifications/${id}/read`)))
+    
+    recentNotifications.value.forEach(n => {
+      n.is_read = true
+    })
+    
+    ElMessage.success('全部标记已读成功')
+  } catch (error) {
+    ElMessage.error('标记已读失败')
+  }
+}
+
+const handleNotificationAction = async ({ action, id }) => {
+  if (action === 'delete') {
+    try {
+      await axios.delete(`/api/notifications/${id}`)
+      const index = recentNotifications.value.findIndex(n => n.id === id)
+      if (index > -1) {
+        recentNotifications.value.splice(index, 1)
+      }
+      ElMessage.success('删除成功')
+    } catch (error) {
+      ElMessage.error('删除失败')
+    }
+  }
+}
+
+const loadMoreNotifications = async () => {
+  loadingMore.value = true
+  try {
+    const response = await axios.get('/api/notifications/list', {
+      params: {
+        offset: recentNotifications.value.length,
+        limit: 10
+      }
+    })
+    recentNotifications.value.push(...response.data.data)
+  } catch (error) {
+    ElMessage.error('加载更多失败')
+  } finally {
+    loadingMore.value = false
+  }
+}
+
 // 格式化文件大小
 const formatSize = (bytes) => {
   if (bytes === 0) return '0 B'
@@ -407,16 +665,220 @@ onMounted(() => {
 <style scoped>
 .dashboard-container {
   padding: 20px;
+  background: var(--bg-color);
+  color: var(--text-color);
 }
 
 .system-card,
 .resource-card,
 .task-card,
 .notification-card {
-  transition: all 0.3s ease;
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0;
+  }
+  
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .header-icon {
+    color: #409eff;
+    font-size: 16px;
+  }
+  
+  .header-title {
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 14px;
+  }
+  
+  .notification-badge {
+    margin-left: 8px;
+  }
+  
+  .header-actions {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .notification-content {
+    min-height: 180px;
+    max-height: 350px;
+    overflow-y: auto;
+  }
+  
+  .empty-notifications {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  
+  .empty-icon {
+    font-size: 40px;
+    color: #c0c4cc;
+    margin-bottom: 12px;
+  }
+  
+  .empty-text {
+    margin: 0 0 4px 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+  
+  .empty-desc {
+    margin: 0;
+    font-size: 12px;
+    color: #c0c4cc;
+  }
+  
+  .notification-list {
+    padding: 0;
+  }
+  
+  .notification-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border-bottom: 1px solid var(--border-lighter);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    position: relative;
+    
+    &:hover {
+      background: var(--bg-secondary);
+    }
+    
+    &.unread {
+      background: var(--bg-secondary);
+      border-left: 3px solid #409eff;
+      
+      &::before {
+        content: '';
+        position: absolute;
+        left: 8px;
+        top: 20px;
+        width: 6px;
+        height: 6px;
+        background: #409eff;
+        border-radius: 50%;
+      }
+    }
+    
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+  
+  .notification-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--bg-color);
+    flex-shrink: 0;
+    
+    .el-icon {
+      font-size: 16px;
+    }
+  }
+  
+  .notification-body {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .notification-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+  }
+  
+  .notification-title {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-color);
+    line-height: 1.4;
+  }
+  
+  .notification-time {
+    font-size: 11px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    margin-left: 12px;
+  }
+  
+  .notification-message {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  
+  .notification-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  
+  .notification-type {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+  
+  .notification-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  
+  .notification-item:hover .notification-actions {
+    opacity: 1;
+  }
+  
+  .mark-read-btn {
+    font-size: 11px;
+    padding: 2px 6px;
+    height: auto;
+  }
+  
+  .notification-footer {
+    padding: 12px 16px;
+    text-align: center;
+    border-top: 1px solid var(--border-lighter);
+  }
+  
+  .load-more-btn {
+    color: #409eff;
+    font-size: 12px;
+    
+    &:hover {
+      color: #66b1ff;
+    }
   }
 }
 
@@ -431,7 +893,7 @@ onMounted(() => {
   .system-status {
     text-align: center;
     padding-right: 40px;
-    border-right: 1px solid #EBEEF5;
+    border-right: 1px solid var(--border-color);
   }
   .status-value {
     font-size: 36px;
@@ -440,10 +902,10 @@ onMounted(() => {
     &.success { color: #67C23A; }
     &.warning { color: #E6A23C; }
     &.danger { color: #F56C6C; }
-    &.info { color: #909399; }
+    &.info { color: var(--text-secondary); }
   }
   .status-label {
-    color: #909399;
+    color: var(--text-secondary);
     font-size: 14px;
   }
   .system-metrics {
@@ -465,11 +927,11 @@ onMounted(() => {
       .metric-value {
         font-size: 20px;
         font-weight: bold;
-        color: #303133;
+        color: var(--text-color);
       }
       .metric-label {
         font-size: 12px;
-        color: #909399;
+        color: var(--text-secondary);
       }
     }
   }
@@ -493,7 +955,7 @@ onMounted(() => {
   }
   .resource-label {
     font-size: 14px;
-    color: #909399;
+    color: var(--text-secondary);
     margin-bottom: 15px;
   }
   .resource-detail {
@@ -506,12 +968,13 @@ onMounted(() => {
       justify-content: space-between;
       align-items: center;
       .label {
-        color: #909399;
+        color: var(--text-secondary);
         font-size: 12px;
       }
       .value {
         font-size: 14px;
         font-weight: bold;
+        color: var(--text-color);
         &.success { color: #67C23A; }
         &.warning { color: #E6A23C; }
         &.danger { color: #F56C6C; }
@@ -530,39 +993,33 @@ onMounted(() => {
     justify-content: space-around;
     margin-bottom: 20px;
     padding-bottom: 20px;
-    border-bottom: 1px solid #EBEEF5;
+    border-bottom: 1px solid var(--border-color);
     .overview-item {
       text-align: center;
       .overview-value {
         font-size: 24px;
         font-weight: bold;
         margin-bottom: 5px;
+        color: var(--text-color);
         &.success { color: #67C23A; }
         &.warning { color: #E6A23C; }
         &.danger { color: #F56C6C; }
       }
       .overview-label {
         font-size: 12px;
-        color: #909399;
+        color: var(--text-secondary);
       }
     }
   }
 }
 
-.notification-card {
-  .el-timeline {
-    padding: 20px;
-    max-height: 300px;
-    overflow-y: auto;
-  }
-}
 
 :deep(.el-timeline-item__content) {
-  color: #606266;
+  color: var(--text-secondary);
 }
 
 :deep(.el-timeline-item__timestamp) {
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 12px;
 }
 

@@ -1663,20 +1663,20 @@ onUnmounted(() => {
   align-items: center;
   margin-bottom: 30px;
   padding: 20px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-left h1 {
   margin: 0 0 5px 0;
-  color: #303133;
+  color: var(--text-color);
   font-size: 24px;
 }
 
 .page-description {
   margin: 0;
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -1730,7 +1730,7 @@ onUnmounted(() => {
 }
 
 .refresh-timer {
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 12px;
   margin-left: 8px;
 }
@@ -1741,7 +1741,7 @@ onUnmounted(() => {
   align-items: center;
   margin-bottom: 20px;
   padding: 15px 20px;
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -1768,7 +1768,7 @@ onUnmounted(() => {
 }
 
 .table-container {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   overflow: hidden;
@@ -1777,7 +1777,7 @@ onUnmounted(() => {
 .pagination-container {
   padding: 20px;
   text-align: right;
-  border-top: 1px solid #ebeef5;
+  border-top: 1px solid var(--border-color);
 }
 
 .task-name {
@@ -1786,7 +1786,7 @@ onUnmounted(() => {
 }
 
 .task-description {
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 12px;
   margin-top: 2px;
 }
@@ -1794,11 +1794,11 @@ onUnmounted(() => {
 .progress-text {
   margin-left: 8px;
   font-size: 12px;
-  color: #606266;
+  color: var(--text-secondary);
 }
 
 .text-muted {
-  color: #909399;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -1821,11 +1821,11 @@ onUnmounted(() => {
 
 .task-config h4 {
   margin-bottom: 10px;
-  color: #303133;
+  color: var(--text-color);
 }
 
 .task-config pre {
-  background: #f5f5f5;
+  background: var(--bg-secondary);
   padding: 10px;
   border-radius: 4px;
   font-size: 12px;
@@ -1844,7 +1844,7 @@ onUnmounted(() => {
   align-items: center;
   margin-bottom: 15px;
   padding: 10px 0;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .log-error {
@@ -1861,8 +1861,8 @@ onUnmounted(() => {
 
 .task-detail-drawer :deep(.el-drawer__header) {
   padding: 15px 20px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #ebeef5;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .task-detail-drawer :deep(.el-drawer__body) {
@@ -1873,8 +1873,8 @@ onUnmounted(() => {
 
 .task-detail-drawer :deep(.el-drawer__footer) {
   padding: 15px 20px;
-  background: #f5f5f5;
-  border-top: 1px solid #ebeef5;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
 }
 
 .task-detail-content {
@@ -1914,8 +1914,8 @@ onUnmounted(() => {
   padding: 18px 24px 10px 24px;
   font-size: 20px;
   font-weight: 500;
-  border-bottom: 1px solid #ebeef5;
-  background: #f5f5f5;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
 }
 
 /* 响应式设计 */
@@ -1955,7 +1955,7 @@ onUnmounted(() => {
   border-radius: 50%;
   font-size: 22px;
   margin-right: 14px;
-  background: #f5f7fa;
+  background: var(--bg-color);
 }
 .stat-icon.total {
   color: #409EFF;
@@ -1978,7 +1978,7 @@ onUnmounted(() => {
   background: #fef0f0;
 }
 .stat-icon.online {
-  color: #909399;
+  color: var(--text-secondary);
   background: #f4f4f5;
 }
 </style> 

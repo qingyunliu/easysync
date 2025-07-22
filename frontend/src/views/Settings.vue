@@ -106,79 +106,150 @@
       </el-tab-pane>
       
       <el-tab-pane label="通知设置" name="notifications">
-        <el-card class="settings-card">
-          <template #header>
-            <div class="card-header">
-              <span>通知设置</span>
+        <div class="notification-settings">
+          <div class="settings-info">
+            <h3>通知设置</h3>
+            <p>配置系统消息通知方式</p>
+            <el-button type="primary" @click="$router.push('/notifications')" size="small">
+              详细设置
+            </el-button>
+          </div>
+
+          <!-- 通知总开关 -->
+          <el-card class="settings-card" shadow="never">
+            <template #header>
+              <div class="card-header">
+                <el-icon><Switch /></el-icon>
+                <span>通知总开关</span>
+              </div>
+            </template>
+            <div class="switch-content">
+              <el-switch 
+                v-model="basicForm.notification_enabled" 
+                size="large"
+                active-text="启用通知" 
+                inactive-text="禁用通知"
+              />
+              <p class="switch-desc">关闭后将不会发送任何通知</p>
             </div>
-          </template>
-          
-          <el-form
-            ref="notificationsFormRef"
-            :model="notificationsForm"
-            :rules="notificationsRules"
-            label-width="180px"
-          >
-            <el-form-item label="启用邮件通知" prop="email_enabled">
-              <el-switch v-model="notificationsForm.email_enabled" />
-              <div class="form-tip">是否启用邮件通知功能</div>
-            </el-form-item>
-            
-            <template v-if="notificationsForm.email_enabled">
-              <el-form-item label="SMTP服务器" prop="smtp_host">
-                <el-input v-model="notificationsForm.smtp_host" />
-              </el-form-item>
-              
-              <el-form-item label="SMTP端口" prop="smtp_port">
-                <el-input-number v-model="notificationsForm.smtp_port" :min="1" :max="65535" />
-              </el-form-item>
-              
-              <el-form-item label="SMTP用户名" prop="smtp_username">
-                <el-input v-model="notificationsForm.smtp_username" />
-              </el-form-item>
-              
-              <el-form-item label="SMTP密码" prop="smtp_password">
-                <el-input v-model="notificationsForm.smtp_password" type="password" show-password />
-              </el-form-item>
-              
-              <el-form-item label="发件人邮箱" prop="sender_email">
-                <el-input v-model="notificationsForm.sender_email" />
-              </el-form-item>
-              
-              <el-form-item label="收件人邮箱" prop="recipient_email">
-                <el-input v-model="notificationsForm.recipient_email" />
-              </el-form-item>
-            </template>
-            
-            <el-form-item label="启用Webhook通知" prop="webhook_enabled">
-              <el-switch v-model="notificationsForm.webhook_enabled" />
-              <div class="form-tip">是否启用Webhook通知功能</div>
-            </el-form-item>
-            
-            <template v-if="notificationsForm.webhook_enabled">
-              <el-form-item label="Webhook URL" prop="webhook_url">
-                <el-input v-model="notificationsForm.webhook_url" />
-              </el-form-item>
-              
-              <el-form-item label="Webhook密钥" prop="webhook_secret">
-                <el-input v-model="notificationsForm.webhook_secret" type="password" show-password />
-              </el-form-item>
-            </template>
-            
-            <el-form-item>
-              <el-button type="primary" @click="saveNotificationsSettings">保存设置</el-button>
-              <el-button @click="testNotifications">测试通知</el-button>
-            </el-form-item>
-          </el-form>
-        </el-card>
+          </el-card>
+
+          <el-row :gutter="20">
+            <!-- 邮件通知 -->
+            <el-col :span="12">
+              <el-card class="notification-type-card" shadow="never" :class="{ disabled: !basicForm.notification_enabled }">
+                <div class="type-header">
+                  <div class="type-info">
+                    <el-icon class="type-icon"><Message /></el-icon>
+                    <span class="type-title">邮件通知</span>
+                  </div>
+                  <el-switch 
+                    v-model="notificationsForm.email_enabled" 
+                    :disabled="!basicForm.notification_enabled"
+                  />
+                </div>
+                <div class="type-description">
+                  <p>通过邮件接收任务完成、系统警报等通知</p>
+                </div>
+              </el-card>
+            </el-col>
+
+            <!-- Webhook通知 -->
+            <el-col :span="12">
+              <el-card class="notification-type-card" shadow="never" :class="{ disabled: !basicForm.notification_enabled }">
+                <div class="type-header">
+                  <div class="type-info">
+                    <el-icon class="type-icon"><Link /></el-icon>
+                    <span class="type-title">Webhook通知</span>
+                  </div>
+                  <el-switch 
+                    v-model="notificationsForm.webhook_enabled" 
+                    :disabled="!basicForm.notification_enabled"
+                  />
+                </div>
+                <div class="type-description">
+                  <p>将通知推送到指定的Webhook地址</p>
+                </div>
+              </el-card>
+            </el-col>
+
+            <!-- 钉钉通知 -->
+            <el-col :span="12">
+              <el-card class="notification-type-card" shadow="never" :class="{ disabled: !basicForm.notification_enabled }">
+                <div class="type-header">
+                  <div class="type-info">
+                    <el-icon class="type-icon"><ChatDotRound /></el-icon>
+                    <span class="type-title">钉钉通知</span>
+                  </div>
+                  <el-switch 
+                    v-model="notificationsForm.dingtalk_enabled" 
+                    :disabled="!basicForm.notification_enabled"
+                  />
+                </div>
+                <div class="type-description">
+                  <p>通过钉钉机器人发送群聊消息</p>
+                </div>
+              </el-card>
+            </el-col>
+
+            <!-- 短信通知 -->
+            <el-col :span="12">
+              <el-card class="notification-type-card" shadow="never" :class="{ disabled: !basicForm.notification_enabled }">
+                <div class="type-header">
+                  <div class="type-info">
+                    <el-icon class="type-icon"><Iphone /></el-icon>
+                    <span class="type-title">短信通知</span>
+                  </div>
+                  <el-switch 
+                    v-model="notificationsForm.sms_enabled" 
+                    :disabled="!basicForm.notification_enabled"
+                  />
+                </div>
+                <div class="type-description">
+                  <p>紧急故障和关键任务的短信提醒</p>
+                </div>
+              </el-card>
+            </el-col>
+          </el-row>
+
+          <!-- 操作按钮 -->
+          <div class="notification-actions">
+            <el-button 
+              type="primary" 
+              @click="saveNotificationsSettings"
+              :disabled="!basicForm.notification_enabled"
+            >
+              保存设置
+            </el-button>
+            <el-button 
+              @click="testNotifications"
+              :disabled="!basicForm.notification_enabled || !hasEnabledNotification"
+            >
+              发送测试消息
+            </el-button>
+          </div>
+        </div>
       </el-tab-pane>
     </el-tabs>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import {
+  Bell,
+  MuteNotification,
+  Switch,
+  Message,
+  Link,
+  ChatDotRound,
+  Iphone,
+  Check,
+  Notification,
+  Setting,
+  InfoFilled
+} from '@element-plus/icons-vue'
 import axios from 'axios'
 
 // 状态
@@ -213,7 +284,23 @@ const notificationsForm = reactive({
   recipient_email: '',
   webhook_enabled: false,
   webhook_url: '',
-  webhook_secret: ''
+  webhook_secret: '',
+  dingtalk_enabled: false,
+  dingtalk_webhook: '',
+  dingtalk_secret: '',
+  sms_enabled: false,
+  sms_provider: '',
+  sms_api_key: '',
+  sms_template_id: '',
+  sms_sign_name: ''
+})
+
+// 计算属性
+const hasEnabledNotification = computed(() => {
+  return notificationsForm.email_enabled || 
+         notificationsForm.webhook_enabled || 
+         notificationsForm.dingtalk_enabled || 
+         notificationsForm.sms_enabled
 })
 
 // 表单验证规则
@@ -394,6 +481,9 @@ onMounted(() => {
 <style scoped>
 .settings-container {
   padding: 20px;
+  background: var(--bg-color);
+  min-height: 100vh;
+  color: var(--text-color);
 }
 
 .header {
@@ -402,21 +492,175 @@ onMounted(() => {
 
 .header h2 {
   margin: 0;
+  color: var(--text-color);
 }
 
 .settings-card {
   margin-bottom: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--card-bg);
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.card-header .el-icon {
+  color: #667eea;
+  margin-right: 8px;
 }
 
 .form-tip {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
   margin-top: 5px;
 }
+
+/* 通知设置样式 */
+.notification-settings {
+  max-width: 1000px;
+}
+
+.settings-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 20px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.settings-info h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.settings-info p {
+  margin: 4px 0 0 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.switch-content {
+  padding: 20px;
+  text-align: center;
+}
+
+.switch-content .el-switch {
+  margin-bottom: 12px;
+}
+
+.switch-desc {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.notification-type-card {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+.notification-type-card.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.type-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid var(--bg-color);
+}
+
+.type-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.type-icon {
+  color: #409eff;
+  font-size: 18px;
+}
+
+.type-title {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 16px;
+}
+
+.type-description {
+  padding: 0 20px 20px 20px;
+}
+
+.type-description p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.notification-actions {
+  text-align: center;
+  padding: 20px 0;
+}
+
+.notification-actions .el-button {
+  margin: 0 8px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .settings-container {
+    padding: 16px;
+  }
+  
+  .settings-header {
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+  }
+  
+  .action-section {
+    flex-direction: column;
+  }
+  
+  .action-section .el-button {
+    width: 100%;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.notification-card {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+.notification-card:nth-child(1) { animation-delay: 0.1s; }
+.notification-card:nth-child(2) { animation-delay: 0.2s; }
+.notification-card:nth-child(3) { animation-delay: 0.3s; }
+.notification-card:nth-child(4) { animation-delay: 0.4s; }
+.notification-card:nth-child(5) { animation-delay: 0.5s; }
 </style> 

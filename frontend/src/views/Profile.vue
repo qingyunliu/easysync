@@ -367,7 +367,7 @@ const handleChangePassword = async () => {
 .profile-container {
   padding: 24px;
   height: 100%;
-  background-color: #f5f7fa;
+  background-color: var(--bg-color);
 }
 
 .page-header {
@@ -427,14 +427,14 @@ const handleChangePassword = async () => {
 }
 
 .info-text {
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 :deep(.el-divider__text) {
   font-size: 16px;
   font-weight: 500;
-  color: #606266;
+  color: var(--text-secondary);
 }
 
 :deep(.el-tabs__nav-wrap::after) {
@@ -485,6 +485,6 @@ const handleChangePassword = async () => {
 }
 
 :deep(.el-input-group__append .el-button:hover) {
-  background-color: #f5f7fa;
+  background-color: var(--bg-color);
 }
 </style> 

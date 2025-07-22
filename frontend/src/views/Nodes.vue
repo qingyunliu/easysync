@@ -1,161 +1,161 @@
 <template>
-    <div class="nodes-page">
-    <!-- 页面头部 -->
-    <div class="page-header">
-      <div class="header-content">
-        <div class="header-left">
-          <h1 class="page-title">同步代理节点管理</h1>
-          <p class="page-subtitle">管理您的EasySync-Proxy代理节点，用于执行数据同步任务</p>
+  <div class="nodes-page">
+  <!-- 页面头部 -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1 class="page-title">同步代理节点管理</h1>
+        <p class="page-subtitle">管理您的EasySync-Proxy代理节点，用于执行数据同步任务</p>
+      </div>
+      <div class="header-actions">
+        <el-button type="primary" @click="showAddDialog" class="action-btn">
+          <el-icon><Plus /></el-icon>
+          添加代理节点
+        </el-button>
+        <el-button 
+          type="info" 
+          @click="toggleArchitecture"
+          class="guide-btn"
+          :title="showArchitecture ? '隐藏流程引导' : '显示流程引导'"
+        >
+          <el-icon>
+            <View v-if="showArchitecture" />
+            <Hide v-else />
+          </el-icon>
+          流程引导
+        </el-button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 架构说明卡片 -->
+  <transition name="fade-arch">
+    <div class="architecture-section" v-show="showArchitecture">
+      <el-card class="architecture-card" shadow="never">
+        <template #header>
+          <div class="card-header">
+            <div class="header-left">
+              <h3>数据同步架构说明</h3>
+              <el-tag type="info">代理节点中枢式同步流程</el-tag>
+            </div>
+          </div>
+        </template>
+        <div class="architecture-content">
+          <div class="architecture-central-diagram">
+            <div class="storage-side">
+              <div class="storage-icon">
+                <el-icon><FolderOpened /></el-icon>
+              </div>
+              <div class="storage-label">存储资源A<br/>(NAS/OBS/NFS/本地)</div>
+            </div>
+            <div class="sync-arrows">
+              <el-icon class="arrow-left"><ArrowLeft /></el-icon>
+              <el-icon class="arrow-right"><ArrowRight /></el-icon>
+            </div>
+            <div class="proxy-center">
+              <div class="proxy-icon">
+                <el-icon><Connection /></el-icon>
+              </div>
+              <div class="proxy-label">同步代理节点<br/>(SyncProxy)</div>
+              <div class="proxy-desc">负责挂载两端存储，执行数据同步任务<br/>支持双向同步、任务分发、状态监控</div>
+            </div>
+            <div class="sync-arrows">
+              <el-icon class="arrow-left"><ArrowLeft /></el-icon>
+              <el-icon class="arrow-right"><ArrowRight /></el-icon>
+            </div>
+            <div class="storage-side">
+              <div class="storage-icon">
+                <el-icon><FolderOpened /></el-icon>
+              </div>
+              <div class="storage-label">存储资源B<br/>(NAS/OBS/NFS/本地)</div>
+            </div>
+          </div>
+          <div class="central-arch-notes">
+            <el-alert type="info" show-icon :closable="false" style="margin-bottom: 18px;">
+              <template #title>
+                <strong>说明：</strong> 同步代理节点作为中枢，挂载/连接两端存储资源，支持任意方向的数据同步与转发。任务可灵活分配到多台代理节点，实现高可用与负载均衡。
+              </template>
+            </el-alert>
+          </div>
+          <div class="usage-guide">
+            <h4>使用指南</h4>
+            <div class="guide-steps">
+              <div class="guide-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                  <strong>添加代理节点</strong>
+                  <p>注册一台或多台服务器作为SyncProxy，作为同步中枢</p>
+                </div>
+              </div>
+              <div class="guide-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                  <strong>挂载存储资源</strong>
+                  <p>确保代理节点能访问并挂载两端存储（如NAS、OBS、NFS等）</p>
+                </div>
+              </div>
+              <div class="guide-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                  <strong>配置同步任务</strong>
+                  <p>选择任意两端存储和代理节点，系统自动分配任务，支持双向同步</p>
+                </div>
+              </div>
+              <div class="guide-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                  <strong>执行与监控</strong>
+                  <p>代理节点负责数据搬运、同步、状态上报，支持多节点高可用</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="header-actions">
-          <el-button type="primary" @click="showAddDialog" class="action-btn">
-            <el-icon><Plus /></el-icon>
-            添加代理节点
-          </el-button>
-          <el-button 
-            type="info" 
-            @click="toggleArchitecture"
-            class="guide-btn"
-            :title="showArchitecture ? '隐藏流程引导' : '显示流程引导'"
-          >
-            <el-icon>
-              <View v-if="showArchitecture" />
-              <Hide v-else />
-            </el-icon>
-            流程引导
-          </el-button>
+      </el-card>
+    </div>
+  </transition>
+
+  <!-- 统计卡片 -->
+  <div class="stats-section">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon online">
+          <el-icon><Monitor /></el-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats?.online || "0" }} </div>
+          <div class="stat-label">在线服务器</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon offline">
+          <el-icon><CircleClose /></el-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats?.offline || "0" }} </div>
+          <div class="stat-label">离线服务器</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon running">
+          <el-icon><Connection /></el-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats?.running || "0" }} </div>
+          <div class="stat-label">运行中Agent</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon pending">
+          <el-icon><Clock /></el-icon>
+        </div>
+        <div class="stat-content">
+          <div class="stat-value">{{ stats?.pending || "0" }} </div>
+          <div class="stat-label">待安装Agent</div>
         </div>
       </div>
     </div>
-
-    <!-- 架构说明卡片 -->
-    <transition name="fade-arch">
-      <div class="architecture-section" v-show="showArchitecture">
-        <el-card class="architecture-card" shadow="never">
-          <template #header>
-            <div class="card-header">
-              <div class="header-left">
-                <h3>数据同步架构说明</h3>
-                <el-tag type="info">代理节点中枢式同步流程</el-tag>
-              </div>
-            </div>
-          </template>
-          <div class="architecture-content">
-            <div class="architecture-central-diagram">
-              <div class="storage-side">
-                <div class="storage-icon">
-                  <el-icon><FolderOpened /></el-icon>
-                </div>
-                <div class="storage-label">存储资源A<br/>(NAS/OBS/NFS/本地)</div>
-              </div>
-              <div class="sync-arrows">
-                <el-icon class="arrow-left"><ArrowLeft /></el-icon>
-                <el-icon class="arrow-right"><ArrowRight /></el-icon>
-              </div>
-              <div class="proxy-center">
-                <div class="proxy-icon">
-                  <el-icon><Connection /></el-icon>
-                </div>
-                <div class="proxy-label">同步代理节点<br/>(SyncProxy)</div>
-                <div class="proxy-desc">负责挂载两端存储，执行数据同步任务<br/>支持双向同步、任务分发、状态监控</div>
-              </div>
-              <div class="sync-arrows">
-                <el-icon class="arrow-left"><ArrowLeft /></el-icon>
-                <el-icon class="arrow-right"><ArrowRight /></el-icon>
-              </div>
-              <div class="storage-side">
-                <div class="storage-icon">
-                  <el-icon><FolderOpened /></el-icon>
-                </div>
-                <div class="storage-label">存储资源B<br/>(NAS/OBS/NFS/本地)</div>
-              </div>
-            </div>
-            <div class="central-arch-notes">
-              <el-alert type="info" show-icon :closable="false" style="margin-bottom: 18px;">
-                <template #title>
-                  <strong>说明：</strong> 同步代理节点作为中枢，挂载/连接两端存储资源，支持任意方向的数据同步与转发。任务可灵活分配到多台代理节点，实现高可用与负载均衡。
-                </template>
-              </el-alert>
-            </div>
-            <div class="usage-guide">
-              <h4>使用指南</h4>
-              <div class="guide-steps">
-                <div class="guide-step">
-                  <div class="step-number">1</div>
-                  <div class="step-content">
-                    <strong>添加代理节点</strong>
-                    <p>注册一台或多台服务器作为SyncProxy，作为同步中枢</p>
-                  </div>
-                </div>
-                <div class="guide-step">
-                  <div class="step-number">2</div>
-                  <div class="step-content">
-                    <strong>挂载存储资源</strong>
-                    <p>确保代理节点能访问并挂载两端存储（如NAS、OBS、NFS等）</p>
-                  </div>
-                </div>
-                <div class="guide-step">
-                  <div class="step-number">3</div>
-                  <div class="step-content">
-                    <strong>配置同步任务</strong>
-                    <p>选择任意两端存储和代理节点，系统自动分配任务，支持双向同步</p>
-                  </div>
-                </div>
-                <div class="guide-step">
-                  <div class="step-number">4</div>
-                  <div class="step-content">
-                    <strong>执行与监控</strong>
-                    <p>代理节点负责数据搬运、同步、状态上报，支持多节点高可用</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </el-card>
-      </div>
-    </transition>
-
-    <!-- 统计卡片 -->
-    <div class="stats-section">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon online">
-            <el-icon><Monitor /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ stats?.online || "0" }} </div>
-            <div class="stat-label">在线服务器</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon offline">
-            <el-icon><CircleClose /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ stats?.offline || "0" }} </div>
-            <div class="stat-label">离线服务器</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon running">
-            <el-icon><Connection /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ stats?.running || "0" }} </div>
-            <div class="stat-label">运行中Agent</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon pending">
-            <el-icon><Clock /></el-icon>
-          </div>
-          <div class="stat-content">
-            <div class="stat-value">{{ stats?.pending || "0" }} </div>
-            <div class="stat-label">待安装Agent</div>
-          </div>
-        </div>
-      </div>
-    </div>
+  </div>
   <div class="nodes-container">
       <el-card class="nodes-card" shadow="never">
         <template #header>
@@ -165,7 +165,7 @@
               <el-tag type="info" size="small">{{ nodes.length }}台节点</el-tag>
             </div>
             <div class="header-right">
-    <div class="header">
+              <div class="header">
                 <div class="header-actions">
                   <el-select v-model="selectedGroup" placeholder="分组筛选" clearable style="width: 120px">
                     <el-option v-for="group in groupList" :key="group" :label="group" :value="group" />
@@ -183,7 +183,7 @@
                   <el-button type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">批量删除</el-button>
                   <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchGroupDialog">批量分组</el-button>
                   <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchTagDialog">批量打标签</el-button>
-    </div>
+                </div>
               </div>
               <el-input v-model="searchQuery" placeholder="搜索名称/IP" class="search-input" clearable @input="handleSearch">
                 <template #prefix>
@@ -197,7 +197,7 @@
           </div>
         </template>
         <div class="table-container">
-          <el-table :data="filteredNodes" v-loading="loading" @selection-change="handleSelectionChange" style="width: 100%" border class="nodes-table">
+          <el-table :data="filteredNodes" v-loading="loading" @selection-change="handleSelectionChange" style="width: 100%" class="nodes-table">
             <el-table-column type="selection" width="55" />
             <el-table-column prop="name" label="名称" min-width="120">
         <template #default="{ row }">
@@ -2181,10 +2181,10 @@ onMounted(() => {
 }
 
 .architecture-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
 }
 
 .architecture-content {
@@ -2234,7 +2234,7 @@ onMounted(() => {
   margin: 0 0 8px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-color);
 }
 
 .sync-arrows {
@@ -2284,13 +2284,13 @@ onMounted(() => {
   margin: 0 0 8px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-color);
 }
 
 .proxy-desc {
   margin: 0;
   font-size: 14px;
-  color: #606266;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
@@ -2304,7 +2304,7 @@ onMounted(() => {
 
 .usage-guide h4 {
   margin: 0 0 20px 0;
-  color: #303133;
+  color: var(--text-color);
   font-size: 18px;
   font-weight: 600;
 }
@@ -2349,14 +2349,14 @@ onMounted(() => {
 .step-content strong {
   display: block;
   margin-bottom: 8px;
-  color: #303133;
+  color: var(--text-color);
   font-size: 14px;
   font-weight: 600;
 }
 
 .step-content p {
   margin: 0;
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 13px;
   line-height: 1.5;
 }
@@ -2422,12 +2422,12 @@ onMounted(() => {
 .stat-card {
   display: flex;
   justify-content: space-between;
-  background: white;
+  background: var(--card-bg);
   border-radius: 12px;
   padding: 24px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   transition: all 0.3s ease;
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
 }
 
 .stat-card:hover {
@@ -2471,13 +2471,13 @@ onMounted(() => {
 .stat-value {
   font-size: 32px;
   font-weight: 700;
-  color: #303133;
+  color: var(--text-color);
   line-height: 1;
 }
 
 .stat-label {
   font-size: 14px;
-  color: #909399;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -2523,8 +2523,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  background: var(--bg-secondary);
 }
 
 .server-info {
@@ -2536,7 +2535,7 @@ onMounted(() => {
 .server-name {
   font-size: 14px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-color);
 }
 
 .server-name-link {
@@ -2577,13 +2576,13 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background-color: #f5f7fa;
+  background-color: var(--bg-color);
   border-radius: 4px;
   min-width: 200px;
 }
 
 .cpu-cores {
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -2597,7 +2596,7 @@ onMounted(() => {
 .memory-details {
   display: flex;
   justify-content: space-between;
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -2613,7 +2612,7 @@ onMounted(() => {
   flex-direction: column;
   gap: 12px;
   padding: 12px;
-  background-color: #f5f7fa;
+  background-color: var(--bg-color);
   border-radius: 4px;
 }
 
@@ -2624,14 +2623,14 @@ onMounted(() => {
 }
 
 .disk-mount {
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .disk-details {
   display: flex;
   justify-content: space-between;
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
@@ -2647,14 +2646,14 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background-color: #f5f7fa;
+  background-color: var(--bg-color);
   border-radius: 4px;
   min-width: 300px;
   flex-wrap: wrap;
 }
 
 .nic-ip, .nic-ip6, .nic-mac, .nic-mtu, .nic-status {
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 14px;
   margin-right: 8px;
 }
@@ -2665,11 +2664,11 @@ onMounted(() => {
 
 :deep(.el-descriptions__label) {
   width: 100px;
-  color: #909399;
+  color: var(--text-secondary);
 }
 
 :deep(.el-descriptions__content) {
-  color: #303133;
+  color: var(--text-color);
 }
 
 :deep(.el-progress) {
@@ -2701,47 +2700,15 @@ onMounted(() => {
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   padding: 20px;
+}
 
-  .chart-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #ebeef5;
-
-    h3 {
-      margin: 0;
-      font-size: 16px;
-      font-weight: 500;
-      color: #303133;
-    }
-  }
-
-  .chart {
-    height: 300px;
-    width: 100%;
-  }
-
-  :deep(.el-table) {
-    --el-table-border-color: #ebeef5;
-    --el-table-header-bg-color: #f5f7fa;
-    border-radius: 4px;
-    margin-top: 8px;
-  }
-
-  :deep(.el-table th) {
-    background-color: var(--el-table-header-bg-color);
-    font-weight: 500;
-  }
-
-  :deep(.el-table--border) {
-    border: 1px solid var(--el-table-border-color);
-  }
-
-  :deep(.el-progress) {
-    margin: 0;
-  }
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .monitor-control-panel {
@@ -2765,7 +2732,7 @@ onMounted(() => {
 .section-label {
   font-size: 14px;
   font-weight: 500;
-  color: #606266;
+  color: var(--text-secondary);
   white-space: nowrap;
 }
 
@@ -2848,7 +2815,7 @@ onMounted(() => {
   background-color: #fff;
   padding: 0 20px;
   margin: 0 -20px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .scrollable-content {
@@ -2896,8 +2863,8 @@ onMounted(() => {
 }
 
 .logs-list :deep(.el-table__header th) {
-  background: #fafafa;
-  color: #606266;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   font-weight: 600;
   font-size: 13px;
 }
@@ -2915,10 +2882,10 @@ onMounted(() => {
 }
 
 .nodes-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-color);
   margin-bottom: 24px;
 }
 
@@ -2928,39 +2895,36 @@ onMounted(() => {
   gap: 12px;
 }
 
+.header-left h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin: 0;
+}
+
 .header-right {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.table-container {
-  background: white;
-  border-radius: 8px;
-  padding: 0;
-  box-shadow: none;
-  border: none;
+.nodes-table {
+  width: 100%;
 }
 
-.nodes-table {
-  font-size: 14px;
-  border-radius: 8px;
-  overflow: hidden;
+.nodes-table :deep(.el-table__header) {
+  background: var(--bg-secondary);
 }
 
 .nodes-table :deep(.el-table__header th) {
-  background: #fafafa;
-  color: #606266;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
   font-weight: 600;
-  font-size: 13px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .nodes-table :deep(.el-table__row) {
-  transition: background 0.2s;
-}
-
-.nodes-table :deep(.el-table__row:hover) {
-  background: #f5f7fa;
+  transition: all 0.3s ease;
 }
 
 .action-buttons {
@@ -3001,8 +2965,7 @@ onMounted(() => {
   }
 }
 
-.nodes-card,
-.nodes-table {
+.nodes-card {
   animation: fadeInUp 0.6s ease-out;
 }
 
@@ -3017,19 +2980,8 @@ onMounted(() => {
   }
 }
 
-.table-container::-webkit-scrollbar {
-  width: 6px;
-}
-.table-container::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 3px;
-}
-.table-container::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 3px;
-}
-.table-container::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+.table-container {
+  padding: 0;
 }
 
 .guide-btn {

@@ -6,7 +6,7 @@ import "element-plus/dist/index.css";
 import zhCn from "element-plus/dist/locale/zh-cn.mjs";
 import App from "./App.vue";
 import router from "./router";
-import "./assets/main.css";
+import "./assets/theme.css";
 import axios from "axios";
 import { registerErrorHandler, handleError } from "./utils/error-handler";
 import { apiConfig } from "@/config";
@@ -75,6 +75,11 @@ axios.interceptors.response.use(
     return Promise.reject(handleError(error));
   }
 );
+
+// 自动设置默认主题
+if (!document.documentElement.getAttribute("data-theme")) {
+  document.documentElement.setAttribute("data-theme", "light");
+}
 
 const app = createApp(App);
 

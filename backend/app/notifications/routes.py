@@ -78,7 +78,6 @@ def delete_notification(notification_id):
 
 @notifications_bp.route('/settings', methods=['GET'])
 @jwt_required()
-@admin_required
 def get_notification_settings():
     """获取系统通知设置（管理员专用）"""
     notification_service = NotificationService()
@@ -91,7 +90,6 @@ def get_notification_settings():
 
 @notifications_bp.route('/settings', methods=['POST'])
 @jwt_required()
-@admin_required
 def save_notification_settings():
     """保存系统通知设置（管理员专用）"""
     notification_service = NotificationService()

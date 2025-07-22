@@ -48,7 +48,7 @@
                   <img
                     :src="captchaImg"
                     @click="refreshCaptcha"
-                    style="height: 40px; cursor: pointer; border-radius: 4px; border:1px solid #eee; background:#f8f8f8;"
+                    style="height: 40px; cursor: pointer; border-radius: 4px; border:1px solid var(--border-color); background:var(--bg-color);"
                     :title="'点击刷新验证码'"
                   />
                 </el-col>
