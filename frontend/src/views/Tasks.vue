@@ -176,7 +176,6 @@
         v-loading="loading"
         @selection-change="handleSelectionChange"
         :default-sort="{ prop: 'created_at', order: 'descending' }"
-        stripe
         style="width: 100%"
       >
         <el-table-column type="selection" width="55" />
@@ -1682,7 +1681,7 @@ onUnmounted(() => {
 
 /* 统计卡片样式 */
 .stat-card {
-  border: none;
+  border: 1px solid var(--border-color);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
   transition: all 0.3s ease;
 }
@@ -1693,23 +1692,23 @@ onUnmounted(() => {
 }
 
 .stat-card.running {
-  background: linear-gradient(135deg, #67c23a, #85ce61);
-  color: white;
+  background: var(--card-bg);
+  color: var(--text-color);
 }
 
 .stat-card.pending {
-  background: linear-gradient(135deg, #e6a23c, #f0a020);
-  color: white;
+  background: var(--card-bg);
+  color: var(--text-color);
 }
 
 .stat-card.completed {
-  background: linear-gradient(135deg, #409eff, #66b1ff);
-  color: white;
+  background: var(--card-bg);
+  color: var(--text-color);
 }
 
 .stat-card.failed {
-  background: linear-gradient(135deg, #f56c6c, #f89898);
-  color: white;
+  background: var(--card-bg);
+  color: var(--text-color);
 }
 
 .stat-content {
@@ -1768,14 +1767,13 @@ onUnmounted(() => {
 }
 
 .table-container {
+  padding: 20px;
   background: var(--card-bg);
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  box-shadow: var(--card-shadow);
 }
 
 .pagination-container {
-  padding: 20px;
   text-align: right;
   border-top: 1px solid var(--border-color);
 }

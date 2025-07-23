@@ -2,8 +2,7 @@
   <div class="home-container">
     <div class="sidebar" :class="{ collapsed: isCollapsed }">
       <div class="logo">
-        <img v-if="isCollapsed" src="/src/assets/logo/easysync-small-logo.svg">
-        <img v-else src="/src/assets/logo/easysync-master-logo.svg" style="margin-left:-10px;width:165px;">
+        <img :src="logoSrc" :style="isCollapsed ? '' : 'margin-left:-10px;width:165px;'">
       </div>
       <div class="collapse-btn" @click="toggleSidebar">
         <el-icon>
@@ -139,6 +138,29 @@ const isCollapsed = ref(localStorage.getItem('isCollapsedSideBar') === 'true')
 const router = useRouter()
 const user = ref(null)
 
+// 主题判断
+const theme = ref(document.documentElement.getAttribute('data-theme') || 'light')
+const updateTheme = () => {
+  theme.value = document.documentElement.getAttribute('data-theme') || 'light'
+}
+window.addEventListener('DOMContentLoaded', updateTheme)
+window.addEventListener('storage', updateTheme)
+const observer = new MutationObserver(updateTheme)
+observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+
+const logoSrc = computed(() => {
+  if (isCollapsed.value) {
+    if (theme.value === 'dark') {
+      return '/src/assets/logo/easysync-small-white-page.svg'
+    }
+    return '/src/assets/logo/easysync-small-logo.svg'
+  }
+  if (theme.value === 'dark') {
+    return '/src/assets/logo/easysync-login-page.svg'
+  }
+  return '/src/assets/logo/easysync-master-logo.svg'
+})
+
 // 获取后端基础URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
 
@@ -247,6 +269,7 @@ const handleAvatarError = () => {
 }
 .el-menu-item {
   height: 48px;
+  font-weight: 500;
   line-height: 48px;
   margin: 8px 0;
   border-radius: 16px;
@@ -270,13 +293,13 @@ const handleAvatarError = () => {
 }
 .el-menu-item:hover {
   background: var(--bg-secondary);
-  color: #409eff;
+  color: var(--sidebar-active);
   box-shadow: 0 2px 8px 0 rgba(64, 158, 255, 0.10);
   border: 1px solid var(--border-color);
 }
 .el-menu-item.is-active {
   background: var(--bg-secondary);
-  color: #409eff !important;
+  color: var(--sidebar-active) !important;
   font-weight: 600;
   box-shadow: 0 2px 12px 0 rgba(64, 158, 255, 0.10);
   border: 1px solid var(--border-color);
@@ -284,13 +307,13 @@ const handleAvatarError = () => {
 
 .el-menu-item .el-icon {
   font-size: 22px;
-  color: #7ab8ff;
+  color: var(--sidebar-text);
   transition: color 0.25s, transform 0.25s;
 }
 
 .el-menu-item.is-active .el-icon,
 .el-menu-item:hover .el-icon {
-  color: #1890ff;
+  color: var(--sidebar-active);
   transform: scale(1.18);
   text-shadow: 0 0 8px #b2e2ff;
 }

@@ -214,7 +214,7 @@ const handleLogin = async () => {
   width: 100%;
   text-align: center;
   margin-bottom: 40px;
-  color: white;
+  color: var(--text-color);
   animation: fadeInDown 1s ease;
 }
 
@@ -236,9 +236,10 @@ const handleLogin = async () => {
   width: 100%;
   max-width: 400px;
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.95);
+  background: var(--card-bg);
   backdrop-filter: blur(10px);
   animation: fadeInUp 1s ease;
+  border: 1px solid var(--border-color);
 }
 
 .card-header {

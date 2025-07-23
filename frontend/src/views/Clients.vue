@@ -2678,18 +2678,23 @@ const toggleArchitecture = () => {
 
 /* 对话框样式 */
 .client-dialog :deep(.el-dialog__header) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--card-bg);
+  color: var(--text-color);
   border-radius: 8px 8px 0 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .client-dialog :deep(.el-dialog__title) {
-  color: white;
+  color: var(--text-color);
   font-weight: 600;
 }
 
+:deep(.el-dialog__title) {
+  color: var(--text-color) !important;
+}
+
 .client-dialog :deep(.el-dialog__headerbtn .el-dialog__close) {
-  color: white;
+  color: var(--text-color);
 }
 
 .client-dialog :deep(.el-dialog__body) {
@@ -2714,31 +2719,36 @@ const toggleArchitecture = () => {
   box-shadow: 0 0 0 1px #409eff inset;
 }
 
+.client-form :deep(.el-textarea__inner) {
+  box-shadow: 0 0 0 1px var(--border-color) inset !important;
+}
+
 .dialog-footer {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border-color);
   background: var(--bg-secondary);
 }
 
 /* 抽屉样式 */
 .client-drawer :deep(.el-drawer__header) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: var(--card-bg);
+  color: var(--text-color);
   padding: 20px 24px;
   margin: 0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .client-drawer :deep(.el-drawer__title) {
-  color: white;
+  color: var(--text-color);
   font-weight: 600;
   font-size: 18px;
 }
 
 .client-drawer :deep(.el-drawer__headerbtn .el-drawer__close) {
-  color: white;
+  color: var(--text-color);
 }
 
 .drawer-content {
@@ -2829,13 +2839,13 @@ const toggleArchitecture = () => {
     align-items: center;
   gap: 8px;
   padding: 12px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 6px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
 }
 
 .cpu-cores {
-  color: #6c757d;
+  color: var(--text-secondary);
   font-size: 14px;
       font-weight: 500;
 }
@@ -2856,10 +2866,10 @@ const toggleArchitecture = () => {
 .memory-details span {
   text-align: center;
   padding: 8px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
     border-radius: 4px;
   font-size: 14px;
-  color: #6c757d;
+  color: var(--text-secondary);
 }
 
 .disk-info {
@@ -2870,9 +2880,9 @@ const toggleArchitecture = () => {
 
 .disk-item {
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 8px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
 }
 
 .disk-header {
@@ -2884,7 +2894,7 @@ const toggleArchitecture = () => {
 
 .disk-mount {
   font-size: 14px;
-  color: #6c757d;
+  color: var(--text-secondary);
   }
 
 .disk-details {
@@ -2900,7 +2910,7 @@ const toggleArchitecture = () => {
   background: var(--card-bg);
   border-radius: 4px;
   font-size: 13px;
-  color: #6c757d;
+  color: var(--text-secondary);
   }
 
 .network-info {
@@ -2913,16 +2923,17 @@ const toggleArchitecture = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px;
-  background: #f8f9fa;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
   border-radius: 6px;
-  border: 1px solid #e9ecef;
+  min-width: 300px;
+  border: 1px solid var(--border-color);
   flex-wrap: wrap;
 }
 
 .nic-ip, .nic-ip6, .nic-mac, .nic-mtu, .nic-status {
   font-size: 13px;
-  color: #6c757d;
+  color: var(--text-secondary);
   padding: 2px 6px;
   background: var(--card-bg);
   border-radius: 3px;
@@ -3232,9 +3243,9 @@ const toggleArchitecture = () => {
   justify-content: space-between;
   margin-bottom: 30px;
   padding: 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: var(--card-bg);
   border-radius: 12px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--border-color);
 }
 
 .flow-step {
@@ -3250,14 +3261,15 @@ const toggleArchitecture = () => {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--bg-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 16px;
-  color: white;
+  color: #409eff;
   font-size: 24px;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: var(--card-shadow);
+  border: 2px solid var(--border-color);
 }
 
 .step-content h4 {
@@ -3325,14 +3337,14 @@ const toggleArchitecture = () => {
   align-items: flex-start;
   gap: 16px;
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 8px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
   transition: all 0.3s ease;
 }
 
 .guide-step:hover {
-  background: #e9ecef;
+  background: var(--border-color);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
@@ -3341,8 +3353,8 @@ const toggleArchitecture = () => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
-  color: white;
+  background: var(--card-bg);
+  color: var(--text-color);
   display: flex;
   align-items: center;
   justify-content: center;

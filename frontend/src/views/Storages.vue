@@ -48,7 +48,6 @@
           :data="filteredNasStorages"
           style="width: 100%"
           v-loading="loading"
-          border
           :fit="false"
         >
           <el-table-column prop="name" label="名称" min-width="180" :resizable="true">
@@ -98,7 +97,6 @@
           :data="filteredS3Storages"
           style="width: 100%"
           v-loading="loading"
-          border
           :fit="false"
         >
           <el-table-column prop="name" label="名称" min-width="180" :resizable="true">
@@ -1681,18 +1679,6 @@ onUnmounted(() => {
   color: var(--el-color-primary);
 }
 
-:deep(.el-collapse-item__header) {
-  font-size: 16px;
-  padding: 12px;
-  background-color: var(--el-color-primary-light-9);
-  border-radius: 4px;
-  margin-bottom: 8px;
-}
-
-:deep(.el-collapse-item__content) {
-  padding: 16px 5px;
-}
-
 :deep(.el-table__row) {
   transition: all 0.3s ease;
 }
@@ -2033,7 +2019,7 @@ onUnmounted(() => {
 :deep(.el-collapse-item__header) {
   font-size: 14px;
   color: var(--el-text-color-primary);
-  background-color: white;
+  background-color: var(--header-bg);
   border-radius: 4px;
   padding: 8px 16px;
   margin-bottom: 0.9px;
@@ -2048,12 +2034,6 @@ onUnmounted(() => {
 /* 存储高级选项样式 */
 .storage-advanced-section {
   margin-top: 8px;
-}
-
-.storage-advanced-section :deep(.el-collapse-item__header) {
-  font-size: 14px;
-  color: var(--el-text-color-primary);
-  border: none;
 }
 
 .storage-advanced-section :deep(.el-collapse-item__header::before) {

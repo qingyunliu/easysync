@@ -51,7 +51,6 @@
         v-loading="loading"
         :data="logs"
         style="width: 100%"
-        border
       >
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="task_name" label="任务名称" min-width="150" />

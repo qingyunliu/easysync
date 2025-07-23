@@ -378,11 +378,11 @@ const handleChangePassword = async () => {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
-  color: #1f2d3d;
+  color: var(--text-color);
 }
 
 .content-wrapper {
-  background-color: #fff;
+  background-color: var(--card-bg);
   border-radius: 4px;
   padding: 24px;
   min-height: calc(100vh - 220px);
@@ -391,6 +391,14 @@ const handleChangePassword = async () => {
 .profile-tabs {
   max-width: 800px;
   margin: 0 auto;
+  display: flex;
+  justify-content: space-between;
+  background: var(--card-bg) #16161a;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: var(--card-shadow);
+  transition: all 0.3s ease;
+  border: 1px solid var(--border-color);
 }
 
 .profile-form {

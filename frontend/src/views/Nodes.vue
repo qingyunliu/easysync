@@ -2197,9 +2197,9 @@ onMounted(() => {
   justify-content: space-between;
   margin-bottom: 30px;
   padding: 20px;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  background: var(--card-bg);
   border-radius: 12px;
-  border: 1px solid #dee2e6;
+  border: 1px solid var(--border-color);
 }
 
 .storage-side {
@@ -2215,18 +2215,18 @@ onMounted(() => {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--card-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
-  color: white;
+  color: var(--text-color);
   margin-bottom: 16px;
   transition: all 0.3s ease;
 }
 
 .storage-icon.current-step {
-  background: linear-gradient(135deg, #409EFF 0%, #67C23A 100%);
+  background: var(--card-bg);
   box-shadow: 0 4px 20px rgba(64, 158, 255, 0.3);
 }
 
@@ -2265,18 +2265,18 @@ onMounted(() => {
   width: 60px;
   height: 60px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--card-bg);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
-  color: white;
+  color: var(--text-color);
   margin-bottom: 16px;
   transition: all 0.3s ease;
 }
 
 .proxy-icon.current-step {
-  background: linear-gradient(135deg, #409EFF 0%, #67C23A 100%);
+  background: var(--card-bg);
   box-shadow: 0 4px 20px rgba(64, 158, 255, 0.3);
 }
 
@@ -2320,14 +2320,14 @@ onMounted(() => {
   align-items: flex-start;
   gap: 16px;
   padding: 16px;
-  background: #f8f9fa;
+  background: var(--bg-secondary);
   border-radius: 8px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-color);
   transition: all 0.3s ease;
 }
 
 .guide-step:hover {
-  background: #e9ecef;
+  background: var(--border-color);
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
@@ -2336,8 +2336,8 @@ onMounted(() => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #409eff 0%, #66b1ff 100%);
-  color: white;
+  background: var(--card-bg);
+  color: var(--text-color);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2513,7 +2513,7 @@ onMounted(() => {
 
 .info-card {
   margin-bottom: 20px;
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
@@ -2646,9 +2646,10 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  background-color: var(--bg-color);
-  border-radius: 4px;
+  background-color: var(--bg-secondary);
+  border-radius: 6px;
   min-width: 300px;
+  border: 1px solid var(--border-color);
   flex-wrap: wrap;
 }
 
@@ -2696,7 +2697,7 @@ onMounted(() => {
 
 .chart-container {
   margin-bottom: 24px;
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   padding: 20px;
@@ -2716,7 +2717,7 @@ onMounted(() => {
   align-items: center;
   margin-bottom: 24px;
   padding: 16px 20px;
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   gap: 24px;
@@ -2831,7 +2832,7 @@ onMounted(() => {
 .logs-control-panel {
   margin-bottom: 20px;
   padding: 16px;
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
 }
@@ -2852,7 +2853,7 @@ onMounted(() => {
 }
 
 .logs-list {
-  background-color: #ffffff;
+  background-color: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
   padding: 16px;

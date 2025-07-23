@@ -106,7 +106,7 @@ onMounted(async () => {
   width: 100%;
   text-align: center;
   margin-bottom: 40px;
-  color: white;
+  color: var(--text-color);
   animation: fadeInDown 1s ease;
 }
 .verify-logo {

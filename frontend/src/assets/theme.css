@@ -27,13 +27,14 @@
   
   /* 卡片颜色 */
   --card-bg: #ffffff;
-  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --card-shadow: 0 0 1px rgba(0, 0, 0, .3),
+    0 4px 14px rgba(0, 0, 0, .1);
   --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
   
   /* 侧边栏 */
   --sidebar-bg: linear-gradient(135deg, #fafdff 0%, #fff 100%);
-  --sidebar-text: #606266;
-  --sidebar-active: #00f2fe;
+  --sidebar-text: #1c1f23;
+  --sidebar-active: #22219b;
   
   /* 头部 */
   --header-bg: rgba(255, 255, 255, 0.9);
@@ -44,7 +45,7 @@
 :root[data-theme="dark"] {
   /* 背景色 */
   --bg-color: #16161a;
-  --bg-secondary: #16161a;
+  --bg-secondary: #1d1d22;
   --bg-tertiary: #262626;
   
   /* 文字颜色 */
@@ -60,7 +61,8 @@
   
   /* 卡片颜色 */
   --card-bg: #16161a;
-  --card-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --card-shadow: 0 0 1px rgba(0, 0, 0, .3),
+    0 4px 14px rgba(0, 0, 0, .1);
   --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.6);
   
   /* 侧边栏 */
@@ -99,8 +101,13 @@ body {
   color: var(--text-color) !important;
 }
 
+.el-descriptions__body {
+  background-color: var(--card-bg) !important;
+  color: var(--text-color) !important;
+}
+
 /* 表单元素 */
-.el-input__wrapper {
+.el-select__wrapper, .el-input__wrapper {
   background-color: var(--card-bg) !important;
   border-color: var(--border-color) !important;
   color: var(--text-color) !important;
@@ -232,12 +239,29 @@ body {
 .el-dialog__header {
   background-color: var(--card-bg) !important;
   color: var(--text-color) !important;
-  border-bottom: 1px solid var(--border-lighter) !important;
+  border-bottom: 1px solid var(--border-color) !important;
+}
+
+.el-dialog__title {
+  color: var(--text-color) !important;
+}
+
+.el-dialog__headerbtn .el-dialog__close {
+  color: var(--text-color) !important;
+}
+
+.el-dialog__headerbtn .el-dialog__close:hover {
+  color: #f56c6c !important;
 }
 
 .el-dialog__body {
   background-color: var(--card-bg) !important;
   color: var(--text-color) !important;
+}
+
+.el-dialog__footer {
+  background-color: var(--card-bg) !important;
+  border-top: 1px solid var(--border-color) !important;
 }
 
 /* 消息提示 */
@@ -358,13 +382,6 @@ body {
     border-color: var(--border-light) !important;
   }
   
-  /* 深色主题下的标签调整 */
-  .el-tag {
-    background-color: var(--bg-secondary) !important;
-    border-color: var(--border-color) !important;
-    color: var(--text-color) !important;
-  }
-  
   /* 深色主题下的抽屉 */
   .el-drawer {
     background-color: var(--card-bg) !important;
@@ -387,16 +404,34 @@ body {
   
   .el-menu-item:hover {
     background-color: var(--bg-secondary) !important;
+    color: var(--sidebar-active) !important;
   }
   
   .el-menu-item.is-active {
-    color: #409eff !important;
+    color: var(--sidebar-active) !important;
     background-color: var(--bg-secondary) !important;
   }
+
+  /* 深色主题下的下拉菜单 */
+  .el-dropdown-menu {
+  background-color: var(--card-bg) !important;
+    border-color: var(--border-color) !important;
+    box-shadow: var(--card-shadow-hover) !important;
+  }
+  
+   .el-dropdown-menu__item {
+    color: var(--text-color) !important;
+  }
+  
+  .el-dropdown-menu__item:hover {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-color) !important;
+  }
+
   
   /* 深色主题下的进度条 */
   .el-progress-bar__outer {
-    background-color: var(--bg-secondary) !important;
+    background-color: var(--bg-tertiary) !important;
   }
   
   /* 深色主题下的时间轴 */
@@ -460,6 +495,12 @@ body {
     background-color: var(--card-bg) !important;
     color: var(--text-color) !important;
     border-bottom: 1px solid var(--border-color) !important;
+  }
+
+  .el-collapse-item__wrap {
+    background-color: var(--card-bg) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    overflow: hidden !important;
   }
   
   .el-collapse-item__content {
@@ -684,5 +725,99 @@ body {
   .el-upload-list__item {
     background-color: var(--bg-secondary) !important;
     color: var(--text-color) !important;
+  }
+
+  /* 消息弹框强化 */
+  .el-message-box {
+    background-color: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+
+  .el-message-box__header {
+    background-color: var(--card-bg) !important;
+  }
+
+  .el-message-box__title {
+    color: var(--text-color) !important;
+  }
+
+  .el-message-box__content {
+    color: var(--text-color) !important;
+  }
+
+  .el-message-box__message {
+    color: var(--text-color) !important;
+  }
+
+  .el-message-box__btns {
+    background-color: var(--card-bg) !important;
+  }
+
+  /* 抽屉强化 */
+  .el-drawer__header {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+  }
+
+  .el-drawer__title {
+    color: var(--text-color) !important;
+  }
+
+  .el-drawer__body {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+  }
+
+  /* 确认弹框 */
+  .el-popconfirm__main {
+    color: var(--text-color) !important;
+  }
+
+  .el-popconfirm__action {
+    border-top: 1px solid var(--border-color) !important;
+    background-color: var(--card-bg) !important;
+  }
+
+  .el-drawer {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+  
+  .el-drawer__header {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+  }
+  
+  .el-drawer__body {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+  }
+  
+  .drawer-content,
+  .client-drawer {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+  }
+  
+  .el-drawer .el-descriptions {
+    --el-descriptions-item-bordered-label-background: 1px solid var(--border-color) !important;
+    --el-descriptions-table-border: 1px solid var(--border-color) !important;
+  }
+
+ .el-descriptions__label {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+  }
+
+  .e-tag {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+  }
+
+  .e-tag--info {
+    background-color: var(--card-bg) !important;
   }
 }
