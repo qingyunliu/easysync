@@ -1,5 +1,5 @@
 from .base import BaseModel
-from .user import User, AuditLog, Notification, NotificationSetting
+from .user import User, AuditLog, Notification, NotificationSetting, NotificationConfig
 from .monitor import MonitorData, PerformanceMetric
 from .task import Task, TaskStatus, TaskPriority, TaskLog
 from .storage import Storage
@@ -15,6 +15,7 @@ __all__ = [
     'AuditLog',
     'Notification',
     'NotificationSetting',
+    'NotificationConfig',
     'Client',
     'Node',
     'NodeStatus',
