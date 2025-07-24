@@ -100,6 +100,7 @@ def create_app(config_name=None):
     from .app.monitor import monitor_bp
     from .app.nodes import nodes_bp
     from .app.agent_api import agent_bp
+    from .app.settings import settings_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(users_bp, url_prefix='/api/users')
@@ -112,6 +113,7 @@ def create_app(config_name=None):
     app.register_blueprint(monitor_bp, url_prefix='/api/monitor')
     app.register_blueprint(nodes_bp, url_prefix='/api/nodes')
     app.register_blueprint(agent_bp, url_prefix='/api/agent')
+    app.register_blueprint(settings_bp, url_prefix='/api/settings')
 
     # 注册错误处理
     from .app.errors import register_error_handlers

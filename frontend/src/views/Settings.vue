@@ -334,6 +334,49 @@ import {
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 
+// 新增表单ref和数据
+const basicFormRef = ref(null)
+const logsFormRef = ref(null)
+
+const activeTab = ref('basic')
+
+const basicForm = ref({
+  max_concurrent_tasks: 5,
+  default_retry_count: 3,
+  default_retry_delay: 60,
+  notification_enabled: false
+})
+
+const logsForm = ref({
+  log_retention_days: 30,
+  log_level: 'INFO',
+  log_file_path: ''
+})
+
+const basicRules = {
+  max_concurrent_tasks: [
+    { required: true, message: '请输入最大并发任务数', trigger: 'blur' }
+  ],
+  default_retry_count: [
+    { required: true, message: '请输入默认重试次数', trigger: 'blur' }
+  ],
+  default_retry_delay: [
+    { required: true, message: '请输入默认重试延迟', trigger: 'blur' }
+  ]
+}
+
+const logsRules = {
+  log_retention_days: [
+    { required: true, message: '请输入日志保留天数', trigger: 'blur' }
+  ],
+  log_level: [
+    { required: true, message: '请选择日志级别', trigger: 'change' }
+  ],
+  log_file_path: [
+    { required: true, message: '请输入日志文件路径', trigger: 'blur' }
+  ]
+}
+
 const emailForm = ref(null)
 const webhookForm = ref(null)
 const dingtalkForm = ref(null)
@@ -425,19 +468,19 @@ const smsRules = {
 
 const fetchSettings = async () => {
   try {
-    const response = await axios.get('/api/notifications/system')
-    const data = response.data
+    const response = await axios.get('/api/settings')
+    const data = response.data.data
 
     // 更新基本设置
-    basicForm.max_concurrent_tasks = data.max_concurrent_tasks
-    basicForm.default_retry_count = data.default_retry_count
-    basicForm.default_retry_delay = data.default_retry_delay
-    basicForm.notification_enabled = data.notification_enabled
+    basicForm.value.max_concurrent_tasks = data.max_concurrent_tasks
+    basicForm.value.default_retry_count = data.default_retry_count
+    basicForm.value.default_retry_delay = data.default_retry_delay
+    basicForm.value.notification_enabled = data.notification_enabled
 
     // 更新日志设置
-    logsForm.log_retention_days = data.log_retention_days
-    logsForm.log_level = data.log_level
-    logsForm.log_file_path = data.log_file_path
+    logsForm.value.log_retention_days = data.log_retention_days
+    logsForm.value.log_level = data.log_level
+    logsForm.value.log_file_path = data.log_file_path
 
     // 更新通知设置
     settings.value.enabled = data.notification_enabled
