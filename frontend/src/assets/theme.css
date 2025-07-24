@@ -39,6 +39,7 @@
   /* 头部 */
   --header-bg: rgba(255, 255, 255, 0.9);
   --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --login-bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 /* 深色主题 */
@@ -73,6 +74,7 @@
   /* 头部 */
   --header-bg: #16161a;
   --header-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  --login-bg-gradient: linear-gradient(135deg, #23243a 0%, #181926 100%);
 }
 
 /* 应用主题变量到全局样式 */
@@ -290,8 +292,9 @@ body {
   .el-dialog__body {
     background-color: var(--card-bg) !important;
     color: var(--text-color) !important;
+    margin-top: 15px !important;
   }
-  
+
   .el-dialog__footer {
     background-color: var(--card-bg) !important;
     border-top: 1px solid var(--border-color) !important;
@@ -354,12 +357,45 @@ body {
   /* 深色主题下的抽屉 */
   .el-drawer {
     background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+
+  .el-drawer .el-descriptions {
+    --el-descriptions-item-bordered-label-background: 1px solid var(--border-color) !important;
+    --el-descriptions-table-border: 1px solid var(--border-color) !important;
   }
   
+  /* 抽屉强化 */
   .el-drawer__header {
     background-color: var(--card-bg) !important;
     color: var(--text-color) !important;
     border-bottom: 1px solid var(--border-color) !important;
+  }
+  
+  .el-drawer__title {
+    color: var(--text-color) !important;
+  }
+  
+  .el-drawer__body {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+  }
+
+  .drawer-content,
+  .client-drawer {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+  }
+  
+  .el-descriptions__label {
+    background-color: var(--bg-secondary) !important;
+    color: var(--text-color) !important;
+  }
+  
+  .el-descriptions__content {
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
   }
   
   /* 深色主题下的菜单 */
@@ -716,21 +752,7 @@ body {
     background-color: var(--card-bg) !important;
   }
 
-  /* 抽屉强化 */
-  .el-drawer__header {
-    background-color: var(--card-bg) !important;
-    color: var(--text-color) !important;
-    border-bottom: 1px solid var(--border-color) !important;
-  }
 
-  .el-drawer__title {
-    color: var(--text-color) !important;
-  }
-
-  .el-drawer__body {
-    background-color: var(--card-bg) !important;
-    color: var(--text-color) !important;
-  }
 
   /* 确认弹框 */
   .el-popconfirm__main {
@@ -742,38 +764,7 @@ body {
     background-color: var(--card-bg) !important;
   }
 
-  .el-drawer {
-    background-color: var(--card-bg) !important;
-    color: var(--text-color) !important;
-    border: 1px solid var(--border-color) !important;
-  }
-  
-  .el-drawer__header {
-    background-color: var(--card-bg) !important;
-    color: var(--text-color) !important;
-    border-bottom: 1px solid var(--border-color) !important;
-  }
-  
-  .el-drawer__body {
-    background-color: var(--card-bg) !important;
-    color: var(--text-color) !important;
-  }
-  
-  .drawer-content,
-  .client-drawer {
-    background-color: var(--card-bg) !important;
-    color: var(--text-color) !important;
-  }
-  
-  .el-drawer .el-descriptions {
-    --el-descriptions-item-bordered-label-background: 1px solid var(--border-color) !important;
-    --el-descriptions-table-border: 1px solid var(--border-color) !important;
-  }
 
- .el-descriptions__label, .el-descriptions__content {
-    background-color: var(--card-bg) !important;
-    color: var(--text-color) !important;
-  }
 
   .el-tag--info {
     color: var(--bg-color) !important;

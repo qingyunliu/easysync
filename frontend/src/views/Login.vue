@@ -12,9 +12,10 @@
           <template #header>
             <div class="card-header">
               <h2>欢迎登录</h2>
+              <ThemeToggle class="theme-toggle-inline" />
             </div>
           </template>
-          <el-form :model="loginForm" :rules="rules" ref="loginFormRef" label-width="0">
+          <el-form :model="loginForm" :rules="rules" ref="loginFormRef" label-width="0" @submit.prevent="handleLogin">
             <el-form-item prop="username">
               <el-input 
                 v-model="loginForm.username" 
@@ -57,7 +58,7 @@
             <el-form-item>
               <el-button 
                 type="primary" 
-                @click="handleLogin" 
+                native-type="submit"
                 :loading="loading" 
                 class="login-button"
               >
@@ -84,6 +85,7 @@ import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import axios from 'axios'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -174,7 +176,7 @@ const handleLogin = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--login-bg-gradient);
   overflow: hidden;
 }
 
@@ -214,7 +216,7 @@ const handleLogin = async () => {
   width: 100%;
   text-align: center;
   margin-bottom: 40px;
-  color: var(--text-color);
+  color: white;
   animation: fadeInDown 1s ease;
 }
 
@@ -243,7 +245,9 @@ const handleLogin = async () => {
 }
 
 .card-header {
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .card-header h2 {
@@ -339,5 +343,15 @@ const handleLogin = async () => {
 
 .el-form-item .el-row {
   width: 100%;
+}
+
+.theme-toggle-bar {
+  position: absolute;
+  top: 32px;
+  right: 48px;
+  z-index: 10;
+}
+.theme-toggle-inline {
+  margin-left: 12px;
 }
 </style> 

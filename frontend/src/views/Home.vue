@@ -113,7 +113,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElNotification } from 'element-plus'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { 
   HomeFilled, 
@@ -128,10 +128,15 @@ import {
   User,
   SwitchButton,
   Fold,
-  Expand
+  Expand,
+  Sunny,
+  Moon,
+  Sunrise,
+  MoonNight
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import defaultAvatar from '@/assets/avatar/default-avatar.jpeg'
+import { h } from 'vue'
 
 const isCollapsed = ref(localStorage.getItem('isCollapsedSideBar') === 'true')
 
@@ -164,7 +169,38 @@ const logoSrc = computed(() => {
 // 获取后端基础URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
 
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 11) {
+    return { text: '早上好', emoji: '🌅' }
+  } else if (hour >= 11 && hour < 13) {
+    return { text: '中午好', emoji: '☀️' }
+  } else if (hour >= 13 && hour < 18) {
+    return { text: '下午好', emoji: '🌤️' }
+  } else if (hour >= 18 && hour < 22) {
+    return { text: '晚上好', emoji: '🌙' }
+  } else {
+    return { text: '深夜好', emoji: '🌃' }
+  }
+}
+
 onMounted(() => {
+  if (!sessionStorage.getItem('welcome_shown')) {
+    const user = JSON.parse(localStorage.getItem('user') || '{}')
+    if (user && user.username) {
+      const { text, emoji } = getGreeting()
+      ElNotification({
+        title: `${text} ${emoji}`,
+        message: `欢迎回来，${user.username}！`,
+        type: 'success',
+        duration: 0,
+        showClose: true,
+        offset: 50,
+        position: 'top-right'
+      })
+      sessionStorage.setItem('welcome_shown', '1')
+    }
+  }
   const userStr = localStorage.getItem('user')
   const token = localStorage.getItem('access_token')
   
@@ -203,6 +239,10 @@ const handleCommand = (command) => {
     localStorage.removeItem('user')
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
+
+    // 清除sessionStorage
+    sessionStorage.removeItem('welcome_shown')
+
     // 清除axios默认请求头
     delete axios.defaults.headers.common['Authorization']
     // 跳转到登录页

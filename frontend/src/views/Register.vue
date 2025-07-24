@@ -12,9 +12,10 @@
           <template #header>
             <div class="card-header">
               <h2>创建账号</h2>
+              <ThemeToggle class="theme-toggle-inline" />
             </div>
           </template>
-          <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-width="0">
+          <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-width="0" @submit.prevent="handleRegister">
             <el-form-item prop="username">
               <el-input 
                 v-model="registerForm.username" 
@@ -66,7 +67,7 @@
             <el-form-item>
               <el-button 
                 type="primary" 
-                @click="handleRegister" 
+                native-type="submit"
                 :loading="loading" 
                 class="register-button"
               >
@@ -90,6 +91,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Message, Lock } from '@element-plus/icons-vue'
 import axios from 'axios'
+import ThemeToggle from '@/components/ThemeToggle.vue'
 
 const router = useRouter()
 const registerFormRef = ref(null)
@@ -179,7 +181,7 @@ const handleRegister = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--login-bg-gradient);
   overflow: hidden;
 }
 
@@ -219,7 +221,7 @@ const handleRegister = async () => {
   width: 100%;
   text-align: center;
   margin-bottom: 40px;
-  color: var(--text-color);
+  color: white;
   animation: fadeInDown 1s ease;
 }
 
@@ -301,6 +303,22 @@ const handleRegister = async () => {
 .login-link a:hover {
   color: #66b1ff;
   text-decoration: underline;
+}
+
+.theme-toggle-bar {
+  position: absolute;
+  top: 32px;
+  right: 48px;
+  z-index: 10;
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.theme-toggle-inline {
+  margin-left: 12px;
 }
 
 @keyframes fadeInDown {

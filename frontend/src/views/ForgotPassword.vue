@@ -10,7 +10,7 @@
         </div>
         <el-card class="forgot-card" shadow="hover">
           <h2>找回密码</h2>
-          <el-form :model="form" :rules="rules" ref="formRef" label-width="0">
+          <el-form :model="form" :rules="rules" ref="formRef" label-width="0" @submit.prevent="handleSubmit">
             <el-form-item prop="email">
               <el-input v-model="form.email" placeholder="请输入注册邮箱">
                 <template #prefix>
@@ -19,7 +19,14 @@
               </el-input>
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleSubmit" :loading="loading" class="forgot-btn">发送重置邮件</el-button>
+              <el-button 
+                type="primary" 
+                native-type="submit"
+                :loading="loading" 
+                class="forgot-btn"
+              >
+                发送重置邮件
+              </el-button>
             </el-form-item>
             <div class="login-link">
               <router-link to="/login">返回登录</router-link>
@@ -112,7 +119,7 @@ const handleSubmit = async () => {
   width: 100%;
   text-align: center;
   margin-bottom: 40px;
-  color: var(--text-color);
+  color: white;
   animation: fadeInDown 1s ease;
 }
 .forgot-logo {

@@ -10,7 +10,7 @@
         </div>
         <el-card class="reset-card" shadow="hover">
           <h2>重置密码</h2>
-          <el-form :model="form" :rules="rules" ref="formRef" label-width="0">
+          <el-form :model="form" :rules="rules" ref="formRef" label-width="0" @submit.prevent="handleSubmit">
             <el-form-item prop="password">
               <el-input v-model="form.password" type="password" placeholder="新密码" show-password />
             </el-form-item>
@@ -18,7 +18,14 @@
               <el-input v-model="form.confirmPassword" type="password" placeholder="确认新密码" show-password />
             </el-form-item>
             <el-form-item>
-              <el-button type="primary" @click="handleSubmit" :loading="loading" class="reset-btn">重置密码</el-button>
+              <el-button 
+                type="primary" 
+                native-type="submit"
+                :loading="loading" 
+                class="reset-btn"
+              >
+                重置密码
+              </el-button>
             </el-form-item>
             <div class="login-link">
               <router-link to="/login">返回登录</router-link>
@@ -133,7 +140,7 @@ const handleSubmit = async () => {
   width: 100%;
   text-align: center;
   margin-bottom: 40px;
-  color: var(--text-color);
+  color: white;
   animation: fadeInDown 1s ease;
 }
 .reset-logo {

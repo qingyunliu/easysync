@@ -47,6 +47,7 @@ axios.interceptors.response.use(
             localStorage.removeItem("access_token");
             localStorage.removeItem("refresh_token");
             localStorage.removeItem("user");
+            sessionStorage.removeItem("welcome_shown");
             router.push("/login");
           }
           break;

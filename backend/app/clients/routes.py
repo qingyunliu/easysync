@@ -130,6 +130,9 @@ def delete_client(client_id):
     client = Client.query.filter_by(id=client_id, user_id=current_user_id).first_or_404()
     
     try:
+        # 删除相关监控数据
+        MonitorData.query.filter_by(client_id=client.id).delete()
+
         # 记录审计日志
         audit_log = AuditLog(
             user_id=current_user_id,
