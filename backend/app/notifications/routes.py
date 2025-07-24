@@ -1,11 +1,7 @@
-from flask import jsonify, request, current_app
+from flask import jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend import db
-from backend.app.models import NotificationSetting
 from backend.app.notifications.services import NotificationService
 from . import notifications_bp
-from backend.app.utils.decorators import admin_required
-from backend.app.config.default import Config
 
 @notifications_bp.route('/config', methods=['GET'])
 @jwt_required()

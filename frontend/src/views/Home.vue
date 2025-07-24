@@ -130,7 +130,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { dateEquals, ElNotification } from 'element-plus'
+import { ElNotification } from 'element-plus'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { 
   Histogram, 
@@ -149,6 +149,8 @@ import {
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import defaultAvatar from '@/assets/avatar/default-avatar.jpeg'
+import { useUserStore } from '@/stores/user'
+const userStore = useUserStore()
 
 const isCollapsed = ref(localStorage.getItem('isCollapsedSideBar') === 'true')
 
@@ -198,29 +200,38 @@ function getGreeting() {
 
 onMounted(() => {
   if (!sessionStorage.getItem('welcome_shown')) {
-    const user = JSON.parse(localStorage.getItem('user') || '{}')
-    if (user && user.username) {
-      const { text, emoji } = getGreeting()
-      ElNotification({
-        title: `${text} ${emoji}`,
-        message: `欢迎回来，${user.username}！`,
-        type: 'success',
-        duration: 0,
-        showClose: true,
-        offset: 50,
-        position: 'top-right'
-      })
-      sessionStorage.setItem('welcome_shown', '1')
-    }
+    // 欢迎通知逻辑延后到 user 信息获取后
   }
-  const userStr = localStorage.getItem('user')
   const token = localStorage.getItem('access_token')
-  
-  if (userStr && token) {
-    user.value = JSON.parse(userStr)
-    // 设置axios默认请求头
+  if (token) {
     axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    // 获取用户信息
+    axios.get('/api/users/me').then(res => {
+      user.value = res.data.data
+      userStore.setUser(res.data.data) // 同步到全局 userStore
+      // 欢迎通知
+      if (!sessionStorage.getItem('welcome_shown') && user.value && user.value.username) {
+        const { text, emoji } = getGreeting()
+        ElNotification({
+          title: `${text} ${emoji}`,
+          message: `欢迎回来，${user.value.username}！`,
+          type: 'success',
+          duration: 0,
+          showClose: true,
+          offset: 50,
+          position: 'top-right'
+        })
+        sessionStorage.setItem('welcome_shown', '1')
+      }
+    }).catch(() => {
+      // token 失效
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('refresh_token')
+      userStore.clearUser()
+      router.push('/login')
+    })
   } else {
+    userStore.clearUser()
     router.push('/login')
   }
 })
@@ -240,7 +251,7 @@ const avatarUrl = computed(() => {
 })
 
 const isAdmin = computed(() => {
-  return user.value && user.value.role === 'admin'
+  return user.value && user.value.is_admin === true
 })
 
 const handleCommand = (command) => {
@@ -248,7 +259,6 @@ const handleCommand = (command) => {
     router.push('/profile')
   } else if (command === 'logout') {
     // 清除本地存储
-    localStorage.removeItem('user')
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
 

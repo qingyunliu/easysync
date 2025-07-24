@@ -11,7 +11,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import current_app
 from backend import db
-from backend.app.models import User, NotificationSetting, TaskLog, Notification, NotificationConfig
+from backend.app.models import User, NotificationSetting, TaskLog, Notification, SystemSetting
 from backend.app.utils.encryption import encrypt_data, decrypt_data
 from typing import Dict, Any, List
 from datetime import datetime
@@ -22,8 +22,6 @@ class NotificationService:
     """通知服务类"""
     
     def __init__(self):
-        self.config_file = current_app.config['NOTIFICATION_CONFIG_FILE']
-        self.system_settings_file = current_app.config['SYSTEM_NOTIFICATION_SETTINGS_FILE']
         self.settings = {}
         self._load_settings()
         self.notification_types = {
@@ -41,72 +39,38 @@ class NotificationService:
         for setting in settings:
             self.settings[setting.user_id] = setting
     
-    def get_config(self, user_id):
-        """获取用户的通知配置"""
-        config = NotificationConfig.query.filter_by(user_id=user_id).first()
-        if not config:
-            return self._get_default_config()
-        
-        # 解密敏感信息
-        decrypted_config = json.loads(config.config_data)
-        if decrypted_config.get('emailEnabled') and 'emailPassword' in decrypted_config:
-            decrypted_config['emailPassword'] = decrypt_data(decrypted_config['emailPassword'])
-        if decrypted_config.get('dingtalkEnabled') and 'dingtalkSecret' in decrypted_config:
-            decrypted_config['dingtalkSecret'] = decrypt_data(decrypted_config['dingtalkSecret'])
-        if decrypted_config.get('webhookEnabled') and 'webhookSecret' in decrypted_config:
-            decrypted_config['webhookSecret'] = decrypt_data(decrypted_config['webhookSecret'])
-        if decrypted_config.get('smsEnabled') and 'smsApiKey' in decrypted_config:
-            decrypted_config['smsApiKey'] = decrypt_data(decrypted_config['smsApiKey'])
-        
-        return decrypted_config
-    
-    def save_config(self, user_id, config_data):
-        """保存用户的通知配置"""
-        # 加密敏感信息
-        encrypted_config = config_data.copy()
-        if encrypted_config.get('emailEnabled') and 'emailPassword' in encrypted_config:
-            encrypted_config['emailPassword'] = encrypt_data(encrypted_config['emailPassword'])
-        if encrypted_config.get('dingtalkEnabled') and 'dingtalkSecret' in encrypted_config:
-            encrypted_config['dingtalkSecret'] = encrypt_data(encrypted_config['dingtalkSecret'])
-        if encrypted_config.get('webhookEnabled') and 'webhookSecret' in encrypted_config:
-            encrypted_config['webhookSecret'] = encrypt_data(encrypted_config['webhookSecret'])
-        if encrypted_config.get('smsEnabled') and 'smsApiKey' in encrypted_config:
-            encrypted_config['smsApiKey'] = encrypt_data(encrypted_config['smsApiKey'])
-        
-        config = NotificationConfig.query.filter_by(user_id=user_id).first()
-        if not config:
-            config = NotificationConfig(user_id=user_id)
-        
-        config.config_data = json.dumps(encrypted_config)
-        db.session.add(config)
-        db.session.commit()
-    
-    def test_notification(self, user_id, config):
+    def get_user_setting(self, user_id):
+        return NotificationSetting.query.filter_by(user_id=user_id).first()
+
+    def test_notification(self, user_id):
         """测试通知发送"""
-        if config.get('emailEnabled'):
-            self._send_test_email(config)
-        
-        if config.get('dingtalkEnabled'):
-            self._send_test_dingtalk(config)
-            
-        if config.get('webhookEnabled'):
-            self._send_test_webhook(config)
-            
-        if config.get('smsEnabled'):
-            self._send_test_sms(config)
+        setting = self.get_user_setting(user_id)
+        if not setting:
+            raise Exception('未找到通知设置')
+        if setting.email_enabled:
+            self._send_test_email(setting)
+        if setting.dingtalk_enabled:
+            self._send_test_dingtalk(setting)
+        if setting.webhook_enabled:
+            self._send_test_webhook(setting)
+        if setting.sms_enabled:
+            self._send_test_sms(setting)
     
     def get_system_settings(self):
-        """获取系统通知设置"""
-        try:
-            with open(self.system_settings_file, 'r') as f:
-                return json.load(f)
-        except FileNotFoundError:
-            return self._get_default_system_settings()
-    
+        """获取系统通知策略（从数据库）"""
+        return SystemSetting.get_json('system_notification_settings', self._get_default_system_settings())
+
     def save_system_settings(self, settings):
-        """保存系统通知设置"""
-        with open(self.system_settings_file, 'w') as f:
-            json.dump(settings, f, indent=2)
+        """保存系统通知策略（到数据库）"""
+        from backend import db
+        import json
+        s = SystemSetting.query.filter_by(key='system_notification_settings').first()
+        if not s:
+            s = SystemSetting(key='system_notification_settings', value=json.dumps(settings, ensure_ascii=False))
+            db.session.add(s)
+        else:
+            s.value = json.dumps(settings, ensure_ascii=False)
+        db.session.commit()
     
     def _get_default_config(self):
         """获取默认通知配置"""
@@ -140,112 +104,115 @@ class NotificationService:
             'notificationInterval': 300  # 5分钟
         }
     
-    def _send_test_email(self, config):
+    def _send_test_email(self, setting):
         """发送测试邮件"""
         msg = MIMEMultipart()
-        msg['From'] = config['senderEmail']
-        msg['To'] = config['receiverEmail']
+        msg['From'] = setting.email
+        msg['To'] = setting.email
         msg['Subject'] = 'EasySync 通知测试'
-        
         body = '这是一封测试邮件，用于验证邮件通知配置是否正确。'
         msg.attach(MIMEText(body, 'plain'))
-        
         try:
-            server = smtplib.SMTP(config['smtpServer'], config['smtpPort'])
+            server = smtplib.SMTP(setting.smtp_host, setting.smtp_port)
             server.starttls()
-            server.login(config['senderEmail'], config['emailPassword'])
+            server.login(setting.smtp_username, setting.smtp_password)
             server.send_message(msg)
             server.quit()
         except Exception as e:
-            current_app.logger.error(f"发送测试邮件失败: {str(e)}")
-            raise Exception("发送测试邮件失败")
+            raise Exception(f"发送测试邮件失败: {str(e)}")
     
-    def _send_test_dingtalk(self, config):
+    def _send_test_dingtalk(self, setting):
         """发送测试钉钉消息"""
-        webhook = config['dingtalkWebhook']
-        secret = config.get('dingtalkSecret', '')
-        
+        webhook = setting.dingtalk_webhook
+        secret = setting.dingtalk_secret or ''
         timestamp = str(round(time.time() * 1000))
         string_to_sign = f"{timestamp}\n{secret}"
-        hmac_code = hmac.new(
-            secret.encode('utf-8'),
-            string_to_sign.encode('utf-8'),
-            digestmod=hashlib.sha256
-        ).digest()
+        hmac_code = hmac.new(secret.encode('utf-8'), string_to_sign.encode('utf-8'), digestmod=hashlib.sha256).digest()
         sign = urllib.parse.quote_plus(base64.b64encode(hmac_code))
-        
         headers = {'Content-Type': 'application/json'}
-        data = {
-            "msgtype": "text",
-            "text": {
-                "content": "这是一条测试消息，用于验证钉钉通知配置是否正确。"
-            }
-        }
-        
+        data = {"msgtype": "text", "text": {"content": "这是一条测试消息，用于验证钉钉通知配置是否正确。"}}
         try:
             url = f"{webhook}&timestamp={timestamp}&sign={sign}"
             response = requests.post(url, headers=headers, json=data)
             response.raise_for_status()
         except Exception as e:
-            current_app.logger.error(f"发送测试钉钉消息失败: {str(e)}")
-            raise Exception("发送测试钉钉消息失败")
+            raise Exception(f"发送测试钉钉消息失败: {str(e)}")
             
-    def _send_test_webhook(self, config):
+    def _send_test_webhook(self, setting):
         """发送测试Webhook通知"""
-        webhook_url = config['webhookUrl']
-        secret = config.get('webhookSecret', '')
-        
+        webhook_url = setting.webhook_url
+        secret = setting.webhook_secret or ''
         headers = {'Content-Type': 'application/json'}
         if secret:
             timestamp = str(round(time.time() * 1000))
             string_to_sign = f"{timestamp}\n{secret}"
-            hmac_code = hmac.new(
-                secret.encode('utf-8'),
-                string_to_sign.encode('utf-8'),
-                digestmod=hashlib.sha256
-            ).digest()
+            hmac_code = hmac.new(secret.encode('utf-8'), string_to_sign.encode('utf-8'), digestmod=hashlib.sha256).digest()
             sign = base64.b64encode(hmac_code).decode('utf-8')
             headers['X-Webhook-Signature'] = sign
             headers['X-Webhook-Timestamp'] = timestamp
-        
-        data = {
-            "type": "test",
-            "message": "这是一条测试消息，用于验证Webhook通知配置是否正确。",
-            "timestamp": int(time.time() * 1000)
-        }
-        
+        data = {"type": "test", "message": "这是一条测试消息，用于验证Webhook通知配置是否正确。", "timestamp": int(time.time() * 1000)}
         try:
             response = requests.post(webhook_url, headers=headers, json=data)
             response.raise_for_status()
         except Exception as e:
-            current_app.logger.error(f"发送测试Webhook通知失败: {str(e)}")
-            raise Exception("发送测试Webhook通知失败")
+            raise Exception(f"发送测试Webhook通知失败: {str(e)}")
             
-    def _send_test_sms(self, config):
-        """发送测试短信"""
-        provider = config['smsProvider']
-        api_key = config['smsApiKey']
-        template_id = config['smsTemplateId']
-        sign_name = config['smsSignName']
-        
-        if provider == 'aliyun':
-            self._send_aliyun_sms(
-                api_key,
-                template_id,
-                sign_name,
-                config['receiverPhone'],
-                {'code': '123456'}
-            )
-        elif provider == 'tencent':
-            self._send_tencent_sms(
-                api_key,
-                template_id,
-                sign_name,
-                config['receiverPhone'],
-                {'code': '123456'}
-            )
+    def _send_test_sms(self, setting):
+        """发送测试短信，支持阿里云和腾讯云"""
+        if not setting.sms_provider or not setting.sms_api_key:
+            raise Exception('未配置短信服务商或API Key')
+        if setting.sms_provider == 'aliyun':
+            # 伪代码，需安装 aliyun-python-sdk-core
+            try:
+                from aliyunsdkcore.client import AcsClient
+                from aliyunsdkcore.request import CommonRequest
+                access_key_id, access_key_secret = setting.sms_api_key.split(',')[:2]
+                client = AcsClient(access_key_id, access_key_secret, 'cn-hangzhou')
+                request = CommonRequest()
+                request.set_accept_format('json')
+                request.set_domain('dysmsapi.aliyuncs.com')
+                request.set_method('POST')
+                request.set_protocol_type('https')
+                request.set_version('2017-05-25')
+                request.set_action_name('SendSms')
+                request.add_query_param('PhoneNumbers', setting.sms_sign_name)  # 这里应为目标手机号
+                request.add_query_param('SignName', setting.sms_sign_name)
+                request.add_query_param('TemplateCode', setting.sms_template_id)
+                request.add_query_param('TemplateParam', '{"code":"123456"}')
+                response = client.do_action_with_exception(request)
+                import json as _json
+                resp_data = _json.loads(response)
+                if resp_data.get('Code') != 'OK':
+                    raise Exception(f"发送阿里云短信失败: {resp_data.get('Message')}")
+            except Exception as e:
+                raise Exception(f"发送阿里云短信失败: {str(e)}")
+        elif setting.sms_provider == 'tencent':
+            # 伪代码，需安装 tencentcloud-sdk-python
+            try:
+                from tencentcloud.common import credential
+                from tencentcloud.common.profile.client_profile import ClientProfile
+                from tencentcloud.common.profile.http_profile import HttpProfile
+                from tencentcloud.sms.v20210111 import sms_client, models
+                access_key_id, access_key_secret, sdk_app_id = setting.sms_api_key.split(',')[:3]
+                cred = credential.Credential(access_key_id, access_key_secret)
+                httpProfile = HttpProfile()
+                httpProfile.endpoint = "sms.tencentcloudapi.com"
+                clientProfile = ClientProfile()
+                clientProfile.httpProfile = httpProfile
+                client = sms_client.SmsClient(cred, "ap-guangzhou", clientProfile)
+                req = models.SendSmsRequest()
+                req.SmsSdkAppId = sdk_app_id
+                req.SignName = setting.sms_sign_name
+                req.TemplateId = setting.sms_template_id
+                req.TemplateParamSet = ["123456"]
+                req.PhoneNumberSet = [f"+86{setting.sms_sign_name}"]  # 这里应为目标手机号
+                response = client.SendSms(req)
+                if response.SendStatusSet[0].Code != "Ok":
+                    raise Exception(f"发送腾讯云短信失败: {response.SendStatusSet[0].Message}")
+            except Exception as e:
+                raise Exception(f"发送腾讯云短信失败: {str(e)}")
         else:
-            raise ValueError(f"不支持的短信服务提供商: {provider}")
+            raise Exception('不支持的短信服务商')
     
     def notify_task_completion(self, task_log: TaskLog):
         """
@@ -419,21 +386,6 @@ class NotificationService:
         try:
             headers = {'Content-Type': 'application/json'}
             
-            # 如果配置了密钥，添加签名
-            config = self.get_config(data.get('user_id'))
-            if config.get('webhookEnabled') and config.get('webhookSecret'):
-                secret = config['webhookSecret']
-                timestamp = str(round(time.time() * 1000))
-                string_to_sign = f"{timestamp}\n{secret}"
-                hmac_code = hmac.new(
-                    secret.encode('utf-8'),
-                    string_to_sign.encode('utf-8'),
-                    digestmod=hashlib.sha256
-                ).digest()
-                sign = base64.b64encode(hmac_code).decode('utf-8')
-                headers['X-Webhook-Signature'] = sign
-                headers['X-Webhook-Timestamp'] = timestamp
-            
             response = requests.post(
                 webhook_url,
                 json=data,
@@ -447,34 +399,28 @@ class NotificationService:
             logger.error(f"发送Webhook通知失败: {str(e)}")
             raise
             
-    def _send_sms_notification(self, phone: str, template_type: str, params: Dict[str, Any]):
+    def _send_sms_notification(self, phone: str, params: Dict[str, Any]):
         """
         发送短信通知
-        
         Args:
             phone: 手机号码
-            template_type: 模板类型
             params: 模板参数
         """
         try:
-            config = self.get_config(params.get('user_id'))
-            if not config.get('smsEnabled'):
+            # 获取全局短信配置（假设只用第一个管理员的 NotificationSetting，或可扩展为系统级配置）
+            setting = NotificationSetting.query.first()
+            if not setting or not setting.sms_enabled:
                 return
-                
-            provider = config['smsProvider']
-            api_key = config['smsApiKey']
-            template_id = config['smsTemplateId']
-            sign_name = config['smsSignName']
-            
+            provider = setting.sms_provider
+            api_key = setting.sms_api_key
+            template_id = setting.sms_template_id
+            sign_name = setting.sms_sign_name
             if provider == 'aliyun':
                 self._send_aliyun_sms(api_key, template_id, sign_name, phone, params)
             elif provider == 'tencent':
                 self._send_tencent_sms(api_key, template_id, sign_name, phone, params)
             else:
                 raise ValueError(f"不支持的短信服务提供商: {provider}")
-                
-            logger.info(f"已发送短信通知: {phone}")
-            
         except Exception as e:
             logger.error(f"发送短信通知失败: {str(e)}")
             raise

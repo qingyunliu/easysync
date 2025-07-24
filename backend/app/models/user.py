@@ -52,6 +52,7 @@ class User(BaseModel):
             'email': self.email,
             'role': self.role,
             'is_active': self.is_active,
+            'is_admin': self.is_admin,
             'avatar': self.avatar,
             'last_login': self.last_login.isoformat() if self.last_login else None,
             'last_login_ip': self.last_login_ip,
@@ -78,6 +79,7 @@ class AuditLog(BaseModel):
         data = super().to_dict()
         data.update({
             'user_id': self.user_id,
+            'username': self.user.username if self.user else None,
             'action': self.action,
             'resource_type': self.resource_type,
             'resource_id': self.resource_id,
@@ -112,49 +114,53 @@ class Notification(BaseModel):
 class NotificationSetting(BaseModel):
     """通知设置模型"""
     __tablename__ = 'notification_settings'
-    
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     enabled = db.Column(db.Boolean, default=True)
+    # 邮件
     email_enabled = db.Column(db.Boolean, default=False)
+    smtp_host = db.Column(db.String(255))
+    smtp_port = db.Column(db.Integer)
+    smtp_username = db.Column(db.String(255))
+    smtp_password = db.Column(db.String(255))  # 可加密
+    email = db.Column(db.String(255))
+    # webhook
     webhook_enabled = db.Column(db.Boolean, default=False)
     webhook_url = db.Column(db.String(500))
-    sms_enabled = db.Column(db.Boolean, default=False)
+    webhook_secret = db.Column(db.String(255))  # 可加密
+    # 钉钉
     dingtalk_enabled = db.Column(db.Boolean, default=False)
     dingtalk_webhook = db.Column(db.String(500))
-    
+    dingtalk_secret = db.Column(db.String(255))  # 可加密
+    # 短信
+    sms_enabled = db.Column(db.Boolean, default=False)
+    sms_provider = db.Column(db.String(50))
+    sms_api_key = db.Column(db.String(255))  # 可加密
+    sms_template_id = db.Column(db.String(255))
+    sms_sign_name = db.Column(db.String(255))
     # 关联
     user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('notification_setting', lazy=True))
-    
+
     def to_dict(self):
-        """转换为字典"""
         data = super().to_dict()
         data.update({
             'user_id': self.user_id,
             'enabled': self.enabled,
             'email_enabled': self.email_enabled,
+            'smtp_host': self.smtp_host,
+            'smtp_port': self.smtp_port,
+            'smtp_username': self.smtp_username,
+            'smtp_password': self.smtp_password,
+            'email': self.email,
             'webhook_enabled': self.webhook_enabled,
             'webhook_url': self.webhook_url,
-            'sms_enabled': self.sms_enabled,
+            'webhook_secret': self.webhook_secret,
             'dingtalk_enabled': self.dingtalk_enabled,
-            'dingtalk_webhook': self.dingtalk_webhook
-        })
-        return data
-
-class NotificationConfig(BaseModel):
-    """通知配置模型"""
-    __tablename__ = 'notification_configs'
-    
-    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
-    config_data = db.Column(db.Text, nullable=False)  # JSON格式的配置数据
-    
-    # 关联
-    user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('notification_config', lazy=True))
-    
-    def to_dict(self):
-        """转换为字典"""
-        data = super().to_dict()
-        data.update({
-            'user_id': self.user_id,
-            'config_data': self.config_data
+            'dingtalk_webhook': self.dingtalk_webhook,
+            'dingtalk_secret': self.dingtalk_secret,
+            'sms_enabled': self.sms_enabled,
+            'sms_provider': self.sms_provider,
+            'sms_api_key': self.sms_api_key,
+            'sms_template_id': self.sms_template_id,
+            'sms_sign_name': self.sms_sign_name
         })
         return data

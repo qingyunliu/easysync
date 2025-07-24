@@ -33,46 +33,83 @@ axios.interceptors.request.use(
 );
 
 // Add response interceptors
+let isRefreshing = false;
+let refreshSubscribers = [];
+
+function onRefreshed(token) {
+  refreshSubscribers.forEach((cb) => cb(token));
+  refreshSubscribers = [];
+}
+
+function addRefreshSubscriber(cb) {
+  refreshSubscribers.push(cb);
+}
+
 axios.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
-    if (error.response) {
-      switch (error.response.status) {
-        case 401:
-          // 未授权，跳转到登录页面
-          if (error.response.data.msg == "Token has expired") {
-            ElMessage.error("登录已过期，请重新登录");
-            localStorage.removeItem("access_token");
-            localStorage.removeItem("refresh_token");
-            localStorage.removeItem("user");
-            sessionStorage.removeItem("welcome_shown");
-            router.push("/login");
-          }
-          break;
-        case 403:
-          // 禁止访问，跳转到403页面
-          ElMessage.error("禁止访问");
-          router.push("/403");
-          break;
-        case 404:
-          // 未找到资源，跳转到404页面
-          ElMessage.error("请求资源不存在");
-          router.push("/404");
-          break;
-        case 500:
-          // 服务器错误，跳转到500页面
-          ElMessage.error("服务器错误");
-          router.push("/500");
-          break;
-        default:
-          // 其他错误，显示错误信息
-          ElMessage.error(error.response.status.message || "请求失败");
+  async (error) => {
+    const originalRequest = error.config;
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      error.response.data?.msg === "Token has expired" &&
+      !originalRequest._retry
+    ) {
+      // access_token 过期，尝试用 refresh_token 刷新
+      if (isRefreshing) {
+        // 正在刷新，队列等待
+        return new Promise((resolve, reject) => {
+          addRefreshSubscriber((token) => {
+            if (token) {
+              originalRequest.headers["Authorization"] = "Bearer " + token;
+              resolve(axios(originalRequest));
+            } else {
+              reject(error);
+            }
+          });
+        });
       }
-    } else {
-      ElMessage.error("网络错误，请稍后再试");
+      isRefreshing = true;
+      originalRequest._retry = true;
+      const refresh_token = localStorage.getItem("refresh_token");
+      if (refresh_token) {
+        try {
+          const res = await axios.post(
+            "/api/auth/refresh",
+            {},
+            {
+              headers: { Authorization: "Bearer " + refresh_token },
+            }
+          );
+          const newToken = res.data.access_token;
+          localStorage.setItem("access_token", newToken);
+          axios.defaults.headers.common["Authorization"] = "Bearer " + newToken;
+          onRefreshed(newToken);
+          isRefreshing = false;
+          originalRequest.headers["Authorization"] = "Bearer " + newToken;
+          return axios(originalRequest);
+        } catch (e) {
+          isRefreshing = false;
+          onRefreshed(null);
+          // 刷新失败，清除token并跳转登录
+          localStorage.removeItem("access_token");
+          localStorage.removeItem("refresh_token");
+          sessionStorage.removeItem("welcome_shown");
+          router.push("/login");
+          return Promise.reject(e);
+        }
+      } else {
+        // 没有refresh_token
+        localStorage.removeItem("access_token");
+        localStorage.removeItem("refresh_token");
+        sessionStorage.removeItem("welcome_shown");
+        router.push("/login");
+        return Promise.reject(error);
+      }
     }
+    // 其他错误处理
     return Promise.reject(handleError(error));
   }
 );

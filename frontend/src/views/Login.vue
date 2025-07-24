@@ -140,20 +140,15 @@ const handleLogin = async () => {
           captcha_id: captchaId.value
         }, { withCredentials: true })
         if (response.data.status === 'success') {
-          // 保存用户信息和token
-          userStore.user = response.data.data.user
-          localStorage.setItem('user', JSON.stringify(response.data.data.user))
+          // 只保存token
           localStorage.setItem('access_token', response.data.data.access_token)
           localStorage.setItem('refresh_token', response.data.data.refresh_token)
-          
           // 设置axios默认请求头
           axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.access_token}`
-          
           ElMessage.success({
             message: '登录成功，3秒后自动跳转到主页',
             duration: 3000
           })
-          
           setTimeout(() => {
             router.push({ name: 'Dashboard' })
           }, 3000)

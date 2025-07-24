@@ -6,6 +6,7 @@
       </div>
       <el-table :data="logs" style="width: 100%">
         <el-table-column prop="user_id" label="用户ID" width="320" />
+        <el-table-column prop="username" label="用户" width="120" />
         <el-table-column prop="action" label="操作" width="180" />
         <el-table-column prop="details.login_time" label="审计时间" width="180">
           <template #default="scope">

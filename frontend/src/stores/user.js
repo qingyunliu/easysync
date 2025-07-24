@@ -3,20 +3,42 @@ import axios from "axios";
 
 export const useUserStore = defineStore("user", {
   state: () => ({
-    user: JSON.parse(localStorage.getItem("user")) || null,
+    user: null,
     loading: false,
     error: null,
   }),
 
   getters: {
     isAuthenticated: (state) => !!state.user,
-    isAdmin: (state) => state.user?.role === "admin",
+    isAdmin: (state) => state.user?.is_admin === true,
     username: (state) => state.user?.username,
     email: (state) => state.user?.email,
     avatar: (state) => state.user?.avatar,
   },
 
   actions: {
+    setUser(user) {
+      this.user = user;
+    },
+    clearUser() {
+      this.user = null;
+    },
+    async fetchUser() {
+      this.loading = true;
+      this.error = null;
+      try {
+        const res = await axios.get("/api/auth/me");
+        this.user = res.data.data;
+        return this.user;
+      } catch (error) {
+        this.user = null;
+        this.error = error.response?.data?.message || "获取用户信息失败";
+        throw error;
+      } finally {
+        this.loading = false;
+      }
+    },
+
     async login(username, password) {
       this.loading = true;
       this.error = null;
@@ -124,7 +146,6 @@ export const useUserStore = defineStore("user", {
 
     logout() {
       this.user = null;
-      localStorage.removeItem("user");
     },
   },
 });

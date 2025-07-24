@@ -135,17 +135,10 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   const access_token = localStorage.getItem("access_token");
-  const user = JSON.parse(localStorage.getItem("user") || "null");
 
   // 如果访问需要认证的页面但没有token
   if (to.meta.requiresAuth && !access_token) {
     next("/login");
-    return;
-  }
-
-  // 如果访问需要管理员权限的页面但用户不是管理员
-  if (to.meta.requiresAdmin && user?.role !== "admin") {
-    next("/dashboard");
     return;
   }
 

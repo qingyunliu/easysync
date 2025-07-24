@@ -1,7 +1,7 @@
 from flask import jsonify, request, current_app
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend import db
-from backend.app.models import NotificationSetting
+from backend.app.models import NotificationSetting, SystemSetting
 from backend.app.notifications.services import NotificationService
 from . import settings_bp
 
@@ -32,51 +32,46 @@ def save_notification_settings():
 
 @settings_bp.route('', methods=['PUT'])
 @jwt_required()
-def update_notification_settings():
-    """更新通知设置"""
+def update_system_settings():
+    """统一保存所有设置（基本、日志、通知）"""
     data = request.get_json()
-    
-    setting = NotificationSetting.query.filter_by(user_id=get_jwt_identity()).first()
-    if not setting:
-        setting = NotificationSetting(user_id=get_jwt_identity())
-        db.session.add(setting)
-    
-    setting.enabled = data.get('enabled', setting.enabled)
-    setting.email_enabled = data.get('email_enabled', setting.email_enabled)
-    setting.webhook_enabled = data.get('webhook_enabled', setting.webhook_enabled)
-    setting.webhook_url = data.get('webhook_url', setting.webhook_url)
-    
+    user_id = get_jwt_identity()
+    # 基本设置和日志设置
+    for key in ['max_concurrent_tasks', 'default_retry_count', 'default_retry_delay', 'log_retention_days', 'log_level', 'log_file_path']:
+        if key in data:
+            s = SystemSetting.query.filter_by(key=key).first()
+            if not s:
+                s = SystemSetting(key=key, value=str(data[key]))
+                db.session.add(s)
+            else:
+                s.value = str(data[key])
+    # 通知设置
+    notify = NotificationSetting.query.filter_by(user_id=user_id).first()
+    if not notify:
+        notify = NotificationSetting(user_id=user_id)
+        db.session.add(notify)
+    for field in [
+        'enabled', 'email_enabled', 'smtp_host', 'smtp_port', 'smtp_username', 'smtp_password', 'email',
+        'webhook_enabled', 'webhook_url', 'webhook_secret',
+        'dingtalk_enabled', 'dingtalk_webhook', 'dingtalk_secret',
+        'sms_enabled', 'sms_provider', 'sms_api_key', 'sms_template_id', 'sms_sign_name']:
+        if field in data:
+            setattr(notify, field, data[field])
     db.session.commit()
-    
-    return jsonify({
-        'enabled': setting.enabled,
-        'email_enabled': setting.email_enabled,
-        'webhook_enabled': setting.webhook_enabled,
-        'webhook_url': setting.webhook_url
-    }) 
+    return jsonify({'status': 'success', 'message': '设置已保存'})
 
 @settings_bp.route('', methods=['GET'])
 @jwt_required()
 def get_system_settings():
     """统一系统设置接口，供前端Settings.vue使用"""
-    # 基本设置（可根据实际情况从数据库或配置文件获取）
-    basic_settings = {
-        'max_concurrent_tasks': 5,
-        'default_retry_count': 3,
-        'default_retry_delay': 60,
-        'notification_enabled': True
-    }
-    # 日志设置
-    log_settings = {
-        'log_retention_days': 30,
-        'log_level': 'INFO',
-        'log_file_path': '/var/log/easysync'
-    }
-    # 通知设置（可从NotificationService获取）
-    notification_service = NotificationService()
-    notification_settings = notification_service.get_system_settings()
+    # 从数据库读取基本设置和日志设置
+    settings = {s.key: s.value for s in SystemSetting.query.all()}
+    # 通知设置
+    user_id = get_jwt_identity()
+    notify = NotificationSetting.query.filter_by(user_id=user_id).first()
+    notify_dict = notify.to_dict() if notify else {}
     # 合并返回
-    result = {**basic_settings, **log_settings, **notification_settings}
+    result = {**settings, **notify_dict}
     return jsonify({
         'status': 'success',
         'message': '系统设置获取成功',
