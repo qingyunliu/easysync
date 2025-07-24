@@ -9,9 +9,9 @@ import Storages from "../views/Storages.vue";
 import Tasks from "../views/Tasks.vue";
 import Logs from "../views/Logs.vue";
 import Settings from "../views/Settings.vue";
-import Notifications from "../views/Notifications.vue";
 import NotFound from "../views/NotFound.vue";
 import Profile from "../views/Profile.vue";
+import AuditLogs from "../views/AuditLogs.vue";
 import VerifyEmail from "../views/VerifyEmail.vue";
 import RegisterMailSent from "../views/RegisterMailSent.vue";
 import ForgotPassword from "../views/ForgotPassword.vue";
@@ -102,11 +102,6 @@ const routes = [
         component: Logs,
       },
       {
-        path: "notifications",
-        name: "Notifications",
-        component: Notifications,
-      },
-      {
         path: "settings",
         name: "Settings",
         component: Settings,
@@ -116,6 +111,12 @@ const routes = [
         path: "profile",
         name: "Profile",
         component: Profile,
+      },
+      {
+        path: "audit-logs",
+        name: "AuditLogs",
+        component: AuditLogs,
+        meta: { requiresAuth: true, requiresAdmin: true },
       },
     ],
   },

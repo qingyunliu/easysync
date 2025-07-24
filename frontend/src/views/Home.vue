@@ -19,16 +19,21 @@
         :collapse="isCollapsed"
         :collapse-transition="true"
       >
-        <el-tooltip content="首页" placement="right" :disabled="!isCollapsed">
+        <!-- 控制台 -->
+        <div class="menu-group-title" v-if="!isCollapsed">控制台</div>
+        <el-tooltip content="数据看板" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/dashboard">
-            <el-icon><HomeFilled /></el-icon>
-            <span v-if="!isCollapsed">首页</span>
+            <el-icon><Histogram /></el-icon>
+            <span v-if="!isCollapsed">数据看板</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="客户端管理" placement="right" :disabled="!isCollapsed">
+
+        <!-- 资源管理 -->
+        <div class="menu-group-title" v-if="!isCollapsed">资源管理</div>
+        <el-tooltip content="服务器管理" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/clients">
             <el-icon><Monitor /></el-icon>
-            <span v-if="!isCollapsed">客户端管理</span>
+            <span v-if="!isCollapsed">服务器管理</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip content="节点管理" placement="right" :disabled="!isCollapsed">
@@ -39,14 +44,23 @@
         </el-tooltip>
         <el-tooltip content="存储管理" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/storages">
-            <el-icon><Folder /></el-icon>
+            <el-icon><Files /></el-icon>
             <span v-if="!isCollapsed">存储管理</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip content="任务管理" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/tasks">
-            <el-icon><List /></el-icon>
+            <el-icon><Clock /></el-icon>
             <span v-if="!isCollapsed">任务管理</span>
+          </el-menu-item>
+        </el-tooltip>
+
+        <!-- 系统管理 -->
+        <div class="menu-group-title" v-if="!isCollapsed">系统管理</div>
+        <el-tooltip content="登录审计" placement="right" :disabled="!isCollapsed" v-if="isAdmin">
+          <el-menu-item index="/audit-logs" v-if="isAdmin">
+            <el-icon><DataAnalysis /></el-icon>
+            <span v-if="!isCollapsed">登录审计</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip content="日志管理" placement="right" :disabled="!isCollapsed">
@@ -55,16 +69,19 @@
             <span v-if="!isCollapsed">日志管理</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="通知设置" placement="right" :disabled="!isCollapsed">
-          <el-menu-item index="/notifications">
-            <el-icon><Bell /></el-icon>
-            <span v-if="!isCollapsed">通知设置</span>
-          </el-menu-item>
-        </el-tooltip>
         <el-tooltip content="系统设置" placement="right" :disabled="!isCollapsed" v-if="isAdmin">
           <el-menu-item index="/settings" v-if="isAdmin">
             <el-icon><Setting /></el-icon>
             <span v-if="!isCollapsed">系统设置</span>
+          </el-menu-item>
+        </el-tooltip>
+
+        <!-- 个人中心 -->
+        <div class="menu-group-title" v-if="!isCollapsed">个人中心</div>
+        <el-tooltip content="个人设置" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/profile">
+            <el-icon><User /></el-icon>
+            <span v-if="!isCollapsed">个人设置</span>
           </el-menu-item>
         </el-tooltip>
       </el-menu>
@@ -113,14 +130,12 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElNotification } from 'element-plus'
+import { dateEquals, ElNotification } from 'element-plus'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import { 
-  HomeFilled, 
-  Folder, 
+  Histogram, 
+  DataAnalysis,
   Document, 
-  List, 
-  Bell, 
   Monitor,
   Connection,
   Setting, 
@@ -129,14 +144,11 @@ import {
   SwitchButton,
   Fold,
   Expand,
-  Sunny,
-  Moon,
-  Sunrise,
-  MoonNight
+  Clock,
+  Files,
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import defaultAvatar from '@/assets/avatar/default-avatar.jpeg'
-import { h } from 'vue'
 
 const isCollapsed = ref(localStorage.getItem('isCollapsedSideBar') === 'true')
 
@@ -308,17 +320,15 @@ const handleAvatarError = () => {
   padding: 8px 0;
 }
 .el-menu-item {
-  height: 48px;
+  height: 45px;
   font-weight: 500;
   line-height: 48px;
-  margin: 8px 0;
   border-radius: 16px;
   color: var(--sidebar-text);
-  font-size: 15px;
+  font-size: 14px;
   transition: background 0.25s, color 0.25s, box-shadow 0.25s, border 0.25s;
   display: flex;
   align-items: center;
-  gap: 14px;
   box-shadow: none;
   border: 2px solid transparent;
   position: relative;
@@ -346,9 +356,9 @@ const handleAvatarError = () => {
 }
 
 .el-menu-item .el-icon {
-  font-size: 22px;
-  color: var(--sidebar-text);
+  color: var(--text-secondary);
   transition: color 0.25s, transform 0.25s;
+  margin-right: 10px
 }
 
 .el-menu-item.is-active .el-icon,
@@ -488,5 +498,14 @@ const handleAvatarError = () => {
 .el-avatar:hover {
   transform: scale(1.05);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.menu-group-title {
+  font-size: 13px;
+  color: #888;
+  margin: 18px 0 6px 24px;
+  letter-spacing: 1px;
+  font-weight: 500;
+  user-select: none;
 }
 </style> 

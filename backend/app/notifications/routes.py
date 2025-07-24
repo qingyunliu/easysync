@@ -5,6 +5,7 @@ from backend.app.models import NotificationSetting
 from backend.app.notifications.services import NotificationService
 from . import notifications_bp
 from backend.app.utils.decorators import admin_required
+from backend.app.config.default import Config
 
 @notifications_bp.route('/config', methods=['GET'])
 @jwt_required()
@@ -125,3 +126,27 @@ def update_notification_settings():
         'webhook_enabled': setting.webhook_enabled,
         'webhook_url': setting.webhook_url
     }) 
+
+@notifications_bp.route('/system', methods=['GET'])
+@jwt_required()
+def get_system_settings():
+    """统一系统设置接口，供前端Settings.vue使用"""
+    # 基本设置（可根据实际情况从数据库或配置文件获取）
+    basic_settings = {
+        'max_concurrent_tasks': 5,
+        'default_retry_count': 3,
+        'default_retry_delay': 60,
+        'notification_enabled': True
+    }
+    # 日志设置
+    log_settings = {
+        'log_retention_days': 30,
+        'log_level': 'INFO',
+        'log_file_path': '/var/log/easysync'
+    }
+    # 通知设置（可从NotificationService获取）
+    notification_service = NotificationService()
+    notification_settings = notification_service.get_system_settings()
+    # 合并返回
+    result = {**basic_settings, **log_settings, **notification_settings}
+    return jsonify(result) 

@@ -106,26 +106,18 @@
       </el-tab-pane>
       
       <el-tab-pane label="通知设置" name="notifications">
-        <div class="notification-settings">
-          <div class="settings-info">
-            <h3>通知设置</h3>
-            <p>配置系统消息通知方式</p>
-            <el-button type="primary" @click="$router.push('/notifications')" size="small">
-              详细设置
-            </el-button>
-          </div>
-
-          <!-- 通知总开关 -->
-          <el-card class="settings-card" shadow="never">
+        <div class="notifications-container">
+          <!-- 通知开关卡片 -->
+          <el-card class="setting-card" shadow="never">
             <template #header>
               <div class="card-header">
                 <el-icon><Switch /></el-icon>
-                <span>通知总开关</span>
+                <span>总开关</span>
               </div>
             </template>
-            <div class="switch-content">
+            <div class="main-switch">
               <el-switch 
-                v-model="basicForm.notification_enabled" 
+                v-model="settings.enabled" 
                 size="large"
                 active-text="启用通知" 
                 inactive-text="禁用通知"
@@ -133,99 +125,195 @@
               <p class="switch-desc">关闭后将不会发送任何通知</p>
             </div>
           </el-card>
-
-          <el-row :gutter="20">
-            <!-- 邮件通知 -->
-            <el-col :span="12">
-              <el-card class="notification-type-card" shadow="never" :class="{ disabled: !basicForm.notification_enabled }">
-                <div class="type-header">
-                  <div class="type-info">
-                    <el-icon class="type-icon"><Message /></el-icon>
-                    <span class="type-title">邮件通知</span>
-                  </div>
-                  <el-switch 
-                    v-model="notificationsForm.email_enabled" 
-                    :disabled="!basicForm.notification_enabled"
-                  />
-                </div>
-                <div class="type-description">
-                  <p>通过邮件接收任务完成、系统警报等通知</p>
-                </div>
-              </el-card>
-            </el-col>
-
-            <!-- Webhook通知 -->
-            <el-col :span="12">
-              <el-card class="notification-type-card" shadow="never" :class="{ disabled: !basicForm.notification_enabled }">
-                <div class="type-header">
-                  <div class="type-info">
-                    <el-icon class="type-icon"><Link /></el-icon>
-                    <span class="type-title">Webhook通知</span>
-                  </div>
-                  <el-switch 
-                    v-model="notificationsForm.webhook_enabled" 
-                    :disabled="!basicForm.notification_enabled"
-                  />
-                </div>
-                <div class="type-description">
-                  <p>将通知推送到指定的Webhook地址</p>
-                </div>
-              </el-card>
-            </el-col>
-
-            <!-- 钉钉通知 -->
-            <el-col :span="12">
-              <el-card class="notification-type-card" shadow="never" :class="{ disabled: !basicForm.notification_enabled }">
-                <div class="type-header">
-                  <div class="type-info">
-                    <el-icon class="type-icon"><ChatDotRound /></el-icon>
-                    <span class="type-title">钉钉通知</span>
-                  </div>
-                  <el-switch 
-                    v-model="notificationsForm.dingtalk_enabled" 
-                    :disabled="!basicForm.notification_enabled"
-                  />
-                </div>
-                <div class="type-description">
-                  <p>通过钉钉机器人发送群聊消息</p>
-                </div>
-              </el-card>
-            </el-col>
-
-            <!-- 短信通知 -->
-            <el-col :span="12">
-              <el-card class="notification-type-card" shadow="never" :class="{ disabled: !basicForm.notification_enabled }">
-                <div class="type-header">
-                  <div class="type-info">
-                    <el-icon class="type-icon"><Iphone /></el-icon>
-                    <span class="type-title">短信通知</span>
-                  </div>
-                  <el-switch 
-                    v-model="notificationsForm.sms_enabled" 
-                    :disabled="!basicForm.notification_enabled"
-                  />
-                </div>
-                <div class="type-description">
-                  <p>紧急故障和关键任务的短信提醒</p>
-                </div>
-              </el-card>
-            </el-col>
-          </el-row>
-
+          <!-- 邮件通知卡片 -->
+          <el-card class="setting-card" shadow="never" :class="{ disabled: !settings.enabled }">
+            <template #header>
+              <div class="card-header">
+                <el-icon><Message /></el-icon>
+                <span>邮件通知</span>
+                <el-switch v-model="settings.email_enabled" :disabled="!settings.enabled" />
+              </div>
+            </template>
+            <el-form 
+              ref="emailForm"
+              :model="settings"
+              :rules="emailRules"
+              label-position="top"
+              v-show="settings.email_enabled && settings.enabled"
+              class="form-content"
+            >
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="邮件地址" prop="email">
+                    <el-input v-model="settings.email" placeholder="请输入接收通知的邮箱" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="SMTP服务器" prop="smtp_host">
+                    <el-input v-model="settings.smtp_host" placeholder="smtp.example.com" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="8">
+                  <el-form-item label="SMTP端口" prop="smtp_port">
+                    <el-input-number v-model="settings.smtp_port" :min="1" :max="65535" style="width: 100%" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="用户名" prop="smtp_username">
+                    <el-input v-model="settings.smtp_username" placeholder="SMTP用户名" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="8">
+                  <el-form-item label="密码" prop="smtp_password">
+                    <el-input 
+                      v-model="settings.smtp_password" 
+                      type="password" 
+                      show-password 
+                      placeholder="SMTP密码"
+                    />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-form>
+          </el-card>
+          <!-- Webhook通知卡片 -->
+          <el-card class="setting-card" shadow="never" :class="{ disabled: !settings.enabled }">
+            <template #header>
+              <div class="card-header">
+                <el-icon><Link /></el-icon>
+                <span>Webhook通知</span>
+                <el-switch v-model="settings.webhook_enabled" :disabled="!settings.enabled" />
+              </div>
+            </template>
+            <el-form 
+              ref="webhookForm"
+              :model="settings"
+              :rules="webhookRules"
+              label-position="top"
+              v-show="settings.webhook_enabled && settings.enabled"
+              class="form-content"
+            >
+              <el-form-item label="Webhook URL" prop="webhook_url">
+                <el-input 
+                  v-model="settings.webhook_url" 
+                  placeholder="https://your-webhook-url.com/notify"
+                />
+              </el-form-item>
+              <el-form-item label="安全密钥 (可选)" prop="webhook_secret">
+                <el-input 
+                  v-model="settings.webhook_secret" 
+                  type="password" 
+                  show-password 
+                  placeholder="用于验证请求的密钥"
+                />
+              </el-form-item>
+            </el-form>
+          </el-card>
+          <!-- 钉钉通知卡片 -->
+          <el-card class="setting-card" shadow="never" :class="{ disabled: !settings.enabled }">
+            <template #header>
+              <div class="card-header">
+                <el-icon><ChatDotRound /></el-icon>
+                <span>钉钉通知</span>
+                <el-switch v-model="settings.dingtalk_enabled" :disabled="!settings.enabled" />
+              </div>
+            </template>
+            <el-form 
+              ref="dingtalkForm"
+              :model="settings"
+              :rules="dingtalkRules"
+              label-position="top"
+              v-show="settings.dingtalk_enabled && settings.enabled"
+              class="form-content"
+            >
+              <el-form-item label="钉钉机器人Webhook" prop="dingtalk_webhook">
+                <el-input 
+                  v-model="settings.dingtalk_webhook" 
+                  placeholder="https://oapi.dingtalk.com/robot/send?access_token=..."
+                />
+              </el-form-item>
+              <el-form-item label="密钥 (可选)" prop="dingtalk_secret">
+                <el-input 
+                  v-model="settings.dingtalk_secret" 
+                  type="password" 
+                  show-password 
+                  placeholder="钉钉机器人密钥"
+                />
+              </el-form-item>
+            </el-form>
+          </el-card>
+          <!-- 短信通知卡片 -->
+          <el-card class="setting-card" shadow="never" :class="{ disabled: !settings.enabled }">
+            <template #header>
+              <div class="card-header">
+                <el-icon><Iphone /></el-icon>
+                <span>短信通知</span>
+                <el-switch v-model="settings.sms_enabled" :disabled="!settings.enabled" />
+              </div>
+            </template>
+            <el-form 
+              ref="smsForm"
+              :model="settings"
+              :rules="smsRules"
+              label-position="top"
+              v-show="settings.sms_enabled && settings.enabled"
+              class="form-content"
+            >
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="服务商" prop="sms_provider">
+                    <el-select v-model="settings.sms_provider" placeholder="选择短信服务商" style="width: 100%">
+                      <el-option label="阿里云" value="aliyun" />
+                      <el-option label="腾讯云" value="tencent" />
+                    </el-select>
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="API Key" prop="sms_api_key">
+                    <el-input 
+                      v-model="settings.sms_api_key" 
+                      type="password" 
+                      show-password 
+                      placeholder="短信服务API Key"
+                    />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+              <el-row :gutter="20">
+                <el-col :span="12">
+                  <el-form-item label="模板ID" prop="sms_template_id">
+                    <el-input v-model="settings.sms_template_id" placeholder="短信模板ID" />
+                  </el-form-item>
+                </el-col>
+                <el-col :span="12">
+                  <el-form-item label="签名" prop="sms_sign_name">
+                    <el-input v-model="settings.sms_sign_name" placeholder="短信签名" />
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </el-form>
+          </el-card>
           <!-- 操作按钮 -->
-          <div class="notification-actions">
+          <div class="action-buttons">
             <el-button 
               type="primary" 
-              @click="saveNotificationsSettings"
-              :disabled="!basicForm.notification_enabled"
+              @click="handleSubmit" 
+              :loading="saving"
+              :disabled="!settings.enabled"
             >
               保存设置
             </el-button>
             <el-button 
-              @click="testNotifications"
-              :disabled="!basicForm.notification_enabled || !hasEnabledNotification"
+              @click="handleTest" 
+              :loading="testing"
+              :disabled="!settings.enabled || !hasEnabledNotification"
             >
-              发送测试消息
+              测试通知
+            </el-button>
+            <el-button @click="handleReset">
+              重置
             </el-button>
           </div>
         </div>
@@ -235,53 +323,32 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Bell,
-  MuteNotification,
   Switch,
   Message,
   Link,
   ChatDotRound,
-  Iphone,
-  Check,
-  Notification,
-  Setting,
-  InfoFilled
+  Iphone
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 
-// 状态
-const activeTab = ref('basic')
-const basicFormRef = ref(null)
-const logsFormRef = ref(null)
-const notificationsFormRef = ref(null)
+const emailForm = ref(null)
+const webhookForm = ref(null)
+const dingtalkForm = ref(null)
+const smsForm = ref(null)
+const saving = ref(false)
+const testing = ref(false)
 
-// 基本设置表单
-const basicForm = reactive({
-  max_concurrent_tasks: 5,
-  default_retry_count: 3,
-  default_retry_delay: 60,
-  notification_enabled: true
-})
-
-// 日志设置表单
-const logsForm = reactive({
-  log_retention_days: 30,
-  log_level: 'INFO',
-  log_file_path: '/var/log/easysync'
-})
-
-// 通知设置表单
-const notificationsForm = reactive({
+const settings = ref({
+  enabled: false,
   email_enabled: false,
+  email: '',
   smtp_host: '',
   smtp_port: 587,
   smtp_username: '',
   smtp_password: '',
-  sender_email: '',
-  recipient_email: '',
   webhook_enabled: false,
   webhook_url: '',
   webhook_secret: '',
@@ -295,40 +362,18 @@ const notificationsForm = reactive({
   sms_sign_name: ''
 })
 
-// 计算属性
 const hasEnabledNotification = computed(() => {
-  return notificationsForm.email_enabled || 
-         notificationsForm.webhook_enabled || 
-         notificationsForm.dingtalk_enabled || 
-         notificationsForm.sms_enabled
+  return settings.value.email_enabled || 
+         settings.value.webhook_enabled || 
+         settings.value.dingtalk_enabled || 
+         settings.value.sms_enabled
 })
 
-// 表单验证规则
-const basicRules = {
-  max_concurrent_tasks: [
-    { required: true, message: '请输入最大并发任务数', trigger: 'blur' }
+const emailRules = {
+  email: [
+    { required: true, message: '请输入邮件地址', trigger: 'blur' },
+    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
   ],
-  default_retry_count: [
-    { required: true, message: '请输入默认重试次数', trigger: 'blur' }
-  ],
-  default_retry_delay: [
-    { required: true, message: '请输入默认重试延迟', trigger: 'blur' }
-  ]
-}
-
-const logsRules = {
-  log_retention_days: [
-    { required: true, message: '请输入日志保留天数', trigger: 'blur' }
-  ],
-  log_level: [
-    { required: true, message: '请选择日志级别', trigger: 'change' }
-  ],
-  log_file_path: [
-    { required: true, message: '请输入日志文件路径', trigger: 'blur' }
-  ]
-}
-
-const notificationsRules = {
   smtp_host: [
     { required: true, message: '请输入SMTP服务器地址', trigger: 'blur' }
   ],
@@ -340,15 +385,10 @@ const notificationsRules = {
   ],
   smtp_password: [
     { required: true, message: '请输入SMTP密码', trigger: 'blur' }
-  ],
-  sender_email: [
-    { required: true, message: '请输入发件人邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
-  ],
-  recipient_email: [
-    { required: true, message: '请输入收件人邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
-  ],
+  ]
+}
+
+const webhookRules = {
   webhook_url: [
     { required: true, message: '请输入Webhook URL', trigger: 'blur' },
     { type: 'url', message: '请输入正确的URL格式', trigger: 'blur' }
@@ -358,100 +398,82 @@ const notificationsRules = {
   ]
 }
 
-// 获取系统设置
+const dingtalkRules = {
+  dingtalk_webhook: [
+    { required: true, message: '请输入钉钉机器人Webhook', trigger: 'blur' },
+    { type: 'url', message: '请输入正确的URL格式', trigger: 'blur' }
+  ],
+  dingtalk_secret: [
+    { required: true, message: '请输入钉钉机器人密钥', trigger: 'blur' }
+  ]
+}
+
+const smsRules = {
+  sms_provider: [
+    { required: true, message: '请选择短信服务商', trigger: 'change' }
+  ],
+  sms_api_key: [
+    { required: true, message: '请输入API Key', trigger: 'blur' }
+  ],
+  sms_template_id: [
+    { required: true, message: '请输入模板ID', trigger: 'blur' }
+  ],
+  sms_sign_name: [
+    { required: true, message: '请输入签名', trigger: 'blur' }
+  ]
+}
+
 const fetchSettings = async () => {
   try {
-    const response = await axios.get('/api/settings')
-    const settings = response.data
-    
+    const response = await axios.get('/api/notifications/system')
+    const data = response.data
+
     // 更新基本设置
-    basicForm.max_concurrent_tasks = settings.max_concurrent_tasks
-    basicForm.default_retry_count = settings.default_retry_count
-    basicForm.default_retry_delay = settings.default_retry_delay
-    basicForm.notification_enabled = settings.notification_enabled
-    
+    basicForm.max_concurrent_tasks = data.max_concurrent_tasks
+    basicForm.default_retry_count = data.default_retry_count
+    basicForm.default_retry_delay = data.default_retry_delay
+    basicForm.notification_enabled = data.notification_enabled
+
     // 更新日志设置
-    logsForm.log_retention_days = settings.log_retention_days
-    logsForm.log_level = settings.log_level
-    logsForm.log_file_path = settings.log_file_path
-    
+    logsForm.log_retention_days = data.log_retention_days
+    logsForm.log_level = data.log_level
+    logsForm.log_file_path = data.log_file_path
+
     // 更新通知设置
-    notificationsForm.email_enabled = settings.email_enabled
-    notificationsForm.smtp_host = settings.smtp_host
-    notificationsForm.smtp_port = settings.smtp_port
-    notificationsForm.smtp_username = settings.smtp_username
-    notificationsForm.sender_email = settings.sender_email
-    notificationsForm.recipient_email = settings.recipient_email
-    notificationsForm.webhook_enabled = settings.webhook_enabled
-    notificationsForm.webhook_url = settings.webhook_url
+    settings.value.enabled = data.notification_enabled
+    settings.value.email_enabled = data.email_enabled
+    settings.value.email = data.email
+    settings.value.smtp_host = data.smtp_host
+    settings.value.smtp_port = data.smtp_port
+    settings.value.smtp_username = data.smtp_username
+    settings.value.smtp_password = data.smtp_password
+    settings.value.webhook_enabled = data.webhook_enabled
+    settings.value.webhook_url = data.webhook_url
+    settings.value.webhook_secret = data.webhook_secret
+    settings.value.dingtalk_enabled = data.dingtalk_enabled
+    settings.value.dingtalk_webhook = data.dingtalk_webhook
+    settings.value.dingtalk_secret = data.dingtalk_secret
+    settings.value.sms_enabled = data.sms_enabled
+    settings.value.sms_provider = data.sms_provider
+    settings.value.sms_api_key = data.sms_api_key
+    settings.value.sms_template_id = data.sms_template_id
+    settings.value.sms_sign_name = data.sms_sign_name
   } catch (error) {
     ElMessage.error('获取系统设置失败')
   }
 }
 
-// 保存基本设置
-const saveBasicSettings = async () => {
-  if (!basicFormRef.value) return
+const handleSubmit = async () => {
+  if (!emailForm.value || !webhookForm.value || !dingtalkForm.value || !smsForm.value) return
   
   try {
-    await basicFormRef.value.validate()
-    await axios.put('/api/settings/basic', basicForm)
-    ElMessage.success('基本设置保存成功')
-  } catch (error) {
-    if (error.response?.data?.error) {
-      ElMessage.error(error.response.data.error)
-    } else {
-      ElMessage.error('保存基本设置失败')
-    }
-  }
-}
+    await emailForm.value.validate()
+    await webhookForm.value.validate()
+    await dingtalkForm.value.validate()
+    await smsForm.value.validate()
 
-// 保存日志设置
-const saveLogsSettings = async () => {
-  if (!logsFormRef.value) return
-  
-  try {
-    await logsFormRef.value.validate()
-    await axios.put('/api/settings/logs', logsForm)
-    ElMessage.success('日志设置保存成功')
-  } catch (error) {
-    if (error.response?.data?.error) {
-      ElMessage.error(error.response.data.error)
-    } else {
-      ElMessage.error('保存日志设置失败')
-    }
-  }
-}
-
-// 清理日志
-const clearLogs = async () => {
-  try {
-    await ElMessageBox.confirm(
-      '确定要清理所有日志吗？此操作不可恢复。',
-      '警告',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-    
-    await axios.post('/api/logs/clear')
-    ElMessage.success('日志清理成功')
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('日志清理失败')
-    }
-  }
-}
-
-// 保存通知设置
-const saveNotificationsSettings = async () => {
-  if (!notificationsFormRef.value) return
-  
-  try {
-    await notificationsFormRef.value.validate()
-    await axios.put('/api/settings/notifications', notificationsForm)
+    saving.value = true
+    await axios.put('/api/settings/notifications', settings.value)
     ElMessage.success('通知设置保存成功')
   } catch (error) {
     if (error.response?.data?.error) {
@@ -459,20 +481,66 @@ const saveNotificationsSettings = async () => {
     } else {
       ElMessage.error('保存通知设置失败')
     }
+  } finally {
+    saving.value = false
   }
 }
 
-// 测试通知
-const testNotifications = async () => {
+const handleTest = async () => {
+  if (!settings.value.enabled) {
+    ElMessage.warning('请先启用通知总开关')
+    return
+  }
   try {
+    testing.value = true
     await axios.post('/api/notifications/test')
     ElMessage.success('测试通知发送成功')
   } catch (error) {
     ElMessage.error(error.response?.data?.error || '测试通知发送失败')
+  } finally {
+    testing.value = false
   }
 }
 
-// 生命周期钩子
+const handleReset = async () => {
+  try {
+    await ElMessageBox.confirm(
+      '确定要重置所有通知设置吗？此操作不可恢复。',
+      '警告',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    settings.value = {
+      enabled: false,
+      email_enabled: false,
+      email: '',
+      smtp_host: '',
+      smtp_port: 587,
+      smtp_username: '',
+      smtp_password: '',
+      webhook_enabled: false,
+      webhook_url: '',
+      webhook_secret: '',
+      dingtalk_enabled: false,
+      dingtalk_webhook: '',
+      dingtalk_secret: '',
+      sms_enabled: false,
+      sms_provider: '',
+      sms_api_key: '',
+      sms_template_id: '',
+      sms_sign_name: ''
+    }
+    ElMessage.success('通知设置已重置')
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('重置通知设置失败')
+    }
+  }
+}
+
 onMounted(() => {
   fetchSettings()
 })
