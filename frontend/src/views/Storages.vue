@@ -1644,7 +1644,7 @@ onUnmounted(() => {
   font-weight: 500;
 }
 
-.header-left h1 {
+.header-left h2 {
   margin: 0 0 5px 0;
   color: var(--text-color);
   font-size: 24px;

@@ -35,7 +35,8 @@
             :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--text-color)' }"
             stripe
           >
-            <el-table-column prop="username" label="用户" width="120" align="center">
+            <el-table-column prop="id" label="ID" width="330" align="center"/>
+            <el-table-column prop="username" label="用户" width="160" align="center">
               <template #default="scope">
                 <div class="user-info">
                   <el-avatar :size="28" style="margin-right: 8px">
@@ -58,7 +59,7 @@
               </template>
             </el-table-column>
             
-            <el-table-column label="操作时间" width="180" align="center">
+            <el-table-column label="操作时间" width="220" align="center">
               <template #default="scope">
                 <div class="time-info">
                   <el-icon class="time-icon"><Clock /></el-icon>
@@ -67,7 +68,7 @@
               </template>
             </el-table-column>
             
-            <el-table-column prop="details.ip" label="IP地址" width="140" align="center">
+            <el-table-column prop="details.ip" label="IP地址" width="180" align="center">
               <template #default="scope">
                 <el-tag type="info" effect="plain" size="small">
                   {{ scope.row.details.ip }}
@@ -255,11 +256,13 @@ onMounted(fetchLogs)
 
 .user-info {
   display: flex;
+  justify-content: center;
   align-items: center;
 }
 
 .time-info {
   display: flex;
+  justify-content: center;
   align-items: center;
   gap: 6px;
 }
