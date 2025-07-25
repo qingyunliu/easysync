@@ -46,11 +46,6 @@
               <div class="form-tip">任务失败后的重试等待时间(秒)</div>
             </el-form-item>
             
-            <el-form-item label="启用通知" prop="enabled">
-              <el-switch v-model="settings.enabled" />
-              <div class="form-tip">是否启用系统通知功能</div>
-            </el-form-item>
-            
             <el-form-item>
               <el-button type="primary" @click="handleSubmit">保存设置</el-button>
             </el-form-item>
@@ -115,7 +110,7 @@
             <span class="flex-spacer"></span>
             <el-button v-if="!notifyStates.email.editing" type="text" @click.stop="startEdit('email')">编辑</el-button>
             <template v-else>
-              <el-button type="primary" size="small" @click.stop="saveEdit('email')" :loading="saving">保存</el-button>
+              <el-button type="primary" size="small" @click.stop="saveEdit('email')" :loading="saving" :disabled="!notifyStates.email.testPassed || saving">保存</el-button>
               <el-button size="small" @click.stop="cancelEdit('email')">取消</el-button>
             </template>
             <el-icon :class="notifyStates.email.collapsed ? 'collapse-arrow collapsed' : 'collapse-arrow'">
@@ -130,8 +125,8 @@
             />
             <span class="notify-switch-label">启用邮件通知</span>
           </div>
-          <el-card v-show="!notifyStates.email.collapsed && notifyStates.email.editing && settings.email_enabled">
-            <el-form :model="settings" ref="emailForm" :rules="emailRules" label-width="120px" class="notify-form-col">
+          <el-card v-show="!notifyStates.email.collapsed && settings.email_enabled">
+            <el-form :model="settings" ref="emailForm" :rules="emailRules" label-width="120px" class="notify-form-col" :disabled="!notifyStates.email.editing">
               <el-form-item label="SMTP服务器" prop="smtp_host">
                 <el-input v-model="settings.smtp_host" placeholder="smtp.example.com" />
               </el-form-item>
@@ -160,7 +155,7 @@
             <span class="flex-spacer"></span>
             <el-button v-if="!notifyStates.sms.editing" type="text" @click.stop="startEdit('sms')">编辑</el-button>
             <template v-else>
-              <el-button type="primary" size="small" @click.stop="saveEdit('sms')" :loading="saving">保存</el-button>
+              <el-button type="primary" size="small" @click.stop="saveEdit('sms')" :loading="saving" :disabled="!notifyStates.sms.testPassed || saving">保存</el-button>
               <el-button size="small" @click.stop="cancelEdit('sms')">取消</el-button>
             </template>
             <el-icon :class="notifyStates.sms.collapsed ? 'collapse-arrow collapsed' : 'collapse-arrow'">
@@ -175,8 +170,8 @@
             />
             <span class="notify-switch-label">启用短信通知</span>
           </div>
-          <el-card v-show="!notifyStates.sms.collapsed && notifyStates.sms.editing && settings.sms_enabled">
-            <el-form :model="settings" ref="smsForm" :rules="smsRules" label-width="120px" class="notify-form-col">
+          <el-card v-show="!notifyStates.sms.collapsed && settings.sms_enabled">
+            <el-form :model="settings" ref="smsForm" :rules="smsRules" label-width="120px" class="notify-form-col" :disabled="!notifyStates.sms.editing">
               <el-form-item label="服务商" prop="sms_provider">
                 <el-select v-model="settings.sms_provider" placeholder="选择服务商" style="width: 100%">
                   <el-option label="阿里云" value="aliyun" />
@@ -205,7 +200,7 @@
             <span class="flex-spacer"></span>
             <el-button v-if="!notifyStates.dingtalk.editing" type="text" @click.stop="startEdit('dingtalk')">编辑</el-button>
             <template v-else>
-              <el-button type="primary" size="small" @click.stop="saveEdit('dingtalk')" :loading="saving">保存</el-button>
+              <el-button type="primary" size="small" @click.stop="saveEdit('dingtalk')" :loading="saving" :disabled="!notifyStates.dingtalk.testPassed || saving">保存</el-button>
               <el-button size="small" @click.stop="cancelEdit('dingtalk')">取消</el-button>
             </template>
             <el-icon :class="notifyStates.dingtalk.collapsed ? 'collapse-arrow collapsed' : 'collapse-arrow'">
@@ -220,8 +215,8 @@
             />
             <span class="notify-switch-label">启用钉钉通知</span>
           </div>
-          <el-card v-show="!notifyStates.dingtalk.collapsed && notifyStates.dingtalk.editing && settings.dingtalk_enabled">
-            <el-form :model="settings" ref="dingtalkForm" :rules="dingtalkRules" label-width="120px" class="notify-form-col">
+          <el-card v-show="!notifyStates.dingtalk.collapsed && settings.dingtalk_enabled">
+            <el-form :model="settings" ref="dingtalkForm" :rules="dingtalkRules" label-width="120px" class="notify-form-col" :disabled="!notifyStates.dingtalk.editing">
               <el-form-item label="Webhook" prop="dingtalk_webhook">
                 <el-input v-model="settings.dingtalk_webhook" placeholder="https://oapi.dingtalk.com/robot/send?access_token=..." />
               </el-form-item>
@@ -241,7 +236,7 @@
             <span class="flex-spacer"></span>
             <el-button v-if="!notifyStates.webhook.editing" type="text" @click.stop="startEdit('webhook')">编辑</el-button>
             <template v-else>
-              <el-button type="primary" size="small" @click.stop="saveEdit('webhook')" :loading="saving">保存</el-button>
+              <el-button type="primary" size="small" @click.stop="saveEdit('webhook')" :loading="saving" :disabled="!notifyStates.webhook.testPassed || saving">保存</el-button>
               <el-button size="small" @click.stop="cancelEdit('webhook')">取消</el-button>
             </template>
             <el-icon :class="notifyStates.webhook.collapsed ? 'collapse-arrow collapsed' : 'collapse-arrow'">
@@ -256,8 +251,8 @@
             />
             <span class="notify-switch-label">启用Webhook通知</span>
           </div>
-          <el-card v-show="!notifyStates.webhook.collapsed && notifyStates.webhook.editing && settings.webhook_enabled">
-            <el-form :model="settings" ref="webhookForm" :rules="webhookRules" label-width="120px" class="notify-form-col">
+          <el-card v-show="!notifyStates.webhook.collapsed && settings.webhook_enabled">
+            <el-form :model="settings" ref="webhookForm" :rules="webhookRules" label-width="120px" class="notify-form-col" :disabled="!notifyStates.webhook.editing">
               <el-form-item label="Webhook URL" prop="webhook_url">
                 <el-input v-model="settings.webhook_url" placeholder="https://your-webhook-url.com/notify" />
               </el-form-item>
@@ -269,11 +264,6 @@
               <el-button @click="handleTest('webhook')" :disabled="saving">测试发送</el-button>
             </div>
           </el-card>
-          <!-- 操作按钮区 -->
-          <div class="notify-actions-bar">
-            <el-button type="primary" :loading="saving" @click="handleNotifySubmit">保存所有设置</el-button>
-            <el-button @click="handleReset" :disabled="saving">重置</el-button>
-          </div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -281,7 +271,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, reactive } from 'vue'
+import { ref, onMounted, computed, reactive, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Switch,
@@ -304,10 +294,10 @@ const testing = ref(false)
 
 // 折叠与编辑状态
 const notifyStates = reactive({
-  email: { collapsed: false, editing: false, backup: {} },
-  sms: { collapsed: false, editing: false, backup: {} },
-  dingtalk: { collapsed: false, editing: false, backup: {} },
-  webhook: { collapsed: false, editing: false, backup: {} }
+  email: { collapsed: false, editing: false, backup: {}, testPassed: false },
+  sms: { collapsed: false, editing: false, backup: {}, testPassed: false },
+  dingtalk: { collapsed: false, editing: false, backup: {}, testPassed: false },
+  webhook: { collapsed: false, editing: false, backup: {}, testPassed: false }
 })
 
 function toggleCollapse(type) {
@@ -315,6 +305,7 @@ function toggleCollapse(type) {
 }
 function startEdit(type) {
   notifyStates[type].editing = true
+  notifyStates[type].testPassed = false
   // 备份当前配置
   notifyStates[type].backup = JSON.parse(JSON.stringify(settings.value))
 }
@@ -327,6 +318,9 @@ function cancelEdit(type) {
     // 还原备份
     Object.assign(settings.value, notifyStates[type].backup)
     notifyStates[type].editing = false
+    notifyStates[type].testPassed = false
+  }).catch(() => {
+    // 用户点击“继续编辑”，无需处理
   })
 }
 async function saveEdit(type) {
@@ -339,11 +333,16 @@ async function saveEdit(type) {
   if (!formRef.value) return
   formRef.value.validate(async (valid) => {
     if (!valid) return
+    if (!notifyStates[type].testPassed) {
+      ElMessage.warning('请先测试通过后再保存！')
+      return
+    }
     saving.value = true
     try {
       await axios.put('/api/settings', settings.value)
       ElMessage.success('设置保存成功')
       notifyStates[type].editing = false
+      notifyStates[type].testPassed = false
     } catch (error) {
       ElMessage.error('保存通知设置失败')
     } finally {
@@ -384,13 +383,6 @@ const settings = ref({
   // 通知事件
   event_scan_success: true,
   event_scan_error: true
-})
-
-const hasEnabledNotification = computed(() => {
-  return settings.value.email_enabled || 
-         settings.value.webhook_enabled || 
-         settings.value.dingtalk_enabled || 
-         settings.value.sms_enabled
 })
 
 const basicRules = {
@@ -549,8 +541,55 @@ const handleSubmit = async () => {
   }
 
 function handleTest(type) {
-  // 可根据 type 调用后端测试接口
-  ElMessage.success('测试发送功能待实现')
+  let formRef = null
+  if (type === 'email') formRef = emailForm
+  if (type === 'sms') formRef = smsForm
+  if (type === 'dingtalk') formRef = dingtalkForm
+  if (type === 'webhook') formRef = webhookForm
+  if (!formRef.value) return
+  formRef.value.validate(async (valid) => {
+    if (!valid) return
+    testing.value = true
+    // 只传当前分组的配置
+    const config = { type }
+    if (type === 'email') {
+      config.email_enabled = settings.value.email_enabled
+      config.smtp_host = settings.value.smtp_host
+      config.smtp_port = settings.value.smtp_port
+      config.smtp_username = settings.value.smtp_username
+      config.smtp_password = settings.value.smtp_password
+      config.email = settings.value.email
+    }
+    if (type === 'sms') {
+      config.sms_enabled = settings.value.sms_enabled
+      config.sms_provider = settings.value.sms_provider
+      config.sms_api_key = settings.value.sms_api_key
+      config.sms_template_id = settings.value.sms_template_id
+      config.sms_sign_name = settings.value.sms_sign_name
+    }
+    if (type === 'dingtalk') {
+      config.dingtalk_enabled = settings.value.dingtalk_enabled
+      config.dingtalk_webhook = settings.value.dingtalk_webhook
+      config.dingtalk_secret = settings.value.dingtalk_secret
+    }
+    if (type === 'webhook') {
+      config.webhook_enabled = settings.value.webhook_enabled
+      config.webhook_url = settings.value.webhook_url
+      config.webhook_secret = settings.value.webhook_secret
+    }
+    axios.post('/api/notifications/test', config)
+      .then(() => {
+        ElMessage.success('测试通知已发送，请检查对应通道')
+        notifyStates[type].testPassed = true
+      })
+      .catch(error => {
+        ElMessage.error(error.response?.data?.message || error.response?.data?.msg || '测试通知发送失败')
+        notifyStates[type].testPassed = false
+      })
+      .finally(() => {
+        testing.value = false
+      })
+  })
 }
 
 const handleReset = async () => {

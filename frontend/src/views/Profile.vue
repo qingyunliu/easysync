@@ -51,7 +51,7 @@
               <el-input v-model="profileForm.id" disabled>
                 <template #append>
                   <el-tooltip content="复制ID" placement="top">
-                    <el-button @click="copyUserId">
+                    <el-button class="copy-id-btn" @click="copyUserId">
                       <el-icon><Document /></el-icon>
                     </el-button>
                   </el-tooltip>
@@ -221,11 +221,7 @@ const beforeAvatarUpload = (file) => {
 // 获取用户信息
 const fetchUserProfile = async () => {
   try {
-    const response = await axios.get("/api/users/me", {
-      headers: {
-        'Authorization': `Bearer ${userStore.token}`
-      }
-    })
+    const response = await axios.get("/api/users/me");
     
     const userData = response.data.data
     Object.assign(profileForm, {
@@ -324,9 +320,24 @@ const formatDate = (date) => {
 
 // 复制用户ID
 const copyUserId = () => {
-  navigator.clipboard.writeText(profileForm.id)
-    .then(() => ElMessage.success('用户ID已复制到剪贴板'))
-    .catch(() => ElMessage.error('复制失败'))
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+    navigator.clipboard.writeText(profileForm.id)
+      .then(() => ElMessage.success('用户ID已复制到剪贴板'))
+      .catch(() => ElMessage.error('复制失败'))
+  } else {
+    // 兼容性降级：使用 document.execCommand
+    const input = document.createElement('input')
+    input.value = profileForm.id
+    document.body.appendChild(input)
+    input.select()
+    try {
+      document.execCommand('copy')
+      ElMessage.success('用户ID已复制到剪贴板')
+    } catch (e) {
+      ElMessage.error('复制失败')
+    }
+    document.body.removeChild(input)
+  }
 }
 
 // 修改密码
@@ -484,6 +495,8 @@ const handleChangePassword = async () => {
 :deep(.el-input-group__append) {
   padding: 0;
   background-color: transparent;
+  box-shadow: 0px 0px 3px 0px var(--border-color);
+  border: 1px solid var(--border-color);
 }
 
 :deep(.el-input-group__append .el-button) {
@@ -495,4 +508,5 @@ const handleChangePassword = async () => {
 :deep(.el-input-group__append .el-button:hover) {
   background-color: var(--bg-color);
 }
+
 </style> 

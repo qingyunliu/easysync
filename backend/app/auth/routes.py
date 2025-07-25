@@ -165,6 +165,41 @@ def reset_password():
     db.session.commit()
     return jsonify({'status': 'success', 'msg': '密码重置成功'}) 
 
+@auth_bp.route('/logout', methods=['POST'])
+@jwt_required()
+def logout():
+    """用户退出登录"""
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    
+    # 退出登录审计日志
+    try:
+        ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+        user_agent = request.headers.get('User-Agent', '')
+        audit_log = AuditLog(
+            user_id=user.id,
+            action='logout',
+            resource_type='user',
+            resource_id=user.id,
+            details={
+                'ip': ip,
+                'user_agent': user_agent,
+                'logout_time': datetime.utcnow().isoformat()
+            }
+        )
+        from backend import db
+        db.session.add(audit_log)
+        db.session.commit()
+    except Exception as e:
+        from backend import db
+        db.session.rollback()
+        # 日志记录失败不影响退出流程
+    
+    return jsonify({
+        'status': 'success',
+        'msg': '退出登录成功'
+    })
+
 @auth_bp.route('/audit-logs', methods=['GET'])
 @jwt_required()
 def get_audit_logs():
@@ -172,12 +207,19 @@ def get_audit_logs():
     user = User.query.get(current_user_id)
     page = int(request.args.get('page', 1))
     per_page = int(request.args.get('per_page', 20))
-    query = AuditLog.query.filter_by(action='login')
+    action = request.args.get('action', 'login')  # 支持筛选操作类型
+    
+    query = AuditLog.query
+    if action != 'all':
+        query = query.filter_by(action=action)
+    
     if not user.is_admin:
         query = query.filter_by(user_id=current_user_id)
+    
     query = query.order_by(AuditLog.created_at.desc())
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     logs = [log.to_dict() for log in pagination.items]
+    
     return jsonify({
         'logs': logs,
         'total': pagination.total,

@@ -2,6 +2,7 @@ from flask import jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.app.notifications.services import NotificationService
 from . import notifications_bp
+from backend.app.models import User
 
 @notifications_bp.route('/config', methods=['GET'])
 @jwt_required()
@@ -25,11 +26,16 @@ def save_config():
 @notifications_bp.route('/test', methods=['POST'])
 @jwt_required()
 def test_notification():
-    """测试通知发送"""
+    """测试通知发送（直接用前端传递的配置）"""
     notification_service = NotificationService()
-    config = request.json
-    notification_service.test_notification(get_jwt_identity(), config)
-    return jsonify({'message': '测试通知已发送'})
+    config = request.json or {}
+    user = User.query.get(get_jwt_identity())
+    to_email = user.email if user else None
+    try:
+        notification_service.test_notification_config(config, to_email)
+        return jsonify({'message': '测试通知已发送'}), 200
+    except Exception as e:
+        return jsonify({'message': str(e)}), 400
 
 @notifications_bp.route('', methods=['GET'])
 @jwt_required()

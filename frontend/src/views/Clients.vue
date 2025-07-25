@@ -1113,16 +1113,10 @@ const fetchClients = async () => {
   try {
     loading.value = true
     const response = await axios.get('/api/clients')
-    // 确保返回的数据是数组
     const data = response.data.data
     clients.value = Array.isArray(data) ? data : []
-    // 如果数据为空，显示提示信息
-    if (clients.value.length === 0) {
-      ElMessage.info('暂无服务器数据')
-    }
   } catch (error) {
-    // 错误处理已经在拦截器中完成
-    clients.value = []  // 发生错误时设置为空数组
+    clients.value = []
   } finally {
     loading.value = false
   }

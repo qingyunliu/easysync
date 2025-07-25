@@ -20,10 +20,11 @@ axios.defaults.headers.common["Accept"] = "application/json";
 // Add request interceptors
 axios.interceptors.request.use(
   (config) => {
-    // Add JWT token to request headers
-    const token = localStorage.getItem("access_token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (!config.headers.Authorization) {
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },

@@ -1045,7 +1045,7 @@ const fetchNodes = async () => {
     const response = await axios.get('/api/nodes')
     nodes.value = response.data.data
   } catch (error) {
-    // 错误处理已经在拦截器中完成
+    nodes.value = []
   } finally {
     loading.value = false
   }

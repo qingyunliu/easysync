@@ -57,8 +57,8 @@
 
         <!-- 系统管理 -->
         <div class="menu-group-title" v-if="!isCollapsed">系统管理</div>
-        <el-tooltip content="登录审计" placement="right" :disabled="!isCollapsed" v-if="isAdmin">
-          <el-menu-item index="/audit-logs" v-if="isAdmin">
+        <el-tooltip content="登录审计" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/audit-logs">
             <el-icon><DataAnalysis /></el-icon>
             <span v-if="!isCollapsed">登录审计</span>
           </el-menu-item>
@@ -69,8 +69,8 @@
             <span v-if="!isCollapsed">日志管理</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="系统设置" placement="right" :disabled="!isCollapsed" v-if="isAdmin">
-          <el-menu-item index="/settings" v-if="isAdmin">
+        <el-tooltip content="系统设置" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/settings">
             <el-icon><Setting /></el-icon>
             <span v-if="!isCollapsed">系统设置</span>
           </el-menu-item>
@@ -96,12 +96,19 @@
               <el-avatar 
                 :size="32" 
                 :src="avatarUrl"
-                :style="{ backgroundColor: user?.avatar ? 'transparent' : '#1890ff' }"
+                :style="{ backgroundColor: userStore.user?.avatar ? 'transparent' : '#1890ff' }"
                 @error="handleAvatarError"
               >
-                {{ username?.charAt(0)?.toUpperCase() }}
+                {{ userStore.user?.username?.charAt(0)?.toUpperCase() }}
               </el-avatar>
-              <span class="username">{{ username }}</span>
+              <span class="username">
+                <template v-if="userStore.loaded">
+                  {{ userStore.user?.username || '未登录' }}
+                </template>
+                <template v-else>
+                  加载中...
+                </template>
+              </span>
               <el-icon class="arrow-down"><ArrowDown /></el-icon>
             </div>
             <template #dropdown>
@@ -153,9 +160,7 @@ import { useUserStore } from '@/stores/user'
 const userStore = useUserStore()
 
 const isCollapsed = ref(localStorage.getItem('isCollapsedSideBar') === 'true')
-
 const router = useRouter()
-const user = ref(null)
 
 // 主题判断
 const theme = ref(document.documentElement.getAttribute('data-theme') || 'light')
@@ -198,41 +203,28 @@ function getGreeting() {
   }
 }
 
-onMounted(() => {
-  if (!sessionStorage.getItem('welcome_shown')) {
-    // 欢迎通知逻辑延后到 user 信息获取后
+onMounted(async () => {
+  isCollapsed.value = localStorage.getItem('isCollapsedSideBar') === 'true'
+  if (!userStore.loaded) {
+    await userStore.fetchUser()
   }
-  const token = localStorage.getItem('access_token')
-  if (token) {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
-    // 获取用户信息
-    axios.get('/api/users/me').then(res => {
-      user.value = res.data.data
-      userStore.setUser(res.data.data) // 同步到全局 userStore
-      // 欢迎通知
-      if (!sessionStorage.getItem('welcome_shown') && user.value && user.value.username) {
-        const { text, emoji } = getGreeting()
-        ElNotification({
-          title: `${text} ${emoji}`,
-          message: `欢迎回来，${user.value.username}！`,
-          type: 'success',
-          duration: 0,
-          showClose: true,
-          offset: 50,
-          position: 'top-right'
-        })
-        sessionStorage.setItem('welcome_shown', '1')
-      }
-    }).catch(() => {
-      // token 失效
-      localStorage.removeItem('access_token')
-      localStorage.removeItem('refresh_token')
-      userStore.clearUser()
-      router.push('/login')
-    })
-  } else {
+  if (!userStore.user) {
     userStore.clearUser()
     router.push('/login')
+    return
+  }
+  if (!sessionStorage.getItem('welcome_shown') && userStore.user && userStore.user.username) {
+    const { text, emoji } = getGreeting()
+    ElNotification({
+      title: `${text} ${emoji}`,
+      message: `欢迎回来，${userStore.user.username}！`,
+      type: 'success',
+      duration: 0,
+      showClose: true,
+      offset: 50,
+      position: 'top-right'
+    })
+    sessionStorage.setItem('welcome_shown', '1')
   }
 })
 
@@ -241,23 +233,24 @@ function toggleSidebar() {
   localStorage.setItem('isCollapsedSideBar', isCollapsed.value)
 }
 
-const username = computed(() => {
-  return user.value ? user.value.username : '用户'
-})
-
+const username = computed(() => userStore.user?.username)
 const avatarUrl = computed(() => {
-  if (!user.value || !user.value.avatar) return defaultAvatar
-  return `${API_BASE_URL}${user.value.avatar}`
+  if (!userStore.user || !userStore.user.avatar) return defaultAvatar
+  return `${API_BASE_URL}${userStore.user.avatar}`
 })
+const isAdmin = computed(() => userStore.user && userStore.user.is_admin === true)
 
-const isAdmin = computed(() => {
-  return user.value && user.value.is_admin === true
-})
-
-const handleCommand = (command) => {
+const handleCommand = async (command) => {
   if (command === 'profile') {
     router.push('/profile')
   } else if (command === 'logout') {
+    try {
+      // 调用退出登录API记录审计日志
+      await axios.post('/api/auth/logout')
+    } catch (error) {
+      console.warn('退出登录审计记录失败:', error)
+    }
+    
     // 清除本地存储
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
@@ -268,13 +261,14 @@ const handleCommand = (command) => {
     // 清除axios默认请求头
     delete axios.defaults.headers.common['Authorization']
     // 跳转到登录页
+    userStore.logout()
     router.push('/login')
   }
 }
 
 const handleAvatarError = () => {
   // 当头像加载失败时，使用默认头像
-  user.value.avatar = defaultAvatar
+  if (userStore.user) userStore.user.avatar = defaultAvatar
 }
 </script>
 
@@ -288,6 +282,7 @@ const handleAvatarError = () => {
 
 .sidebar {
   width: 200px;
+  min-width: 60px;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border-color);
   box-shadow: 2px 0 16px 0 rgba(24, 144, 255, 0.06);
@@ -298,6 +293,7 @@ const handleAvatarError = () => {
 .sidebar.collapsed {
   width: 60px;
 }
+
 .logo {
   text-align: center;
   border-bottom: 1px solid var(--border-color);
