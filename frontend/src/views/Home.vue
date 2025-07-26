@@ -57,10 +57,10 @@
 
         <!-- 系统管理 -->
         <div class="menu-group-title" v-if="!isCollapsed">系统管理</div>
-        <el-tooltip content="登录审计" placement="right" :disabled="!isCollapsed">
+        <el-tooltip content="操作审计" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/audit-logs">
             <el-icon><DataAnalysis /></el-icon>
-            <span v-if="!isCollapsed">登录审计</span>
+            <span v-if="!isCollapsed">操作审计</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip content="日志管理" placement="right" :disabled="!isCollapsed">

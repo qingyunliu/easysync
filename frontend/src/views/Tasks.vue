@@ -1231,11 +1231,36 @@ const handleTestConnection = async (task) => {
       return
     }
     
-    const response = await axios.post('/api/tasks/test-connection', {
-      storage_config: storageConfig
-    })
+    // 检查是否有可用的测试节点
+    const nodesResponse = await axios.get('/api/nodes')
+    const availableNodes = (nodesResponse.data.data || []).filter(
+      node => node.status === 'online' && node.agent_status === 'running'
+    )
     
-    ElMessage.success('连接测试任务已创建并启动')
+    if (availableNodes.length === 0) {
+      ElMessage.error('没有可用的测试节点，请确保有节点在线且Agent已启动')
+      return
+    }
+    
+    // 使用第一个可用节点进行测试
+    const testNode = availableNodes[0]
+    
+    // 如果有存储ID，使用存储测试接口
+    if (storageConfig.id) {
+      const response = await axios.post(`/api/storages/${storageConfig.id}/test-connection`, {
+        node_id: testNode.id
+      })
+      ElMessage.success('连接测试任务已创建并启动')
+    } else {
+      // 否则使用临时测试接口
+      const response = await axios.post('/api/storages/test-connection', {
+        type: storageConfig.type,
+        config: storageConfig.config,
+        node_id: testNode.id
+      })
+      ElMessage.success('连接测试任务已创建并启动')
+    }
+    
     fetchTasks()
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '创建连接测试失败')

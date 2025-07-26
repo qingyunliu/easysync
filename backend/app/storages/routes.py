@@ -4,6 +4,7 @@ from .services import StorageService
 from backend.app.utils.decorators import require_user
 import io
 from botocore.exceptions import ClientError
+from backend.app.auth.services import AuditService
 
 storage_service = StorageService()
 
@@ -16,25 +17,58 @@ def create_storage():
         name = data.get('name')
         type = data.get('type')
         config = data.get('config', {})
+        user_id = getattr(g, 'user', None).id if hasattr(g, 'user') and g.user else None
         
         if not all([name, type]):
+            AuditService.log_storage_operation(
+                user_id=user_id,
+                action='create',
+                storage_id=None,
+                storage_name=name,
+                details={'error': '名称和类型不能为空'},
+                result='failed'
+            )
             return jsonify({
                 'status': 'error',
                 'message': '名称和类型不能为空'
             }), 400
 
         storage = storage_service.create_storage(name, type, config)
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='create',
+            storage_id=storage.id,
+            storage_name=storage.name,
+            details={'msg': '存储节点创建成功'},
+            result='success'
+        )
         return jsonify({
             'status': 'success',
             'message': '存储节点创建成功',
             'storage': storage.to_dict()
         }), 201
     except ValueError as e:
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='create',
+            storage_id=None,
+            storage_name=name,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 400
     except Exception as e:
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='create',
+            storage_id=None,
+            storage_name=name,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': f'创建存储节点失败: {str(e)}'
@@ -89,25 +123,57 @@ def update_storage(storage_id):
         name = data.get('name')
         type = data.get('type')
         config = data.get('config')
+        user_id = getattr(g, 'user', None).id if hasattr(g, 'user') and g.user else None
         
         storage = storage_service.update_storage(storage_id, name, type, config)
         if not storage:
+            AuditService.log_storage_operation(
+                user_id=user_id,
+                action='update',
+                storage_id=storage_id,
+                storage_name=name,
+                details={'error': '存储节点不存在'},
+                result='failed'
+            )
             return jsonify({
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
-            
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='update',
+            storage_id=storage.id,
+            storage_name=storage.name,
+            details={'msg': '存储节点更新成功'},
+            result='success'
+        )
         return jsonify({
             'status': 'success',
             'message': '存储节点更新成功',
             'storage': storage.to_dict()
         })
     except ValueError as e:
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='update',
+            storage_id=storage_id,
+            storage_name=name,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 400
     except Exception as e:
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='update',
+            storage_id=storage_id,
+            storage_name=name,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': f'更新存储节点失败: {str(e)}'
@@ -117,14 +183,39 @@ def update_storage(storage_id):
 @require_user
 def delete_storage(storage_id):
     """删除存储节点"""
+    user_id = getattr(g, 'user', None).id if hasattr(g, 'user') and g.user else None
     try:
         if not storage_service.delete_storage(storage_id):
+            AuditService.log_storage_operation(
+                user_id=user_id,
+                action='delete',
+                storage_id=storage_id,
+                storage_name=None,
+                details={'error': '存储节点不存在'},
+                result='failed'
+            )
             return jsonify({
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='delete',
+            storage_id=storage_id,
+            storage_name=None,
+            details={'msg': '存储节点删除成功'},
+            result='success'
+        )
         return '', 204
     except Exception as e:
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='delete',
+            storage_id=storage_id,
+            storage_name=None,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': f'删除存储节点失败: {str(e)}'
@@ -138,17 +229,44 @@ def test_temporary_connect():
         data = request.get_json()
         storage_type = data.get('type')
         config = data.get('config', {})
+        node_id = data.get('node_id')  # 获取指定的节点ID
         
         if not storage_type:
             return jsonify({
                 'status': 'error',
                 'message': '存储类型不能为空'
             }), 400
+        
+        if not node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '请选择测试节点'
+            }), 400
             
-        # 创建临时存储对象
-        temp_storage = type('TempStorage', (), {'type': storage_type, 'config': config})
-        result = storage_service.test_connection(temp_storage)
-        return jsonify(result)
+        # 构建存储配置
+        storage_config = {
+            'type': storage_type,
+            'config': config
+        }
+        
+        # 创建连接测试任务
+        from backend.app.tasks.service import TaskService
+        task_service = TaskService()
+        task = task_service.create_connection_test_task(storage_config, g.user.id)
+        
+        # 启动任务并分配给指定节点
+        started_task = task_service.start_task(task.id, node_id)
+        
+        return jsonify({
+            'status': 'success',
+            'message': '连接测试任务已创建并分配给节点执行',
+            'data': {
+                'task_id': started_task.id,
+                'task_name': started_task.name,
+                'node_id': started_task.node_id,
+                'status': started_task.status
+            }
+        })
     except ValueError as e:
         return jsonify({
             'status': 'error',
@@ -163,8 +281,18 @@ def test_temporary_connect():
 @storages_bp.route('/<string:storage_id>/test-connection', methods=['POST'])
 @require_user
 def test_connect(storage_id):
-    """测试存储连接"""
+    """测试存储连接 - 统一使用任务系统"""
     try:
+        data = request.get_json()
+        node_id = data.get('node_id')  # 获取指定的节点ID
+        
+        if not node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '请选择测试节点'
+            }), 400
+        
+        # 获取存储配置
         storage = storage_service.get_storage(storage_id)
         if not storage:
             return jsonify({
@@ -172,8 +300,37 @@ def test_connect(storage_id):
                 'message': '存储节点不存在'
             }), 404
             
-        result = storage_service.test_connection(storage)
-        return jsonify(result)
+        # 构建存储配置
+        storage_config = {
+            'id': storage.id,
+            'name': storage.name,
+            'type': storage.type,
+            'config': storage.config
+        }
+        
+        # 创建连接测试任务
+        from backend.app.tasks.service import TaskService
+        task_service = TaskService()
+        task = task_service.create_connection_test_task(storage_config, g.user.id)
+        
+        # 启动任务并分配给指定节点
+        started_task = task_service.start_task(task.id, node_id)
+        
+        return jsonify({
+            'status': 'success',
+            'message': '连接测试任务已创建并分配给节点执行',
+            'data': {
+                'task_id': started_task.id,
+                'task_name': started_task.name,
+                'node_id': started_task.node_id,
+                'status': started_task.status
+            }
+        })
+    except ValueError as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
     except Exception as e:
         return jsonify({
             'status': 'error',
@@ -191,12 +348,19 @@ def get_storage_stats(storage_id):
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
-            
-        stats = storage_service.get_stats(storage)
-        return jsonify({
-            'status': 'success',
-            'data': stats
-        })
+        
+        # 检查存储是否有绑定的节点
+        if not storage.node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '该存储未绑定任何节点，无法获取统计信息'
+            }), 400
+        
+        # 检查是否使用任务模式
+        use_task = request.args.get('use_task', 'false').lower() == 'true'
+        
+        result = storage_service.get_stats(storage, use_task=use_task)
+        return jsonify(result)
     except Exception as e:
         return jsonify({
             'status': 'error',
@@ -214,14 +378,21 @@ def get_buckets(storage_id):
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
-            
+        
+        # 检查存储是否有绑定的节点
+        if not storage.node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '该存储未绑定任何节点，无法获取存储桶列表'
+            }), 400
+        
+        # 检查是否使用任务模式
+        use_task = request.args.get('use_task', 'false').lower() == 'true'
+        
         page = int(request.args.get('page', 1))
         page_size = int(request.args.get('page_size', 20))
-        buckets = storage_service.list_buckets(storage, page, page_size)
-        return jsonify({
-            'status': 'success',
-            'data': buckets
-        })
+        result = storage_service.list_buckets(storage, page, page_size, use_task=use_task)
+        return jsonify(result)
     except Exception as e:
         return jsonify({
             'status': 'error',
@@ -239,7 +410,17 @@ def get_objects(storage_id):
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
-            
+        
+        # 检查存储是否有绑定的节点
+        if not storage.node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '该存储未绑定任何节点，无法获取对象列表'
+            }), 400
+        
+        # 检查是否使用任务模式
+        use_task = request.args.get('use_task', 'false').lower() == 'true'
+        
         bucket = request.args.get('bucket')
         prefix = request.args.get('prefix', '')
         page = int(request.args.get('page', 1))
@@ -251,11 +432,8 @@ def get_objects(storage_id):
                 'message': '存储桶名称不能为空'
             }), 400
 
-        result = storage_service.list_objects(storage, bucket, prefix, page, page_size)
-        return jsonify({
-            'status': 'success',
-            'data': result
-        })
+        result = storage_service.list_objects(storage, bucket, prefix, page, page_size, use_task=use_task)
+        return jsonify(result)
     except ValueError as e:
         return jsonify({
             'status': 'error',
@@ -278,7 +456,17 @@ def download_object(storage_id):
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
-            
+        
+        # 检查存储是否有绑定的节点
+        if not storage.node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '该存储未绑定任何节点，无法下载对象'
+            }), 400
+        
+        # 检查是否使用任务模式
+        use_task = request.args.get('use_task', 'true').lower() == 'true'
+        
         bucket = request.args.get('bucket')
         key = request.args.get('key')
         
@@ -288,15 +476,8 @@ def download_object(storage_id):
                 'message': '存储桶名称和对象键不能为空'
             }), 400
         
-        data = storage_service.download_object(storage, bucket, key)
-        filename = key.split('/')[-1]
-        
-        return send_file(
-            io.BytesIO(data),
-            mimetype='application/octet-stream',
-            as_attachment=True,
-            download_name=filename
-        )
+        result = storage_service.download_object(storage, bucket, key, use_task=use_task)
+        return jsonify(result)
     except ValueError as e:
         return jsonify({
             'status': 'error',
@@ -320,6 +501,16 @@ def get_nas_stats(storage_id):
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
+        
+        # 检查存储是否有绑定的节点
+        if not storage.node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '该存储未绑定任何节点，无法获取 NAS 统计信息'
+            }), 400
+        
+        # 检查是否使用任务模式
+        use_task = request.args.get('use_task', 'false').lower() == 'true'
             
         if storage.type != 'nas':
             return jsonify({
@@ -327,11 +518,8 @@ def get_nas_stats(storage_id):
                 'message': '该存储不是 NAS 类型'
             }), 400
             
-        stats = storage_service.get_nas_stats(storage)
-        return jsonify({
-            'status': 'success',
-            'data': stats
-        })
+        result = storage_service.get_nas_stats(storage, use_task=use_task)
+        return jsonify(result)
     except Exception as e:
         return jsonify({
             'status': 'error',
@@ -349,6 +537,16 @@ def get_nas_files(storage_id):
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
+        
+        # 检查存储是否有绑定的节点
+        if not storage.node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '该存储未绑定任何节点，无法获取文件列表'
+            }), 400
+        
+        # 检查是否使用任务模式
+        use_task = request.args.get('use_task', 'false').lower() == 'true'
             
         if storage.type != 'nas':
             return jsonify({
@@ -360,11 +558,8 @@ def get_nas_files(storage_id):
         page = int(request.args.get('page', 1))
         page_size = int(request.args.get('page_size', 20))
         
-        result = storage_service.list_nas_files(storage, path, page, page_size)
-        return jsonify({
-            'status': 'success',
-            'data': result
-        })
+        result = storage_service.list_nas_files(storage, path, page, page_size, use_task=use_task)
+        return jsonify(result)
     except Exception as e:
         return jsonify({
             'status': 'error',
@@ -382,6 +577,16 @@ def download_nas_file(storage_id):
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
+        
+        # 检查存储是否有绑定的节点
+        if not storage.node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '该存储未绑定任何节点，无法下载文件'
+            }), 400
+        
+        # 检查是否使用任务模式
+        use_task = request.args.get('use_task', 'true').lower() == 'true'
             
         if storage.type != 'nas':
             return jsonify({
@@ -396,15 +601,8 @@ def download_nas_file(storage_id):
                 'message': '文件路径不能为空'
             }), 400
         
-        data = storage_service.download_nas_file(storage, path)
-        filename = path.split('/')[-1]
-        
-        return send_file(
-            io.BytesIO(data),
-            mimetype='application/octet-stream',
-            as_attachment=True,
-            download_name=filename
-        )
+        result = storage_service.download_nas_file(storage, path, use_task=use_task)
+        return jsonify(result)
     except ValueError as e:
         return jsonify({
             'status': 'error',
@@ -427,16 +625,23 @@ def get_storage_info(storage_id):
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
+        
+        # 检查存储是否有绑定的节点
+        if not storage.node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '该存储未绑定任何节点，无法获取存储信息'
+            }), 400
+        
+        # 检查是否使用任务模式
+        use_task = request.args.get('use_task', 'false').lower() == 'true'
             
         if storage.type == 'nas':
-            stats = storage_service.get_nas_stats(storage)
+            result = storage_service.get_nas_stats(storage, use_task=use_task)
         else:
-            stats = storage_service.get_stats(storage)
+            result = storage_service.get_stats(storage, use_task=use_task)
             
-        return jsonify({
-            'status': 'success',
-            'data': stats
-        })
+        return jsonify(result)
     except Exception as e:
         return jsonify({
             'status': 'error',

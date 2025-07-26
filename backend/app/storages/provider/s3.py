@@ -32,108 +32,18 @@ class S3Provider(StorageProvider):
         
         return self._client
 
-    def test_connection(self) -> Dict[str, Any]:
-        """测试连接并获取存储信息"""
-        try:
-            buckets = self.client.list_buckets()
-            bucket_names = [bucket.name for bucket in buckets]
-            
-            result = {
-                "status": "success",
-                "message": "连接成功",
-                "data": {
-                    "buckets": bucket_names
-                }
-            }
-
-            if self.config.get('bucket'):
-                bucket_name = self.config['bucket']
-                try:
-                    # 检查存储桶是否存在
-                    if not self.client.bucket_exists(bucket_name):
-                        result["data"]["current_bucket"] = {
-                            "name": bucket_name,
-                            "error": f"存储桶 {bucket_name} 不存在"
-                        }
-                    else:
-                        # 获取存储桶中的对象
-                        objects = list(self.client.list_objects(
-                            bucket_name,
-                            recursive=False,
-                            max_keys=10
-                        ))
-                        
-                        result["data"]["current_bucket"] = {
-                            "name": bucket_name,
-                            "region": self.config.get('region', ''),
-                            "object_count": len(objects),
-                            "objects": [
-                                {
-                                    "key": obj.object_name,
-                                    "size": obj.size,
-                                    "last_modified": obj.last_modified.isoformat()
-                                }
-                                for obj in objects
-                            ]
-                        }
-                except MinioException as e:
-                    result["data"]["current_bucket"] = {
-                        "name": bucket_name,
-                        "error": f"访问存储桶失败: {str(e)}"
-                    }
-
-            return result
-            
-        except MinioException as e:
-            raise ValueError(f"连接测试失败: {str(e)}")
-
     def get_stats(self) -> Dict[str, Any]:
         """获取存储统计信息"""
-        try:
-            buckets = self.client.list_buckets()
-            
-            stats = {
-                "bucket_count": len(buckets),
+        # 这个方法现在由 Proxy 节点执行，本地不再需要实现
+        return {
+            "status": "success",
+            "message": "存储统计信息获取成功",
+            "data": {
+                "bucket_count": 0,
                 "object_count": 0,
-                "total_size": 0,
-                "last_modified": None,
-                "bucket_stats": []
+                "total_size": 0
             }
-            
-            for bucket in buckets:
-                bucket_name = bucket.name
-                try:
-                    size = 0
-                    object_count = 0
-                    last_modified = None
-                    
-                    objects = self.client.list_objects(bucket_name, recursive=True)
-                    for obj in objects:
-                        size += obj.size
-                        object_count += 1
-                        if not last_modified or obj.last_modified > last_modified:
-                            last_modified = obj.last_modified
-                    
-                    stats["object_count"] += object_count
-                    stats["total_size"] += size
-                    if not stats["last_modified"] or (last_modified and last_modified > stats["last_modified"]):
-                        stats["last_modified"] = last_modified
-                    
-                    stats["bucket_stats"].append({
-                        "name": bucket_name,
-                        "region": self.config.get('region', ''),
-                        "object_count": object_count,
-                        "size": size,
-                        "last_modified": last_modified
-                    })
-                    
-                except MinioException:
-                    continue
-            
-            return stats
-            
-        except MinioException as e:
-            raise ValueError(f"获取统计信息失败: {str(e)}")
+        }
 
     def list_buckets(self) -> List[Dict[str, Any]]:
         """获取存储桶列表"""
@@ -157,85 +67,41 @@ class S3Provider(StorageProvider):
         except MinioException as e:
             raise ValueError(f"获取存储桶列表失败: {str(e)}")
 
-    def list_objects(self, bucket: str, prefix: str = '', page: int = 1, page_size: int = 20) -> Dict[str, Any]:
-        """获取对象列表"""
+    def list_objects(self, bucket: str, prefix: str = '') -> List[Dict[str, Any]]:
+        """列出对象"""
         try:
-            # 获取所有对象
-            objects = list(self.client.list_objects(
-                bucket,
-                prefix=prefix,
-                recursive=False
-            ))
-            
-            # 计算分页
-            start_idx = (page - 1) * page_size
-            end_idx = start_idx + page_size
-            page_objects = objects[start_idx:end_idx]
-            total = len(objects)
-
-            # 处理目录和文件
-            directories = []
-            files = []
-            
-            for obj in page_objects:
-                if obj.is_dir:
-                    name = obj.object_name[len(prefix):].rstrip('/')
-                    directories.append({
-                        'name': name,
-                        'prefix': obj.object_name,
-                        'type': 'directory'
-                    })
-                else:
-                    name = obj.object_name[len(prefix):] if prefix else obj.object_name
-                    if not name:
-                        continue
-                    files.append({
-                        'name': name,
-                        'key': obj.object_name,
-                        'size': obj.size,
-                        'lastModified': obj.last_modified.isoformat(),
-                        'type': 'file'
-                    })
-
-            return {
-                'objects': directories + files,
-                'total': total,
-                'page': page,
-                'page_size': page_size
-            }
-            
+            objects = []
+            for obj in self.client.list_objects(bucket, prefix=prefix, recursive=False):
+                objects.append({
+                    'name': obj.object_name,
+                    'size': obj.size,
+                    'modified_time': obj.last_modified.isoformat(),
+                    'type': 'file'
+                })
+            return objects
         except MinioException as e:
             raise ValueError(f"获取对象列表失败: {str(e)}")
 
-    def download_object(self, bucket: str, key: str) -> bytes:
-        """下载对象"""
+    def upload_file(self, bucket: str, object_name: str, file_path: str) -> bool:
+        """上传文件"""
         try:
-            response = self.client.get_object(bucket, key)
-            return response.read()
-        except MinioException as e:
-            raise ValueError(f"下载对象失败: {str(e)}")
-
-    def upload_object(self, bucket: str, key: str, data: bytes) -> Dict[str, Any]:
-        """上传对象"""
-        try:
-            result = self.client.put_object(
-                bucket,
-                key,
-                data,
-                length=len(data)
-            )
-            return {
-                "status": "success",
-                "message": "上传成功",
-                "etag": result.etag
-            }
-        except MinioException as e:
-            raise ValueError(f"上传对象失败: {str(e)}")
-
-    def delete_object(self, bucket: str, key: str) -> bool:
-        """删除对象"""
-        try:
-            self.client.remove_object(bucket, key)
+            self.client.fput_object(bucket, object_name, file_path)
             return True
         except MinioException as e:
-            raise ValueError(f"删除对象失败: {str(e)}") 
+            raise ValueError(f"上传文件失败: {str(e)}")
+
+    def download_file(self, bucket: str, object_name: str, file_path: str) -> bool:
+        """下载文件"""
+        try:
+            self.client.fget_object(bucket, object_name, file_path)
+            return True
+        except MinioException as e:
+            raise ValueError(f"下载文件失败: {str(e)}")
+
+    def delete_file(self, bucket: str, object_name: str) -> bool:
+        """删除文件"""
+        try:
+            self.client.remove_object(bucket, object_name)
+            return True
+        except MinioException as e:
+            raise ValueError(f"删除文件失败: {str(e)}") 

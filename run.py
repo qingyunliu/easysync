@@ -1,4 +1,4 @@
-from backend import create_app, socketio
+from backend import create_app
 import logging
 
 # 配置日志
@@ -8,13 +8,10 @@ logger = logging.getLogger(__name__)
 app = create_app()
 
 if __name__ == '__main__':
-    logger.info('Starting WebSocket server...')
-    socketio.run(
-        app,
+    logger.info('Starting HTTP server...')
+    app.run(
         host='0.0.0.0',
         port=5001,
         debug=True,
-        use_reloader=False,  # 禁用重载器，避免重复初始化
-        log_output=True,
-        allow_unsafe_werkzeug=True
+        use_reloader=True
     ) 

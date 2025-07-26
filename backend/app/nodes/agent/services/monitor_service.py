@@ -13,8 +13,8 @@ class MonitorService:
     """Enhanced monitoring service with alerting capabilities"""
     def __init__(self, config, node_id, token):
         self.config = config
-        self.node_id = node_id
-        self.token = token
+        self._node_id = node_id
+        self._token = token
         self.callbacks = []
         self.running = False
         self.server_comm = ServerCommunication(config)
@@ -38,6 +38,38 @@ class MonitorService:
         
         # 合并配置的阈值
         self.thresholds = {**self.default_thresholds, **self.alert_thresholds}
+        
+        # 初始化时更新 ServerCommunication 的认证信息
+        self._update_server_comm_auth()
+    
+    @property
+    def node_id(self):
+        return self._node_id
+    
+    @node_id.setter
+    def node_id(self, value):
+        self._node_id = value
+        self._update_server_comm_auth()
+    
+    @property
+    def token(self):
+        return self._token
+    
+    @token.setter
+    def token(self, value):
+        self._token = value
+        self._update_server_comm_auth()
+    
+    def _update_server_comm_auth(self):
+        """更新 ServerCommunication 的认证信息"""
+        if self._node_id and self._token:
+            self.server_comm.node_id = self._node_id
+            self.server_comm.token = self._token
+            # 同时更新配置中的认证信息
+            if 'node' not in self.config:
+                self.config['node'] = {}
+            self.config['node']['id'] = self._node_id
+            self.config['node']['token'] = self._token
         
     def start(self):
         """启动监控服务"""

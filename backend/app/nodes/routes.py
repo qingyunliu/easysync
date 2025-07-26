@@ -1,15 +1,16 @@
 import os
 import logging
 from datetime import datetime
-from flask import request, jsonify, current_app
+from flask import request, jsonify, current_app, g
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend import db
-from backend.app.models import Node, AuditLog
+from backend.app.models import Node, AuditLog, MonitorData
 from backend.app.utils.ssh_utils import SSHClient
 from backend.app.utils import utils
 from . import nodes_bp
 from .service import NodeService
 from .errors import NodeError, NodeNotFoundError, NodeUnhealthyError, NodeOperationError
+from backend.app.auth.services import AuditService
 
 logger = logging.getLogger(__name__)
 
@@ -43,35 +44,72 @@ def handle_node_error(error):
 @jwt_required()
 def create_node():
     """创建节点"""
-    data = request.get_json()
-    name = data.get('name')
-    ipaddress = data.get('ipaddress')
-    username = data.get('username')
-    auth_type = data.get('auth_type')
-    password = data.get('password')
-    ssh_key = data.get('ssh_key')
-    port = data.get('port')
-    group = data.get('group', 'default')
-    tags = data.get('tags', '')
-    user_id = get_jwt_identity()
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        ipaddress = data.get('ipaddress')
+        username = data.get('username')
+        auth_type = data.get('auth_type')
+        password = data.get('password')
+        ssh_key = data.get('ssh_key')
+        port = data.get('port')
+        group = data.get('group', 'default')
+        tags = data.get('tags', '')
+        user_id = get_jwt_identity()
 
-    node = Node(name=name,
-                ipaddress=ipaddress,
-                username=username,
-                auth_type=auth_type,
-                password=password,
-                auth_key=ssh_key,
-                port=port,
-                group=group,
-                tags=tags,
-                user_id=user_id)
-    db.session.add(node)
-    db.session.commit()
-    return jsonify({
-        'status': 'success',
-        'message': '节点创建成功',
-        'data': node.to_dict()
-    }), 201
+        if not all([name, ipaddress, username]):
+            AuditService.log_node_operation(
+                user_id=user_id,
+                action='create',
+                node_id=None,
+                node_name=name,
+                details={'error': '缺少必要字段'},
+                result='failed'
+            )
+            return jsonify({
+                'status': 'error',
+                'message': '缺少必要字段'
+            }), 400
+
+        node = Node(name=name,
+                    ipaddress=ipaddress,
+                    username=username,
+                    auth_type=auth_type,
+                    password=password,
+                    auth_key=ssh_key,
+                    port=port,
+                    group=group,
+                    tags=tags,
+                    user_id=user_id)
+        db.session.add(node)
+        db.session.commit()
+        
+        AuditService.log_node_operation(
+            user_id=user_id,
+            action='create',
+            node_id=node.id,
+            node_name=node.name,
+            details={'msg': '节点创建成功'},
+            result='success'
+        )
+        return jsonify({
+            'status': 'success',
+            'message': '节点创建成功',
+            'data': node.to_dict()
+        }), 201
+    except Exception as e:
+        AuditService.log_node_operation(
+            user_id=user_id,
+            action='create',
+            node_id=None,
+            node_name=name,
+            details={'error': str(e)},
+            result='failed'
+        )
+        return jsonify({
+            'status': 'error',
+            'message': f'创建节点失败: {str(e)}'
+        }), 500
 
 @nodes_bp.route('', methods=['GET'])
 @jwt_required()
@@ -203,75 +241,142 @@ def get_node(node_id):
 @jwt_required()
 def update_node(node_id):
     """更新节点"""
-    current_user_id = get_jwt_identity()
-    data = request.get_json()
-    name = data.get('name')
-    ipaddress = data.get('ipaddress')
-    username = data.get('username')
-    port = data.get('port')
-    auth_type = data.get('auth_type')
-    password = data.get('password')
-    auth_key = data.get('key')
-    config = data.get('config', {})
-    group = data.get('group')
-    tags = data.get('tags')
-    description = data.get('description')
+    try:
+        current_user_id = get_jwt_identity()
+        data = request.get_json()
+        name = data.get('name')
+        ipaddress = data.get('ipaddress')
+        username = data.get('username')
+        port = data.get('port')
+        auth_type = data.get('auth_type')
+        password = data.get('password')
+        auth_key = data.get('key')
+        config = data.get('config', {})
+        group = data.get('group')
+        tags = data.get('tags')
+        description = data.get('description')
 
-    node = Node.query.filter_by(id=node_id, user_id=current_user_id).first()
-    if not node:
+        node = Node.query.filter_by(id=node_id, user_id=current_user_id).first()
+        if not node:
+            AuditService.log_node_operation(
+                user_id=current_user_id,
+                action='update',
+                node_id=node_id,
+                node_name=name,
+                details={'error': '节点不存在'},
+                result='failed'
+            )
+            return jsonify({
+                'status': 'error',
+                'message': '节点不存在'
+            }), 404
+
+        if name:
+            node.name = name
+        if ipaddress:
+            node.ipaddress = ipaddress
+        if username:
+            node.username = username
+        if password:
+            node.password = password
+        if port:
+            node.port = port
+        if auth_type:
+            node.auth_type = auth_type
+        if auth_key:
+            node.auth_key = auth_key
+        if config:
+            node.config = config
+        if description:
+            node.description = description
+        if group is not None:
+            node.group = group
+        if tags is not None:
+            node.tags = tags
+
+        db.session.commit()
+        
+        AuditService.log_node_operation(
+            user_id=current_user_id,
+            action='update',
+            node_id=node.id,
+            node_name=node.name,
+            details={'msg': '节点更新成功'},
+            result='success'
+        )
+        return jsonify({
+            'status': 'success',
+            'message': '节点更新成功',
+            'data': node.to_dict()
+        })
+    except Exception as e:
+        AuditService.log_node_operation(
+            user_id=current_user_id,
+            action='update',
+            node_id=node_id,
+            node_name=name,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
-            'message': '节点不存在'
-        }), 404
-
-    if name:
-        node.name = name
-    if ipaddress:
-        node.ipaddress = ipaddress
-    if username:
-        node.username = username
-    if password:
-        node.password = password
-    if port:
-        node.port = port
-    if auth_type:
-        node.auth_type = auth_type
-    if auth_key:
-        node.auth_key = auth_key
-    if config:
-        node.config = config
-    if description:
-        node.description = description
-    if group is not None:
-        node.group = group
-    if tags is not None:
-        node.tags = tags
-
-    db.session.commit()
-    return jsonify({
-        'status': 'success',
-        'message': '节点更新成功',
-        'data': node.to_dict()
-    })
+            'message': f'更新节点失败: {str(e)}'
+        }), 500
 
 @nodes_bp.route('/<string:node_id>', methods=['DELETE'])
 @jwt_required()
 def delete_node(node_id):
     """删除节点"""
     current_user_id = get_jwt_identity()
-    node = Node.query.filter_by(id=node_id, user_id=current_user_id).first()
-    if not node:
+    try:
+        node = Node.query.filter_by(id=node_id, user_id=current_user_id).first()
+
+        if not node:
+            AuditService.log_node_operation(
+                user_id=current_user_id,
+                action='delete',
+                node_id=node_id,
+                node_name=None,
+                details={'error': '节点不存在'},
+                result='failed'
+            )
+            return jsonify({
+                'status': 'error',
+                'message': '节点不存在'
+            }), 404
+
+        # 删除相关监控数据
+        MonitorData.query.filter_by(node_id=node.id).delete()
+
+        db.session.delete(node)
+        db.session.commit()
+        
+        AuditService.log_node_operation(
+            user_id=current_user_id,
+            action='delete',
+            node_id=node.id,
+            node_name=node.name,
+            details={'msg': '节点删除成功', 'ip_address': node.ipaddress},
+            result='success'
+        )
+        return jsonify({
+            'status': 'success',
+            'message': '节点删除成功'
+        })
+    except Exception as e:
+        db.session.rollback()
+        AuditService.log_node_operation(
+            user_id=current_user_id,
+            action='delete',
+            node_id=node_id,
+            node_name=None,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
-            'message': '节点不存在'
-        }), 404
-
-    db.session.delete(node)
-    db.session.commit()
-    return jsonify({
-        'status': 'success',
-        'message': '节点删除成功'
-    })
+            'message': str(e)
+        }), 500
 
 @nodes_bp.route('/<string:node_id>/tasks', methods=['GET'])
 def get_node_tasks(node_id):
@@ -458,6 +563,7 @@ def install_node_agent(node_id):
         
         with SSHClient(node=node) as ssh:
             # 创建远程目录
+            import pdb;pdb.set_trace()
             ssh.create_directory(install_path)
             ssh.create_directory(backup_path)
             ssh.create_directory(log_path)
@@ -587,7 +693,7 @@ def get_node_status(node_id):
             process_status = stdout.strip()
             
             # 检查日志文件
-            log_path = '/opt/easysync/logs/proxy.log'
+            log_path = '/opt/easysync/proxy/logs/proxy.log'
             stdout, stderr, exit_code = ssh.execute_command(f'tail -n 100 {log_path}')
             log_content = stdout
             
@@ -658,7 +764,7 @@ def get_node_logs(node_id):
         
         with SSHClient(node=node) as ssh:
             # 获取日志内容
-            log_path = '/opt/easysync/logs/proxy.log'
+            log_path = '/opt/easysync/proxy/logs/proxy.log'
             if level == 'ALL':
                 command = f'tail -n {lines} {log_path}'
             else:

@@ -30,7 +30,7 @@ def setup_logging(log_level: str):
     
     # 设置文件处理器
     file_handler = logging.FileHandler(
-        os.path.join(log_dir, 'agent.log'),
+        os.path.join(log_dir, 'proxy.log'),
         encoding='utf-8'
     )
     file_handler.setFormatter(formatter)

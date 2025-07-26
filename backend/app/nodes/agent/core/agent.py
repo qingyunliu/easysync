@@ -33,7 +33,7 @@ class CommandService:
                 time.sleep(5)
 
     def poll_and_execute(self):
-        url = f"{self.server_url}/api/agent/{self.node_id}/commands"
+        url = f"{self.server_url}/{self.node_id}/commands"
         headers = {"Authorization": f"Bearer {self.token}"}
         try:
             resp = requests.get(url, headers=headers, timeout=5)
@@ -70,7 +70,7 @@ class CommandService:
         return {'return_code': -2, 'stdout': '', 'stderr': 'Unknown command type'}
 
     def report_command_result(self, cmd_id, result):
-        url = f"{self.server_url}/api/agent/{self.node_id}/commands/{cmd_id}/result"
+        url = f"{self.server_url}/{self.node_id}/commands/{cmd_id}/result"
         headers = {"Authorization": f"Bearer {self.token}"}
         try:
             requests.post(url, json={'result': result}, headers=headers, timeout=5)
@@ -166,6 +166,7 @@ class ProxyAgent:
             'machine': platform.machine(),
             'processor': platform.processor(),
             'user_id': self.server_comm.user_id,
+            'node_id': self.server_comm.node_id,
             'version': self.version
         }
         node_id = self.server_comm.register_node(node_info)
@@ -222,6 +223,11 @@ class ProxyAgent:
                             # 检查是否需要挂载检查
                             if task.get('type') == 'mount-check':
                                 self._handle_mount_check_task(task)
+                                continue
+                            
+                            # 检查是否需要存储操作
+                            if task.get('type') == 'storage-operation':
+                                self._handle_storage_operation_task(task)
                                 continue
                             
                             # 开始执行任务
@@ -282,10 +288,12 @@ class ProxyAgent:
                 'started_at': datetime.utcnow().isoformat()
             })
             
-            # 获取存储配置
-            storage_config = task.get('storage_config')
+            # 获取存储配置 - 从 options 中获取
+            storage_config = task.get('options', {}).get('storage_config')
             if not storage_config:
                 raise ValueError("缺少存储配置信息")
+            
+            self.logger.info(f"开始执行连接测试任务 {task_id}, 存储类型: {storage_config.get('type')}")
             
             # 执行连接测试
             self.progress_tracker.update_step_progress(task_id, 0, '执行连接测试', 50)
@@ -295,55 +303,40 @@ class ProxyAgent:
             # 更新进度
             self.progress_tracker.update_step_progress(task_id, 1, '连接测试完成', 100)
             
-            # 更新任务状态
-            if result.status.value == 'success':
-                self.server_comm.update_task_status(task_id, {
-                    'status': 'completed',
-                    'progress': 100,
-                    'completed_at': datetime.utcnow().isoformat(),
-                    'result': {
-                        'connection_status': result.status.value,
-                        'message': result.message,
-                        'details': result.details,
-                        'response_time': result.response_time
-                    }
-                })
-                self.logger.info(f"连接测试任务 {task_id} 成功完成")
-            else:
-                self.server_comm.update_task_status(task_id, {
-                    'status': 'failed',
-                    'progress': 100,
-                    'failed_at': datetime.utcnow().isoformat(),
-                    'error': result.message,
-                    'result': {
-                        'connection_status': result.status.value,
-                        'message': result.message,
-                        'details': result.details,
-                        'response_time': result.response_time
-                    }
-                })
-                self.logger.error(f"连接测试任务 {task_id} 失败: {result.message}")
+            # 更新任务状态为completed
+            self.server_comm.update_task_status(task_id, {
+                'status': 'completed',
+                'progress': 100,
+                'completed_at': datetime.utcnow().isoformat(),
+                'result': {
+                    'status': result.status.value,
+                    'message': result.message,
+                    'details': result.details,
+                    'check_time': result.check_time.isoformat(),
+                    'response_time': result.response_time
+                }
+            })
             
-            # 完成进度跟踪
-            self.progress_tracker.complete_task_progress(task_id, result.status.value == 'success')
+            self.logger.info(f"连接测试任务 {task_id} 完成")
             
         except Exception as e:
-            self.logger.error(f"连接测试任务 {task_id} 执行异常: {e}")
+            self.logger.error(f"连接测试任务 {task_id} 失败: {str(e)}")
+            
+            # 更新任务状态为failed
             self.server_comm.update_task_status(task_id, {
                 'status': 'failed',
                 'progress': 0,
                 'failed_at': datetime.utcnow().isoformat(),
                 'error': str(e)
             })
-            self.progress_tracker.complete_task_progress(task_id, False, str(e))
-    
-    def _handle_mount_check_task(self, task):
-        """处理挂载检查任务"""
+
+    def _handle_storage_operation_task(self, task):
+        """处理存储操作任务"""
         task_id = task['id']
         
         try:
             # 开始进度跟踪
-            self.progress_tracker.start_task_progress(task_id, 2, ['挂载检查', '完成'])
+            self.progress_tracker.start_task_progress(task_id, 2, ['存储操作', '完成'])
             
             # 更新任务状态为running
             self.server_comm.update_task_status(task_id, {
@@ -352,21 +345,132 @@ class ProxyAgent:
                 'started_at': datetime.utcnow().isoformat()
             })
             
-            # 获取挂载点
-            mount_point = task.get('mount_point')
-            if not mount_point:
-                raise ValueError("缺少挂载点信息")
+            # 获取任务参数
+            options = task.get('options', {})
+            storage_config = options.get('storage_config')
+            operation = options.get('operation')
+            params = options.get('params', {})
             
-            # 执行挂载检查
-            self.progress_tracker.update_step_progress(task_id, 0, '执行挂载检查', 50)
+            if not storage_config or not operation:
+                raise ValueError("缺少存储配置或操作类型")
             
-            result = self.mount_checker.check_mount_status(mount_point)
+            self.logger.info(f"开始执行存储操作任务 {task_id}, 操作: {operation}")
+            
+            # 执行存储操作
+            self.progress_tracker.update_step_progress(task_id, 0, f'执行{operation}操作', 50)
+            
+            # 根据操作类型执行相应的存储操作
+            result = self._execute_storage_operation(storage_config, operation, params)
             
             # 更新进度
-            self.progress_tracker.update_step_progress(task_id, 1, '挂载检查完成', 100)
+            self.progress_tracker.update_step_progress(task_id, 1, '存储操作完成', 100)
             
-            # 更新任务状态
+            # 更新任务状态为completed
+            self.server_comm.update_task_status(task_id, {
+                'status': 'completed',
+                'progress': 100,
+                'completed_at': datetime.utcnow().isoformat(),
+                'result': result
+            })
+            
+            self.logger.info(f"存储操作任务 {task_id} 完成")
+            
+        except Exception as e:
+            self.logger.error(f"存储操作任务 {task_id} 失败: {str(e)}")
+            
+            # 更新任务状态为failed
+            self.server_comm.update_task_status(task_id, {
+                'status': 'failed',
+                'progress': 0,
+                'failed_at': datetime.utcnow().isoformat(),
+                'error': str(e)
+            })
+
+    def _execute_storage_operation(self, storage_config, operation, params):
+        """执行存储操作"""
+        storage_type = storage_config.get('type')
+        config = storage_config.get('config', {})
+        
+        # 根据存储类型创建提供者
+        if storage_type == 'nas':
+            from backend.app.storages.provider.nas import NASProvider
+            provider = NASProvider(config)
+        elif storage_type in ['s3', 'obs']:
+            from backend.app.storages.provider.s3 import S3Provider
+            provider = S3Provider(config)
+        else:
+            raise ValueError(f"不支持的存储类型: {storage_type}")
+        
+        # 根据操作类型执行相应的方法
+        if operation == 'get_stats':
+            return provider.get_stats()
+        elif operation == 'list_buckets':
+            page = params.get('page', 1)
+            page_size = params.get('page_size', 20)
+            all_buckets = provider.list_buckets()
+            total = len(all_buckets)
+            start = (page - 1) * page_size
+            end = start + page_size
+            return {
+                'buckets': all_buckets[start:end],
+                'total': total,
+                'page': page,
+                'page_size': page_size
+            }
+        elif operation == 'list_objects':
+            bucket = params.get('bucket', '')
+            prefix = params.get('prefix', '')
+            page = params.get('page', 1)
+            page_size = params.get('page_size', 20)
+            return provider.list_objects(bucket, prefix, page, page_size)
+        elif operation == 'download_object':
+            bucket = params.get('bucket', '')
+            key = params.get('key', '')
+            return provider.download_file(bucket, key, '/tmp/downloaded_file')
+        elif operation == 'get_nas_stats':
+            return provider.get_stats()
+        elif operation == 'list_nas_files':
+            path = params.get('path', '')
+            page = params.get('page', 1)
+            page_size = params.get('page_size', 20)
+            return provider.list_objects('', path, page, page_size)
+        elif operation == 'download_nas_file':
+            path = params.get('path', '')
+            return provider.download_file('', path, '/tmp/downloaded_file')
+        else:
+            raise ValueError(f"不支持的操作类型: {operation}")
+    
+    def _handle_mount_check_task(self, task):
+        """处理挂载检查任务"""
+        task_id = task['id']
+        
+        try:
+            # 开始进度跟踪
+            self.progress_tracker.start_task_progress(task_id, 3, ['检查挂载状态', '执行挂载', '完成'])
+            
+            # 更新任务状态为running
+            self.server_comm.update_task_status(task_id, {
+                'status': 'running',
+                'progress': 0,
+                'started_at': datetime.utcnow().isoformat()
+            })
+            
+            # 获取挂载点和存储配置
+            mount_point = task.get('mount_point')
+            storage_config = task.get('source_storage_config', {}).get('config', {})
+            
+            if not mount_point:
+                raise ValueError("缺少挂载点信息")
+            if not storage_config:
+                raise ValueError("缺少存储配置信息")
+            
+            # 步骤1：检查当前挂载状态
+            self.progress_tracker.update_step_progress(task_id, 0, '检查挂载状态', 30)
+            result = self.mount_checker.check_mount_status(mount_point)
+            
+            # 如果已经挂载且可访问，直接返回成功
             if result.status.value == 'success':
+                self.progress_tracker.update_step_progress(task_id, 2, '挂载检查完成', 100)
                 self.server_comm.update_task_status(task_id, {
                     'status': 'completed',
                     'progress': 100,
@@ -375,27 +479,70 @@ class ProxyAgent:
                         'mount_status': result.status.value,
                         'mount_point': result.mount_point,
                         'is_mounted': result.is_mounted,
-                        'mount_info': result.mount_info
+                        'mount_info': result.mount_info,
+                        'action': 'already_mounted'
                     }
                 })
-                self.logger.info(f"挂载检查任务 {task_id} 成功完成")
+                self.logger.info(f"挂载检查任务 {task_id} 成功完成：已挂载")
+                self.progress_tracker.complete_task_progress(task_id, True)
+                return
+            
+            # 步骤2：尝试挂载
+            self.progress_tracker.update_step_progress(task_id, 1, '执行挂载操作', 70)
+            mount_result = self.mount_checker.mount_storage(mount_point, storage_config)
+            
+            if mount_result.status.value == 'success':
+                # 步骤3：验证挂载结果
+                self.progress_tracker.update_step_progress(task_id, 2, '验证挂载结果', 100)
+                verify_result = self.mount_checker.check_mount_status(mount_point)
+                
+                if verify_result.status.value == 'success':
+                    self.server_comm.update_task_status(task_id, {
+                        'status': 'completed',
+                        'progress': 100,
+                        'completed_at': datetime.utcnow().isoformat(),
+                        'result': {
+                            'mount_status': verify_result.status.value,
+                            'mount_point': verify_result.mount_point,
+                            'is_mounted': verify_result.is_mounted,
+                            'mount_info': verify_result.mount_info,
+                            'action': 'mounted_successfully'
+                        }
+                    })
+                    self.logger.info(f"挂载检查任务 {task_id} 成功完成：挂载成功")
+                    self.progress_tracker.complete_task_progress(task_id, True)
+                else:
+                    self.server_comm.update_task_status(task_id, {
+                        'status': 'failed',
+                        'progress': 100,
+                        'failed_at': datetime.utcnow().isoformat(),
+                        'error': f"挂载后验证失败: {verify_result.error}",
+                        'result': {
+                            'mount_status': verify_result.status.value,
+                            'mount_point': verify_result.mount_point,
+                            'is_mounted': verify_result.is_mounted,
+                            'mount_info': verify_result.mount_info,
+                            'action': 'mount_verification_failed'
+                        }
+                    })
+                    self.logger.error(f"挂载检查任务 {task_id} 失败：挂载后验证失败")
+                    self.progress_tracker.complete_task_progress(task_id, False, verify_result.error)
             else:
                 self.server_comm.update_task_status(task_id, {
                     'status': 'failed',
                     'progress': 100,
                     'failed_at': datetime.utcnow().isoformat(),
-                    'error': result.error or '挂载检查失败',
+                    'error': f"挂载失败: {mount_result.error}",
                     'result': {
-                        'mount_status': result.status.value,
-                        'mount_point': result.mount_point,
-                        'is_mounted': result.is_mounted,
-                        'mount_info': result.mount_info
+                        'mount_status': mount_result.status.value,
+                        'mount_point': mount_point,
+                        'is_mounted': False,
+                        'mount_info': {},
+                        'action': 'mount_failed'
                     }
                 })
-                self.logger.error(f"挂载检查任务 {task_id} 失败: {result.error}")
-            
-            # 完成进度跟踪
-            self.progress_tracker.complete_task_progress(task_id, result.status.value == 'success')
+                self.logger.error(f"挂载检查任务 {task_id} 失败：挂载失败")
+                self.progress_tracker.complete_task_progress(task_id, False, mount_result.error)
             
         except Exception as e:
             self.logger.error(f"挂载检查任务 {task_id} 执行异常: {e}")

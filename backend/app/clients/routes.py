@@ -9,7 +9,6 @@ import logging
 import tempfile
 import yaml
 import uuid
-from ..websocket import socketio
 from ..utils.ssh_utils import SSHClient
 from ..utils import utils
 
@@ -584,9 +583,6 @@ def create_sync_task(client_id):
             'options': data.get('options', {}),
             'schedule': data.get('schedule', {})
         }
-        
-        # 发送任务到客户端
-        socketio.emit('sync_task', task, room=f'client_{client_id}')
         
         return jsonify({
             'status': 'success',

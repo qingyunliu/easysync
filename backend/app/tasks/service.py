@@ -129,7 +129,7 @@ class TaskService:
         Returns:
             List[Task]: 任务列表
         """
-        return Task.query.filter_by(node_id=node_id, status='pending').all()
+        return Task.query.filter_by(node_id=node_id, status='assigned').all()
         
     def get_pending_tasks(self) -> List[Task]:
         """获取待分配任务

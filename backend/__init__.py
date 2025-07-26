@@ -23,13 +23,13 @@ jwt = JWTManager()
 celery = Celery()
 
 # 创建SocketIO实例
-socketio = SocketIO(
-    cors_allowed_origins="*",
-    async_mode='threading',
-    logger=True,
-    engineio_logger=True,
-    path='/ws/socket.io'  # 修改为正确的 WebSocket 路径
-)
+# socketio = SocketIO(
+#     cors_allowed_origins="*",
+#     async_mode='threading',
+#     logger=True,
+#     engineio_logger=True,
+#     path='/ws/socket.io'  # 修改为正确的 WebSocket 路径
+# )
 
 def create_app(config_name=None):
     """创建并配置 Flask 应用实例"""
@@ -85,8 +85,8 @@ def create_app(config_name=None):
     celery.conf.update(app.config)
     
     # 初始化WebSocket
-    from .app.websocket import init_websocket
-    init_websocket(app)
+    # from .app.websocket import init_websocket
+    # init_websocket(app)
     
     # 注册蓝图
     from .app.auth import auth_bp

@@ -254,10 +254,10 @@
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item :command="{ action: 'edit', row }" :disabled="row.status==='offline'">
+                  <el-dropdown-item :command="{ action: 'edit', row }">
                     <el-icon><Edit /></el-icon>编辑
                   </el-dropdown-item>
-                  <el-dropdown-item :command="{ action: 'test', row }" :disabled="row.status==='offline'">
+                  <el-dropdown-item :command="{ action: 'test', row }">
                     <el-icon><Connection /></el-icon>测试连接
                   </el-dropdown-item>
                     <el-dropdown-item :command="{ action: 'install', row }" :disabled="row.status==='offline'">
@@ -269,7 +269,7 @@
                   <el-dropdown-item :command="{ action: 'info', row }" :disabled="row.status==='offline'">
                     <el-icon><InfoFilled /></el-icon>获取信息
                   </el-dropdown-item>
-                  <el-dropdown-item divided :command="{ action: 'delete', row }" :disabled="row.status==='offline'">
+                  <el-dropdown-item divided :command="{ action: 'delete', row }">
                     <el-icon><Delete /></el-icon>删除
                   </el-dropdown-item>
                 </el-dropdown-menu>
@@ -308,7 +308,7 @@
       <!-- 安装/卸载Agent弹窗 -->
       <el-dialog title="安装/卸载Agent" v-model="installDialogVisible" width="500px">
       <el-form :model="installForm" label-width="120px">
-          <el-form-item label="安装路径"><el-input v-model="installForm.install_path" placeholder="/opt/easysync" /></el-form-item>
+          <el-form-item label="安装路径"><el-input v-model="installForm.install_path" placeholder="/opt/easysync/proxy" /></el-form-item>
           <el-form-item label="配置参数"><el-input v-model="installForm.config" type="textarea" :rows="4" placeholder="请输入JSON格式的配置参数" /></el-form-item>
       </el-form>
       <template #footer>
@@ -387,7 +387,7 @@
               </template>
               <div class="memory-info">
                 <el-progress 
-                  :percentage="(nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100).toFixed(1)"
+                  :percentage="Number((nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100).toFixed(1))"
                   :status="getUsageStatus((nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100))"
                 />
                 <div class="memory-details">
@@ -411,7 +411,7 @@
                     <span class="disk-mount">{{ disk.mount }}</span>
                   </div>
                   <el-progress 
-                    :percentage="disk.usage"
+                    :percentage="Number(disk.usage)"
                     :status="getUsageStatus(disk.usage)"
                   />
                   <div class="disk-details">
@@ -492,6 +492,7 @@
                     <el-icon><Refresh /></el-icon>
                     <span>刷新</span>
                   </el-button>
+
                   <div class="auto-refresh-control">
                     <el-switch
                       v-model="autoRefresh"
@@ -519,49 +520,31 @@
                 </div>
               </div>
             </div>
-            <!-- CPU使用率图表 -->
+            <!-- CPU使用情况图表 -->
             <div class="chart-container">
               <div class="chart-header">
-                <h3>CPU使用率</h3>
+                <h3>CPU 使用情况</h3>
               </div>
               <div class="chart" ref="cpuChart"></div>
             </div>
-            <!-- 内存使用率图表 -->
+            <!-- 内存使用情况图表 -->
             <div class="chart-container">
               <div class="chart-header">
-                <h3>内存使用率</h3>
+                <h3>内存使用情况</h3>
               </div>
               <div class="chart" ref="memoryChart"></div>
             </div>
-            <!-- 磁盘使用率 -->
+            <!-- 磁盘使用率图表 -->
             <div class="chart-container">
               <div class="chart-header">
-                <h3>磁盘使用率</h3>
+                <h3>磁盘使用情况</h3>
               </div>
-              <el-table :data="nodeDetail.disk_info" style="width: 100%">
-                <el-table-column prop="device" label="设备" />
-                <el-table-column prop="mount" label="挂载点" />
-                <el-table-column prop="total" label="总容量">
-                  <template #default="{ row }">
-                    {{ formatSize(row.total) }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="used" label="已使用">
-                  <template #default="{ row }">
-                    {{ formatSize(row.used) }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="usage" label="使用率">
-                  <template #default="{ row }">
-                    <el-progress :percentage="row.usage" :status="getUsageStatus(row.usage)" />
-                  </template>
-                </el-table-column>
-              </el-table>
+              <div class="chart" ref="diskChart"></div>
             </div>
-            <!-- 网络流量 -->
+            <!-- 网络流量监控图表 -->
             <div class="chart-container">
               <div class="chart-header">
-                <h3>网络流量</h3>
+                <h3>网络流量监控</h3>
               </div>
               <div class="chart" ref="networkChart"></div>
             </div>
@@ -724,6 +707,8 @@ import {
 import * as echarts from 'echarts'
 import axios from 'axios'
 
+// ECharts 错误过滤已在全局错误处理器中处理
+
 const nodes = ref([])
 const loading = ref(false)
 const dialogVisible = ref(false)
@@ -751,7 +736,7 @@ const stats = computed(() => {
 })
 
 const installForm = ref({
-  install_path: '/opt/easysync',
+  install_path: '/opt/easysync/proxy',
   config: '{}'
 })
 
@@ -812,13 +797,16 @@ const nodeDetail = ref({
 // 图表相关
 const cpuChart = ref(null)
 const memoryChart = ref(null)
+const diskChart = ref(null)
 const networkChart = ref(null)
 const cpuTimeRange = ref('1h')
 const memoryTimeRange = ref('1h')
+const diskTimeRange = ref('1h')
 const networkTimeRange = ref('1h')
 
 const cpuChartInstance = ref(null)
 const memoryChartInstance = ref(null)
+const diskChartInstance = ref(null)
 const networkChartInstance = ref(null)
 
 // WebSocket相关
@@ -835,10 +823,19 @@ const refreshTimer = ref(null)
 
 const monitorData = ref({
   cpu: [],
+  load1: [],
+  load5: [],
+  load15: [],
   memory: [],
+  memoryUsed: [],
+  memoryAvailable: [],
+  disk: [],
+  diskUsed: [],
+  diskFree: [],
   network: {
     recv: [],
-    sent: []
+    sent: [],
+    dropped: []
   }
 })
 
@@ -1023,7 +1020,7 @@ const fetchGroups = async () => {
       groupList.value = response.data.data || []
     }
   } catch (error) {
-    console.error('获取分组列表失败:', error)
+    // 静默处理错误
   }
 }
 
@@ -1034,7 +1031,7 @@ const fetchTags = async () => {
       tagList.value = response.data.data || []
     }
   } catch (error) {
-    console.error('获取标签列表失败:', error)
+    // 静默处理错误
   }
 }
 
@@ -1179,7 +1176,7 @@ const handleSubmit = async () => {
 const installAgent = (row) => {
   currentNode.value = row
   installForm.value = {
-    install_path: '/opt/easysync',
+    install_path: '/opt/easysync/proxy',
     config: JSON.stringify({
     })
   }
@@ -1281,7 +1278,6 @@ const handleNameClick = async (node) => {
     await nextTick()
     await initCharts()
   } catch (error) {
-    console.error('Error showing node detail:', error)
     ElMessage.error('加载节点详情失败')
   }
 }
@@ -1322,300 +1318,150 @@ const fetchNodeDetail = async (nodeId) => {
   }
 }
 
-// 初始化图表
-const initCharts = async () => {
-  if (!currentNode.value?.id) {
-    console.warn('当前没有选中的节点')
+// 添加安全初始化 ECharts 的函数
+function safeInitChart(refDom, instanceRef, option) {
+  if (!refDom.value) return
+  // 如果宽高为0，延迟重试
+  if (refDom.value.clientWidth === 0 || refDom.value.clientHeight === 0) {
+    setTimeout(() => safeInitChart(refDom, instanceRef, option), 120)
     return
   }
-
+  
   try {
-    // 销毁旧的实例
-    disposeCharts()
+    // 销毁现有实例
+    if (instanceRef.value) {
+      instanceRef.value.dispose()
+    }
     
+    // 创建新实例
+    instanceRef.value = echarts.init(refDom.value, null, {
+      renderer: 'canvas',
+      useDirtyRect: true
+    })
+    
+    // 验证数据格式并确保所有必要属性存在
+    if (option.series) {
+      option.series.forEach((series, index) => {
+        // 确保基本属性存在
+        if (!series.type) {
+          series.type = 'line'
+        }
+        if (!series.name) {
+          series.name = `Series ${index}`
+        }
+        if (!Array.isArray(series.data)) {
+          series.data = []
+        }
+        
+        // 确保其他必要属性存在
+        if (!series.smooth) series.smooth = true
+        if (!series.symbol) series.symbol = 'circle'
+        if (!series.showSymbol) series.showSymbol = false
+        if (!series.symbolSize) series.symbolSize = 6
+        if (!series.sampling) series.sampling = 'average'
+        
+        // 确保样式属性存在
+        if (!series.itemStyle) {
+          series.itemStyle = {
+            color: '#409EFF'
+          }
+        }
+        
+        // 确保 emphasis 属性存在
+        if (!series.emphasis) {
+          series.emphasis = {
+            focus: 'series',
+            itemStyle: {
+              borderWidth: 3,
+              shadowBlur: 10
+            }
+          }
+        }
+      })
+    }
+    
+    // 设置配置
+    instanceRef.value.setOption(option, true)
+    
+  } catch (error) {
+    // 静默处理错误
+  }
+}
+
+// 修改 initCharts 函数，重新设计图表配置
+const initCharts = async () => {
+  if (!currentNode.value?.id) {
+    return
+  }
+  try {
+    disposeCharts()
     await nextTick()
     
-    // 初始化CPU图表
+    // 确保数据存在，如果为空则添加默认数据
+    const ensureData = (dataArray, defaultValue = 0) => {
+      if (!Array.isArray(dataArray) || dataArray.length === 0) {
+        const now = Date.now()
+        return [[now - 60000, defaultValue], [now, defaultValue]]
+      }
+      return dataArray
+    }
+    
+    // CPU 图表 - 包含使用率和负载
     if (cpuChart.value) {
-      cpuChartInstance.value = echarts.init(cpuChart.value, null, {
-        renderer: 'canvas',
-        useDirtyRect: true
-      })
       const cpuOption = {
         title: {
-          text: 'CPU使用率',
+          text: 'CPU 使用情况',
           left: 'center',
           top: 10,
           textStyle: {
-            fontSize: 14
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#303133'
           }
         },
         tooltip: {
           trigger: 'axis',
-          showContent: true,
-          alwaysShowContent: false,
+          show: true,
           axisPointer: {
             type: 'cross',
             label: {
               backgroundColor: '#6a7985'
             }
           },
-          formatter: (params) => {
-            if (!params || !params.length) return ''
-            const time = new Date(params[0].value[0]).toLocaleString()
-            const usage = params[0].value[1].toFixed(2)
-            return `
-              <div style="font-weight: bold">${time}</div>
-              <div style="margin-top: 5px">
-                <span style="display:inline-block;margin-right:5px;border-radius:50%;width:10px;height:10px;background-color:${params[0].color};"></span>
-                CPU使用率: ${usage}%
-              </div>
-            `
-          }
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '3%',
-          top: '60px',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'time',
-          boundaryGap: false,
-          axisLine: { show: true },
-          axisTick: { show: true },
-          axisLabel: {
-            formatter: (value) => {
-              return new Date(value).toLocaleTimeString()
-            }
-          },
-          splitLine: {
-            show: true,
-            lineStyle: {
-              type: 'dashed'
-            }
-          }
-        },
-        yAxis: {
-          type: 'value',
-          name: '使用率(%)',
-          min: 0,
-          max: 100,
-          axisLabel: {
-            formatter: '{value}%'
-          },
-          splitLine: {
-            show: true,
-            lineStyle: {
-              type: 'dashed'
-            }
-          }
-        },
-        series: [{
-          name: 'CPU使用率',
-          type: 'line',
-          smooth: true,
-          symbol: 'circle',
-          showSymbol: true,
-          symbolSize: 5,
-          sampling: 'average',
-          itemStyle: {
-            color: '#409EFF'
-          },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(64,158,255,0.3)' },
-              { offset: 1, color: 'rgba(64,158,255,0.1)' }
-            ])
-          },
-          emphasis: {
-            focus: 'series',
-            itemStyle: {
-              color: '#409EFF',
-              borderWidth: 2,
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowOffsetY: 0,
-              shadowColor: 'rgba(0,0,0,0.3)'
-            }
-          },
-          data: monitorData.value.cpu || []
-        }]
-      }
-      cpuChartInstance.value.setOption(cpuOption)
-    }
-
-    // 初始化内存图表
-    if (memoryChart.value) {
-      memoryChartInstance.value = echarts.init(memoryChart.value, null, {
-        renderer: 'canvas',
-        useDirtyRect: true
-      })
-      const memoryOption = {
-        title: {
-          text: '内存使用率',
-          left: 'center',
-          top: 10,
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          borderColor: '#e4e7ed',
+          borderWidth: 1,
           textStyle: {
-            fontSize: 14
-          }
-        },
-        tooltip: {
-          trigger: 'axis',
-          showContent: true,
-          alwaysShowContent: false,
-          axisPointer: {
-            type: 'cross',
-            label: {
-              backgroundColor: '#6a7985'
-            }
-          },
-          formatter: (params) => {
-            if (!params || !params.length) return ''
-            const time = new Date(params[0].value[0]).toLocaleString()
-            const usage = params[0].value[1].toFixed(2)
-            return `
-              <div style="font-weight: bold">${time}</div>
-              <div style="margin-top: 5px">
-                <span style="display:inline-block;margin-right:5px;border-radius:50%;width:10px;height:10px;background-color:${params[0].color};"></span>
-                内存使用率: ${usage}%
-              </div>
-            `
-          }
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '3%',
-          top: '60px',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'time',
-          boundaryGap: false,
-          axisLine: { show: true },
-          axisTick: { show: true },
-          axisLabel: {
-            formatter: (value) => {
-              return new Date(value).toLocaleTimeString()
-            }
-          },
-          splitLine: {
-            show: true,
-            lineStyle: {
-              type: 'dashed'
-            }
-          }
-        },
-        yAxis: {
-          type: 'value',
-          name: '使用率(%)',
-          min: 0,
-          max: 100,
-          axisLabel: {
-            formatter: '{value}%'
-          },
-          splitLine: {
-            show: true,
-            lineStyle: {
-              type: 'dashed'
-            }
-          }
-        },
-        series: [{
-          name: '内存使用率',
-          type: 'line',
-          smooth: true,
-          symbol: 'circle',
-          showSymbol: true,
-          symbolSize: 5,
-          sampling: 'average',
-          itemStyle: {
-            color: '#67C23A'
-          },
-          areaStyle: {
-            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-              { offset: 0, color: 'rgba(103,194,58,0.3)' },
-              { offset: 1, color: 'rgba(103,194,58,0.1)' }
-            ])
-          },
-          emphasis: {
-            focus: 'series',
-            itemStyle: {
-              color: '#67C23A',
-              borderWidth: 2,
-              shadowBlur: 10,
-              shadowOffsetX: 0,
-              shadowOffsetY: 0,
-              shadowColor: 'rgba(0,0,0,0.3)'
-            }
-          },
-          data: monitorData.value.memory || []
-        }]
-      }
-      memoryChartInstance.value.setOption(memoryOption)
-    }
-
-    // 初始化网络图表
-    if (networkChart.value) {
-      networkChartInstance.value = echarts.init(networkChart.value, null, {
-        renderer: 'canvas',
-        useDirtyRect: true
-      })
-      const networkOption = {
-        title: {
-          text: '网络流量',
-          left: 'center',
-          top: 10,
-          textStyle: {
-            fontSize: 14
-          }
-        },
-        tooltip: {
-          trigger: 'axis',
-          showContent: true,
-          alwaysShowContent: false,
-          axisPointer: {
-            type: 'cross',
-            label: {
-              backgroundColor: '#6a7985'
-            }
-          },
-          formatter: (params) => {
-            if (!params || !params.length) return ''
-            const time = new Date(params[0].value[0]).toLocaleString()
-            const usage = params[0].value[1].toFixed(2)
-            return `
-              <div style="font-weight: bold">${time}</div>
-              <div style="margin-top: 5px">
-                <span style="display:inline-block;margin-right:5px;border-radius:50%;width:10px;height:10px;background-color:${params[0].color};"></span>
-                接收: ${formatSize(params[0].value[1])}/s
-              </div>
-              <div style="margin-top: 5px">
-                <span style="display:inline-block;margin-right:5px;border-radius:50%;width:10px;height:10px;background-color:${params[1].color};"></span>
-                发送: ${formatSize(params[1].value[1])}/s
-              </div>
-            `
+            color: '#303133'
           }
         },
         legend: {
-          data: ['接收', '发送'],
-          top: 40
+          data: ['CPU使用率', '1分钟负载', '5分钟负载', '15分钟负载'],
+          top: 40,
+          textStyle: {
+            fontSize: 12
+          }
         },
         grid: {
           left: '3%',
           right: '4%',
           bottom: '3%',
-          top: '90px',
+          top: '100px',
           containLabel: true
         },
         xAxis: {
           type: 'time',
           boundaryGap: false,
-          axisLine: { show: true },
-          axisTick: { show: true },
+          axisLine: { 
+            show: true,
+            lineStyle: { color: '#e4e7ed' }
+          },
+          axisTick: { 
+            show: true,
+            lineStyle: { color: '#e4e7ed' }
+          },
           axisLabel: {
+            color: '#909399',
             formatter: (value) => {
               return new Date(value).toLocaleTimeString()
             }
@@ -1623,38 +1469,60 @@ const initCharts = async () => {
           splitLine: {
             show: true,
             lineStyle: {
-              type: 'dashed'
+              type: 'dashed',
+              color: '#f0f0f0'
             }
           }
         },
-        yAxis: {
-          type: 'value',
-          name: '流量/s',
-          axisLabel: {
-            formatter: (value) => formatSize(value) + '/s'
+        yAxis: [
+          {
+            type: 'value',
+            name: '使用率(%)',
+            min: 0,
+            max: 100,
+            position: 'left',
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: {
+              color: '#909399',
+              formatter: '{value}%'
+            },
+            splitLine: {
+              show: true,
+              lineStyle: {
+                type: 'dashed',
+                color: '#f0f0f0'
+              }
+            }
           },
-          splitLine: {
-            show: true,
-            lineStyle: {
-              type: 'dashed'
-            }
+          {
+            type: 'value',
+            name: '负载',
+            position: 'right',
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: {
+              color: '#909399'
+            },
+            splitLine: { show: false }
           }
-        },
+        ],
         series: [
           {
-            name: '接收',
+            name: 'CPU使用率',
             type: 'line',
+            yAxisIndex: 0,
             smooth: true,
             symbol: 'circle',
-            showSymbol: true,
-            symbolSize: 5,
+            showSymbol: false,
+            symbolSize: 6,
             sampling: 'average',
             itemStyle: {
               color: '#409EFF'
             },
             areaStyle: {
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: 'rgba(64,158,255,0.3)' },
+                { offset: 0, color: 'rgba(64,158,255,0.4)' },
                 { offset: 1, color: 'rgba(64,158,255,0.1)' }
               ])
             },
@@ -1662,29 +1530,187 @@ const initCharts = async () => {
               focus: 'series',
               itemStyle: {
                 color: '#409EFF',
-                borderWidth: 2,
+                borderWidth: 3,
                 shadowBlur: 10,
-                shadowOffsetX: 0,
-                shadowOffsetY: 0,
-                shadowColor: 'rgba(0,0,0,0.3)'
+                shadowColor: 'rgba(64,158,255,0.3)'
               }
             },
-            data: monitorData.value.network.recv || []
+            data: ensureData(monitorData.value.cpu, 50)
           },
           {
-            name: '发送',
+            name: '1分钟负载',
             type: 'line',
+            yAxisIndex: 1,
             smooth: true,
             symbol: 'circle',
-            showSymbol: true,
-            symbolSize: 5,
+            showSymbol: false,
+            symbolSize: 4,
+            sampling: 'average',
+            itemStyle: {
+              color: '#E6A23C'
+            },
+            lineStyle: {
+              type: 'dashed'
+            },
+            data: ensureData(monitorData.value.load1, 1.5)
+          },
+          {
+            name: '5分钟负载',
+            type: 'line',
+            yAxisIndex: 1,
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 4,
+            sampling: 'average',
+            itemStyle: {
+              color: '#F56C6C'
+            },
+            lineStyle: {
+              type: 'dashed'
+            },
+            data: ensureData(monitorData.value.load5, 1.2)
+          },
+          {
+            name: '15分钟负载',
+            type: 'line',
+            yAxisIndex: 1,
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 4,
+            sampling: 'average',
+            itemStyle: {
+              color: '#909399'
+            },
+            lineStyle: {
+              type: 'dashed'
+            },
+            data: ensureData(monitorData.value.load15, 1.0)
+          }
+        ]
+      }
+      safeInitChart(cpuChart, cpuChartInstance, cpuOption)
+    }
+    
+    // 内存图表 - 包含使用率和详细信息
+    if (memoryChart.value) {
+      const memoryOption = {
+        title: {
+          text: '内存使用情况',
+          left: 'center',
+          top: 10,
+          textStyle: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#303133'
+          }
+        },
+        tooltip: {
+          trigger: 'axis',
+          show: true,
+          axisPointer: {
+            type: 'cross',
+            label: {
+              backgroundColor: '#6a7985'
+            }
+          },
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          borderColor: '#e4e7ed',
+          borderWidth: 1,
+          textStyle: {
+            color: '#303133'
+          }
+        },
+        legend: {
+          data: ['内存使用率', '已用内存', '可用内存'],
+          top: 40,
+          textStyle: {
+            fontSize: 12
+          }
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          top: '100px',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'time',
+          boundaryGap: false,
+          axisLine: { 
+            show: true,
+            lineStyle: { color: '#e4e7ed' }
+          },
+          axisTick: { 
+            show: true,
+            lineStyle: { color: '#e4e7ed' }
+          },
+          axisLabel: {
+            color: '#909399',
+            formatter: (value) => {
+              return new Date(value).toLocaleTimeString()
+            }
+          },
+          splitLine: {
+            show: true,
+            lineStyle: {
+              type: 'dashed',
+              color: '#f0f0f0'
+            }
+          }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: '使用率(%)',
+            min: 0,
+            max: 100,
+            position: 'left',
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: {
+              color: '#909399',
+              formatter: '{value}%'
+            },
+            splitLine: {
+              show: true,
+              lineStyle: {
+                type: 'dashed',
+                color: '#f0f0f0'
+              }
+            }
+          },
+          {
+            type: 'value',
+            name: '内存(GB)',
+            position: 'right',
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: {
+              color: '#909399',
+              formatter: (value) => formatSize(value)
+            },
+            splitLine: { show: false }
+          }
+        ],
+        series: [
+          {
+            name: '内存使用率',
+            type: 'line',
+            yAxisIndex: 0,
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 6,
             sampling: 'average',
             itemStyle: {
               color: '#67C23A'
             },
             areaStyle: {
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                { offset: 0, color: 'rgba(103,194,58,0.3)' },
+                { offset: 0, color: 'rgba(103,194,58,0.4)' },
                 { offset: 1, color: 'rgba(103,194,58,0.1)' }
               ])
             },
@@ -1692,30 +1718,411 @@ const initCharts = async () => {
               focus: 'series',
               itemStyle: {
                 color: '#67C23A',
-                borderWidth: 2,
+                borderWidth: 3,
                 shadowBlur: 10,
-                shadowOffsetX: 0,
-                shadowOffsetY: 0,
-                shadowColor: 'rgba(0,0,0,0.3)'
+                shadowColor: 'rgba(103,194,58,0.3)'
               }
             },
-            data: monitorData.value.network.sent || []
+            data: ensureData(monitorData.value.memory, 60)
+          },
+          {
+            name: '已用内存',
+            type: 'line',
+            yAxisIndex: 1,
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 4,
+            sampling: 'average',
+            itemStyle: {
+              color: '#F56C6C'
+            },
+            lineStyle: {
+              type: 'dashed'
+            },
+            data: ensureData(monitorData.value.memoryUsed, 8 * 1024 * 1024 * 1024) // 8GB
+          },
+          {
+            name: '可用内存',
+            type: 'line',
+            yAxisIndex: 1,
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 4,
+            sampling: 'average',
+            itemStyle: {
+              color: '#909399'
+            },
+            lineStyle: {
+              type: 'dashed'
+            },
+            data: ensureData(monitorData.value.memoryAvailable, 4 * 1024 * 1024 * 1024) // 4GB
           }
         ]
       }
-      networkChartInstance.value.setOption(networkOption)
+      safeInitChart(memoryChart, memoryChartInstance, memoryOption)
     }
-
-    // 加载历史数据
-    await loadHistoryData()
     
-  } catch (error) {
-    console.error('初始化图表失败:', error)
-    ElMessage.error('初始化图表失败，请稍后重试')
+    // 磁盘图表 - 新增磁盘使用情况
+    if (diskChart.value) {
+      const diskOption = {
+        title: {
+          text: '磁盘使用情况',
+          left: 'center',
+          top: 10,
+          textStyle: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#303133'
+          }
+        },
+        tooltip: {
+          trigger: 'axis',
+          show: true,
+          axisPointer: {
+            type: 'cross',
+            label: {
+              backgroundColor: '#6a7985'
+            }
+          },
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          borderColor: '#e4e7ed',
+          borderWidth: 1,
+          textStyle: {
+            color: '#303133'
+          }
+        },
+        legend: {
+          data: ['磁盘使用率', '已用空间', '可用空间'],
+          top: 40,
+          textStyle: {
+            fontSize: 12
+          }
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          top: '100px',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'time',
+          boundaryGap: false,
+          axisLine: { 
+            show: true,
+            lineStyle: { color: '#e4e7ed' }
+          },
+          axisTick: { 
+            show: true,
+            lineStyle: { color: '#e4e7ed' }
+          },
+          axisLabel: {
+            color: '#909399',
+            formatter: (value) => {
+              return new Date(value).toLocaleTimeString()
+            }
+          },
+          splitLine: {
+            show: true,
+            lineStyle: {
+              type: 'dashed',
+              color: '#f0f0f0'
+            }
+          }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: '使用率(%)',
+            min: 0,
+            max: 100,
+            position: 'left',
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: {
+              color: '#909399',
+              formatter: '{value}%'
+            },
+            splitLine: {
+              show: true,
+              lineStyle: {
+                type: 'dashed',
+                color: '#f0f0f0'
+              }
+            }
+          },
+          {
+            type: 'value',
+            name: '空间(GB)',
+            position: 'right',
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: {
+              color: '#909399',
+              formatter: (value) => formatSize(value)
+            },
+            splitLine: { show: false }
+          }
+        ],
+        series: [
+          {
+            name: '磁盘使用率',
+            type: 'line',
+            yAxisIndex: 0,
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 6,
+            sampling: 'average',
+            itemStyle: {
+              color: '#E6A23C'
+            },
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(230,162,60,0.4)' },
+                { offset: 1, color: 'rgba(230,162,60,0.1)' }
+              ])
+            },
+            emphasis: {
+              focus: 'series',
+              itemStyle: {
+                color: '#E6A23C',
+                borderWidth: 3,
+                shadowBlur: 10,
+                shadowColor: 'rgba(230,162,60,0.3)'
+              }
+            },
+            data: ensureData(monitorData.value.disk, 70)
+          },
+          {
+            name: '已用空间',
+            type: 'line',
+            yAxisIndex: 1,
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 4,
+            sampling: 'average',
+            itemStyle: {
+              color: '#F56C6C'
+            },
+            lineStyle: {
+              type: 'dashed'
+            },
+            data: ensureData(monitorData.value.diskUsed, 500 * 1024 * 1024 * 1024) // 500GB
+          },
+          {
+            name: '可用空间',
+            type: 'line',
+            yAxisIndex: 1,
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 4,
+            sampling: 'average',
+            itemStyle: {
+              color: '#909399'
+            },
+            lineStyle: {
+              type: 'dashed'
+            },
+            data: ensureData(monitorData.value.diskFree, 200 * 1024 * 1024 * 1024) // 200GB
+          }
+        ]
+      }
+      safeInitChart(diskChart, diskChartInstance, diskOption)
+    }
+    
+    // 网络图表 - 优化网络流量展示
+    if (networkChart.value) {
+      const networkOption = {
+        title: {
+          text: '网络流量监控',
+          left: 'center',
+          top: 10,
+          textStyle: {
+            fontSize: 16,
+            fontWeight: 'bold',
+            color: '#303133'
+          }
+        },
+        tooltip: {
+          trigger: 'axis',
+          show: true,
+          axisPointer: {
+            type: 'cross',
+            label: {
+              backgroundColor: '#6a7985'
+            }
+          },
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          borderColor: '#e4e7ed',
+          borderWidth: 1,
+          textStyle: {
+            color: '#303133'
+          }
+        },
+        legend: {
+          data: ['接收流量', '发送流量', '丢包数'],
+          top: 40,
+          textStyle: {
+            fontSize: 12
+          }
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          top: '100px',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'time',
+          boundaryGap: false,
+          axisLine: { 
+            show: true,
+            lineStyle: { color: '#e4e7ed' }
+          },
+          axisTick: { 
+            show: true,
+            lineStyle: { color: '#e4e7ed' }
+          },
+          axisLabel: {
+            color: '#909399',
+            formatter: (value) => {
+              return new Date(value).toLocaleTimeString()
+            }
+          },
+          splitLine: {
+            show: true,
+            lineStyle: {
+              type: 'dashed',
+              color: '#f0f0f0'
+            }
+          }
+        },
+        yAxis: [
+          {
+            type: 'value',
+            name: '流量',
+            position: 'left',
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: {
+              color: '#909399',
+              formatter: (value) => formatSize(value)
+            },
+            splitLine: {
+              show: true,
+              lineStyle: {
+                type: 'dashed',
+                color: '#f0f0f0'
+              }
+            }
+          },
+          {
+            type: 'value',
+            name: '丢包数',
+            position: 'right',
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: {
+              color: '#909399'
+            },
+            splitLine: { show: false }
+          }
+        ],
+        series: [
+          {
+            name: '接收流量',
+            type: 'line',
+            yAxisIndex: 0,
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 6,
+            sampling: 'average',
+            itemStyle: {
+              color: '#409EFF'
+            },
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(64,158,255,0.4)' },
+                { offset: 1, color: 'rgba(64,158,255,0.1)' }
+              ])
+            },
+            emphasis: {
+              focus: 'series',
+              itemStyle: {
+                color: '#409EFF',
+                borderWidth: 3,
+                shadowBlur: 10,
+                shadowColor: 'rgba(64,158,255,0.3)'
+              }
+            },
+            data: ensureData(monitorData.value.network.recv, 100 * 1024 * 1024) // 100MB
+          },
+          {
+            name: '发送流量',
+            type: 'line',
+            yAxisIndex: 0,
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 6,
+            sampling: 'average',
+            itemStyle: {
+              color: '#67C23A'
+            },
+            areaStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: 'rgba(103,194,58,0.4)' },
+                { offset: 1, color: 'rgba(103,194,58,0.1)' }
+              ])
+            },
+            emphasis: {
+              focus: 'series',
+              itemStyle: {
+                color: '#67C23A',
+                borderWidth: 3,
+                shadowBlur: 10,
+                shadowColor: 'rgba(103,194,58,0.3)'
+              }
+            },
+            data: ensureData(monitorData.value.network.sent, 50 * 1024 * 1024) // 50MB
+          },
+          {
+            name: '丢包数',
+            type: 'line',
+            yAxisIndex: 1,
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 4,
+            sampling: 'average',
+            itemStyle: {
+              color: '#F56C6C'
+            },
+            lineStyle: {
+              type: 'dashed'
+            },
+            data: ensureData(monitorData.value.network.dropped, 10) // 10 packets
+          }
+        ]
+      }
+      safeInitChart(networkChart, networkChartInstance, networkOption)
+    }
+    
+
+    
+  } catch (e) {
+    // 静默处理错误
   }
 }
 
-// 加载历史数据
+// 修改 loadHistoryData 函数，支持新的数据结构
 const loadHistoryData = async () => {
   try {
     const nodeId = currentNode.value.id
@@ -1753,66 +2160,182 @@ const loadHistoryData = async () => {
       // 清空现有数据
       monitorData.value = {
         cpu: [],
+        load1: [],
+        load5: [],
+        load15: [],
         memory: [],
+        memoryUsed: [],
+        memoryAvailable: [],
+        disk: [],
+        diskUsed: [],
+        diskFree: [],
         network: {
           recv: [],
-          sent: []
+          sent: [],
+          dropped: []
         }
       }
 
       // 处理历史数据
       historyData.forEach(item => {
-        // 使用数据记录的时间戳
-        const timestamp = new Date(item.timestamp).getTime()
-        
-        // CPU数据
-        const cpuUsage = parseFloat(item.data.cpu?.percent || 0)
-        monitorData.value.cpu.push([timestamp, cpuUsage])
-        
-        // 内存数据
-        const memoryUsage = parseFloat(item.data.memory?.percent || 0)
-        monitorData.value.memory.push([timestamp, memoryUsage])
-        
-        // 网络数据
-        const recv = parseFloat(item.data.network?.bytes_recv || 0)
-        const sent = parseFloat(item.data.network?.bytes_sent || 0)
-        monitorData.value.network.recv.push([timestamp, recv])
-        monitorData.value.network.sent.push([timestamp, sent])
+        try {
+          // 使用数据记录的时间戳
+          const timestamp = new Date(item.timestamp).getTime()
+          
+          // CPU数据
+          const cpuUsage = parseFloat(item.data.cpu?.percent || 0)
+          if (!isNaN(cpuUsage)) {
+            monitorData.value.cpu.push([timestamp, cpuUsage])
+          }
+          
+          // CPU负载数据
+          const loadAvg = item.data.cpu?.load_avg || [0, 0, 0]
+          const load1 = parseFloat(loadAvg[0] || 0)
+          const load5 = parseFloat(loadAvg[1] || 0)
+          const load15 = parseFloat(loadAvg[2] || 0)
+          
+          if (!isNaN(load1)) monitorData.value.load1.push([timestamp, load1])
+          if (!isNaN(load5)) monitorData.value.load5.push([timestamp, load5])
+          if (!isNaN(load15)) monitorData.value.load15.push([timestamp, load15])
+          
+          // 内存数据
+          const memoryUsage = parseFloat(item.data.memory?.percent || 0)
+          const memoryUsed = parseFloat(item.data.memory?.used || 0)
+          const memoryAvailable = parseFloat(item.data.memory?.available || 0)
+          
+          if (!isNaN(memoryUsage)) monitorData.value.memory.push([timestamp, memoryUsage])
+          if (!isNaN(memoryUsed)) monitorData.value.memoryUsed.push([timestamp, memoryUsed])
+          if (!isNaN(memoryAvailable)) monitorData.value.memoryAvailable.push([timestamp, memoryAvailable])
+          
+          // 磁盘数据
+          const diskUsage = parseFloat(item.data.disk?.percent || 0)
+          const diskUsed = parseFloat(item.data.disk?.used || 0)
+          const diskFree = parseFloat(item.data.disk?.free || 0)
+          
+          if (!isNaN(diskUsage)) monitorData.value.disk.push([timestamp, diskUsage])
+          if (!isNaN(diskUsed)) monitorData.value.diskUsed.push([timestamp, diskUsed])
+          if (!isNaN(diskFree)) monitorData.value.diskFree.push([timestamp, diskFree])
+          
+          // 网络数据
+          const recv = parseFloat(item.data.network?.bytes_recv || 0)
+          const sent = parseFloat(item.data.network?.bytes_sent || 0)
+          const dropped = parseFloat(item.data.network?.packets_dropped || 0)
+          
+          if (!isNaN(recv)) monitorData.value.network.recv.push([timestamp, recv])
+          if (!isNaN(sent)) monitorData.value.network.sent.push([timestamp, sent])
+          if (!isNaN(dropped)) monitorData.value.network.dropped.push([timestamp, dropped])
+          
+        } catch (error) {
+          // 静默处理错误
+        }
       })
+      
+      
+
 
       // 更新图表数据
       updateCharts()
     }
   } catch (error) {
-    console.error('加载历史数据失败:', error)
     ElMessage.error('加载历史数据失败，请稍后重试')
   }
 }
 
-// 更新图表数据
+// 更新图表数据 - 使用更安全的方式更新数据
 const updateCharts = () => {
-  if (cpuChartInstance.value) {
-    cpuChartInstance.value.setOption({
-      series: [{
-        data: monitorData.value.cpu || []
-      }]
-    })
-  }
+  if (activeTab.value === 'monitor' && drawerVisible.value) {
+    nextTick(() => {
+      try {
+        // 创建完整的系列配置，包含所有必要属性
+        const createSeriesConfig = (name, data, color = '#409EFF', lineStyle = {}, hasArea = false) => {
+          const config = {
+            name,
+            type: 'line',
+            data: data || [],
+            smooth: true,
+            symbol: 'circle',
+            showSymbol: false,
+            symbolSize: 6,
+            sampling: 'average',
+            itemStyle: { color },
+            lineStyle,
+            emphasis: {
+              focus: 'series',
+              itemStyle: {
+                borderWidth: 3,
+                shadowBlur: 10
+              }
+            }
+          }
+          
+          // 为第一个系列添加区域样式
+          if (hasArea) {
+            // 将十六进制颜色转换为rgba格式
+            const hexToRgba = (hex, alpha) => {
+              const r = parseInt(hex.slice(1, 3), 16)
+              const g = parseInt(hex.slice(3, 5), 16)
+              const b = parseInt(hex.slice(5, 7), 16)
+              return `rgba(${r}, ${g}, ${b}, ${alpha})`
+            }
+            
+            config.areaStyle = {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: hexToRgba(color, 0.4) },
+                { offset: 1, color: hexToRgba(color, 0.1) }
+              ])
+            }
+          }
+          
+          return config
+        }
 
-  if (memoryChartInstance.value) {
-    memoryChartInstance.value.setOption({
-      series: [{
-        data: monitorData.value.memory || []
-      }]
-    })
-  }
-
-  if (networkChartInstance.value) {
-    networkChartInstance.value.setOption({
-      series: [
-        { data: monitorData.value.network.recv || [] },
-        { data: monitorData.value.network.sent || [] }
-      ]
+        // 只更新数据，不重新初始化整个图表
+        if (cpuChartInstance.value) {
+          cpuChartInstance.value.setOption({
+            series: [
+              createSeriesConfig('CPU使用率', monitorData.value.cpu, '#409EFF', {}, true),
+              createSeriesConfig('1分钟负载', monitorData.value.load1, '#E6A23C', { type: 'dashed' }),
+              createSeriesConfig('5分钟负载', monitorData.value.load5, '#F56C6C', { type: 'dashed' }),
+              createSeriesConfig('15分钟负载', monitorData.value.load15, '#909399', { type: 'dashed' })
+            ]
+          }, false)
+        }
+        
+        if (memoryChartInstance.value) {
+          memoryChartInstance.value.setOption({
+            series: [
+              createSeriesConfig('内存使用率', monitorData.value.memory, '#409EFF', {}, true),
+              createSeriesConfig('已用内存', monitorData.value.memoryUsed, '#E6A23C', { type: 'dashed' }),
+              createSeriesConfig('可用内存', monitorData.value.memoryAvailable, '#F56C6C', { type: 'dashed' })
+            ]
+          }, false)
+        }
+        
+        if (diskChartInstance.value) {
+          diskChartInstance.value.setOption({
+            series: [
+              createSeriesConfig('磁盘使用率', monitorData.value.disk, '#409EFF', {}, true),
+              createSeriesConfig('已用空间', monitorData.value.diskUsed, '#E6A23C', { type: 'dashed' }),
+              createSeriesConfig('可用空间', monitorData.value.diskFree, '#F56C6C', { type: 'dashed' })
+            ]
+          }, false)
+        }
+        
+        if (networkChartInstance.value) {
+          networkChartInstance.value.setOption({
+            series: [
+              createSeriesConfig('接收流量', monitorData.value.network.recv, '#409EFF', {}, true),
+              createSeriesConfig('发送流量', monitorData.value.network.sent, '#E6A23C', { type: 'dashed' }),
+              createSeriesConfig('丢包数', monitorData.value.network.dropped, '#F56C6C', { type: 'dashed' })
+            ]
+          }, false)
+        }
+      } catch (error) {
+        // 如果更新失败，回退到重新初始化
+        setTimeout(() => {
+          initCharts()
+        }, 100)
+      }
     })
   }
 }
@@ -1840,6 +2363,8 @@ const handleManualRefresh = async () => {
     refreshing.value = false
   }
 }
+
+
 
 // 处理自动刷新开关变化
 const handleAutoRefreshChange = (value) => {
@@ -1878,18 +2403,16 @@ const stopAutoRefresh = () => {
 // 监听标签页切换
 watch(activeTab, (newVal) => {
   if (newVal === 'monitor' && drawerVisible.value) {
-    nextTick(async () => {
-      await initCharts()
-      // 如果已经连接了WebSocket，重新加载数据
-      if (isConnected.value) {
-        loadHistoryData()
-      }
+    nextTick(() => {
+      setTimeout(() => {
+        initCharts()
+      }, 120)
     })
   }
 })
 
 // 监听时间范围变化
-watch([cpuTimeRange, memoryTimeRange, networkTimeRange], () => {
+watch([cpuTimeRange, memoryTimeRange, diskTimeRange, networkTimeRange], () => {
   if (activeTab.value === 'monitor' && drawerVisible.value) {
     nextTick(() => {
       loadHistoryData()
@@ -1919,6 +2442,14 @@ const handleResize = () => {
           silent: true
         })
       }
+      if (diskChartInstance.value) {
+        diskChartInstance.value.resize({
+          animation: {
+            duration: 300
+          },
+          silent: true
+        })
+      }
       if (networkChartInstance.value) {
         networkChartInstance.value.resize({
           animation: {
@@ -1927,9 +2458,9 @@ const handleResize = () => {
           silent: true
         })
       }
-    } catch (error) {
-      console.warn('图表调整大小失败:', error)
-    }
+      } catch (error) {
+    // 静默处理错误
+  }
   })
 }
 
@@ -1944,12 +2475,16 @@ const disposeCharts = () => {
       memoryChartInstance.value.dispose()
       memoryChartInstance.value = null
     }
+    if (diskChartInstance.value) {
+      diskChartInstance.value.dispose()
+      diskChartInstance.value = null
+    }
     if (networkChartInstance.value) {
       networkChartInstance.value.dispose()
       networkChartInstance.value = null
     }
   } catch (error) {
-    console.warn('销毁图表实例失败:', error)
+    // 静默处理错误
   }
 }
 
@@ -1957,9 +2492,11 @@ const disposeCharts = () => {
 watch(drawerVisible, (newVal) => {
   if (newVal) {
     nextTick(() => {
-      if (activeTab.value === 'monitor') {
-        initCharts()
-      }
+      setTimeout(() => {
+        if (activeTab.value === 'monitor') {
+          initCharts()
+        }
+      }, 120)
       // 使用防抖处理resize事件
       const debouncedResize = debounce(handleResize, 300)
       window.addEventListener('resize', debouncedResize)
@@ -2122,7 +2659,6 @@ const fetchLogs = async () => {
       logs.value = logEntries
     }
   } catch (error) {
-    console.error('获取日志失败:', error)
     ElMessage.error('获取日志失败')
   } finally {
     loadingLogs.value = false
@@ -3009,5 +3545,11 @@ onMounted(() => {
 }
 .fade-arch-enter-to, .fade-arch-leave-from {
   opacity: 1;
+}
+
+.chart {
+  width: 100%;
+  height: 300px;
+  min-height: 200px;
 }
 </style> 

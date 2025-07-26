@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, g
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend import db
 from backend.app.models import MonitorData, Client, Node, Alert, AlertRule
@@ -8,6 +8,7 @@ from . import monitor_bp
 from .service import MonitorService
 from .errors import MonitorError, MonitorNotFoundError, MonitorValidationError, MonitorOperationError, AlertRuleError
 import logging
+from backend.app.auth.services import AuditService
 
 logger = logging.getLogger(__name__)
 
@@ -225,20 +226,53 @@ def get_node_history(node_id):
 @jwt_required()
 def create_alert_rule():
     """创建告警规则"""
-    data = request.get_json()
-    
     try:
+        data = request.get_json()
+        user_id = get_jwt_identity()
+        
         rule = monitor_service.create_alert_rule(data)
+        AuditService.log_operation(
+            user_id=user_id,
+            action='create',
+            resource_type='monitor',
+            resource_id=rule.id,
+            resource_name=rule.name,
+            details={'msg': '告警规则创建成功'},
+            result='success'
+        )
         return jsonify({
             'status': 'success',
             'message': '告警规则创建成功',
             'data': rule.to_dict()
         }), 201
     except AlertRuleError as e:
+        AuditService.log_operation(
+            user_id=user_id,
+            action='create',
+            resource_type='monitor',
+            resource_id=None,
+            resource_name=data.get('name'),
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 400
+    except Exception as e:
+        AuditService.log_operation(
+            user_id=user_id,
+            action='create',
+            resource_type='monitor',
+            resource_id=None,
+            resource_name=data.get('name'),
+            details={'error': str(e)},
+            result='failed'
+        )
+        return jsonify({
+            'status': 'error',
+            'message': f'创建告警规则失败: {str(e)}'
+        }), 500
 
 @monitor_bp.route('/alert-rules', methods=['GET'])
 @jwt_required()
@@ -255,16 +289,26 @@ def get_alert_rules():
 @jwt_required()
 def update_alert_rule(rule_id):
     """更新告警规则"""
-    data = request.get_json()
-    rule = AlertRule.query.get(rule_id)
-    
-    if not rule:
-        return jsonify({
-            'status': 'error',
-            'message': '告警规则不存在'
-        }), 404
-        
     try:
+        data = request.get_json()
+        user_id = get_jwt_identity()
+        rule = AlertRule.query.get(rule_id)
+        
+        if not rule:
+            AuditService.log_operation(
+                user_id=user_id,
+                action='update',
+                resource_type='monitor',
+                resource_id=rule_id,
+                resource_name=data.get('name'),
+                details={'error': '告警规则不存在'},
+                result='failed'
+            )
+            return jsonify({
+                'status': 'error',
+                'message': '告警规则不存在'
+            }), 404
+            
         # 更新规则
         if 'name' in data:
             rule.name = data['name']
@@ -285,36 +329,102 @@ def update_alert_rule(rule_id):
             
         db.session.commit()
         
+        AuditService.log_operation(
+            user_id=user_id,
+            action='update',
+            resource_type='monitor',
+            resource_id=rule.id,
+            resource_name=rule.name,
+            details={'msg': '告警规则更新成功'},
+            result='success'
+        )
         return jsonify({
             'status': 'success',
             'message': '告警规则更新成功',
             'data': rule.to_dict()
         })
     except AlertRuleError as e:
+        AuditService.log_operation(
+            user_id=user_id,
+            action='update',
+            resource_type='monitor',
+            resource_id=rule_id,
+            resource_name=data.get('name'),
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 400
+    except Exception as e:
+        AuditService.log_operation(
+            user_id=user_id,
+            action='update',
+            resource_type='monitor',
+            resource_id=rule_id,
+            resource_name=data.get('name'),
+            details={'error': str(e)},
+            result='failed'
+        )
+        return jsonify({
+            'status': 'error',
+            'message': f'更新告警规则失败: {str(e)}'
+        }), 500
 
 @monitor_bp.route('/alert-rules/<int:rule_id>', methods=['DELETE'])
 @jwt_required()
 def delete_alert_rule(rule_id):
     """删除告警规则"""
-    rule = AlertRule.query.get(rule_id)
-    
-    if not rule:
+    try:
+        user_id = get_jwt_identity()
+        rule = AlertRule.query.get(rule_id)
+        
+        if not rule:
+            AuditService.log_operation(
+                user_id=user_id,
+                action='delete',
+                resource_type='monitor',
+                resource_id=rule_id,
+                resource_name=None,
+                details={'error': '告警规则不存在'},
+                result='failed'
+            )
+            return jsonify({
+                'status': 'error',
+                'message': '告警规则不存在'
+            }), 404
+            
+        db.session.delete(rule)
+        db.session.commit()
+        
+        AuditService.log_operation(
+            user_id=user_id,
+            action='delete',
+            resource_type='monitor',
+            resource_id=rule.id,
+            resource_name=rule.name,
+            details={'msg': '告警规则删除成功'},
+            result='success'
+        )
+        return jsonify({
+            'status': 'success',
+            'message': '告警规则删除成功'
+        })
+    except Exception as e:
+        AuditService.log_operation(
+            user_id=user_id,
+            action='delete',
+            resource_type='monitor',
+            resource_id=rule_id,
+            resource_name=None,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
-            'message': '告警规则不存在'
-        }), 404
-        
-    db.session.delete(rule)
-    db.session.commit()
-    
-    return jsonify({
-        'status': 'success',
-        'message': '告警规则删除成功'
-    })
+            'message': f'删除告警规则失败: {str(e)}'
+        }), 500
 
 @monitor_bp.route('/alerts', methods=['GET'])
 @jwt_required()

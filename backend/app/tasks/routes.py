@@ -1,11 +1,12 @@
-from flask import jsonify, request
+from flask import jsonify, request, g
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from backend import db
 from backend.app.models import Task, TaskLog
 from . import tasks_bp
 from .service import TaskService
-from datetime import datetime
 import logging
 from .errors import TaskError, TaskNotFoundError, TaskOperationError, TaskValidationError, TaskStateError
+from backend.app.auth.services import AuditService
 
 logger = logging.getLogger(__name__)
 
@@ -72,23 +73,85 @@ def get_task(task_id):
 @tasks_bp.route('', methods=['POST'])
 @jwt_required()
 def create_task():
-    """创建任务，支持 type=mount-check（如挂载检测），允许 node_id/source/options 字段"""
-    user_id = get_jwt_identity()
-    data = request.get_json()
-    data['user_id'] = user_id
-    
     try:
-        task = task_service.create_task(data)
+        data = request.get_json()
+        user_id = get_jwt_identity()
+        
+        # 验证必需字段
+        name = data.get('name')
+        type = data.get('type')
+        
+        if not all([name, type]):
+            AuditService.log_task_operation(
+                user_id=user_id,
+                action='create',
+                task_id=None,
+                task_name=name,
+                details={'error': '名称和类型不能为空'},
+                result='failed'
+            )
+            return jsonify({
+                'status': 'error',
+                'message': '名称和类型不能为空'
+            }), 400
+
+        # 构建任务数据，包含所有前端传递的字段
+        task_data = {
+            'name': name,
+            'description': data.get('description', ''),
+            'type': type,
+            'priority': data.get('priority', 2),
+            'user_id': user_id,
+            'node_id': data.get('node_id'),
+            'source_type': data.get('source_type'),
+            'source_client_id': data.get('source_client_id'),
+            'source_storage_id': data.get('source_storage_id'),
+            'source_path': data.get('source_path'),
+            'target_storage_id': data.get('target_storage_id'),
+            'target_path': data.get('target_path'),
+            'options': data.get('options', {})
+        }
+            
+        task = task_service.create_task(task_data)
+        AuditService.log_task_operation(
+            user_id=user_id,
+            action='create',
+            task_id=task.id,
+            task_name=task.name,
+            details={'msg': '任务创建成功'},
+            result='success'
+        )
         return jsonify({
             'status': 'success',
             'message': '任务创建成功',
-            'data': task.to_dict()
+            'task': task.to_dict()
         }), 201
-    except TaskValidationError as e:
+    except ValueError as e:
+        AuditService.log_task_operation(
+            user_id=user_id,
+            action='create',
+            task_id=None,
+            task_name=name,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': str(e)
         }), 400
+    except Exception as e:
+        AuditService.log_task_operation(
+            user_id=user_id,
+            action='create',
+            task_id=None,
+            task_name=name,
+            details={'error': str(e)},
+            result='failed'
+        )
+        return jsonify({
+            'status': 'error',
+            'message': f'创建任务失败: {str(e)}'
+        }), 500
 
 @tasks_bp.route('/<string:task_id>/status', methods=['PUT'])
 @jwt_required()
@@ -448,54 +511,111 @@ def resume_task(task_id):
         logger.error(f"Error resuming task {task_id}: {e}")
         raise e
 
+@tasks_bp.route('/<string:task_id>', methods=['PUT'])
+@jwt_required()
+def update_task(task_id):
+    try:
+        data = request.get_json()
+        name = data.get('name')
+        status = data.get('status')
+        progress = data.get('progress')
+        result = data.get('result')
+        user_id = get_jwt_identity()
+        
+        task = task_service.update_task(task_id, name, status, progress, result)
+        if not task:
+            AuditService.log_task_operation(
+                user_id=user_id,
+                action='update',
+                task_id=task_id,
+                task_name=name,
+                details={'error': '任务不存在'},
+                result='failed'
+            )
+            return jsonify({
+                'status': 'error',
+                'message': '任务不存在'
+            }), 404
+        AuditService.log_task_operation(
+            user_id=user_id,
+            action='update',
+            task_id=task.id,
+            task_name=task.name,
+            details={'msg': '任务更新成功'},
+            result='success'
+        )
+        return jsonify({
+            'status': 'success',
+            'message': '任务更新成功',
+            'task': task.to_dict()
+        })
+    except ValueError as e:
+        AuditService.log_task_operation(
+            user_id=user_id,
+            action='update',
+            task_id=task_id,
+            task_name=name,
+            details={'error': str(e)},
+            result='failed'
+        )
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
+    except Exception as e:
+        AuditService.log_task_operation(
+            user_id=user_id,
+            action='update',
+            task_id=task_id,
+            task_name=name,
+            details={'error': str(e)},
+            result='failed'
+        )
+        return jsonify({
+            'status': 'error',
+            'message': f'更新任务失败: {str(e)}'
+        }), 500
+
 @tasks_bp.route('/<string:task_id>', methods=['DELETE'])
 @jwt_required()
 def delete_task(task_id):
-    """删除任务"""
+    user_id = get_jwt_identity()
     try:
-        force = request.args.get('force', 'false').lower() == 'true'
-        success = task_service.delete_task(task_id, force=force)
-        
-        if success:
-            return jsonify({
-                'status': 'success',
-                'message': f'Task {task_id} deleted successfully'
-            })
-        else:
+        if not task_service.delete_task(task_id):
+            AuditService.log_task_operation(
+                user_id=user_id,
+                action='delete',
+                task_id=task_id,
+                task_name=None,
+                details={'error': '任务不存在'},
+                result='failed'
+            )
             return jsonify({
                 'status': 'error',
-                'message': f'Failed to delete task {task_id}'
-            }), 500
+                'message': '任务不存在'
+            }), 404
+        AuditService.log_task_operation(
+            user_id=user_id,
+            action='delete',
+            task_id=task_id,
+            task_name=None,
+            details={'msg': '任务删除成功'},
+            result='success'
+        )
+        return '', 204
     except Exception as e:
-        logger.error(f"Error deleting task {task_id}: {e}")
-        raise e
-
-@tasks_bp.route('/test-connection', methods=['POST'])
-@jwt_required()
-def test_storage_connection():
-    """测试存储连接"""
-    try:
-        user_id = get_jwt_identity()
-        data = request.get_json()
-        
-        storage_config = data.get('storage_config')
-        if not storage_config:
-            raise TaskValidationError("Missing storage_config")
-        
-        # 创建连接测试任务
-        task = task_service.create_connection_test_task(storage_config, user_id)
-        
-        # 自动启动任务
-        started_task = task_service.start_task(task.id)
-        
+        AuditService.log_task_operation(
+            user_id=user_id,
+            action='delete',
+            task_id=task_id,
+            task_name=None,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
-            'status': 'success',
-            'message': 'Connection test task created and started',
-            'data': started_task.to_dict_with_storage_config()
-        })
-    except Exception as e:
-        logger.error(f"Error creating connection test: {e}")
-        raise e
+            'status': 'error',
+            'message': f'删除任务失败: {str(e)}'
+        }), 500
 
 @tasks_bp.route('/test-mount', methods=['POST'])
 @jwt_required()

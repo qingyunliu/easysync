@@ -11,6 +11,7 @@ from PIL import Image
 import io
 from backend import db
 from backend.app.utils.email_utils import send_email
+from backend.app.auth.services import AuditService
 
 user_service = UserService()
 
@@ -47,12 +48,36 @@ def create_user():
     role = data.get('role', 'user')
     
     if not all([username, password, email]):
+        AuditService.log_user_operation(
+            user_id=None,
+            action='create',
+            target_user_id=None,
+            target_username=username,
+            details={'error': '缺少必要字段'},
+            result='failed'
+        )
         return jsonify({'error': '缺少必要字段'}), 400
         
     if User.query.filter_by(username=username).first():
+        AuditService.log_user_operation(
+            user_id=None,
+            action='create',
+            target_user_id=None,
+            target_username=username,
+            details={'error': '用户名已存在'},
+            result='failed'
+        )
         return jsonify({'error': '用户名已存在'}), 400
         
     if User.query.filter_by(email=email).first():
+        AuditService.log_user_operation(
+            user_id=None,
+            action='create',
+            target_user_id=None,
+            target_username=username,
+            details={'error': '邮箱已存在'},
+            result='failed'
+        )
         return jsonify({'error': '邮箱已存在'}), 400
     
     # 生成邮箱验证token
@@ -69,9 +94,25 @@ def create_user():
             f"请点击以下链接验证您的邮箱：<a href='{verify_url}'>{verify_url}</a>"
         )
         db.session.commit()
+        AuditService.log_user_operation(
+            user_id=None,
+            action='create',
+            target_user_id=user.id,
+            target_username=user.username,
+            details={'msg': '用户注册成功', 'email': email},
+            result='success'
+        )
     except Exception as e:
         db.session.rollback()
         current_app.logger.error(f"注册或发送验证邮件失败: {str(e)}")
+        AuditService.log_user_operation(
+            user_id=None,
+            action='create',
+            target_user_id=None,
+            target_username=username,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({'error': '注册或发送验证邮件失败'}), 502
 
     return jsonify({
@@ -137,26 +178,78 @@ def update_user(user_id):
     data = request.get_json()
     email = data.get('email')
     role = data.get('role')
-    
-    user = user_service.update_user(user_id, email, role)
-    if not user:
-        return jsonify({'error': '用户不存在'}), 404
-        
-    return jsonify({
-        'id': user.id,
-        'username': user.username,
-        'email': user.email,
-        'role': user.role,
-        'created_at': user.created_at.isoformat()
-    })
+    try:
+        user = user_service.update_user(user_id, email, role)
+        if not user:
+            AuditService.log_user_operation(
+                user_id=None,
+                action='update',
+                target_user_id=user_id,
+                target_username=None,
+                details={'error': '用户不存在'},
+                result='failed'
+            )
+            return jsonify({'error': '用户不存在'}), 404
+        AuditService.log_user_operation(
+            user_id=None,
+            action='update',
+            target_user_id=user.id,
+            target_username=user.username,
+            details={'msg': '用户信息更新成功'},
+            result='success'
+        )
+        return jsonify({
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+            'role': user.role,
+            'created_at': user.created_at.isoformat()
+        })
+    except Exception as e:
+        AuditService.log_user_operation(
+            user_id=None,
+            action='update',
+            target_user_id=user_id,
+            target_username=None,
+            details={'error': str(e)},
+            result='failed'
+        )
+        return jsonify({'error': '用户信息更新失败'}), 500
 
 @users_bp.route('/<string:user_id>', methods=['DELETE'])
 @jwt_required()
 def delete_user(user_id):
     """删除用户"""
-    if not user_service.delete_user(user_id):
-        return jsonify({'error': '用户不存在'}), 404
-    return '', 204
+    try:
+        if not user_service.delete_user(user_id):
+            AuditService.log_user_operation(
+                user_id=None,
+                action='delete',
+                target_user_id=user_id,
+                target_username=None,
+                details={'error': '用户不存在'},
+                result='failed'
+            )
+            return jsonify({'error': '用户不存在'}), 404
+        AuditService.log_user_operation(
+            user_id=None,
+            action='delete',
+            target_user_id=user_id,
+            target_username=None,
+            details={'msg': '用户删除成功'},
+            result='success'
+        )
+        return '', 204
+    except Exception as e:
+        AuditService.log_user_operation(
+            user_id=None,
+            action='delete',
+            target_user_id=user_id,
+            target_username=None,
+            details={'error': str(e)},
+            result='failed'
+        )
+        return jsonify({'error': '用户删除失败'}), 500
 
 @users_bp.route('/<string:user_id>/avatar', methods=['POST'])
 @jwt_required()

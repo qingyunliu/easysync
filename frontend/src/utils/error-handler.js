@@ -117,6 +117,23 @@ export const registerErrorHandler = (app) => {
   };
 
   window.onerror = (message, source, lineno, colno, error) => {
+    // 忽略 ResizeObserver 相关的警告
+    if (message && typeof message === 'string' && message.includes('ResizeObserver')) {
+      return true
+    }
+    
+    // 忽略 ECharts 相关的错误
+    if (message && typeof message === 'string' && (
+      message.includes('Cannot read properties of undefined (reading \'type\')') ||
+      message.includes('ECharts') || 
+      message.includes('echarts') ||
+      message.includes('type') ||
+      source && source.includes('echarts')
+    )) {
+      console.warn('ECharts error suppressed:', message)
+      return true
+    }
+
     console.error("Global Error:", {
       message,
       source,

@@ -683,9 +683,38 @@
         </template>
 
         <el-form-item label="测试节点" prop="test_node_id">
-          <el-select v-model="testNodeId" placeholder="请选择节点">
-            <el-option v-for="node in availableNodes" :key="node.id" :label="node.name + '（' + node.ipaddress + '）'" :value="node.id" />
-          </el-select>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <el-select v-model="testNodeId" placeholder="请选择节点" style="flex: 1;">
+              <el-option 
+                v-for="node in availableNodes" 
+                :key="node.id" 
+                :label="node.name + ' (' + node.ipaddress + ')'" 
+                :value="node.id"
+              >
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                  <span>{{ node.name }} ({{ node.ipaddress }})</span>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <el-tag size="small" type="success" v-if="node.status === 'online'">在线</el-tag>
+                    <el-tag size="small" type="warning" v-else>离线</el-tag>
+                    <el-tag size="small" type="primary" v-if="node.agent_status === 'running'">Agent运行中</el-tag>
+                    <el-tag size="small" type="danger" v-else>Agent未运行</el-tag>
+                  </div>
+                </div>
+              </el-option>
+            </el-select>
+            <el-button 
+              type="primary" 
+              :icon="Refresh" 
+              circle 
+              size="small" 
+              @click="fetchAvailableNodes"
+              title="刷新节点列表"
+            />
+          </div>
+          <div style="margin-top: 8px; font-size: 12px; color: #909399;">
+            <span v-if="availableNodes.length === 0">暂无可用的测试节点，请确保有节点在线且Agent已启动</span>
+            <span v-else>已找到 {{ availableNodes.length }} 个可用节点</span>
+          </div>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -703,6 +732,7 @@
 import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Icon } from '@iconify/vue'
+import { Refresh } from '@element-plus/icons-vue'
 import StorageActions from '@/components/StorageActions.vue'
 import axios from 'axios'
 
@@ -749,11 +779,11 @@ const form = ref({
     secret_key: '',
     endpoint: '',
     region: '',
-    path_style: false,
     bucket: '',
+    path_style: false,
+    protocol: 'cifs', // 默认选中 CIFS
 
     // NAS 配置
-    protocol: 'cifs', // 默认选中 CIFS
     server: '',
     path: '',
     permission: 'rw',
@@ -985,6 +1015,29 @@ const getStorageInfo = async (row) => {
 // 显示存储详情
 const handleNameClick = async (row) => {
   try {
+    // 检查存储是否有绑定的节点
+    if (!row.node_id) {
+      ElMessage.warning('该存储未绑定任何节点，无法查看详情。请先为存储分配一个节点。')
+      return
+    }
+    
+    // 检查绑定的节点是否在线
+    const nodesResponse = await axios.get('/api/nodes')
+    const boundNode = nodesResponse.data.data.find(node => node.id === row.node_id)
+    
+    if (!boundNode) {
+      ElMessage.error('绑定的节点不存在，请重新分配节点')
+      return
+    }
+    
+    if (boundNode.status !== 'online') {
+      ElMessage.warning(`绑定的节点 "${boundNode.name}" 当前不在线，可能无法正常访问存储`)
+    }
+    
+    if (boundNode.agent_status !== 'running') {
+      ElMessage.warning(`绑定的节点 "${boundNode.name}" 的 Agent 未运行，可能无法正常访问存储`)
+    }
+    
     currentStorage.value = row
     drawerVisible.value = true
     activeTab.value = 'basic'
@@ -999,6 +1052,7 @@ const handleNameClick = async (row) => {
       await fetchBuckets()
     }
   } catch (error) {
+    console.error('加载存储详情失败:', error)
     ElMessage.error('加载存储详情失败')
   }
 }
@@ -1015,10 +1069,26 @@ const handleFileClick = (row) => {
 // 获取 nas 存储信息
 const fetchNASDetails = async () => {
   try {
+    // 检查存储是否有绑定的节点
+    if (!currentStorage.value.node_id) {
+      ElMessage.error('该存储未绑定任何节点，无法获取统计信息')
+      return
+    }
+    
     loading.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/nas/stats`)
-    nasStats.value = response.data.data
+    
+    if (response.data.status === 'task_created') {
+      ElMessage.info(`统计信息获取任务已创建，任务ID: ${response.data.task_id}`)
+      // 可以在这里添加任务状态轮询逻辑
+      console.log('任务信息:', response.data)
+    } else if (response.data.status === 'success') {
+      nasStats.value = response.data.data
+    } else {
+      ElMessage.error(response.data.message || '获取统计信息失败')
+    }
   } catch (error) {
+    console.error('获取 NAS 存储信息失败:', error)
     ElMessage.error('获取 NAS 存储信息失败')
   } finally {
     loading.value = false
@@ -1028,10 +1098,25 @@ const fetchNASDetails = async () => {
 // 刷新 NAS 统计信息
 const refreshNASStats = async () => {
   try {
+    // 检查存储是否有绑定的节点
+    if (!currentStorage.value.node_id) {
+      ElMessage.error('该存储未绑定任何节点，无法刷新统计信息')
+      return
+    }
+    
     refreshingStats.value = true
-    await fetchNASDetails()
-    ElMessage.success('统计信息已更新')
+    const response = await axios.get(`/api/storages/${currentStorage.value.id}/nas/stats`)
+    
+    if (response.data.status === 'task_created') {
+      ElMessage.info(`统计信息获取任务已创建，任务ID: ${response.data.task_id}`)
+    } else if (response.data.status === 'success') {
+      nasStats.value = response.data.data
+      ElMessage.success('统计信息已更新')
+    } else {
+      ElMessage.error(response.data.message || '更新统计信息失败')
+    }
   } catch (error) {
+    console.error('更新统计信息失败:', error)
     ElMessage.error('更新统计信息失败')
   } finally {
     refreshingStats.value = false
@@ -1041,18 +1126,32 @@ const refreshNASStats = async () => {
 // 下载文件
 const handleFileDownload = async (file) => {
   try {
+    // 检查存储是否有绑定的节点
+    if (!currentStorage.value.node_id) {
+      ElMessage.error('该存储未绑定任何节点，无法下载文件')
+      return
+    }
+    
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/nas/download`, {
-      params: { path: file.path },
-      responseType: 'blob'
+      params: { path: file.path }
     })
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', file.name)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    
+    if (response.data.status === 'task_created') {
+      ElMessage.info(`文件下载任务已创建，任务ID: ${response.data.task_id}`)
+    } else if (response.data.status === 'success') {
+      // 处理文件下载
+      const url = window.URL.createObjectURL(new Blob([response.data.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', file.name)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } else {
+      ElMessage.error(response.data.message || '下载失败')
+    }
   } catch (error) {
+    console.error('下载失败:', error)
     ElMessage.error('下载失败')
   }
 }
@@ -1060,6 +1159,12 @@ const handleFileDownload = async (file) => {
 // 获取文件列表
 const fetchFiles = async () => {
   try {
+    // 检查存储是否有绑定的节点
+    if (!currentStorage.value.node_id) {
+      ElMessage.error('该存储未绑定任何节点，无法获取文件列表')
+      return
+    }
+    
     loadingFiles.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/nas/files`, {
       params: {
@@ -1068,9 +1173,17 @@ const fetchFiles = async () => {
         page_size: pageSize.value
       }
     })
-    files.value = response.data.data.files
-    total.value = response.data.data.total
+    
+    if (response.data.status === 'task_created') {
+      ElMessage.info(`文件列表获取任务已创建，任务ID: ${response.data.task_id}`)
+    } else if (response.data.status === 'success') {
+      files.value = response.data.data.files
+      total.value = response.data.data.total
+    } else {
+      ElMessage.error(response.data.message || '获取文件列表失败')
+    }
   } catch (error) {
+    console.error('获取文件列表失败:', error)
     ElMessage.error('获取文件列表失败')
   } finally {
     loadingFiles.value = false
@@ -1080,6 +1193,12 @@ const fetchFiles = async () => {
 // 获取对象存储存储桶列表
 const fetchBuckets = async () => {
   try {
+    // 检查存储是否有绑定的节点
+    if (!currentStorage.value.node_id) {
+      ElMessage.error('该存储未绑定任何节点，无法获取存储桶列表')
+      return
+    }
+    
     loadingBuckets.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/buckets`, {
       params: {
@@ -1087,16 +1206,24 @@ const fetchBuckets = async () => {
         page_size: bucketPageSize.value
       }
     })
-    if (response.data.data.buckets && Array.isArray(response.data.data.buckets)) {
-      buckets.value = response.data.data.buckets
-      bucketTotal.value = response.data.data.total
+    
+    if (response.data.status === 'task_created') {
+      ElMessage.info(`存储桶列表获取任务已创建，任务ID: ${response.data.task_id}`)
+    } else if (response.data.status === 'success') {
+      if (response.data.data.buckets && Array.isArray(response.data.data.buckets)) {
+        buckets.value = response.data.data.buckets
+        bucketTotal.value = response.data.data.total
+      } else {
+        buckets.value = response.data.data
+        bucketTotal.value = response.data.data.length
+      }
     } else {
-      buckets.value = response.data.data
-      bucketTotal.value = response.data.data.length
+      ElMessage.error(response.data.message || '获取存储桶列表失败')
     }
   } catch (error) {
+    console.error('获取存储桶列表失败:', error)
     ElMessage.error('获取存储桶列表失败')
-      } finally {
+  } finally {
     loadingBuckets.value = false
   }
 }
@@ -1123,6 +1250,12 @@ const fetchObjects = async () => {
   }
 
   try {
+    // 检查存储是否有绑定的节点
+    if (!currentStorage.value.node_id) {
+      ElMessage.error('该存储未绑定任何节点，无法获取对象列表')
+      return
+    }
+    
     loadingObjects.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/objects`, {
       params: {
@@ -1132,9 +1265,17 @@ const fetchObjects = async () => {
         page_size: pageSize.value
       }
     })
-    objects.value = response.data.data.objects
-    total.value = response.data.data.total
+    
+    if (response.data.status === 'task_created') {
+      ElMessage.info(`对象列表获取任务已创建，任务ID: ${response.data.task_id}`)
+    } else if (response.data.status === 'success') {
+      objects.value = response.data.data.objects
+      total.value = response.data.data.total
+    } else {
+      ElMessage.error(response.data.message || '获取对象列表失败')
+    }
   } catch (error) {
+    console.error('获取对象列表失败:', error)
     ElMessage.error('获取对象列表失败')
   } finally {
     loadingObjects.value = false
@@ -1450,12 +1591,26 @@ const handleSubmit = async () => {
 const fetchAvailableNodes = async () => {
   try {
     const response = await axios.get('/api/nodes')
-    // 只保留在线且Agent已安装的节点
-    availableNodes.value = (response.data.data || []).filter(
+    const allNodes = response.data.data || []
+    
+    // 过滤出在线且Agent已安装的节点
+    const filteredNodes = allNodes.filter(
       node => node.status === 'online' && node.agent_status === 'running'
     )
+    
+    availableNodes.value = filteredNodes
+    
+    console.log(`获取到 ${allNodes.length} 个节点，其中 ${filteredNodes.length} 个可用`)
+    
+    // 如果没有可用节点，给出提示
+    if (filteredNodes.length === 0 && allNodes.length > 0) {
+      console.warn('没有找到可用的测试节点，请检查节点状态和Agent状态')
+    }
+    
   } catch (error) {
+    console.error('获取节点列表失败:', error)
     ElMessage.error('获取节点列表失败')
+    availableNodes.value = []
   }
 }
 
@@ -1468,10 +1623,35 @@ watch(dialogVisible, (val) => {
 const handleTestConnect = async () => {
   try {
     await formRef.value.validate()
+    
+    // 检查是否选择了测试节点
     if (!testNodeId.value) {
       ElMessage.warning('请先选择一个测试节点')
       return
     }
+    
+    // 重新获取最新的节点状态
+    await fetchAvailableNodes()
+    
+    // 检查选中的节点是否在线
+    const selectedNode = availableNodes.value.find(node => node.id === testNodeId.value)
+    if (!selectedNode) {
+      ElMessage.error('选择的测试节点不存在或已离线，请重新选择节点')
+      return
+    }
+    
+    // 检查节点状态
+    if (selectedNode.status !== 'online') {
+      ElMessage.error(`测试节点 "${selectedNode.name}" 当前不在线，请选择其他在线节点`)
+      return
+    }
+    
+    // 检查 Agent 状态
+    if (selectedNode.agent_status !== 'running') {
+      ElMessage.error(`测试节点 "${selectedNode.name}" 的 Agent 未运行，请确保 Agent 已启动`)
+      return
+    }
+    
     // 根据存储类型构建配置对象
     let config = {}
     if (form.value.type === 's3') {
@@ -1503,9 +1683,21 @@ const handleTestConnect = async () => {
       config: config,
       node_id: testNodeId.value
     }
+    
+    // 显示加载状态
+    ElMessage.info(`正在创建连接测试任务，将使用节点: ${selectedNode.name} (${selectedNode.ipaddress})`)
+    
     const response = await axios.post('/api/storages/test-connection', submitData)
     if (response.data.status == "success") { 
-      ElMessage.success("测试连接成功: " + (response.data.data?.message || ''))
+      const taskData = response.data.data
+      ElMessage.success(`连接测试任务已创建，任务ID: ${taskData.task_id}`)
+      
+      // 可以在这里添加任务状态轮询逻辑
+      // 或者跳转到任务页面查看详情
+      console.log('任务信息:', taskData)
+      
+      // 可选：自动跳转到任务页面
+      // router.push(`/tasks?task_id=${taskData.task_id}`)
     } else {
       ElMessage.error(response.data.message || '测试连接失败')
     }
@@ -1548,6 +1740,12 @@ const handleUploadError = () => {
 // 修改刷新统计信息函数
 const refreshStats = async () => {
   try {
+    // 检查存储是否有绑定的节点
+    if (!currentStorage.value.node_id) {
+      ElMessage.error('该存储未绑定任何节点，无法刷新统计信息')
+      return
+    }
+    
     await ElMessageBox.confirm('此动作将会重新调用接口，如果桶数据量较多那么时间会较长，请耐心等待', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
@@ -1556,11 +1754,19 @@ const refreshStats = async () => {
     
     refreshingStats.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
-    storageStats.value = response.data.data
-    ElMessage.success('统计信息已更新')
+    
+    if (response.data.status === 'task_created') {
+      ElMessage.info(`统计信息获取任务已创建，任务ID: ${response.data.task_id}`)
+    } else if (response.data.status === 'success') {
+      storageStats.value = response.data.data
+      ElMessage.success('统计信息已更新')
+    } else {
+      ElMessage.error(response.data.message || '获取统计信息失败')
+    }
   } catch (error) {
     // 如果是用户取消操作,不显示错误提示
     if (error !== 'cancel') {
+      console.error('获取统计信息失败:', error)
       ElMessage.error('获取统计信息失败')
     }
   } finally {

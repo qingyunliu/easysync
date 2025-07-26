@@ -18,6 +18,7 @@ class Node(BaseModel):
     __tablename__ = 'nodes'
     
     name = db.Column(db.String(100), nullable=False)
+    hostname = db.Column(db.String(128))
     ipaddress = db.Column(db.String(255), nullable=False)
     port = db.Column(db.Integer, nullable=False)
     username = db.Column(db.String(255), nullable=False)
@@ -48,6 +49,7 @@ class Node(BaseModel):
         data = super().to_dict()
         data.update({
             'name': self.name,
+            'hostname': self.hostname,
             'username': self.username,
             'ipaddress': self.ipaddress,
             'port': self.port,

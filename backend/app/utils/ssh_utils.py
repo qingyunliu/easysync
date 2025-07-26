@@ -96,12 +96,33 @@ class SSHClient:
         sftp.get(remote_path, local_path)
 
     def create_directory(self, path: str):
-        """在远程服务器创建目录"""
+        """在远程服务器创建目录（支持多层目录）"""
         sftp = self.get_sftp()
         try:
-            sftp.mkdir(path)
-        except IOError:
-            pass  # 目录已存在
+            # 分割路径
+            path_parts = path.strip('/').split('/')
+            current_path = ''
+            
+            # 逐层创建目录
+            for part in path_parts:
+                if current_path:
+                    current_path += '/' + part
+                else:
+                    current_path = '/' + part
+                
+                try:
+                    sftp.stat(current_path)  # 检查目录是否存在
+                except IOError:
+                    # 目录不存在，创建它
+                    try:
+                        sftp.mkdir(current_path)
+                        print(f"Created directory: {current_path}")
+                    except IOError as e:
+                        print(f"Failed to create directory {current_path}: {e}")
+                        raise
+        except Exception as e:
+            print(f"Error creating directory {path}: {e}")
+            raise
 
     def write_file(self, remote_path: str, content: str):
         """写入文件内容到远程服务器"""

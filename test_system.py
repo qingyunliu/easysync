@@ -141,9 +141,32 @@ class EasySyncTester:
         }
         
         try:
+            # 首先获取可用节点
+            nodes_response = requests.get(
+                f"{self.server_url}/api/nodes",
+                headers=self.get_headers()
+            )
+            
+            if nodes_response.status_code != 200:
+                self.log_result("❌ 获取节点列表失败", False)
+                return
+            
+            available_nodes = [node for node in nodes_response.json()['data'] 
+                             if node['status'] == 'online' and node['agent_status'] == 'running']
+            
+            if not available_nodes:
+                self.log_result("❌ 没有可用的测试节点", False)
+                return
+            
+            test_node = available_nodes[0]
+            
             response = requests.post(
-                f"{self.server_url}/api/tasks/test-connection",
-                json={"storage_config": storage_config},
+                f"{self.server_url}/api/storages/test-connection",
+                json={
+                    "type": storage_config["type"],
+                    "config": storage_config["config"],
+                    "node_id": test_node["id"]
+                },
                 headers=self.get_headers()
             )
             
@@ -156,7 +179,7 @@ class EasySyncTester:
                 
                 # 检查任务状态
                 response = requests.get(
-                    f"{self.server_url}/api/tasks/{task['id']}",
+                    f"{self.server_url}/api/tasks/{task['task_id']}",
                     headers=self.get_headers()
                 )
                 

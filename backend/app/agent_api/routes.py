@@ -30,10 +30,10 @@ def agent_register():
     ipaddress = data.get('ipaddress')
     version = data.get('version')
     user_id = data.get('user_id') or 1  # 默认用户ID为1
+    node_id = data.get('node_id')
     system_info = data.get('system_info', {})
 
-    # 先查找是否已注册（根据IP地址和hostname判断）
-    existing_node = Node.query.filter_by(hostname=hostname, ipaddress=ipaddress).first()
+    existing_node = Node.query.filter_by(id=node_id).first()
     if existing_node:
         # 已注册，直接返回原有信息
         token = existing_node.config.get('agent_token') if existing_node.config else generate_token()
@@ -56,7 +56,7 @@ def agent_register():
                 'id': existing_node.id,
                 'user_id': existing_node.user_id,
                 'token': token
-                }
+            }
         })
 
     # 未注册，创建新节点
@@ -65,7 +65,7 @@ def agent_register():
         name=name, 
         hostname=hostname,
         ipaddress=ipaddress, 
-        port=0, 
+        port=22, 
         status='online',  # 新注册的节点状态为在线
         username="", 
         password="",
@@ -122,11 +122,11 @@ def agent_get_tasks(node_id):
         if task.type == 'test-connection':
             task_dict['storage_config'] = task.options.get('storage_config', {})
         elif task.type == 'mount-check':
-            task_dict['mount_point'] = task.options.get('mount_point', '')
+            task_dict['mount_point'] = task.source_path
             task_dict['storage_config'] = task.options.get('storage_config', {})
         
         task_data.append(task_dict)
-    
+    current_app.logger.info(f"task_data: {task_data}")
     return jsonify({
         'status': 'success', 
         'data': task_data

@@ -72,7 +72,9 @@ class AuditLog(BaseModel):
     action = db.Column(db.String(32), nullable=False)
     resource_type = db.Column(db.String(32), nullable=False)
     resource_id = db.Column(db.String(36))
+    resource_name = db.Column(db.String(255))  # 资源名称
     details = db.Column(db.JSON)
+    result = db.Column(db.String(20), default='success')  # success, failed
     
     def to_dict(self):
         """转换为字典"""
@@ -83,9 +85,11 @@ class AuditLog(BaseModel):
             'action': self.action,
             'resource_type': self.resource_type,
             'resource_id': self.resource_id,
-            'details': self.details
+            'resource_name': self.resource_name,
+            'details': self.details,
+            'result': self.result
         })
-        return data 
+        return data
 
 class Notification(BaseModel):
     """通知模型"""

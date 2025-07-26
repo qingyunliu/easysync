@@ -1,5 +1,5 @@
 import os
-import shutil
+import logging
 from datetime import datetime
 from typing import Dict, Any, List
 from .base import StorageProvider
@@ -9,70 +9,30 @@ class NASProvider(StorageProvider):
 
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
+        self.logger = logging.getLogger(__name__)
+        # 修正配置字段映射
         self.mount_point = config.get('path', '')
         self.server = config.get('server', '')
-        self.protocol = config.get('protocol', 'smb')
+        # 协议类型映射：cifs -> smb
+        protocol = config.get('protocol', 'smb')
+        self.protocol = 'smb' if protocol.lower() == 'cifs' else protocol
         self.workgroup = config.get('workgroup', '')
         self.username = config.get('username', '')
         self.password = config.get('password', '')
-
-    def test_connection(self) -> Dict[str, Any]:
-        """测试连接并获取存储信息"""
-        try:
-            if not os.path.exists(self.mount_point):
-                raise ValueError(f"挂载点 {self.mount_point} 不存在")
-
-            # 获取存储信息
-            total, used, free = shutil.disk_usage(self.mount_point)
-            
-            return {
-                "status": "success",
-                "message": "连接成功",
-                "data": {
-                    "total_size": total,
-                    "used_size": used,
-                    "free_size": free,
-                    "mount_point": self.mount_point,
-                    "server": self.server,
-                    "protocol": self.protocol,
-                    "workgroup": self.workgroup
-                }
-            }
-        except Exception as e:
-            raise ValueError(f"连接测试失败: {str(e)}")
+        self.share_path = config.get('path', '')  # 前端发送的是 path，映射到 share_path
 
     def get_stats(self) -> Dict[str, Any]:
         """获取存储统计信息"""
-        try:
-            total, used, free = shutil.disk_usage(self.mount_point)
-            
-            # 获取目录统计信息
-            total_files = 0
-            total_size = 0
-            last_modified = None
-            
-            for root, dirs, files in os.walk(self.mount_point):
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    try:
-                        stat = os.stat(file_path)
-                        total_files += 1
-                        total_size += stat.st_size
-                        if not last_modified or stat.st_mtime > last_modified:
-                            last_modified = stat.st_mtime
-                    except:
-                        continue
-            
-            return {
-                "total_size": total,
-                "used_size": used,
-                "free_size": free,
-                "total_files": total_files,
-                "total_objects": total_files,
-                "last_modified": datetime.fromtimestamp(last_modified).isoformat() if last_modified else None
+        # 这个方法现在由 Proxy 节点执行，本地不再需要实现
+        return {
+            "status": "success",
+            "message": "存储统计信息获取成功",
+            "data": {
+                "total_size": 0,
+                "used_size": 0,
+                "free_size": 0
             }
-        except Exception as e:
-            raise ValueError(f"获取统计信息失败: {str(e)}")
+        }
 
     def list_buckets(self) -> List[Dict[str, Any]]:
         """获取目录列表（模拟存储桶）"""
@@ -91,8 +51,8 @@ class NASProvider(StorageProvider):
         except Exception as e:
             raise ValueError(f"获取目录列表失败: {str(e)}")
 
-    def list_objects(self, bucket: str, prefix: str = '', page: int = 1, page_size: int = 20) -> Dict[str, Any]:
-        """获取文件列表"""
+    def list_objects(self, bucket: str, prefix: str = '') -> List[Dict[str, Any]]:
+        """列出对象"""
         try:
             # 构建完整路径
             full_path = os.path.join(self.mount_point, prefix)
@@ -101,7 +61,6 @@ class NASProvider(StorageProvider):
 
             # 获取所有对象
             objects = []
-            total = 0
             
             # 获取当前目录下的文件和文件夹
             try:
@@ -115,82 +74,78 @@ class NASProvider(StorageProvider):
                 
                 try:
                     stat = os.stat(item_path)
-                    total += 1
                     
-                    if total > (page - 1) * page_size and len(objects) < page_size:
-                        if os.path.isdir(item_path):
-                            objects.append({
-                                    'name': item,
-                                    'path': rel_path,
-                                    'type': 'directory',
-                                    'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat()
-                                })
-                        else:
-                            objects.append({
-                                    'name': item,
-                                    'path': rel_path,
-                                    'size': stat.st_size,
-                                    'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                                'type': 'file'
-                            })
+                    if os.path.isdir(item_path):
+                        objects.append({
+                            'name': item,
+                            'path': rel_path,
+                            'type': 'directory',
+                            'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat()
+                        })
+                    else:
+                        objects.append({
+                            'name': item,
+                            'path': rel_path,
+                            'size': stat.st_size,
+                            'modified_time': datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                            'type': 'file'
+                        })
                 except (OSError, PermissionError):
                     continue
-
-            return {
-                'files': objects,
-                'total': total,
-                'page': page,
-                'page_size': page_size
-            }
+            
+            return objects
+            
         except Exception as e:
             raise ValueError(f"获取文件列表失败: {str(e)}")
 
-    def download_object(self, bucket: str, key: str) -> bytes:
-        """下载文件"""
-        try:
-            file_path = os.path.join(self.mount_point, key)
-            if not os.path.exists(file_path):
-                raise ValueError(f"文件 {key} 不存在")
-            
-            if not os.path.isfile(file_path):
-                raise ValueError(f"{key} 不是一个文件")
-            
-            with open(file_path, 'rb') as f:
-                return f.read()
-        except Exception as e:
-            raise ValueError(f"下载文件失败: {str(e)}")
-
-    def upload_object(self, bucket: str, key: str, data: bytes) -> Dict[str, Any]:
+    def upload_file(self, bucket: str, object_name: str, file_path: str) -> bool:
         """上传文件"""
         try:
-            file_path = os.path.join(self.mount_point, key)
+            # 构建目标路径
+            target_path = os.path.join(self.mount_point, object_name)
             
-            # 确保目录存在
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            # 确保目标目录存在
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
             
-            with open(file_path, 'wb') as f:
-                f.write(data)
+            # 复制文件
+            import shutil
+            shutil.copy2(file_path, target_path)
             
-            return {
-                'key': key,
-                'size': len(data),
-                'uploaded_at': datetime.utcnow().isoformat()
-            }
+            return True
         except Exception as e:
             raise ValueError(f"上传文件失败: {str(e)}")
 
-    def delete_object(self, bucket: str, key: str) -> bool:
+    def download_file(self, bucket: str, object_name: str, file_path: str) -> bool:
+        """下载文件"""
+        try:
+            # 构建源路径
+            source_path = os.path.join(self.mount_point, object_name)
+            
+            if not os.path.exists(source_path):
+                raise ValueError(f"文件 {object_name} 不存在")
+            
+            # 确保目标目录存在
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            
+            # 复制文件
+            import shutil
+            shutil.copy2(source_path, file_path)
+            
+            return True
+        except Exception as e:
+            raise ValueError(f"下载文件失败: {str(e)}")
+
+    def delete_file(self, bucket: str, object_name: str) -> bool:
         """删除文件"""
         try:
-            file_path = os.path.join(self.mount_point, key)
-            if not os.path.exists(file_path):
-                return False
+            # 构建文件路径
+            file_path = os.path.join(self.mount_point, object_name)
             
-            if os.path.isfile(file_path):
-                os.remove(file_path)
-            else:
-                import shutil
-                shutil.rmtree(file_path)
+            if not os.path.exists(file_path):
+                raise ValueError(f"文件 {object_name} 不存在")
+            
+            # 删除文件
+            os.remove(file_path)
             
             return True
         except Exception as e:
