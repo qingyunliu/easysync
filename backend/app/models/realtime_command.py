@@ -12,7 +12,7 @@ class RealTimeCommand(BaseModel):
     
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     node_id = db.Column(db.String(36), db.ForeignKey('nodes.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     command_type = db.Column(db.String(50), nullable=False)  # test_connection, list_files, get_stats, download_file
     params = db.Column(db.JSON, nullable=False, default=dict)
     status = db.Column(db.String(20), default='pending')  # pending, executing, completed, failed, timeout
