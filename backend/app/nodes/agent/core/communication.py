@@ -241,24 +241,42 @@ class ServerCommunication:
             self.logger.error(f"Error reporting error: {e}")
             return False
 
-    def send_alert(self, alert_data: Dict[str, Any]) -> bool:
-        """发送告警信息
+    def get_realtime_commands(self) -> List[Dict[str, Any]]:
+        """获取待执行的实时命令
+        
+        Returns:
+            List[Dict[str, Any]]: 实时命令列表
+        """
+        if not self.node_id or not self.token:
+            return []
+        
+        try:
+            url = f"{self.server_url}/../commands/agent/{self.node_id}/commands"
+            response = self.session.get(url, headers=self._auth_headers())
+            response.raise_for_status()
+            return response.json().get('data', [])
+        except Exception as e:
+            self.logger.error(f"Error getting realtime commands: {e}")
+            return []
+    
+    def update_command_status(self, command_id: str, status: Dict[str, Any]) -> bool:
+        """更新实时命令状态
         
         Args:
-            alert_data: 告警数据
+            command_id: 命令ID
+            status: 状态信息
             
         Returns:
             bool: 是否成功
         """
         if not self.node_id or not self.token:
-            self.logger.error("Node not registered or token missing")
             return False
-            
+        
         try:
-            url = f"{self.server_url}/{self.node_id}/alerts"
-            response = self.session.post(url, json=alert_data, headers=self._auth_headers())
+            url = f"{self.server_url}/../commands/agent/{self.node_id}/commands/{command_id}/status"
+            response = self.session.put(url, json=status, headers=self._auth_headers())
             response.raise_for_status()
             return True
         except Exception as e:
-            self.logger.error(f"Error sending alert: {e}")
+            self.logger.error(f"Error updating command status: {e}")
             return False 
