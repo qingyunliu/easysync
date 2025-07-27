@@ -1,3 +1,4 @@
+from flask import current_app
 from flask import request, jsonify, send_file
 from . import storages_bp
 from .services import StorageService
@@ -6,6 +7,9 @@ from backend.app.utils.decorators import require_user
 import io
 from botocore.exceptions import ClientError
 from backend.app.auth.services import AuditService
+from backend.app.storages.services import StorageRealTimeService
+
+storage_realtime_service = StorageRealTimeService()
 
 storage_service = StorageService()
 
@@ -339,6 +343,74 @@ def test_connect(storage_id):
             'status': 'error',
             'message': f'连接测试失败: {str(e)}'
         }), 500
+    
+@storages_bp.route('/<string:storage_id>/test-connection-realtime', methods=['POST'])
+@require_user
+def test_storage_connection_realtime(storage_id):
+    """实时测试存储连接"""
+    try:
+        data = request.get_json()
+        node_id = data.get('node_id') if data else None
+        user_id = get_jwt_identity()
+        
+        if not node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '请选择测试节点'
+            }), 400
+        
+        # 记录审计日志
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='test_connection_realtime',
+            storage_id=storage_id,
+            storage_name=None,
+            details={'node_id': node_id, 'method': 'realtime'},
+            result='started'
+        )
+        
+        # 执行实时连接测试
+        result = storage_realtime_service.test_connection_realtime(storage_id, node_id)
+        
+        # 记录结果
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='test_connection_realtime',
+            storage_id=storage_id,
+            storage_name=None,
+            details={'node_id': node_id, 'result': result},
+            result='success' if result.get('status') == 'success' else 'failed'
+        )
+        
+        return jsonify(result)
+        
+    except ValueError as e:
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='test_connection_realtime',
+            storage_id=storage_id,
+            storage_name=None,
+            details={'error': str(e)},
+            result='failed'
+        )
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 400
+    except Exception as e:
+        current_app.logger.error(f"实时连接测试失败: {e}")
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='test_connection_realtime',
+            storage_id=storage_id,
+            storage_name=None,
+            details={'error': str(e)},
+            result='failed'
+        )
+        return jsonify({
+            'status': 'error',
+            'message': f'连接测试失败: {str(e)}'
+        }), 500
 
 @storages_bp.route('/<string:storage_id>/stats', methods=['GET'])
 @require_user
@@ -365,6 +437,21 @@ def get_storage_stats(storage_id):
         result = storage_service.get_stats(storage, use_task=use_task)
         return jsonify(result)
     except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取统计信息失败: {str(e)}'
+        }), 500
+
+@storages_bp.route('/<string:storage_id>/stats-realtime', methods=['GET'])
+@require_user
+def get_storage_stats_realtime(storage_id):
+    """实时获取存储统计信息"""
+    try:
+        node_id = request.args.get('node_id')
+        result = storage_realtime_service.get_storage_stats_realtime(storage_id, node_id)
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"获取存储统计信息失败: {e}")
         return jsonify({
             'status': 'error',
             'message': f'获取统计信息失败: {str(e)}'
@@ -397,6 +484,26 @@ def get_buckets(storage_id):
         result = storage_service.list_buckets(storage, page, page_size, use_task=use_task)
         return jsonify(result)
     except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'获取存储桶列表失败: {str(e)}'
+        }), 500
+
+@storages_bp.route('/<string:storage_id>/buckets-realtime', methods=['GET'])
+@require_user
+def list_buckets_realtime(storage_id):
+    """实时获取存储桶列表"""
+    try:
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 20))
+        node_id = request.args.get('node_id')
+        
+        result = storage_realtime_service.list_buckets_realtime(
+            storage_id, page, page_size, node_id
+        )
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"获取存储桶列表失败: {e}")
         return jsonify({
             'status': 'error',
             'message': f'获取存储桶列表失败: {str(e)}'
@@ -492,6 +599,33 @@ def download_object(storage_id):
             'message': f'下载对象失败: {str(e)}'
         }), 500
 
+@storages_bp.route('/<string:storage_id>/download-realtime', methods=['POST'])
+@require_user
+def download_file_realtime(storage_id):
+    """实时下载文件"""
+    try:
+        data = request.get_json()
+        file_path = data.get('file_path') if data else None
+        bucket = data.get('bucket', '') if data else ''
+        node_id = data.get('node_id') if data else None
+        
+        if not file_path:
+            return jsonify({
+                'status': 'error',
+                'message': '文件路径不能为空'
+            }), 400
+        
+        result = storage_realtime_service.download_file_realtime(
+            storage_id, file_path, bucket, node_id
+        )
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"下载文件失败: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'下载文件失败: {str(e)}'
+        }), 500
+
 # NAS 存储相关 API
 @storages_bp.route('/<string:storage_id>/nas/stats', methods=['GET'])
 @require_user
@@ -568,6 +702,28 @@ def get_nas_files(storage_id):
             'status': 'error',
             'message': f'获取文件列表失败: {str(e)}'
         }), 500
+
+@storages_bp.route('/<string:storage_id>/files-realtime', methods=['GET'])
+@require_user
+def list_files_realtime(storage_id):
+    """实时获取文件列表"""
+    try:
+        path = request.args.get('path', '')
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 20))
+        node_id = request.args.get('node_id')
+        
+        result = storage_realtime_service.list_files_realtime(
+            storage_id, path, page, page_size, node_id
+        )
+        return jsonify(result)
+    except Exception as e:
+        current_app.logger.error(f"获取文件列表失败: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取文件列表失败: {str(e)}'
+        }), 500
+
 
 @storages_bp.route('/<string:storage_id>/nas/download', methods=['GET'])
 @require_user

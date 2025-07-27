@@ -231,7 +231,7 @@ const handleTestConnectionRealtime = async () => {
     
     props.storage.testingRealtime = true
     
-    const response = await axios.post(`/api/commands/storage/${props.storage.id}/test-connection-realtime`, {
+    const response = await axios.post(`/api/storages/${props.storage.id}/test-connection-realtime`, {
       node_id: testNode.id
     })
     
@@ -272,7 +272,7 @@ const handleGetInfoRealtime = async () => {
     
     props.storage.fetchingRealtime = true
     
-    const response = await axios.get(`/api/commands/storage/${props.storage.id}/stats-realtime`, {
+    const response = await axios.get(`/api/storages/${props.storage.id}/stats-realtime`, {
       params: { node_id: targetNodeId }
     })
     
@@ -318,7 +318,7 @@ const handleBrowseFiles = async () => {
     
     props.storage.browsing = true
     
-    const response = await axios.get(`/api/commands/storage/${props.storage.id}/files-realtime`, {
+    const response = await axios.get(`/api/storages/${props.storage.id}/files-realtime`, {
       params: { 
         node_id: targetNodeId,
         path: '',
@@ -371,7 +371,7 @@ const handleBrowseBuckets = async () => {
     
     props.storage.browsing = true
     
-    const response = await axios.get(`/api/commands/storage/${props.storage.id}/buckets-realtime`, {
+    const response = await axios.get(`/api/storages/${props.storage.id}/buckets-realtime`, {
       params: { 
         node_id: targetNodeId,
         page: 1,

@@ -682,8 +682,8 @@
           <!-- 继续渲染 S3/OBS 相关项 -->
         </template>
 
-        <el-form-item label="测试节点" prop="test_node_id">
-          <div style="display: flex; gap: 8px; align-items: center;">
+        <el-form-item label="测试节点" prop="test_node_id" style="margin-top: 10px;">
+          <div style="display: flex; gap: 8px; align-items: center; flex:0.8;">
             <el-select v-model="testNodeId" placeholder="请选择节点" style="flex: 1;">
               <el-option 
                 v-for="node in availableNodes" 
@@ -711,7 +711,7 @@
               title="刷新节点列表"
             />
           </div>
-          <div style="margin-top: 8px; font-size: 12px; color: #909399;">
+          <div style="font-size: 12px; color: #909399; margin-left: 8px;">
             <span v-if="availableNodes.length === 0">暂无可用的测试节点，请确保有节点在线且Agent已启动</span>
             <span v-else>已找到 {{ availableNodes.length }} 个可用节点</span>
           </div>
@@ -2122,85 +2122,6 @@ onUnmounted(() => {
   padding: 8px 16px;
   background-color: var(--el-color-primary-light-9);
   border-radius: 4px;
-}
-
-/* 统计信息卡片样式 */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 20px;
-  padding: 10px;
-}
-
-.stat-item {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px;
-  background-color: var(--el-color-primary-light-9);
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.stat-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
-
-.stat-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  background-color: var(--el-color-primary-light-8);
-  border-radius: 8px;
-  color: var(--el-color-primary);
-}
-
-.stat-content {
-  flex: 1;
-}
-
-.stat-value {
-  font-size: 24px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  line-height: 1.2;
-}
-
-.stat-label {
-  font-size: 14px;
-  color: var(--el-text-color-secondary);
-  margin-top: 4px;
-}
-
-/* 旋转动画 */
-.rotating {
-  animation: rotate 1s linear infinite;
-}
-
-@keyframes rotate {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-/* 加载状态样式 */
-:deep(.el-loading-mask) {
-  background-color: rgba(255, 255, 255, 0.9);
-}
-
-:deep(.el-loading-spinner) {
-  margin-top: 20px;
-}
-
-:deep(.el-loading-text) {
-  margin-top: 10px;
-  color: var(--el-color-primary);
 }
 
 /* 添加表单提示样式 */

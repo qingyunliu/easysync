@@ -13,69 +13,6 @@ from ..services.monitor_service import MonitorService
 from ..services.sync_service import SyncService
 from ..services.connection_checker import StorageConnectionChecker, MountChecker
 
-class CommandService:
-    def __init__(self, config, node_id, token, server_url):
-        self.config = config
-        self.node_id = node_id
-        self.token = token
-        self.server_url = server_url
-        self.running = False
-        self.poll_interval = config.get('command_poll_interval', 10)
-
-    def start(self):
-        self.running = True
-        while self.running:
-            try:
-                self.poll_and_execute()
-                time.sleep(self.poll_interval)
-            except Exception as e:
-                print(f"Command poll error: {e}")
-                time.sleep(5)
-
-    def poll_and_execute(self):
-        url = f"{self.server_url}/{self.node_id}/commands"
-        headers = {"Authorization": f"Bearer {self.token}"}
-        try:
-            resp = requests.get(url, headers=headers, timeout=5)
-            if resp.status_code == 200:
-                commands = resp.json().get('data', [])
-                for cmd in commands:
-                    result = self.execute_command(cmd)
-                    self.report_command_result(cmd['id'], result)
-        except Exception as e:
-            print(f"命令拉取失败: {e}")
-
-    def execute_command(self, cmd):
-        if cmd.get('type') == 'shell':
-            try:
-                completed = subprocess.run(
-                    cmd['command'],
-                    shell=True,
-                    capture_output=True,
-                    timeout=cmd.get('timeout', 60),
-                    text=True
-                )
-                return {
-                    'return_code': completed.returncode,
-                    'stdout': completed.stdout,
-                    'stderr': completed.stderr
-                }
-            except Exception as e:
-                return {
-                    'return_code': -1,
-                    'stdout': '',
-                    'stderr': str(e)
-                }
-        # 可扩展其它类型
-        return {'return_code': -2, 'stdout': '', 'stderr': 'Unknown command type'}
-
-    def report_command_result(self, cmd_id, result):
-        url = f"{self.server_url}/{self.node_id}/commands/{cmd_id}/result"
-        headers = {"Authorization": f"Bearer {self.token}"}
-        try:
-            requests.post(url, json={'result': result}, headers=headers, timeout=5)
-        except Exception as e:
-            print(f"命令结果上报失败: {e}")
 
 class ProxyAgent:
     """代理类"""
@@ -145,10 +82,6 @@ class ProxyAgent:
         self.command_poll_thread.start()
         # 启动同步服务
         self.sync_service.start()
-        # 启动命令服务
-        self.command_service = CommandService(self.config, self.node_id, self.token, self.server_comm.server_url)
-        self.command_thread = threading.Thread(target=self.command_service.start, daemon=True)
-        self.command_thread.start()
 
     def stop(self):
         self.running = False

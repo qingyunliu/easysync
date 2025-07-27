@@ -251,7 +251,7 @@ class ServerCommunication:
             return []
         
         try:
-            url = f"{self.server_url}/../commands/agent/{self.node_id}/commands"
+            url = f"{self.server_url}/{self.node_id}/commands"
             response = self.session.get(url, headers=self._auth_headers())
             response.raise_for_status()
             return response.json().get('data', [])
@@ -273,7 +273,7 @@ class ServerCommunication:
             return False
         
         try:
-            url = f"{self.server_url}/../commands/agent/{self.node_id}/commands/{command_id}/status"
+            url = f"{self.server_url}/{self.node_id}/commands/{command_id}/status"
             response = self.session.put(url, json=status, headers=self._auth_headers())
             response.raise_for_status()
             return True

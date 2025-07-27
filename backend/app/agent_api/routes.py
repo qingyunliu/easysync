@@ -1,10 +1,16 @@
 from flask import Blueprint, request, jsonify, current_app
 from backend import db
 from backend.app.models import Node, Task, MonitorData
+from backend.app.commands.service import RealTimeCommandService
+from backend.app.storages.services import StorageRealTimeService
 from . import agent_bp
 from werkzeug.security import gen_salt
 from functools import wraps
 import datetime
+
+# 实时命令服务实例
+command_service = RealTimeCommandService()
+storage_realtime_service = StorageRealTimeService()
 
 # 简单token生成与校验（可替换为更安全实现）
 def generate_token():
@@ -283,3 +289,70 @@ def agent_send_alert(node_id):
         db.session.rollback()
         current_app.logger.error(f'Failed to save alert: {e}')
         return jsonify({'status': 'error', 'message': f'告警保存失败: {e}'}), 500 
+
+@agent_bp.route('/<string:node_id>/commands', methods=['GET'])
+@agent_token_required
+def get_pending_commands(node_id):
+    """Agent获取待执行的实时命令"""
+    try:
+        # 验证节点权限（可以加入token验证）
+        commands = command_service.get_pending_commands(node_id)
+        return jsonify({
+            'status': 'success',
+            'data': commands
+        })
+    except Exception as e:
+        current_app.logger.error(f"获取待执行命令失败: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取命令失败: {str(e)}'
+        }), 500
+
+
+@agent_bp.route('/<string:node_id>/commands/<string:command_id>/status', methods=['PUT'])
+@agent_token_required
+def update_command_status(node_id, command_id):
+    """Agent更新命令执行状态"""
+    try:
+        status_data = request.get_json()
+        if not status_data:
+            return jsonify({
+                'status': 'error',
+                'message': '缺少状态数据'
+            }), 400
+        
+        success = command_service.update_command_status(command_id, status_data)
+        if success:
+            return jsonify({
+                'status': 'success',
+                'message': '状态更新成功'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '状态更新失败'
+            }), 400
+            
+    except Exception as e:
+        current_app.logger.error(f"更新命令状态失败: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'更新状态失败: {str(e)}'
+        }), 500
+
+@agent_bp.route('/<string:node_id>/commands/<string:command_id>/result', methods=['POST'])
+@agent_token_required
+def report_command_result(node_id, command_id):
+    """Agent上报命令执行结果"""
+    import pdb;pdb.set_trace()
+    data = request.get_json()
+    result = data.get('result', {})
+    status_data = {
+        'status': 'completed',
+        'result': result
+    }
+    command_service.update_command_status(command_id, status_data)
+    return jsonify({
+        'status': 'success',
+        'message': '命令结果已上报'
+    })
