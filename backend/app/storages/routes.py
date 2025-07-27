@@ -1,6 +1,7 @@
 from flask import request, jsonify, send_file
 from . import storages_bp
 from .services import StorageService
+from flask_jwt_extended import get_jwt_identity, jwt_required
 from backend.app.utils.decorators import require_user
 import io
 from botocore.exceptions import ClientError
@@ -17,7 +18,7 @@ def create_storage():
         name = data.get('name')
         type = data.get('type')
         config = data.get('config', {})
-        user_id = getattr(g, 'user', None).id if hasattr(g, 'user') and g.user else None
+        user_id = get_jwt_identity()
         
         if not all([name, type]):
             AuditService.log_storage_operation(
@@ -123,7 +124,7 @@ def update_storage(storage_id):
         name = data.get('name')
         type = data.get('type')
         config = data.get('config')
-        user_id = getattr(g, 'user', None).id if hasattr(g, 'user') and g.user else None
+        user_id = get_jwt_identity()
         
         storage = storage_service.update_storage(storage_id, name, type, config)
         if not storage:
@@ -183,7 +184,7 @@ def update_storage(storage_id):
 @require_user
 def delete_storage(storage_id):
     """删除存储节点"""
-    user_id = getattr(g, 'user', None).id if hasattr(g, 'user') and g.user else None
+    user_id = get_jwt_identity()
     try:
         if not storage_service.delete_storage(storage_id):
             AuditService.log_storage_operation(
@@ -230,6 +231,7 @@ def test_temporary_connect():
         storage_type = data.get('type')
         config = data.get('config', {})
         node_id = data.get('node_id')  # 获取指定的节点ID
+        user_id = get_jwt_identity()
         
         if not storage_type:
             return jsonify({
@@ -252,7 +254,7 @@ def test_temporary_connect():
         # 创建连接测试任务
         from backend.app.tasks.service import TaskService
         task_service = TaskService()
-        task = task_service.create_connection_test_task(storage_config, g.user.id)
+        task = task_service.create_connection_test_task(storage_config, user_id)
         
         # 启动任务并分配给指定节点
         started_task = task_service.start_task(task.id, node_id)
@@ -285,6 +287,7 @@ def test_connect(storage_id):
     try:
         data = request.get_json()
         node_id = data.get('node_id')  # 获取指定的节点ID
+        user_id = get_jwt_identity()
         
         if not node_id:
             return jsonify({
@@ -311,7 +314,7 @@ def test_connect(storage_id):
         # 创建连接测试任务
         from backend.app.tasks.service import TaskService
         task_service = TaskService()
-        task = task_service.create_connection_test_task(storage_config, g.user.id)
+        task = task_service.create_connection_test_task(storage_config, user_id)
         
         # 启动任务并分配给指定节点
         started_task = task_service.start_task(task.id, node_id)
