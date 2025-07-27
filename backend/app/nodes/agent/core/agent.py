@@ -89,9 +89,11 @@ class ProxyAgent:
         self.running = False
         self.heartbeat_thread = None
         self.task_poll_thread = None
+        self.command_poll_thread = None  # 新增：实时命令轮询线程
         self.command_thread = None
         self.heartbeat_interval = self.config.get('heartbeat_interval', 30)
         self.task_poll_interval = self.config.get('task_poll_interval', 10)
+        self.command_poll_interval = self.config.get('command_poll_interval', 1)  # 新增：实时命令轮询间隔
         self.user_id = None
         self.node_id = None
         self.token = None
@@ -138,6 +140,9 @@ class ProxyAgent:
         # 启动任务拉取线程
         self.task_poll_thread = threading.Thread(target=self._task_poll_loop, daemon=True)
         self.task_poll_thread.start()
+        # 启动实时命令轮询线程
+        self.command_poll_thread = threading.Thread(target=self._command_poll_loop, daemon=True)
+        self.command_poll_thread.start()
         # 启动同步服务
         self.sync_service.start()
         # 启动命令服务
@@ -151,6 +156,8 @@ class ProxyAgent:
             self.heartbeat_thread.join(timeout=5)
         if self.task_poll_thread:
             self.task_poll_thread.join(timeout=5)
+        if self.command_poll_thread:
+            self.command_poll_thread.join(timeout=5)
         if self.command_thread:
             self.command_thread.join(timeout=5)
         self.monitor_service.stop()
@@ -272,6 +279,196 @@ class ProxyAgent:
             except Exception as e:
                 self.logger.error(f"Error in task poll loop: {e}")
             time.sleep(self.task_poll_interval)
+
+    def _command_poll_loop(self):
+        """实时命令轮询循环"""
+        while self.running:
+            try:
+                # 获取待执行的实时命令
+                commands = self.server_comm.get_realtime_commands()
+                for command in commands:
+                    self._execute_realtime_command(command)
+            except Exception as e:
+                self.logger.error(f"Error in command poll loop: {e}")
+            time.sleep(self.command_poll_interval)
+
+    def _execute_realtime_command(self, command):
+        """执行实时命令"""
+        command_id = command['id']
+        command_type = command['command_type']
+        params = command['params']
+        
+        self.logger.info(f"执行实时命令: {command_id}, 类型: {command_type}")
+        
+        try:
+            # 更新命令状态为执行中
+            self.server_comm.update_command_status(command_id, {
+                'status': 'executing',
+                'started_at': datetime.utcnow().isoformat()
+            })
+            
+            # 根据命令类型执行相应的操作
+            result = None
+            if command_type == 'test_connection':
+                result = self._execute_test_connection(params)
+            elif command_type == 'get_stats':
+                result = self._execute_get_stats(params)
+            elif command_type == 'list_files':
+                result = self._execute_list_files(params)
+            elif command_type == 'list_objects':
+                result = self._execute_list_objects(params)
+            elif command_type == 'list_buckets':
+                result = self._execute_list_buckets(params)
+            elif command_type == 'download_file':
+                result = self._execute_download_file(params)
+            else:
+                raise ValueError(f"不支持的命令类型: {command_type}")
+            
+            # 更新命令状态为完成
+            self.server_comm.update_command_status(command_id, {
+                'status': 'completed',
+                'result': result,
+                'completed_at': datetime.utcnow().isoformat()
+            })
+            
+            self.logger.info(f"实时命令执行完成: {command_id}")
+            
+        except Exception as e:
+            self.logger.error(f"实时命令执行失败: {command_id}, 错误: {str(e)}")
+            
+            # 更新命令状态为失败
+            self.server_comm.update_command_status(command_id, {
+                'status': 'failed',
+                'error': str(e),
+                'completed_at': datetime.utcnow().isoformat()
+            })
+
+    def _execute_test_connection(self, params):
+        """执行连接测试"""
+        storage_config = params.get('storage_config')
+        if not storage_config:
+            raise ValueError("缺少存储配置")
+        
+        result = self.connection_checker.check_storage_connection(storage_config)
+        return {
+            'status': result.status.value,
+            'message': result.message,
+            'response_time': result.response_time,
+            'details': result.details,
+            'check_time': result.check_time.isoformat()
+        }
+
+    def _execute_get_stats(self, params):
+        """获取存储统计信息"""
+        storage_config = params.get('storage_config')
+        if not storage_config:
+            raise ValueError("缺少存储配置")
+        
+        return self._execute_storage_operation(storage_config, 'get_stats', {})
+
+    def _execute_list_files(self, params):
+        """获取文件列表（NAS）"""
+        storage_config = params.get('storage_config')
+        if not storage_config:
+            raise ValueError("缺少存储配置")
+        
+        operation_params = {
+            'path': params.get('path', ''),
+            'page': params.get('page', 1),
+            'page_size': params.get('page_size', 20)
+        }
+        
+        return self._execute_storage_operation(storage_config, 'list_nas_files', operation_params)
+
+    def _execute_list_objects(self, params):
+        """获取对象列表（S3/OBS）"""
+        storage_config = params.get('storage_config')
+        if not storage_config:
+            raise ValueError("缺少存储配置")
+        
+        operation_params = {
+            'bucket': params.get('bucket', ''),
+            'prefix': params.get('prefix', ''),
+            'page': params.get('page', 1),
+            'page_size': params.get('page_size', 20)
+        }
+        
+        return self._execute_storage_operation(storage_config, 'list_objects', operation_params)
+
+    def _execute_list_buckets(self, params):
+        """获取存储桶列表"""
+        storage_config = params.get('storage_config')
+        if not storage_config:
+            raise ValueError("缺少存储配置")
+        
+        operation_params = {
+            'page': params.get('page', 1),
+            'page_size': params.get('page_size', 20)
+        }
+        
+        return self._execute_storage_operation(storage_config, 'list_buckets', operation_params)
+
+    def _execute_download_file(self, params):
+        """下载文件"""
+        storage_config = params.get('storage_config')
+        if not storage_config:
+            raise ValueError("缺少存储配置")
+        
+        operation_params = {
+            'bucket': params.get('bucket', ''),
+            'file_path': params.get('file_path', ''),
+        }
+        
+        return self._execute_storage_operation(storage_config, 'download_file', operation_params)
+
+    def _execute_storage_operation(self, storage_config, operation, params):
+        """执行存储操作"""
+        storage_type = storage_config.get('type')
+        config = storage_config.get('config', {})
+        
+        # 根据存储类型创建提供者
+        if storage_type == 'nas':
+            from backend.app.storages.provider.nas import NASProvider
+            provider = NASProvider(config)
+        elif storage_type in ['s3', 'obs']:
+            from backend.app.storages.provider.s3 import S3Provider
+            provider = S3Provider(config)
+        else:
+            raise ValueError(f"不支持的存储类型: {storage_type}")
+        
+        # 根据操作类型执行相应的方法
+        if operation == 'get_stats':
+            return provider.get_stats()
+        elif operation == 'list_buckets':
+            page = params.get('page', 1)
+            page_size = params.get('page_size', 20)
+            all_buckets = provider.list_buckets()
+            total = len(all_buckets)
+            start = (page - 1) * page_size
+            end = start + page_size
+            return {
+                'buckets': all_buckets[start:end],
+                'total': total,
+                'page': page,
+                'page_size': page_size
+            }
+        elif operation == 'list_objects':
+            bucket = params.get('bucket', '')
+            prefix = params.get('prefix', '')
+            page = params.get('page', 1)
+            page_size = params.get('page_size', 20)
+            return provider.list_objects(bucket, prefix, page, page_size)
+        elif operation == 'download_file':
+            bucket = params.get('bucket', '')
+            file_path = params.get('file_path', '')
+            return provider.download_file(bucket, file_path, '/tmp/downloaded_file')
+        elif operation == 'list_nas_files':
+            path = params.get('path', '')
+            page = params.get('page', 1)
+            page_size = params.get('page_size', 20)
+            return provider.list_objects('', path, page, page_size)
+        else:
+            raise ValueError(f"不支持的操作类型: {operation}")
 
     def _handle_connection_test_task(self, task):
         """处理连接测试任务"""

@@ -30,6 +30,15 @@
                 <Icon icon="mdi:connection" />&nbsp;测试连接
               </el-button>
             </el-dropdown-item>
+            <el-dropdown-item @click="handleTestConnectionRealtime">
+              <el-button 
+                type="text" 
+                :loading="storage.testingRealtime"
+                :disabled="storage.status === 'error'"
+              >
+                <Icon icon="mdi:flash" />&nbsp;实时测试
+              </el-button>
+            </el-dropdown-item>
             <el-dropdown-item @click="handleGetInfo">
               <el-button 
                 type="text" 
@@ -37,6 +46,33 @@
                 :disabled="storage.status === 'error'"
               >
                 <Icon icon="mdi:information" />&nbsp;获取信息
+              </el-button>
+            </el-dropdown-item>
+            <el-dropdown-item @click="handleGetInfoRealtime">
+              <el-button 
+                type="text" 
+                :loading="storage.fetchingRealtime"
+                :disabled="storage.status === 'error'"
+              >
+                <Icon icon="mdi:flash-circle" />&nbsp;实时获取信息
+              </el-button>
+            </el-dropdown-item>
+            <el-dropdown-item v-if="storage.type === 'nas'" @click="handleBrowseFiles">
+              <el-button 
+                type="text" 
+                :loading="storage.browsing"
+                :disabled="storage.status === 'error'"
+              >
+                <Icon icon="mdi:folder-open" />&nbsp;浏览文件
+              </el-button>
+            </el-dropdown-item>
+            <el-dropdown-item v-if="storage.type === 's3'" @click="handleBrowseBuckets">
+              <el-button 
+                type="text" 
+                :loading="storage.browsing"
+                :disabled="storage.status === 'error'"
+              >
+                <Icon icon="mdi:bucket" />&nbsp;浏览存储桶
               </el-button>
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -173,6 +209,196 @@ const handleGetInfo = async () => {
     ElMessage.error('获取信息失败')
   } finally {
     props.storage.fetching = false
+  }
+}
+
+// 实时测试连接
+const handleTestConnectionRealtime = async () => {
+  try {
+    // 检查是否有可用的测试节点
+    const nodesResponse = await axios.get('/api/nodes')
+    const availableNodes = (nodesResponse.data.data || []).filter(
+      node => node.status === 'online' && node.agent_status === 'running'
+    )
+    
+    if (availableNodes.length === 0) {
+      ElMessage.error('没有可用的测试节点，请确保有节点在线且Agent已启动')
+      return
+    }
+    
+    // 使用第一个可用节点进行测试
+    const testNode = availableNodes[0]
+    
+    props.storage.testingRealtime = true
+    
+    const response = await axios.post(`/api/commands/storage/${props.storage.id}/test-connection-realtime`, {
+      node_id: testNode.id
+    })
+    
+    if (response.data.status === 'success') {
+      const result = response.data.data
+      ElMessage.success(`实时连接测试成功！响应时间: ${(result.response_time || 0).toFixed(2)}ms`)
+    } else if (response.data.status === 'timeout') {
+      ElMessage.warning('连接测试超时，请检查网络或存储配置')
+    } else {
+      ElMessage.error(response.data.message || '实时连接测试失败')
+    }
+  } catch (error) {
+    ElMessage.error('实时连接测试失败')
+  } finally {
+    props.storage.testingRealtime = false
+  }
+}
+
+// 实时获取信息
+const handleGetInfoRealtime = async () => {
+  try {
+    // 检查是否有可用的节点
+    let targetNodeId = props.storage.node_id
+    
+    if (!targetNodeId) {
+      const nodesResponse = await axios.get('/api/nodes')
+      const availableNodes = (nodesResponse.data.data || []).filter(
+        node => node.status === 'online' && node.agent_status === 'running'
+      )
+      
+      if (availableNodes.length === 0) {
+        ElMessage.error('没有可用的节点，请确保有节点在线且Agent已启动')
+        return
+      }
+      
+      targetNodeId = availableNodes[0].id
+    }
+    
+    props.storage.fetchingRealtime = true
+    
+    const response = await axios.get(`/api/commands/storage/${props.storage.id}/stats-realtime`, {
+      params: { node_id: targetNodeId }
+    })
+    
+    if (response.data.status === 'success') {
+      const result = response.data.data
+      
+      // 触发事件更新存储统计信息
+      window.dispatchEvent(new CustomEvent('update-storage-stats', { 
+        detail: result 
+      }))
+      
+      ElMessage.success(`实时获取信息成功！执行时间: ${(response.data.execution_time || 0).toFixed(2)}s`)
+    } else if (response.data.status === 'timeout') {
+      ElMessage.warning('获取信息超时，请检查网络或存储配置')
+    } else {
+      ElMessage.error(response.data.message || '实时获取信息失败')
+    }
+  } catch (error) {
+    ElMessage.error('实时获取信息失败')
+  } finally {
+    props.storage.fetchingRealtime = false
+  }
+}
+
+// 浏览文件（NAS）
+const handleBrowseFiles = async () => {
+  try {
+    let targetNodeId = props.storage.node_id
+    
+    if (!targetNodeId) {
+      const nodesResponse = await axios.get('/api/nodes')
+      const availableNodes = (nodesResponse.data.data || []).filter(
+        node => node.status === 'online' && node.agent_status === 'running'
+      )
+      
+      if (availableNodes.length === 0) {
+        ElMessage.error('没有可用的节点，请确保有节点在线且Agent已启动')
+        return
+      }
+      
+      targetNodeId = availableNodes[0].id
+    }
+    
+    props.storage.browsing = true
+    
+    const response = await axios.get(`/api/commands/storage/${props.storage.id}/files-realtime`, {
+      params: { 
+        node_id: targetNodeId,
+        path: '',
+        page: 1,
+        page_size: 50
+      }
+    })
+    
+    if (response.data.status === 'success') {
+      const result = response.data.data
+      
+      // 触发事件显示文件浏览器
+      window.dispatchEvent(new CustomEvent('show-file-browser', { 
+        detail: {
+          storage: props.storage,
+          files: result.files || result.objects || [],
+          total: result.total || 0
+        }
+      }))
+      
+      ElMessage.success('文件列表获取成功')
+    } else {
+      ElMessage.error(response.data.message || '获取文件列表失败')
+    }
+  } catch (error) {
+    ElMessage.error('获取文件列表失败')
+  } finally {
+    props.storage.browsing = false
+  }
+}
+
+// 浏览存储桶（S3/OBS）
+const handleBrowseBuckets = async () => {
+  try {
+    let targetNodeId = props.storage.node_id
+    
+    if (!targetNodeId) {
+      const nodesResponse = await axios.get('/api/nodes')
+      const availableNodes = (nodesResponse.data.data || []).filter(
+        node => node.status === 'online' && node.agent_status === 'running'
+      )
+      
+      if (availableNodes.length === 0) {
+        ElMessage.error('没有可用的节点，请确保有节点在线且Agent已启动')
+        return
+      }
+      
+      targetNodeId = availableNodes[0].id
+    }
+    
+    props.storage.browsing = true
+    
+    const response = await axios.get(`/api/commands/storage/${props.storage.id}/buckets-realtime`, {
+      params: { 
+        node_id: targetNodeId,
+        page: 1,
+        page_size: 50
+      }
+    })
+    
+    if (response.data.status === 'success') {
+      const result = response.data.data
+      
+      // 触发事件显示存储桶浏览器
+      window.dispatchEvent(new CustomEvent('show-bucket-browser', { 
+        detail: {
+          storage: props.storage,
+          buckets: result.buckets || [],
+          total: result.total || 0
+        }
+      }))
+      
+      ElMessage.success('存储桶列表获取成功')
+    } else {
+      ElMessage.error(response.data.message || '获取存储桶列表失败')
+    }
+  } catch (error) {
+    ElMessage.error('获取存储桶列表失败')
+  } finally {
+    props.storage.browsing = false
   }
 }
 </script>
