@@ -70,7 +70,6 @@ class StorageConnectionChecker:
         
         check_functions = {
             'nas': self._check_nas_connection,
-            'nfs': self._check_nfs_connection,
             's3': self._check_s3_connection,
             'obs': self._check_obs_connection,
             'local': self._check_local_connection
@@ -114,10 +113,9 @@ class StorageConnectionChecker:
     def _check_nas_connection(self, storage_config: Dict[str, Any]) -> ConnectionResult:
         """检查NAS连接"""
         config = storage_config.get('config', {})
-        # 修正字段映射：前端发送的是 server，后端期望的是 host
         host = config.get('server') or config.get('host')
-        port = config.get('port', 445)  # SMB默认端口
-        protocol = config.get('protocol', 'smb').lower()
+        port = config.get('port', 2049)  # NFS默认端口
+        protocol = config.get('protocol', 'nfs').lower()
         
         if not host:
             return ConnectionResult(
@@ -161,42 +159,6 @@ class StorageConnectionChecker:
                 response_time=0.0,
                 error=f"Unsupported protocol: {protocol}"
             )
-    def _check_nfs_connection(self, storage_config: Dict[str, Any]) -> ConnectionResult:
-        """检查NFS连接"""
-        config = storage_config.get('config', {})
-        # 修正字段映射：前端发送的是 server，后端期望的是 host
-        host = config.get('server') or config.get('host')
-        port = config.get('port', 2049)  # NFS默认端口
-        
-        if not host:
-            return ConnectionResult(
-                status=CheckStatus.FAILED,
-                message="NFS配置中缺少服务器地址",
-                details={},
-                check_time=datetime.now(),
-                response_time=0.0,
-                error="Missing server/host in NFS config"
-            )
-        
-        details = {
-            'host': host,
-            'port': port,
-            'protocol': 'nfs'
-        }
-        
-        # 检查网络连接
-        network_result = self._check_network_connection(host, port)
-        if network_result.status != CheckStatus.SUCCESS:
-            return ConnectionResult(
-                status=network_result.status,
-                message=f"无法连接到 {host}:{port}",
-                details=details,
-                check_time=datetime.now(),
-                response_time=0.0,
-                error=network_result.error
-            )
-        
-        return self._check_nfs_service(config, details)
     
     def _check_s3_connection(self, storage_config: Dict[str, Any]) -> ConnectionResult:
         """检查S3连接"""

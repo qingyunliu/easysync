@@ -135,24 +135,54 @@ class S3Provider(StorageProvider):
         except MinioException as e:
             raise ValueError(f"获取统计信息失败: {str(e)}")
 
-    def list_buckets(self) -> List[Dict[str, Any]]:
+    def list_buckets(self, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
         """获取存储桶列表"""
         try:
             buckets = self.client.list_buckets()
-            ret = []
+            processed_buckets = []
+            
             for obj in (buckets or []):
                 created_at = obj.creation_date
                 if isinstance(created_at, datetime):
                     created_at = created_at.strftime("%Y-%m-%dT%H:%M:%SZ")
-                ret.append(
-                    {
-                        "name": obj.name,
-                        "created_at": created_at,
-                        "region": self.config.get('region', '')  # 使用配置中的region
-                    }
-                )
-                
-            return ret
+                processed_buckets.append({
+                    "name": obj.name,
+                    "created_at": created_at,
+                    "region": self.config.get('region', '')  # 使用配置中的region
+                })
+
+            # 实现分页
+            total_count = len(processed_buckets)
+            start_index = (page - 1) * page_size
+            end_index = start_index + page_size
+            
+            # 确保页码有效
+            if page < 1:
+                page = 1
+            if page_size < 1:
+                page_size = 20
+            
+            # 获取当前页的数据
+            paginated_buckets = processed_buckets[start_index:end_index]
+            
+            # 计算分页信息
+            total_pages = (total_count + page_size - 1) // page_size  # 向上取整
+            has_next = page < total_pages
+            has_prev = page > 1
+            
+            return {
+                'buckets': paginated_buckets,
+                'pagination': {
+                    'page': page,
+                    'page_size': page_size,
+                    'total_count': total_count,
+                    'total_pages': total_pages,
+                    'has_next': has_next,
+                    'has_prev': has_prev,
+                    'start_index': start_index + 1 if total_count > 0 else 0,
+                    'end_index': min(end_index, total_count)
+                }
+            }
 
         except MinioException as e:
             raise ValueError(f"获取存储桶列表失败: {str(e)}")

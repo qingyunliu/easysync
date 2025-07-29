@@ -41,10 +41,10 @@ def agent_register():
 
     existing_node = Node.query.filter_by(id=node_id).first()
     if existing_node:
-        # 已注册，直接返回原有信息
         token = existing_node.config.get('agent_token') if existing_node.config else generate_token()
-        # 如果老节点没有token，补发一个
+        current_app.logger.debug(f"Found existing node({node_id}), token: {token}")
         if not existing_node.config or not existing_node.config.get('agent_token'):
+            current_app.logger.debug(f"No token found for node({node_id}), generating new token")
             token = generate_token()
             existing_node.config = existing_node.config or {}
             existing_node.config['agent_token'] = token
@@ -54,6 +54,8 @@ def agent_register():
         existing_node.status = 'online'
         existing_node.last_heartbeat = datetime.datetime.utcnow()
         db.session.commit()
+
+        current_app.logger.debug(f"Updated node({node_id}) status to online")
         
         return jsonify({
             'status': 'success', 
@@ -82,6 +84,7 @@ def agent_register():
     )
     db.session.add(node)
     db.session.commit()
+    current_app.logger.debug(f"Created new node({node.id}), token: {token}")
     return jsonify({
         'status': 'success', 
         'message': '注册成功', 
@@ -100,7 +103,9 @@ def agent_heartbeat(node_id):
     node = Node.query.get(node_id)
     node.last_heartbeat = datetime.datetime.utcnow()
     node.status = 'online'
+    node.agent_status = data.get('agent_status', 'running')
     node.system_info = data.get('system_info', {})
+    current_app.logger.info(f"Received node({node_id}) heartbeat: {data}")
     db.session.commit()
     return jsonify({'status': 'success', 'message': '心跳成功'})
 
@@ -132,7 +137,6 @@ def agent_get_tasks(node_id):
             task_dict['storage_config'] = task.options.get('storage_config', {})
         
         task_data.append(task_dict)
-    current_app.logger.info(f"task_data: {task_data}")
     return jsonify({
         'status': 'success', 
         'data': task_data
@@ -234,13 +238,13 @@ def agent_report_metrics(node_id):
     metrics = data.get('metrics', {})
     node.system_info = metrics
     db.session.commit()
-    # 新增：写入历史监控表
     try:
         MonitorData.create_monitor_data(
             user_id=node.user_id,
             node_id=node.id,
             data=metrics
         )
+        current_app.logger.info(f"Received node({node_id}) metrics: {metrics}")
     except Exception as e:
         db.session.rollback()
         return jsonify({'status': 'error', 'message': f'监控数据写入失败: {e}'})
@@ -297,6 +301,7 @@ def get_pending_commands(node_id):
     try:
         # 验证节点权限（可以加入token验证）
         commands = command_service.get_pending_commands(node_id)
+        current_app.logger.info(f"Received node({node_id}) pending commands: {commands}")
         return jsonify({
             'status': 'success',
             'data': commands
@@ -315,6 +320,7 @@ def update_command_status(node_id, command_id):
     """Agent更新命令执行状态"""
     try:
         status_data = request.get_json()
+        current_app.logger.info(f"Received node({node_id}) command({command_id}) status update: {status_data}")
         if not status_data:
             return jsonify({
                 'status': 'error',
@@ -339,20 +345,3 @@ def update_command_status(node_id, command_id):
             'status': 'error',
             'message': f'更新状态失败: {str(e)}'
         }), 500
-
-@agent_bp.route('/<string:node_id>/commands/<string:command_id>/result', methods=['POST'])
-@agent_token_required
-def report_command_result(node_id, command_id):
-    """Agent上报命令执行结果"""
-    import pdb;pdb.set_trace()
-    data = request.get_json()
-    result = data.get('result', {})
-    status_data = {
-        'status': 'completed',
-        'result': result
-    }
-    command_service.update_command_status(command_id, status_data)
-    return jsonify({
-        'status': 'success',
-        'message': '命令结果已上报'
-    })

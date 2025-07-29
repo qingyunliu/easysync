@@ -89,45 +89,51 @@ class RealTimeCommandService:
         Returns:
             Dict[str, Any]: 执行结果
         """
+        from sqlalchemy.orm import scoped_session, sessionmaker
+        Session = scoped_session(sessionmaker(bind=db.engine))
         start_time = time.time()
-        check_interval = 0.5  # 500ms检查一次
-        
+        check_interval = 0.2  # 200ms检查一次
         while time.time() - start_time < timeout:
-            command = RealTimeCommand.query.get(command_id)
+            session = Session()
+            command = session.query(RealTimeCommand).get(command_id)
+            logger.debug(f"Get command({command_id}) status from db: {command.status if command else 'None'}")
             if not command:
+                session.close()
                 return {'status': 'error', 'message': '命令不存在'}
-            
             if command.status == 'completed':
                 execution_time = command.get_execution_time()
+                session.close()
                 return {
                     'status': 'success',
                     'data': command.result,
                     'execution_time': execution_time,
                     'command_id': command_id
                 }
-            
             elif command.status == 'failed':
+                session.close()
                 return {
                     'status': 'error',
                     'message': command.error or '命令执行失败',
                     'command_id': command_id
                 }
-            
             elif command.status == 'timeout':
+                session.close()
                 return {
                     'status': 'timeout',
                     'message': f'命令执行超时（{timeout}秒）',
                     'command_id': command_id
                 }
-            
+            session.close()
             time.sleep(check_interval)
-        
         # 超时，标记命令为超时状态
-        command = RealTimeCommand.query.get(command_id)
+        session = Session()
+        command = session.query(RealTimeCommand).get(command_id)
+        logger.debug(f"Get command({command_id}) status from db after timeout({timeout}s): {command.status if command else 'None'}")
         if command and command.status in ['pending', 'executing']:
+            logger.debug(f"Mark command({command_id}) as timeout")
             command.mark_as_timeout()
-            db.session.commit()
-        
+            session.commit()
+        session.close()
         return {
             'status': 'timeout',
             'message': f'等待命令结果超时（{timeout}秒）',
@@ -167,6 +173,7 @@ class RealTimeCommandService:
                 return False
             
             status = status_data.get('status')
+            logger.info(f"更新命令状态: {command_id}, 状态: {status}, 时间: {datetime.utcnow()}")
             
             if status == 'executing':
                 command.mark_as_executing()
@@ -175,7 +182,7 @@ class RealTimeCommandService:
             elif status == 'completed':
                 result = status_data.get('result', {})
                 command.mark_as_completed(result)
-                logger.info(f"命令执行完成: {command_id}")
+                logger.info(f"命令执行完成: {command_id}, 结果: {result}")
                 
             elif status == 'failed':
                 error = status_data.get('error', '未知错误')
@@ -187,6 +194,7 @@ class RealTimeCommandService:
                 return False
             
             db.session.commit()
+            logger.info(f"命令状态更新成功: {command_id}, 状态: {status}")
             return True
             
         except Exception as e:

@@ -55,7 +55,7 @@ class NASProvider(StorageProvider):
         except Exception as e:
             raise ValueError(f"获取统计信息失败: {str(e)}")
 
-    def list_buckets(self) -> List[Dict[str, Any]]:
+    def list_buckets(self, page: int = 1, page_size: int = 20) -> Dict[str, Any]:
         """获取目录列表（模拟存储桶）"""
         try:
             buckets = []
@@ -68,12 +68,44 @@ class NASProvider(StorageProvider):
                         "created_at": datetime.fromtimestamp(stat.st_ctime).isoformat(),
                         "region": self.server
                     })
-            return buckets
+            
+            # 实现分页
+            total_count = len(buckets)
+            start_index = (page - 1) * page_size
+            end_index = start_index + page_size
+            
+            # 确保页码有效
+            if page < 1:
+                page = 1
+            if page_size < 1:
+                page_size = 20
+            
+            # 获取当前页的数据
+            paginated_buckets = buckets[start_index:end_index]
+            
+            # 计算分页信息
+            total_pages = (total_count + page_size - 1) // page_size  # 向上取整
+            has_next = page < total_pages
+            has_prev = page > 1
+            
+            return {
+                'buckets': paginated_buckets,
+                'pagination': {
+                    'page': page,
+                    'page_size': page_size,
+                    'total_count': total_count,
+                    'total_pages': total_pages,
+                    'has_next': has_next,
+                    'has_prev': has_prev,
+                    'start_index': start_index + 1 if total_count > 0 else 0,
+                    'end_index': min(end_index, total_count)
+                }
+            }
         except Exception as e:
             raise ValueError(f"获取目录列表失败: {str(e)}")
 
-    def list_objects(self, bucket: str, prefix: str = '') -> List[Dict[str, Any]]:
-        """列出对象"""
+    def list_objects(self, prefix: str = '', page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+        """列出文件"""
         try:
             # 构建完整路径
             full_path = os.path.join(self.mount_point, prefix)
@@ -114,16 +146,47 @@ class NASProvider(StorageProvider):
                 except (OSError, PermissionError):
                     continue
             
-            return objects
+            # 实现分页
+            total_count = len(objects)
+            start_index = (page - 1) * page_size
+            end_index = start_index + page_size
+            
+            # 确保页码有效
+            if page < 1:
+                page = 1
+            if page_size < 1:
+                page_size = 20
+            
+            # 获取当前页的数据
+            paginated_objects = objects[start_index:end_index]
+            
+            # 计算分页信息
+            total_pages = (total_count + page_size - 1) // page_size  # 向上取整
+            has_next = page < total_pages
+            has_prev = page > 1
+            
+            return {
+                'objects': paginated_objects,
+                'pagination': {
+                    'page': page,
+                    'page_size': page_size,
+                    'total_count': total_count,
+                    'total_pages': total_pages,
+                    'has_next': has_next,
+                    'has_prev': has_prev,
+                    'start_index': start_index + 1 if total_count > 0 else 0,
+                    'end_index': min(end_index, total_count)
+                }
+            }
             
         except Exception as e:
             raise ValueError(f"获取文件列表失败: {str(e)}")
 
-    def upload_file(self, bucket: str, object_name: str, file_path: str) -> bool:
+    def upload_file(self, file_path: str, target_path: str) -> bool:
         """上传文件"""
         try:
             # 构建目标路径
-            target_path = os.path.join(self.mount_point, object_name)
+            target_path = os.path.join(self.mount_point, target_path)
             
             # 确保目标目录存在
             os.makedirs(os.path.dirname(target_path), exist_ok=True)
@@ -136,34 +199,34 @@ class NASProvider(StorageProvider):
         except Exception as e:
             raise ValueError(f"上传文件失败: {str(e)}")
 
-    def download_file(self, bucket: str, object_name: str, file_path: str) -> bool:
+    def download_file(self, source_path: str, target_path: str) -> bool:
         """下载文件"""
         try:
             # 构建源路径
-            source_path = os.path.join(self.mount_point, object_name)
+            source_path = os.path.join(self.mount_point, source_path)
             
             if not os.path.exists(source_path):
-                raise ValueError(f"文件 {object_name} 不存在")
+                raise ValueError(f"文件 {source_path} 不存在")
             
             # 确保目标目录存在
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            os.makedirs(os.path.dirname(target_path), exist_ok=True)
             
             # 复制文件
             import shutil
-            shutil.copy2(source_path, file_path)
+            shutil.copy2(source_path, target_path)
             
             return True
         except Exception as e:
             raise ValueError(f"下载文件失败: {str(e)}")
 
-    def delete_file(self, bucket: str, object_name: str) -> bool:
+    def delete_file(self, file_path: str) -> bool:
         """删除文件"""
         try:
             # 构建文件路径
-            file_path = os.path.join(self.mount_point, object_name)
+            file_path = os.path.join(self.mount_point, file_path)
             
             if not os.path.exists(file_path):
-                raise ValueError(f"文件 {object_name} 不存在")
+                raise ValueError(f"文件 {file_path} 不存在")
             
             # 删除文件
             os.remove(file_path)

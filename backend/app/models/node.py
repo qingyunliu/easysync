@@ -29,7 +29,7 @@ class Node(BaseModel):
     config = db.Column(db.JSON)  # 节点配置信息
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     last_heartbeat = db.Column(db.DateTime)
-    agent_status = db.Column(db.String(20), default=AgentStatus.INACTIVE.value)  # INACTIVE, ACTIVE, ERROR
+    agent_status = db.Column(db.String(20), default=AgentStatus.INACTIVE.value)  # running, inactive, error
     agent_version = db.Column(db.String(32))  # ProxyAgent版本
     agent_last_update = db.Column(db.DateTime)  # ProxyAgent最后更新时间
     system_info = db.Column(db.JSON)  # 系统信息（OS、CPU、内存等）

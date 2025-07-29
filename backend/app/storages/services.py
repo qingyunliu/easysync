@@ -375,18 +375,10 @@ class StorageService:
             # 直接执行（实时模式）
             try:
                 provider = self.get_provider(storage)
-                all_buckets = provider.list_buckets()
-                total = len(all_buckets)
-                start = (page - 1) * page_size
-                end = start + page_size
+                result = provider.list_buckets(page, page_size)
                 return {
                     'status': 'success',
-                    'data': {
-                        'buckets': all_buckets[start:end],
-                        'total': total,
-                        'page': page,
-                        'page_size': page_size
-                    }
+                    'data': result
                 }
             except Exception as e:
                 return {
@@ -414,7 +406,7 @@ class StorageService:
             # 直接执行（实时模式）
             try:
                 provider = self.get_provider(storage)
-                result = provider.list_objects(bucket, prefix)
+                result = provider.list_objects(bucket, prefix, page, page_size)
                 return {
                     'status': 'success',
                     'data': result
@@ -495,7 +487,7 @@ class StorageService:
             # 直接执行（实时模式）
             try:
                 provider = self.get_provider(storage)
-                result = provider.list_objects('', path, page, page_size)
+                result = provider.list_files('', path, page, page_size)
                 return {
                     'status': 'success',
                     'data': result

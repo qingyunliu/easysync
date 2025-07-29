@@ -27,9 +27,26 @@
   
   /* 卡片颜色 */
   --card-bg: #ffffff;
+  --card-header-bg: #fafafa;
   --card-shadow: 0 0 1px rgba(0, 0, 0, .3),
     0 4px 14px rgba(0, 0, 0, .1);
   --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.1);
+  
+  /* 表格颜色 */
+  --table-header-bg: #fafafa;
+  --table-stripe-bg: #fafafa;
+  
+  /* 输入框颜色 */
+  --input-bg: #ffffff;
+  
+  /* 代码背景 */
+  --code-bg: #f5f5f5;
+  
+  /* 状态颜色 */
+  --danger-bg: #fef0f0;
+  --danger-color: #f56c6c;
+  --info-bg: #f0f9ff;
+  --info-color: #409eff;
   
   /* 侧边栏 */
   --sidebar-bg: linear-gradient(135deg, #fafdff 0%, #fff 100%);
@@ -62,9 +79,26 @@
   
   /* 卡片颜色 */
   --card-bg: #16161a;
+  --card-header-bg: #1d1d22;
   --card-shadow: 0 0 1px rgba(0, 0, 0, .3),
     0 4px 14px rgba(0, 0, 0, .1);
   --card-shadow-hover: 0 4px 12px rgba(0, 0, 0, 0.6);
+  
+  /* 表格颜色 */
+  --table-header-bg: #1d1d22;
+  --table-stripe-bg: #1a1a1f;
+  
+  /* 输入框颜色 */
+  --input-bg: #1d1d22;
+  
+  /* 代码背景 */
+  --code-bg: #2a2a2a;
+  
+  /* 状态颜色 */
+  --danger-bg: #2a1a1a;
+  --danger-color: #f56c6c;
+  --info-bg: #1a2a3a;
+  --info-color: #409eff;
   
   /* 侧边栏 */
   --sidebar-bg: linear-gradient(135deg, #16161a 0%, #16161a 100%);

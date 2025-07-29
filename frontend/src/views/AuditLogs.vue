@@ -40,6 +40,7 @@
                 class="audit-table"
                 :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--text-color)' }"
                 stripe
+                @row-click="handleLoginRowClick"
               >
                 <el-table-column prop="id" label="ID" width="330" align="center"/>
                 <el-table-column prop="username" label="用户" width="160" align="center">
@@ -170,6 +171,7 @@
                 class="audit-table"
                 :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--text-color)' }"
                 stripe
+                @row-click="handleOperationRowClick"
               >
                 <el-table-column prop="id" label="ID" width="330" align="center"/>
                 
@@ -263,13 +265,267 @@
         </el-tab-pane>
       </el-tabs>
     </div>
+
+    <!-- 审计日志详情抽屉 -->
+    <el-drawer
+      v-model="drawerVisible"
+      title="审计日志详情"
+      direction="rtl"
+      size="60%"
+      :before-close="handleDrawerClose"
+      class="audit-drawer"
+    >
+      <div class="detail-content">
+
+        <!-- 基本信息卡片 -->
+        <el-card class="info-card">
+          <template #header>
+            <div class="card-header">
+              <span>基本信息</span>
+            </div>
+          </template>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item label="日志ID">
+              <el-tag type="info">{{ currentLog.id }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="用户">
+              <div class="user-info">
+                <el-avatar :size="24" style="margin-right: 8px">
+                  {{ currentLog.username?.charAt(0)?.toUpperCase() }}
+                </el-avatar>
+                <span>{{ currentLog.username }}</span>
+              </div>
+            </el-descriptions-item>
+            <el-descriptions-item label="操作类型">
+              <el-tag 
+                :type="currentLog.action === 'login' ? 'success' : 
+                       currentLog.action === 'logout' ? 'warning' : 
+                       getActionTypeColor(currentLog.action)"
+                effect="light"
+              >
+                {{ currentLog.action === 'login' ? '登录' : 
+                   currentLog.action === 'logout' ? '退出' : 
+                   getActionLabel(currentLog.action) }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="操作结果">
+              <el-tag 
+                :type="currentLog.result === 'success' ? 'success' : 'danger'"
+                effect="light"
+              >
+                {{ currentLog.result === 'success' ? '成功' : '失败' }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="操作时间">
+              {{ formatTime(currentLog.created_at || currentLog.details?.login_time || currentLog.details?.logout_time) }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.resource_type" label="资源类型">
+              <el-tag 
+                :type="getResourceTypeColor(currentLog.resource_type)"
+                effect="light"
+              >
+                {{ getResourceTypeLabel(currentLog.resource_type) }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.resource_name" label="资源名称">
+              {{ currentLog.resource_name }}
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.resource_id" label="资源ID">
+              <el-tag type="info" size="small">{{ currentLog.resource_id }}</el-tag>
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+
+        <!-- 详细信息卡片 -->
+        <el-card class="info-card" v-if="currentLog.details && hasDetailsContent(currentLog.details)">
+          <template #header>
+            <div class="card-header">
+              <span>详细信息</span>
+            </div>
+          </template>
+          <el-descriptions :column="1" border>
+            <el-descriptions-item v-if="currentLog.details.ip" label="IP地址">
+              <el-tag type="info" effect="plain">{{ currentLog.details.ip }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.user_agent" label="用户代理">
+              <div class="user-agent-detail">
+                <span>{{ currentLog.details.user_agent }}</span>
+              </div>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.path" label="请求路径">
+              <el-tag type="info" effect="plain">{{ currentLog.details.path }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.method" label="请求方法">
+              <el-tag type="info" effect="plain">{{ currentLog.details.method }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.status_code" label="状态码">
+              <el-tag 
+                :type="currentLog.details.status_code >= 200 && currentLog.details.status_code < 300 ? 'success' : 'danger'"
+                effect="light"
+              >
+                {{ currentLog.details.status_code }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.response_time" label="响应时间">
+              <span>{{ currentLog.details.response_time }}ms</span>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.msg" label="操作消息">
+              <span>{{ currentLog.details.msg }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.username" label="操作用户名">
+              <span>{{ currentLog.details.username }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.name" label="资源名称">
+              <span>{{ currentLog.details.name }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.ip_address" label="IP地址">
+              <span>{{ currentLog.details.ip_address }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.status" label="状态">
+              <el-tag 
+                :type="currentLog.details.status === 'success' ? 'success' : 'danger'"
+                effect="light"
+              >
+                {{ currentLog.details.status }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.error" label="错误信息">
+              <div class="error-detail">
+                <el-tag type="danger" effect="light">{{ currentLog.details.error }}</el-tag>
+              </div>
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+
+        <!-- 操作审计详细信息卡片 -->
+        <el-card class="info-card" v-if="currentLog.resource_type && currentLog.details">
+          <template #header>
+            <div class="card-header">
+              <span>操作详情</span>
+              <el-button 
+                type="primary" 
+                link 
+                @click="toggleDetailsExpanded"
+                size="small"
+              >
+                {{ detailsExpanded ? '收起' : '展开' }}
+                <el-icon style="margin-left: 4px;">
+                  <ArrowDown v-if="!detailsExpanded" />
+                  <ArrowUp v-else />
+                </el-icon>
+              </el-button>
+            </div>
+          </template>
+          
+          <!-- 简化的详细信息 -->
+          <div v-if="!detailsExpanded" class="details-summary">
+            <div class="summary-item" v-if="currentLog.details.params">
+              <span class="summary-label">请求参数:</span>
+              <span class="summary-value">{{ getSummaryText(currentLog.details.params) }}</span>
+            </div>
+            <div class="summary-item" v-if="currentLog.details.headers">
+              <span class="summary-label">请求头:</span>
+              <span class="summary-value">{{ getSummaryText(currentLog.details.headers) }}</span>
+            </div>
+            <div class="summary-item" v-if="currentLog.details.response">
+              <span class="summary-label">响应数据:</span>
+              <span class="summary-value">{{ getSummaryText(currentLog.details.response) }}</span>
+            </div>
+            <div class="summary-item" v-if="currentLog.details.error">
+              <span class="summary-label">错误信息:</span>
+              <span class="summary-value error-text">{{ currentLog.details.error }}</span>
+            </div>
+            <div v-if="!currentLog.details.params && !currentLog.details.headers && !currentLog.details.response && !currentLog.details.error" class="summary-item">
+              <span class="summary-label">详细信息:</span>
+              <span class="summary-value">{{ getSummaryText(currentLog.details) }}</span>
+            </div>
+          </div>
+
+          <!-- 展开的详细信息 -->
+          <div v-else class="details-expanded">
+            <el-collapse v-model="activeDetailsCollapse">
+              <el-collapse-item v-if="currentLog.details.params" title="请求参数" name="params">
+                <div class="json-detail">
+                  <pre>{{ formatJSON(currentLog.details.params) }}</pre>
+                </div>
+              </el-collapse-item>
+              
+              <el-collapse-item v-if="currentLog.details.headers" title="请求头" name="headers">
+                <div class="json-detail">
+                  <pre>{{ formatJSON(currentLog.details.headers) }}</pre>
+                </div>
+              </el-collapse-item>
+              
+              <el-collapse-item v-if="currentLog.details.response" title="响应数据" name="response">
+                <div class="json-detail">
+                  <pre>{{ formatJSON(currentLog.details.response) }}</pre>
+                </div>
+              </el-collapse-item>
+              
+              <el-collapse-item v-if="currentLog.details.error" title="错误信息" name="error">
+                <div class="error-detail">
+                  <el-tag type="danger" effect="light">{{ currentLog.details.error }}</el-tag>
+                </div>
+              </el-collapse-item>
+              
+              <el-collapse-item v-if="!currentLog.details.params && !currentLog.details.headers && !currentLog.details.response && !currentLog.details.error" title="完整详细信息" name="full">
+                <div class="json-detail">
+                  <pre>{{ formatJSON(currentLog.details) }}</pre>
+                </div>
+              </el-collapse-item>
+            </el-collapse>
+          </div>
+        </el-card>
+
+        <!-- 环境信息卡片 -->
+        <el-card class="info-card" v-if="currentLog.details && (currentLog.details.user_agent || currentLog.details.ip)">
+          <template #header>
+            <div class="card-header">
+              <span>环境信息</span>
+            </div>
+          </template>
+          <el-descriptions :column="2" border>
+            <el-descriptions-item v-if="currentLog.details.session_id" label="会话ID">
+              <el-tag type="info" size="small">{{ currentLog.details.session_id }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.user_id" label="用户ID">
+              <el-tag type="info" size="small">{{ currentLog.details.user_id }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.user_agent" label="客户端类型">
+              <el-tag type="info" effect="plain">{{ getClientType(currentLog.details.user_agent) }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.user_agent" label="操作系统">
+              <el-tag type="info" effect="plain">{{ getOSInfo(currentLog.details.user_agent) }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.location" label="地理位置">
+              <span>{{ currentLog.details.location }}</span>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="currentLog.details.timezone" label="时区">
+              <span>{{ currentLog.details.timezone }}</span>
+            </el-descriptions-item>
+          </el-descriptions>
+        </el-card>
+
+        <el-card class="info-card original-card" v-if="currentLog.id">
+          <template #header>
+            <div class="card-header">
+              <span>原始信息</span>
+            </div>
+          </template>
+          <div class="original-content">
+            <p><strong>日志数据:</strong></p>
+            <pre>{{ JSON.stringify(currentLog, null, 2) }}</pre>
+          </div>
+        </el-card>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
-import { DataAnalysis, Clock, Operation } from '@element-plus/icons-vue'
+import { DataAnalysis, Clock, Operation, ArrowDown, ArrowUp } from '@element-plus/icons-vue'
 
 // 登录审计相关
 const loginLogs = ref([])
@@ -288,6 +544,14 @@ const resourceTypeFilter = ref('all')
 
 // 当前激活的标签页
 const activeTab = ref('login')
+
+// 审计日志详情抽屉
+const drawerVisible = ref(false)
+const currentLog = ref({})
+
+// 控制操作审计详细信息展开/收起
+const detailsExpanded = ref(false)
+const activeDetailsCollapse = ref(['params']) // 默认展开第一个
 
 // 获取登录审计日志
 const fetchLoginLogs = async () => {
@@ -358,6 +622,33 @@ const handleOperationFilterChange = () => {
   fetchOperationLogs()
 }
 
+// 处理登录日志行点击
+const handleLoginRowClick = (row) => {
+  currentLog.value = row
+  drawerVisible.value = true
+  // 重置展开状态
+  detailsExpanded.value = false
+  activeDetailsCollapse.value = ['params']
+}
+
+// 处理操作日志行点击
+const handleOperationRowClick = (row) => {
+  currentLog.value = row
+  drawerVisible.value = true
+  // 重置展开状态
+  detailsExpanded.value = false
+  activeDetailsCollapse.value = ['params']
+}
+
+// 关闭抽屉
+const handleDrawerClose = () => {
+  drawerVisible.value = false
+  currentLog.value = {}
+  // 重置展开状态
+  detailsExpanded.value = false
+  activeDetailsCollapse.value = ['params']
+}
+
 // 格式化时间
 const formatTime = (t) => {
   if (!t) return '-'
@@ -390,6 +681,16 @@ const formatDetails = (details) => {
   }
   const detailsStr = JSON.stringify(details)
   return detailsStr.length > 50 ? detailsStr.substring(0, 50) + '...' : detailsStr
+}
+
+// 格式化JSON
+const formatJSON = (json) => {
+  if (!json) return 'null'
+  try {
+    return JSON.stringify(json, null, 2)
+  } catch (e) {
+    return JSON.stringify(json)
+  }
 }
 
 // 获取资源类型标签
@@ -436,6 +737,73 @@ const getActionTypeColor = (action) => {
     'read': 'info'
   }
   return colors[action] || 'info'
+}
+
+// 获取客户端类型
+const getClientType = (userAgent) => {
+  if (!userAgent) return '未知'
+  if (userAgent.includes('Chrome')) return 'Chrome'
+  if (userAgent.includes('Firefox')) return 'Firefox'
+  if (userAgent.includes('Safari')) return 'Safari'
+  if (userAgent.includes('Edge')) return 'Edge'
+  return '其他浏览器'
+}
+
+// 获取操作系统信息
+const getOSInfo = (userAgent) => {
+  if (!userAgent) return '未知'
+  if (userAgent.includes('Windows')) return 'Windows'
+  if (userAgent.includes('Macintosh')) return 'Mac OS'
+  if (userAgent.includes('Linux')) return 'Linux'
+  if (userAgent.includes('Android')) return 'Android'
+  if (userAgent.includes('iOS')) return 'iOS'
+  return '其他操作系统'
+}
+
+// 切换操作审计详细信息展开/收起
+const toggleDetailsExpanded = () => {
+  detailsExpanded.value = !detailsExpanded.value
+  if (detailsExpanded.value) {
+    activeDetailsCollapse.value = ['params'] // 默认展开第一个
+  } else {
+    activeDetailsCollapse.value = [] // 收起所有
+  }
+}
+
+// 获取操作审计详细信息摘要文本
+const getSummaryText = (json) => {
+  if (!json) return '无'
+  if (typeof json === 'string') {
+    return json.length > 50 ? json.substring(0, 50) + '...' : json
+  }
+  const keys = Object.keys(json)
+  if (keys.length === 0) return '无'
+  return `${keys.length} 项`
+}
+
+// 判断详细信息是否有实际内容
+const hasDetailsContent = (details) => {
+  if (!details) return false
+  
+  // 检查是否有我们关心的字段
+  const relevantFields = [
+    'ip', 'user_agent', 'path', 'method', 'status_code', 'response_time',
+    'msg', 'username', 'name', 'ip_address', 'status', 'error'
+  ]
+  
+  return relevantFields.some(field => details[field] !== undefined && details[field] !== null && details[field] !== '')
+}
+
+// 判断操作审计详细信息是否有实际内容
+const hasOperationDetailsContent = (details) => {
+  if (!details) return false
+  
+  // 检查是否有我们关心的字段
+  const relevantFields = [
+    'params', 'headers', 'response', 'error'
+  ]
+  
+  return relevantFields.some(field => details[field] !== undefined && details[field] !== null && details[field] !== '')
 }
 
 onMounted(() => {
@@ -623,5 +991,239 @@ onMounted(() => {
 
 :deep(.el-tag) {
   border-radius: 6px;
+}
+
+/* 抽屉样式 */
+.audit-drawer {
+  height: 100vh;
+}
+
+.audit-drawer :deep(.el-drawer__body) {
+  padding: 0;
+  height: calc(100vh - 60px);
+  overflow: hidden;
+}
+
+.detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.info-card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  box-shadow: var(--card-shadow);
+  border: 1px solid var(--border-color);
+  margin-bottom: 0;
+}
+
+.info-card .el-card__header {
+  background: var(--card-header-bg);
+  border-bottom: 1px solid var(--border-color);
+  padding: 15px 20px;
+}
+
+.info-card .el-card__body {
+  padding: 20px;
+}
+
+.info-card .el-card__header .el-card__title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.json-detail pre {
+  background: var(--code-bg, #f5f5f5);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 10px;
+  overflow-x: auto;
+  font-size: 13px;
+  color: var(--text-color);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.error-detail .el-tag {
+  background: var(--danger-bg, #fef0f0);
+  color: var(--danger-color, #f56c6c);
+}
+
+.user-agent-detail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-agent-detail span {
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.user-agent-detail .el-tag {
+  background: var(--info-bg, #f0f9ff);
+  color: var(--info-color, #409eff);
+}
+
+/* 表格行点击样式 */
+:deep(.el-table__row) {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+:deep(.el-table__row:hover) {
+  background-color: var(--el-color-primary-light-9);
+}
+
+/* 卡片头部样式 */
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header span {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* 抽屉滚动条样式 */
+.detail-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.detail-content::-webkit-scrollbar-track {
+  background: var(--border-lighter);
+  border-radius: 3px;
+}
+
+.detail-content::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.detail-content::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* JSON详情滚动条样式 */
+.json-detail pre::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.json-detail pre::-webkit-scrollbar-track {
+  background: var(--border-lighter);
+  border-radius: 2px;
+}
+
+.json-detail pre::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 2px;
+}
+
+.json-detail pre::-webkit-scrollbar-thumb:hover {
+  background: var(--text-tertiary);
+}
+
+/* 操作审计详细信息样式 */
+.details-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.summary-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+  border: 1px solid var(--border-lighter);
+}
+
+.summary-label {
+  font-weight: 500;
+  color: var(--text-secondary);
+  min-width: 80px;
+  flex-shrink: 0;
+}
+
+.summary-value {
+  color: var(--text-color);
+  flex: 1;
+  word-break: break-all;
+  line-height: 1.4;
+}
+
+.summary-value.error-text {
+  color: var(--danger-color);
+}
+
+.details-expanded {
+  margin-top: 16px;
+}
+
+.details-expanded :deep(.el-collapse) {
+  border: none;
+}
+
+.details-expanded :deep(.el-collapse-item__header) {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--text-color);
+}
+
+.details-expanded :deep(.el-collapse-item__content) {
+  padding: 0;
+}
+
+.details-expanded :deep(.el-collapse-item__wrap) {
+  border: none;
+  background: transparent;
+}
+
+/* 卡片头部按钮样式 */
+.card-header .el-button {
+  font-size: 14px;
+  padding: 4px 8px;
+}
+
+.card-header .el-icon {
+  font-size: 12px;
+}
+
+.original-card {
+  border: 2px dashed var(--el-color-warning);
+  background: var(--el-color-warning-light-9);
+}
+
+.original-content {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.original-content pre {
+  background: var(--code-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px;
+  overflow-x: auto;
+  font-size: 11px;
+  max-height: 200px;
+  overflow-y: auto;
 }
 </style> 

@@ -4,6 +4,7 @@ import logging
 import requests
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+import time
 
 class ServerCommunication:
     """服务器通信类（适配新版Agent API）"""
@@ -78,7 +79,9 @@ class ServerCommunication:
             
         try:
             url = f"{self.server_url}/{self.node_id}/heartbeat"
+            self.logger.debug(f"Sending heartbeat to {url}, data: {heartbeat_info}")
             response = self.session.post(url, json=heartbeat_info, headers=self._auth_headers())
+            self.logger.debug(f"Heartbeat response: {response.json()}")
             response.raise_for_status()
             
             return True
@@ -100,6 +103,7 @@ class ServerCommunication:
         try:
             url = f"{self.server_url}/{self.node_id}/tasks"
             response = self.session.get(url, headers=self._auth_headers())
+            self.logger.debug(f"Getting tasks from {url}, received tasks data: {response.json()}")
             response.raise_for_status()
             
             return response.json().get('data', [])
@@ -124,7 +128,9 @@ class ServerCommunication:
             
         try:
             url = f"{self.server_url}/{self.node_id}/tasks/{task_id}/status"
+            self.logger.debug(f"Updating task status to {url}, data: {status}")
             response = self.session.put(url, json=status, headers=self._auth_headers())
+            self.logger.debug(f"Task status update response: {response.json()}")
             response.raise_for_status()
             
             return True
@@ -148,9 +154,10 @@ class ServerCommunication:
             
         try:
             url = f"{self.server_url}/{self.node_id}/tasks/{task_id}"
+            self.logger.debug(f"Getting task status from {url}")
             response = self.session.get(url)
+            self.logger.debug(f"Task status response: {response.json()}")
             response.raise_for_status()
-            
             return response.json()
             
         except Exception as e:
@@ -176,8 +183,9 @@ class ServerCommunication:
                 'node_id': self.node_id,
                 'storage_config': storage_config
             }
-            
+            self.logger.debug(f"Mounting storage to {url}, data: {data}")
             response = self.session.post(url, json=data)
+            self.logger.debug(f"Mount storage response: {response.json()}")
             response.raise_for_status()
             
             return True
@@ -205,8 +213,9 @@ class ServerCommunication:
                 'node_id': self.node_id,
                 'mount_point': mount_point
             }
-            
+            self.logger.debug(f"Unmounting storage to {url}, data: {data}")
             response = self.session.post(url, json=data)
+            self.logger.debug(f"Unmount storage response: {response.json()}")
             response.raise_for_status()
             
             return True
@@ -221,7 +230,9 @@ class ServerCommunication:
             return False
         try:
             url = f"{self.server_url}/{self.node_id}/metrics"
+            self.logger.debug(f"Reporting metrics to {url}, data: {metrics}")
             response = self.session.post(url, json={'metrics': metrics}, headers=self._auth_headers())
+            self.logger.debug(f"Metrics report response: {response.json()}")
             response.raise_for_status()
             return True
         except Exception as e:
@@ -234,7 +245,9 @@ class ServerCommunication:
             return False
         try:
             url = f"{self.server_url}/{self.node_id}/errors"
+            self.logger.debug(f"Reporting error to {url}, data: {error}")
             response = self.session.post(url, json=error, headers=self._auth_headers())
+            self.logger.debug(f"Error report response: {response.json()}")
             response.raise_for_status()
             return True
         except Exception as e:
@@ -253,6 +266,7 @@ class ServerCommunication:
         try:
             url = f"{self.server_url}/{self.node_id}/commands"
             response = self.session.get(url, headers=self._auth_headers())
+            self.logger.debug(f"Realtime commands response: {response.json()}")
             response.raise_for_status()
             return response.json().get('data', [])
         except Exception as e:
@@ -270,13 +284,27 @@ class ServerCommunication:
             bool: 是否成功
         """
         if not self.node_id or not self.token:
+            self.logger.error("Node not registered or token missing")
             return False
         
-        try:
-            url = f"{self.server_url}/{self.node_id}/commands/{command_id}/status"
-            response = self.session.put(url, json=status, headers=self._auth_headers())
-            response.raise_for_status()
-            return True
-        except Exception as e:
-            self.logger.error(f"Error updating command status: {e}")
-            return False 
+        max_retries = 3
+        retry_delay = 1
+        
+        for attempt in range(max_retries):
+            try:
+                url = f"{self.server_url}/{self.node_id}/commands/{command_id}/status"
+                self.logger.debug(f"Updating command status to {url}, data: {status}, attempt: {attempt + 1}")
+                response = self.session.put(url, json=status, headers=self._auth_headers(), timeout=10)
+                self.logger.debug(f"Command status update response: {response.json()}")
+                response.raise_for_status()
+                return True
+            except Exception as e:
+                self.logger.error(f"Error updating command status (attempt {attempt + 1}): {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    retry_delay *= 2  # 指数退避
+                else:
+                    self.logger.error(f"Failed to update command status after {max_retries} attempts")
+                    return False
+        
+        return False 

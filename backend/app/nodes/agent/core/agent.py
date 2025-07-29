@@ -1,4 +1,3 @@
-import logging
 import threading
 import time
 import platform
@@ -12,25 +11,26 @@ from .enhanced_progress import EnhancedProgressTracker
 from ..services.monitor_service import MonitorService
 from ..services.sync_service import SyncService
 from ..services.connection_checker import StorageConnectionChecker, MountChecker
-
+from ..provider.nas import NASProvider
+from ..provider.s3 import S3Provider
+from ..utils.logger import get_log_manager
 
 class ProxyAgent:
     """代理类"""
     
     def __init__(self, config: dict):
         self.config = config
-        self.logger = logging.getLogger('ProxyAgent')
+        self.logger = get_log_manager().get_logger('ProxyAgent')
         self.server_comm = ServerCommunication(config)
         self.monitor_service = MonitorService(config, None, None)  # node_id/token后续赋值
         self.sync_service = SyncService(config)
         self.running = False
         self.heartbeat_thread = None
         self.task_poll_thread = None
-        self.command_poll_thread = None  # 新增：实时命令轮询线程
-        self.command_thread = None
+        self.command_poll_thread = None
         self.heartbeat_interval = self.config.get('heartbeat_interval', 30)
         self.task_poll_interval = self.config.get('task_poll_interval', 10)
-        self.command_poll_interval = self.config.get('command_poll_interval', 1)  # 新增：实时命令轮询间隔
+        self.command_interval = self.config.get('command_interval', 0.5) 
         self.user_id = None
         self.node_id = None
         self.token = None
@@ -91,8 +91,6 @@ class ProxyAgent:
             self.task_poll_thread.join(timeout=5)
         if self.command_poll_thread:
             self.command_poll_thread.join(timeout=5)
-        if self.command_thread:
-            self.command_thread.join(timeout=5)
         self.monitor_service.stop()
         self.sync_service.stop()
 
@@ -223,7 +221,7 @@ class ProxyAgent:
                     self._execute_realtime_command(command)
             except Exception as e:
                 self.logger.error(f"Error in command poll loop: {e}")
-            time.sleep(self.command_poll_interval)
+            time.sleep(self.command_interval)
 
     def _execute_realtime_command(self, command):
         """执行实时命令"""
@@ -235,10 +233,15 @@ class ProxyAgent:
         
         try:
             # 更新命令状态为执行中
-            self.server_comm.update_command_status(command_id, {
+            self.logger.info(f"更新命令状态为执行中: {command_id}")
+            success = self.server_comm.update_command_status(command_id, {
                 'status': 'executing',
                 'started_at': datetime.utcnow().isoformat()
             })
+            
+            if not success:
+                self.logger.error(f"更新命令状态为执行中失败: {command_id}")
+                return
             
             # 根据命令类型执行相应的操作
             result = None
@@ -246,35 +249,47 @@ class ProxyAgent:
                 result = self._execute_test_connection(params)
             elif command_type == 'get_stats':
                 result = self._execute_get_stats(params)
-            elif command_type == 'list_files':
-                result = self._execute_list_files(params)
             elif command_type == 'list_objects':
                 result = self._execute_list_objects(params)
             elif command_type == 'list_buckets':
                 result = self._execute_list_buckets(params)
+            elif command_type == 'list_files':
+                result = self._execute_list_files(params)
             elif command_type == 'download_file':
                 result = self._execute_download_file(params)
+            elif command_type == 'upload_file':
+                result = self._execute_upload_file(params)
             else:
                 raise ValueError(f"不支持的命令类型: {command_type}")
             
             # 更新命令状态为完成
-            self.server_comm.update_command_status(command_id, {
+            self.logger.info(f"更新命令状态为完成: {command_id}, 结果: {result}")
+            success = self.server_comm.update_command_status(command_id, {
                 'status': 'completed',
                 'result': result,
                 'completed_at': datetime.utcnow().isoformat()
             })
             
-            self.logger.info(f"实时命令执行完成: {command_id}")
+            if not success:
+                self.logger.error(f"更新命令状态为完成失败: {command_id}")
+            else:
+                self.logger.info(f"实时命令执行完成: {command_id}")
             
         except Exception as e:
             self.logger.error(f"实时命令执行失败: {command_id}, 错误: {str(e)}")
             
             # 更新命令状态为失败
-            self.server_comm.update_command_status(command_id, {
-                'status': 'failed',
-                'error': str(e),
-                'completed_at': datetime.utcnow().isoformat()
-            })
+            try:
+                success = self.server_comm.update_command_status(command_id, {
+                    'status': 'failed',
+                    'error': str(e),
+                    'completed_at': datetime.utcnow().isoformat()
+                })
+                
+                if not success:
+                    self.logger.error(f"更新命令状态为失败也失败了: {command_id}")
+            except Exception as update_error:
+                self.logger.error(f"更新命令状态为失败时发生异常: {command_id}, 错误: {str(update_error)}")
 
     def _execute_test_connection(self, params):
         """执行连接测试"""
@@ -311,7 +326,7 @@ class ProxyAgent:
             'page_size': params.get('page_size', 20)
         }
         
-        return self._execute_storage_operation(storage_config, 'list_nas_files', operation_params)
+        return self._execute_storage_operation(storage_config, 'list_files', operation_params)
 
     def _execute_list_objects(self, params):
         """获取对象列表（S3/OBS）"""
@@ -354,6 +369,19 @@ class ProxyAgent:
         
         return self._execute_storage_operation(storage_config, 'download_file', operation_params)
 
+    def _execute_upload_file(self, params):
+
+        storage_config = params.get('storage_config')
+        if not storage_config:
+            raise ValueError("缺少存储配置")
+        
+        operation_params = {
+            'bucket': params.get('bucket', ''),
+            'file_path': params.get('file_path', ''),
+        }
+        
+        return self._execute_storage_operation(storage_config, 'upload_file', operation_params)
+
     def _execute_storage_operation(self, storage_config, operation, params):
         """执行存储操作"""
         storage_type = storage_config.get('type')
@@ -361,10 +389,8 @@ class ProxyAgent:
         
         # 根据存储类型创建提供者
         if storage_type == 'nas':
-            from backend.app.storages.provider.nas import NASProvider
             provider = NASProvider(config)
         elif storage_type in ['s3', 'obs']:
-            from backend.app.storages.provider.s3 import S3Provider
             provider = S3Provider(config)
         else:
             raise ValueError(f"不支持的存储类型: {storage_type}")
@@ -375,31 +401,30 @@ class ProxyAgent:
         elif operation == 'list_buckets':
             page = params.get('page', 1)
             page_size = params.get('page_size', 20)
-            all_buckets = provider.list_buckets()
-            total = len(all_buckets)
-            start = (page - 1) * page_size
-            end = start + page_size
-            return {
-                'buckets': all_buckets[start:end],
-                'total': total,
-                'page': page,
-                'page_size': page_size
-            }
+            return provider.list_buckets(page, page_size)
         elif operation == 'list_objects':
             bucket = params.get('bucket', '')
             prefix = params.get('prefix', '')
             page = params.get('page', 1)
             page_size = params.get('page_size', 20)
             return provider.list_objects(bucket, prefix, page, page_size)
-        elif operation == 'download_file':
+        elif operation == 'download_object':
             bucket = params.get('bucket', '')
-            file_path = params.get('file_path', '')
-            return provider.download_file(bucket, file_path, '/tmp/downloaded_file')
-        elif operation == 'list_nas_files':
+            key = params.get('key', '')
+            return provider.download_file_to_memory(bucket, key)
+        elif operation == 'list_files':
             path = params.get('path', '')
             page = params.get('page', 1)
             page_size = params.get('page_size', 20)
-            return provider.list_objects('', path, page, page_size)
+            return provider.list_files(path, page, page_size)
+        elif operation == 'download_file':
+            file_path = params.get('file_path', '')
+            target_path = params.get('target_path', '')
+            return provider.download_file(file_path, target_path)
+        elif operation == 'upload_file':
+            file_path = params.get('file_path', '')
+            target_path = params.get('target_path', '')
+            return provider.upload_file(file_path, target_path)
         else:
             raise ValueError(f"不支持的操作类型: {operation}")
 
@@ -516,60 +541,6 @@ class ProxyAgent:
                 'error': str(e)
             })
 
-    def _execute_storage_operation(self, storage_config, operation, params):
-        """执行存储操作"""
-        storage_type = storage_config.get('type')
-        config = storage_config.get('config', {})
-        
-        # 根据存储类型创建提供者
-        if storage_type == 'nas':
-            from backend.app.storages.provider.nas import NASProvider
-            provider = NASProvider(config)
-        elif storage_type in ['s3', 'obs']:
-            from backend.app.storages.provider.s3 import S3Provider
-            provider = S3Provider(config)
-        else:
-            raise ValueError(f"不支持的存储类型: {storage_type}")
-        
-        # 根据操作类型执行相应的方法
-        if operation == 'get_stats':
-            return provider.get_stats()
-        elif operation == 'list_buckets':
-            page = params.get('page', 1)
-            page_size = params.get('page_size', 20)
-            all_buckets = provider.list_buckets()
-            total = len(all_buckets)
-            start = (page - 1) * page_size
-            end = start + page_size
-            return {
-                'buckets': all_buckets[start:end],
-                'total': total,
-                'page': page,
-                'page_size': page_size
-            }
-        elif operation == 'list_objects':
-            bucket = params.get('bucket', '')
-            prefix = params.get('prefix', '')
-            page = params.get('page', 1)
-            page_size = params.get('page_size', 20)
-            return provider.list_objects(bucket, prefix, page, page_size)
-        elif operation == 'download_object':
-            bucket = params.get('bucket', '')
-            key = params.get('key', '')
-            return provider.download_file(bucket, key, '/tmp/downloaded_file')
-        elif operation == 'get_nas_stats':
-            return provider.get_stats()
-        elif operation == 'list_nas_files':
-            path = params.get('path', '')
-            page = params.get('page', 1)
-            page_size = params.get('page_size', 20)
-            return provider.list_objects('', path, page, page_size)
-        elif operation == 'download_nas_file':
-            path = params.get('path', '')
-            return provider.download_file('', path, '/tmp/downloaded_file')
-        else:
-            raise ValueError(f"不支持的操作类型: {operation}")
-    
     def _handle_mount_check_task(self, task):
         """处理挂载检查任务"""
         task_id = task['id']
@@ -698,7 +669,7 @@ class ProxyAgent:
             self.stop()
 
     def is_healthy(self):
-        return self.running and self.heartbeat_thread and self.heartbeat_thread.is_alive() and self.task_poll_thread and self.task_poll_thread.is_alive() and self.command_thread and self.command_thread.is_alive()
+        return self.running and self.heartbeat_thread and self.heartbeat_thread.is_alive() and self.task_poll_thread and self.task_poll_thread.is_alive() and self.command_poll_thread and self.command_poll_thread.is_alive()
     
     def get_agent_status(self):
         """获取代理状态信息"""
@@ -712,7 +683,7 @@ class ProxyAgent:
                 'threads': {
                     'heartbeat': self.heartbeat_thread.is_alive() if self.heartbeat_thread else False,
                     'task_poll': self.task_poll_thread.is_alive() if self.task_poll_thread else False,
-                    'command': self.command_thread.is_alive() if self.command_thread else False
+                    'command': self.command_poll_thread.is_alive() if self.command_poll_thread else False
                 },
                 'services': {
                     'monitor': self.monitor_service.is_running() if hasattr(self.monitor_service, 'is_running') else True,

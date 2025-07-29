@@ -563,7 +563,6 @@ def install_node_agent(node_id):
         
         with SSHClient(node=node) as ssh:
             # 创建远程目录
-            import pdb;pdb.set_trace()
             ssh.create_directory(install_path)
             ssh.create_directory(backup_path)
             ssh.create_directory(log_path)

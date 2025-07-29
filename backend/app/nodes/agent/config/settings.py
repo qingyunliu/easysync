@@ -45,6 +45,7 @@ class Settings:
                 'token': ''
             },
             'heartbeat_interval': 30,
+            'command_interval': 3,
             'monitor': {
                 'interval': 5,
                 'max_history': 1000,
