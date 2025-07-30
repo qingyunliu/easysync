@@ -253,8 +253,6 @@ class ProxyAgent:
                 result = self._execute_list_objects(params)
             elif command_type == 'list_buckets':
                 result = self._execute_list_buckets(params)
-            elif command_type == 'list_files':
-                result = self._execute_list_files(params)
             elif command_type == 'download_file':
                 result = self._execute_download_file(params)
             elif command_type == 'upload_file':
@@ -313,20 +311,6 @@ class ProxyAgent:
             raise ValueError("缺少存储配置")
         
         return self._execute_storage_operation(storage_config, 'get_stats', {})
-
-    def _execute_list_files(self, params):
-        """获取文件列表（NAS）"""
-        storage_config = params.get('storage_config')
-        if not storage_config:
-            raise ValueError("缺少存储配置")
-        
-        operation_params = {
-            'path': params.get('path', ''),
-            'page': params.get('page', 1),
-            'page_size': params.get('page_size', 20)
-        }
-        
-        return self._execute_storage_operation(storage_config, 'list_files', operation_params)
 
     def _execute_list_objects(self, params):
         """获取对象列表（S3/OBS）"""
@@ -412,11 +396,6 @@ class ProxyAgent:
             bucket = params.get('bucket', '')
             key = params.get('key', '')
             return provider.download_file_to_memory(bucket, key)
-        elif operation == 'list_files':
-            path = params.get('path', '')
-            page = params.get('page', 1)
-            page_size = params.get('page_size', 20)
-            return provider.list_files(path, page, page_size)
         elif operation == 'download_file':
             file_path = params.get('file_path', '')
             target_path = params.get('target_path', '')

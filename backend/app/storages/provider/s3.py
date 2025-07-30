@@ -8,6 +8,10 @@ from .base import StorageProvider
 class S3Provider(StorageProvider):
     """S3 兼容的存储提供者实现"""
 
+    def __init__(self, config: Dict[str, Any]):
+        super().__init__(config)
+        self._client = None
+
     @property
     def client(self):
         """获取或创建 MinIO 客户端"""

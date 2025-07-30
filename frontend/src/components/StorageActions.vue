@@ -75,6 +75,15 @@
                 <Icon icon="mdi:bucket" />&nbsp;浏览存储桶
               </el-button>
             </el-dropdown-item>
+            <el-dropdown-item v-if="storage.type === 's3'" @click="handleBrowseBucketObjects">
+              <el-button 
+                type="text" 
+                :loading="storage.browsing"
+                :disabled="storage.status === 'error'"
+              >
+                <Icon icon="mdi:files" />&nbsp;浏览存储对象
+              </el-button>
+            </el-dropdown-item>
           </el-dropdown-menu>
         </template>
       </el-dropdown>
@@ -294,6 +303,59 @@ const handleGetInfoRealtime = async () => {
     ElMessage.error('实时获取信息失败')
   } finally {
     props.storage.fetchingRealtime = false
+  }
+}
+
+// 浏览对象存储文件(OBS/S3)
+const handleBrowseBucketObjects = async () => { 
+  try {
+    let targetNodeId = props.storage.node_id
+    
+    if (!targetNodeId) {
+      const nodesResponse = await axios.get('/api/nodes')
+      const availableNodes = (nodesResponse.data.data || []).filter(
+        node => node.status === 'online' && node.agent_status === 'running'
+      )
+      
+      if (availableNodes.length === 0) {
+        ElMessage.error('没有可用的节点，请确保有节点在线且Agent已启动')
+        return
+      }
+      
+      targetNodeId = availableNodes[0].id
+    }
+    
+    props.storage.browsing = true
+    
+    const response = await axios.get(`/api/storages/${props.storage.id}/objects-realtime`, {
+      params: { 
+        node_id: targetNodeId,
+        path: '',
+        page: 1,
+        page_size: 50
+      }
+    })
+    
+    if (response.data.status === 'success') {
+      const result = response.data.data
+      
+      // 触发事件显示文件浏览器
+      window.dispatchEvent(new CustomEvent('show-file-browser', { 
+        detail: {
+          storage: props.storage,
+          files: result.files || result.objects || [],
+          total: result.total || 0
+        }
+      }))
+      
+      ElMessage.success('对象存储列表获取成功')
+    } else {
+      ElMessage.error(response.data.message || '获取对象存储列表失败')
+    }
+  } catch (error) {
+    ElMessage.error('获取对象存储列表失败')
+  } finally {
+    props.storage.browsing = false
   }
 }
 

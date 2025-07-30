@@ -84,8 +84,48 @@ class StorageRealTimeService:
             timeout=30
         )
     
+    def list_objects_realtime(self, storage_id: str, bucket: str = '', prefix: str = '', page: int = 1, 
+                              page_size: int = 20, node_id: str = None) -> dict:
+        """
+        实时获取对象存储 objects 列表（S3/OBS）
+        """
+        storage = Storage.query.get(storage_id)
+        if not storage:
+            return {'status': 'error', 'message': '存储不存在'}
+
+        # 只支持S3/OBS
+        if storage.type not in ['s3', 'obs']:
+            return {'status': 'error', 'message': '仅支持对象存储类型'}
+
+        # 选定目标节点
+        target_node_id = node_id or storage.node_id
+        if not target_node_id:
+            return {'status': 'error', 'message': '存储未绑定节点'}
+
+        # 构造参数
+        params = {
+            'storage_config': {
+                'id': storage.id,
+                'name': storage.name,
+                'type': storage.type,
+                'config': storage.config
+            },
+            'bucket': bucket or storage.config.get('bucket', ''),
+            'prefix': prefix,
+            'page': page,
+            'page_size': page_size
+        }
+
+        # 发起实时命令
+        return self.command_service.execute_command_sync(
+            node_id=target_node_id,
+            command_type='list_objects',
+            params=params,
+            timeout=30
+        )
+    
     def list_files_realtime(self, storage_id: str, path: str = '', page: int = 1, 
-                          page_size: int = 20, node_id: str = None) -> Dict[str, Any]:
+                            page_size: int = 20, node_id: str = None) -> Dict[str, Any]:
         """实时获取文件列表
         
         Args:
@@ -120,15 +160,10 @@ class StorageRealTimeService:
             'page_size': page_size
         }
         
-        # 根据存储类型选择命令
-        command_type = 'list_files'
-        if storage.type in ['s3', 'obs']:
-            command_type = 'list_objects'
-        
         # 执行实时命令
         return self.command_service.execute_command_sync(
             node_id=target_node_id,
-            command_type=command_type,
+            command_type='list_objects',
             params=params,
             timeout=30
         )

@@ -104,7 +104,7 @@ class NASProvider(StorageProvider):
         except Exception as e:
             raise ValueError(f"获取目录列表失败: {str(e)}")
 
-    def list_objects(self, prefix: str = '', page: int = 1, page_size: int = 20) -> Dict[str, Any]:
+    def list_objects(self, bucket: str = '', prefix: str = '', page: int = 1, page_size: int = 20) -> Dict[str, Any]:
         """列出文件"""
         try:
             # 构建完整路径
