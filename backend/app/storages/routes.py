@@ -903,12 +903,16 @@ def list_files_realtime(storage_id):
             action='list_files_realtime',
             storage_id=storage_id,
             storage_name=storage.name,
-            details={'msg': '获取文件列表', 'result': result},
+            details={'msg': '获取文件列表'},
             result='started'
         )
         
         result = storage_realtime_service.list_files_realtime(
-            storage_id, path, page, page_size, node_id
+            storage_id=storage_id,
+            path=path,
+            page=page,
+            page_size=page_size,
+            node_id=node_id
         )
 
         AuditService.log_storage_operation(
