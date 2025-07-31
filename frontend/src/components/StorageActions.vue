@@ -389,12 +389,22 @@ const handleBrowseBuckets = async () => {
   line-height: normal;
 }
 
+:deep(.el-dropdown-menu) {
+  text-align: left;
+}
+
+:deep(.el-dropdown-menu .el-dropdown-menu__item) {
+  text-align: left;
+}
+
 :deep(.el-button--text) {
   display: flex;
   align-items: center;
   width: 100%;
   padding: 8px 16px;
   white-space: nowrap;
+  justify-content: flex-start;
+  text-align: left;
 }
 
 :deep(.el-button .iconify) {

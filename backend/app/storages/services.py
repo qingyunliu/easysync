@@ -235,7 +235,7 @@ class StorageRealTimeService:
             timeout=30
         )
     
-    def download_file_realtime(self, storage_id: str, file_path: str, bucket: str = '', 
+    def download_file_realtime(self, storage_id: str, path: str, bucket: str = '', 
                              node_id: str = None) -> Dict[str, Any]:
         """实时下载文件
         
@@ -265,7 +265,7 @@ class StorageRealTimeService:
                 'type': storage.type,
                 'config': storage.config
             },
-            'file_path': file_path,
+            'path': path,
             'bucket': bucket
         }
         
@@ -292,7 +292,7 @@ class StorageService:
             raise ValueError(f"不支持的存储类型: {storage_type}")
         return self.PROVIDER_MAP[storage_type]
     
-    def create_storage(self, name: str, type: str, config: Dict[str, Any]) -> Storage:
+    def create_storage(self, name: str, type: str, config: Dict[str, Any], node_id: str = None) -> Storage:
         """创建存储节点"""
         # 验证存储类型
         self.get_provider_class(type)
@@ -301,7 +301,8 @@ class StorageService:
             name=name,
             type=type,
             config=config,
-            user_id=g.user.id
+            user_id=g.user.id,
+            node_id=node_id  # 添加节点ID绑定
         )
         db.session.add(storage)
         db.session.commit()
@@ -315,7 +316,7 @@ class StorageService:
         """获取存储节点详情"""
         return Storage.query.filter_by(id=storage_id, user_id=g.user.id).first()
         
-    def update_storage(self, storage_id: str, name: str = None, type: str = None, config: Dict[str, Any] = None) -> Optional[Storage]:
+    def update_storage(self, storage_id: str, name: str = None, type: str = None, config: Dict[str, Any] = None, node_id: str = None) -> Optional[Storage]:
         """更新存储节点"""
         storage = Storage.query.filter_by(id=storage_id, user_id=g.user.id).first()
         if not storage:
@@ -330,6 +331,8 @@ class StorageService:
             storage.name = name
         if config:
             storage.config = config
+        if node_id is not None:  # 允许设置为None来解绑节点
+            storage.node_id = node_id
             
         db.session.commit()
         return storage

@@ -75,6 +75,12 @@
             </template>
           </el-table-column>
           <el-table-column prop="created_at" label="创建时间" min-width="160" :resizable="true" />
+          <el-table-column prop="node_id" label="绑定节点" min-width="140" :resizable="true">
+            <template #default="{ row }">
+              <el-tag v-if="row.node_id" type="success" size="small">已绑定</el-tag>
+              <el-tag v-else type="warning" size="small">未绑定</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" min-width="280" fixed="right">
             <template #default="{ row }">
               <StorageActions :storage="row" @refresh="fetchStorages" />
@@ -120,6 +126,12 @@
           <el-table-column prop="config.endpoint" label="Endpoint" min-width="200" :resizable="true" />
           <el-table-column prop="config.region" label="区域" min-width="120" :resizable="true" />
           <el-table-column prop="created_at" label="创建时间" min-width="160" :resizable="true" />
+          <el-table-column prop="node_id" label="绑定节点" min-width="140" :resizable="true">
+            <template #default="{ row }">
+              <el-tag v-if="row.node_id" type="success" size="small">已绑定</el-tag>
+              <el-tag v-else type="warning" size="small">未绑定</el-tag>
+            </template>
+          </el-table-column>
           <el-table-column label="操作" min-width="280" fixed="right">
             <template #default="{ row }">
               <StorageActions :storage="row" @refresh="fetchStorages" />
@@ -994,6 +1006,8 @@ const showEditDialog = (row) => {
       password: row.config?.password || '',
     }
   }
+  // 设置当前绑定的节点ID
+  testNodeId.value = row.node_id || ''
   // 打印编辑的表单数据，用于调试
   dialogVisible.value = true
 }
@@ -1076,7 +1090,7 @@ const fetchNASDetails = async () => {
     }
     
     loading.value = true
-    const response = await axios.get(`/api/storages/${currentStorage.value.id}/nas/stats`)
+    const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
     
     if (response.data.status === 'task_created') {
       ElMessage.info(`统计信息获取任务已创建，任务ID: ${response.data.task_id}`)
@@ -1105,7 +1119,7 @@ const refreshNASStats = async () => {
     }
     
     refreshingStats.value = true
-    const response = await axios.get(`/api/storages/${currentStorage.value.id}/nas/stats`)
+    const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
     
     if (response.data.status === 'task_created') {
       ElMessage.info(`统计信息获取任务已创建，任务ID: ${response.data.task_id}`)
@@ -1132,8 +1146,13 @@ const handleFileDownload = async (file) => {
       return
     }
     
-    const response = await axios.get(`/api/storages/${currentStorage.value.id}/nas/download`, {
-      params: { path: file.path }
+    const response = await axios.post(`/api/storages/${currentStorage.value.id}/download`, {
+      params: { 
+        node_id: currentStorage.value.node_id,
+        path: file.path,
+        bucket: currentBucket.value,
+      },
+      responseType: 'blob'
     })
     
     if (response.data.status === 'task_created') {
@@ -1166,8 +1185,9 @@ const fetchFiles = async () => {
     }
     
     loadingFiles.value = true
-    const response = await axios.get(`/api/storages/${currentStorage.value.id}/nas/files`, {
+    const response = await axios.get(`/api/storages/${currentStorage.value.id}/files`, {
       params: {
+        node_id: currentStorage.value.node_id,
         path: currentPath.value,
         page: currentPage.value,
         page_size: pageSize.value
@@ -1177,7 +1197,7 @@ const fetchFiles = async () => {
     if (response.data.status === 'task_created') {
       ElMessage.info(`文件列表获取任务已创建，任务ID: ${response.data.task_id}`)
     } else if (response.data.status === 'success') {
-      files.value = response.data.data.files
+      files.value = response.data.data.objects
       total.value = response.data.data.total
     } else {
       ElMessage.error(response.data.message || '获取文件列表失败')
@@ -1259,6 +1279,7 @@ const fetchObjects = async () => {
     loadingObjects.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/objects`, {
       params: {
+        node_id: currentStorage.value.node_id,
         bucket: currentBucket.value,
         prefix: currentPath.value,
         page: currentPage.value,
@@ -1533,6 +1554,12 @@ const handleSubmit = async () => {
   try {
     await formRef.value.validate()
     
+    // 检查是否选择了节点（仅在创建时强制要求）
+    if (dialogType.value === 'add' && !testNodeId.value) {
+      ElMessage.warning('请选择一个节点来绑定此存储')
+      return
+    }
+    
     // 根据存储类型构建配置对象
     let config = {}
     if (form.value.type === 's3') {
@@ -1564,7 +1591,8 @@ const handleSubmit = async () => {
       id: form.value.id,
       name: form.value.name,
       type: form.value.type,
-      config: config
+      config: config,
+      node_id: testNodeId.value // 添加节点ID绑定
     }
     
     if (dialogType.value === 'add') {

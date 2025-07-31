@@ -22,6 +22,7 @@ def create_storage():
         name = data.get('name')
         type = data.get('type')
         config = data.get('config', {})
+        node_id = data.get('node_id')  # 获取节点ID
         user_id = get_jwt_identity()
         
         if not all([name, type]):
@@ -38,7 +39,7 @@ def create_storage():
                 'message': '名称和类型不能为空'
             }), 400
 
-        storage = storage_service.create_storage(name, type, config)
+        storage = storage_service.create_storage(name, type, config, node_id)
         AuditService.log_storage_operation(
             user_id=user_id,
             action='create',
@@ -128,9 +129,10 @@ def update_storage(storage_id):
         name = data.get('name')
         type = data.get('type')
         config = data.get('config')
+        node_id = data.get('node_id')  # 获取节点ID
         user_id = get_jwt_identity()
         
-        storage = storage_service.update_storage(storage_id, name, type, config)
+        storage = storage_service.update_storage(storage_id, name, type, config, node_id)
         if not storage:
             AuditService.log_storage_operation(
                 user_id=user_id,
@@ -590,13 +592,13 @@ def download_file(storage_id):
     """实时下载文件"""
     try:
         data = request.get_json()
-        file_path = data.get('file_path') if data else None
+        path = data.get('path') if data else None
         bucket = data.get('bucket', '') if data else ''
         node_id = data.get('node_id') if data else None
         user_id = get_jwt_identity()
         storage = storage_service.get_storage(storage_id)
         
-        if not file_path:
+        if not path:
             return jsonify({
                 'status': 'error',
                 'message': '文件路径不能为空'
@@ -611,7 +613,7 @@ def download_file(storage_id):
             result='started'
         )
         result = storage_realtime_service.download_file_realtime(
-            storage_id, file_path, bucket, node_id
+            storage_id, path, bucket, node_id
         )
         AuditService.log_storage_operation(
             user_id=user_id,
