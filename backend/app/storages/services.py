@@ -160,6 +160,12 @@ class StorageRealTimeService:
             'page_size': page_size
         }
         
+        # 对于NAS存储，添加挂载点信息
+        if storage.type in ['nas', 'nfs']:
+            mount_point = storage.config.get('mount_point')
+            if mount_point:
+                params['mount_point'] = mount_point
+        
         # 执行实时命令
         return self.command_service.execute_command_sync(
             node_id=target_node_id,

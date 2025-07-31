@@ -2458,9 +2458,9 @@ const handleResize = () => {
           silent: true
         })
       }
-      } catch (error) {
+    } catch (error) {
     // 静默处理错误
-  }
+    }
   })
 }
 

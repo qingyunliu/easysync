@@ -184,6 +184,10 @@ class RealTimeCommandService:
                 command.mark_as_completed(result)
                 logger.info(f"命令执行完成: {command_id}, 结果: {result}")
                 
+                # 处理NAS存储的挂载点信息
+                if command.command_type == 'list_objects' and result.get('mount_point'):
+                    self._handle_nas_mount_point(command, result)
+                
             elif status == 'failed':
                 error = status_data.get('error', '未知错误')
                 command.mark_as_failed(error)
@@ -240,5 +244,53 @@ class RealTimeCommandService:
         db.session.commit()
         logger.info(f"清理了 {count} 个旧命令")
         return count
+
+    def _handle_nas_mount_point(self, command: RealTimeCommand, result: Dict[str, Any]):
+        """处理NAS存储的挂载点信息
+        
+        Args:
+            command: 命令对象
+            result: 执行结果
+        """
+        try:
+            mount_point = result.get('mount_point')
+            auto_mounted = result.get('auto_mounted', False)
+            
+            if not mount_point:
+                return
+            
+            # 获取存储配置
+            storage_config = command.params.get('storage_config', {})
+            storage_id = storage_config.get('id')
+            
+            if not storage_id:
+                logger.warning(f"命令 {command.id} 缺少存储ID，无法保存挂载点信息")
+                return
+            
+            # 查找存储
+            storage = Storage.query.get(storage_id)
+            if not storage:
+                logger.warning(f"存储 {storage_id} 不存在，无法保存挂载点信息")
+                return
+            
+            # 更新存储配置，添加挂载点信息
+            config = storage.config or {}
+            
+            # 如果存储配置中没有挂载点，或者这是自动挂载的，则更新挂载点
+            if auto_mounted or not config.get('mount_point'):
+                config['mount_point'] = mount_point
+                config['auto_mounted'] = auto_mounted
+                config['last_mount_time'] = datetime.utcnow().isoformat()
+                
+                storage.config = config
+                db.session.commit()
+                
+                logger.info(f"存储 {storage_id} 挂载点已更新: {mount_point}")
+            else:
+                logger.info(f"存储 {storage_id} 已有挂载点 {config.get('mount_point')}，跳过更新")
+                
+        except Exception as e:
+            logger.error(f"处理NAS挂载点信息失败: {e}")
+            db.session.rollback()
 
 

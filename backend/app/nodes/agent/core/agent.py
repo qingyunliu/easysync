@@ -4,6 +4,7 @@ import platform
 import socket
 import subprocess
 import requests
+import os
 from datetime import datetime
 from .communication import ServerCommunication
 from .task_manager import TaskManager, TaskRetryManager, TaskValidator
@@ -313,19 +314,204 @@ class ProxyAgent:
         return self._execute_storage_operation(storage_config, 'get_stats', {})
 
     def _execute_list_objects(self, params):
-        """获取对象列表（S3/OBS）"""
+        """获取对象列表"""
         storage_config = params.get('storage_config')
         if not storage_config:
             raise ValueError("缺少存储配置")
         
-        operation_params = {
-            'bucket': params.get('bucket', ''),
-            'prefix': params.get('prefix', ''),
-            'page': params.get('page', 1),
-            'page_size': params.get('page_size', 20)
-        }
+        storage_type = storage_config.get('type', '').lower()
         
-        return self._execute_storage_operation(storage_config, 'list_objects', operation_params)
+        # 对于NAS类型，需要处理挂载点
+        if storage_type in ['nas', 'nfs']:
+            return self._execute_nas_list_objects(params)
+        else:
+            # 对于S3/OBS类型，使用原有逻辑
+            operation_params = {
+                'bucket': params.get('bucket', ''),
+                'prefix': params.get('prefix', ''),
+                'page': params.get('page', 1),
+                'page_size': params.get('page_size', 20)
+            }
+            return self._execute_storage_operation(storage_config, 'list_objects', operation_params)
+    
+    def _execute_nas_list_objects(self, params):
+        """执行NAS存储的对象列表操作"""
+        storage_config = params.get('storage_config')
+        path = params.get('path', '')
+        page = params.get('page', 1)
+        page_size = params.get('page_size', 20)
+        
+        # 检查是否有指定的挂载点
+        mount_point = params.get('mount_point')
+        
+        if mount_point:
+            # 有指定挂载点，检查挂载状态
+            mount_result = self.mount_checker.check_mount_status(mount_point)
+            
+            if mount_result.is_mounted:
+                # 检查挂载点是否匹配当前存储
+                mount_info = mount_result.mount_info
+                if self._is_mount_point_matches_storage(mount_point, storage_config):
+                    # 挂载点匹配，直接使用
+                    return self._list_objects_from_mount_point(mount_point, path, page, page_size)
+                else:
+                    # 挂载点不匹配，返回错误信息
+                    return {
+                        'error': f'挂载点 {mount_point} 已被其他存储使用',
+                        'mount_info': mount_info,
+                        'suggested_action': 'unmount_existing'
+                    }
+            else:
+                # 挂载点存在但未挂载，执行挂载
+                mount_result = self.mount_checker.mount_storage(mount_point, storage_config)
+                if mount_result.status.value == 'success':
+                    return self._list_objects_from_mount_point(mount_point, path, page, page_size)
+                else:
+                    return {
+                        'error': f'挂载失败: {mount_result.error}',
+                        'mount_point': mount_point
+                    }
+        else:
+            # 没有指定挂载点，自动生成并挂载
+            import tempfile
+            import uuid
+            
+            # 生成唯一的挂载点
+            mount_point = f"/tmp/easysync_nas_{uuid.uuid4().hex[:8]}"
+            
+            # 执行挂载
+            mount_result = self.mount_checker.mount_storage(mount_point, storage_config)
+            
+            if mount_result.status.value == 'success':
+                try:
+                    # 获取文件列表
+                    result = self._list_objects_from_mount_point(mount_point, path, page, page_size)
+                    
+                    # 在结果中添加挂载点信息，供服务端保存
+                    result['mount_point'] = mount_point
+                    result['auto_mounted'] = True
+                    
+                    return result
+                except Exception as e:
+                    # 清理挂载点
+                    try:
+                        import subprocess
+                        subprocess.run(['umount', mount_point], check=True)
+                        os.rmdir(mount_point)
+                    except:
+                        pass
+                    raise e
+            else:
+                return {
+                    'error': f'自动挂载失败: {mount_result.error}',
+                    'mount_point': mount_point
+                }
+    
+    def _is_mount_point_matches_storage(self, mount_point: str, storage_config: dict) -> bool:
+        """检查挂载点是否匹配当前存储配置"""
+        try:
+            mount_info = self.mount_checker._get_mount_info(mount_point)
+            if not mount_info:
+                return False
+            
+            config = storage_config.get('config', {})
+            server = config.get('server', '')
+            share_path = config.get('path', '')
+            
+            # 检查挂载的设备是否匹配
+            mount_device = mount_info.get('device', '')
+            
+            if config.get('protocol', '').lower() in ['nfs', 'nas']:
+                # NFS格式：server:share_path
+                expected_device = f"{server}:{share_path}"
+            else:
+                # SMB格式：//server/share_path
+                expected_device = f"//{server}/{share_path}"
+            
+            return mount_device == expected_device
+            
+        except Exception as e:
+            self.logger.error(f"检查挂载点匹配失败: {e}")
+            return False
+    
+    def _list_objects_from_mount_point(self, mount_point: str, path: str, page: int, page_size: int) -> dict:
+        """从挂载点获取文件列表"""
+        try:
+            # 构建完整路径
+            full_path = os.path.join(mount_point, path.lstrip('/'))
+            
+            if not os.path.exists(full_path):
+                raise ValueError(f"路径 {path} 不存在")
+            
+            # 获取所有对象
+            objects = []
+            
+            try:
+                items = os.listdir(full_path)
+            except PermissionError:
+                raise ValueError(f"没有权限访问路径 {path}")
+            
+            for item in items:
+                item_path = os.path.join(full_path, item)
+                rel_path = os.path.join(path, item) if path else item
+                
+                try:
+                    stat = os.stat(item_path)
+                    
+                    if os.path.isdir(item_path):
+                        objects.append({
+                            'name': item,
+                            'path': rel_path,
+                            'type': 'directory',
+                            'modified_time': datetime.utcnow().fromtimestamp(stat.st_mtime).isoformat()
+                        })
+                    else:
+                        objects.append({
+                            'name': item,
+                            'path': rel_path,
+                            'size': stat.st_size,
+                            'modified_time': datetime.utcnow().fromtimestamp(stat.st_mtime).isoformat(),
+                            'type': 'file'
+                        })
+                except (OSError, PermissionError):
+                    continue
+            
+            # 实现分页
+            total_count = len(objects)
+            start_index = (page - 1) * page_size
+            end_index = start_index + page_size
+            
+            # 确保页码有效
+            if page < 1:
+                page = 1
+            if page_size < 1:
+                page_size = 20
+            
+            # 获取当前页的数据
+            paginated_objects = objects[start_index:end_index]
+            
+            # 计算分页信息
+            total_pages = (total_count + page_size - 1) // page_size
+            has_next = page < total_pages
+            has_prev = page > 1
+            
+            return {
+                'objects': paginated_objects,
+                'pagination': {
+                    'page': page,
+                    'page_size': page_size,
+                    'total_count': total_count,
+                    'total_pages': total_pages,
+                    'has_next': has_next,
+                    'has_prev': has_prev,
+                    'start_index': start_index + 1 if total_count > 0 else 0,
+                    'end_index': min(end_index, total_count)
+                },
+                'mount_point': mount_point
+            }
+            
+        except Exception as e:
+            raise ValueError(f"获取文件列表失败: {str(e)}")
 
     def _execute_list_buckets(self, params):
         """获取存储桶列表"""
@@ -519,7 +705,7 @@ class ProxyAgent:
                 'failed_at': datetime.utcnow().isoformat(),
                 'error': str(e)
             })
-
+    
     def _handle_mount_check_task(self, task):
         """处理挂载检查任务"""
         task_id = task['id']
