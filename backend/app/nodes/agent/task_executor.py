@@ -14,6 +14,7 @@ from typing import Dict, Any, Tuple, List
 import requests
 import logging
 from datetime import datetime
+from .services.mount_manager import get_mount_manager
 
 class TaskExecutor:
     """任务执行器"""
@@ -196,46 +197,25 @@ class TaskExecutor:
     
     def prepare_nas_storage(self, storage_config: Dict[str, Any], task_path: str) -> str:
         """准备NAS存储挂载"""
-        config = storage_config['config']
-        
-        # 生成唯一挂载点
-        mount_point = f"/tmp/easysync_mount_{storage_config['id']}_{int(time.time())}"
-        os.makedirs(mount_point, exist_ok=True)
+        storage_id = storage_config.get('id', str(time.time()))
         
         try:
-            # 构建挂载命令
-            if config.get('protocol', 'smb').lower() == 'smb':
-                mount_cmd = [
-                    'mount', '-t', 'cifs',
-                    f"//{config['host']}{config['share_path']}",
-                    mount_point,
-                    '-o', f"username={config['username']},password={config['password']}"
-                ]
-            else:  # NFS
-                mount_cmd = [
-                    'mount', '-t', 'nfs',
-                    f"{config['host']}:{config['share_path']}",
-                    mount_point
-                ]
+            # 使用挂载管理器挂载存储
+            mount_manager = get_mount_manager()
+            mount_point = mount_manager.mount_storage(storage_id, storage_config)
             
-            # 执行挂载
-            result = subprocess.run(mount_cmd, capture_output=True, text=True, timeout=30)
+            if not mount_point:
+                raise Exception("挂载管理器挂载失败")
             
-            if result.returncode != 0:
-                os.rmdir(mount_point)
-                raise Exception(f"挂载失败: {result.stderr}")
-            
-            # 记录挂载点用于后续清理
-            self.active_mounts.append(mount_point)
-            
-            # 返回完整路径
-            full_path = os.path.join(mount_point, task_path.lstrip('/'))
-            return full_path
-            
+            # 返回实际的文件路径
+            if task_path:
+                return os.path.join(mount_point, task_path.lstrip('/'))
+            else:
+                return mount_point
+                
         except Exception as e:
-            if os.path.exists(mount_point):
-                os.rmdir(mount_point)
-            raise e
+            self.logger.error(f"准备NAS存储失败: {e}")
+            raise
     
     def prepare_s3_storage(self, storage_config: Dict[str, Any], task_path: str) -> str:
         """准备S3存储（返回rclone格式路径）"""
@@ -421,17 +401,33 @@ region = {s3_config['region']}
     
     def cleanup_resources(self):
         """清理资源"""
-        # 卸载所有挂载点
-        for mount_point in self.active_mounts:
-            try:
-                subprocess.run(['umount', mount_point], capture_output=True, timeout=10)
-                if os.path.exists(mount_point):
-                    os.rmdir(mount_point)
-                self.logger.info(f"清理挂载点: {mount_point}")
-            except Exception as e:
-                self.logger.error(f"清理挂载点失败: {mount_point}, {e}")
-        
-        self.active_mounts.clear()
+        try:
+            # 使用挂载管理器清理废弃的挂载点
+            mount_manager = get_mount_manager()
+            cleaned_count = mount_manager.cleanup_abandoned_mounts()
+            
+            if cleaned_count > 0:
+                self.logger.info(f"清理了 {cleaned_count} 个废弃挂载点")
+            
+            # 清理活跃挂载记录（这个列表现在可能不需要了，但为了兼容性保留）
+            self.active_mounts.clear()
+            
+        except Exception as e:
+            self.logger.error(f"清理资源失败: {e}")
+    
+    def cleanup_storage_mount(self, storage_id: str):
+        """清理特定存储的挂载"""
+        try:
+            mount_manager = get_mount_manager()
+            success = mount_manager.unmount_storage(storage_id)
+            
+            if success:
+                self.logger.info(f"成功卸载存储 {storage_id}")
+            else:
+                self.logger.warning(f"卸载存储 {storage_id} 失败")
+                
+        except Exception as e:
+            self.logger.error(f"清理存储挂载失败: {e}")
 
 
 def main():

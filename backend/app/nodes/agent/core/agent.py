@@ -13,6 +13,7 @@ from .enhanced_progress import EnhancedProgressTracker
 from ..services.monitor_service import MonitorService
 from ..services.sync_service import SyncService
 from ..services.connection_checker import StorageConnectionChecker, MountChecker
+from ..services.mount_manager import get_mount_manager
 from ..provider.nas import NASProvider
 from ..provider.s3 import S3Provider
 from ..utils.logger import get_log_manager
@@ -355,72 +356,35 @@ class ProxyAgent:
         path = params.get('path', '')
         page = params.get('page', 1)
         page_size = params.get('page_size', 20)
+        storage_id = storage_config.get('id', 'unknown')
         
-        # 检查是否有指定的挂载点
-        mount_point = params.get('mount_point')
-        
-        if mount_point:
-            # 有指定挂载点，检查挂载状态
-            mount_result = self.mount_checker.check_mount_status(mount_point)
+        try:
+            # 使用挂载管理器获取或创建挂载点
+            mount_manager = get_mount_manager()
             
-            if mount_result.is_mounted:
-                # 检查挂载点是否匹配当前存储
-                mount_info = mount_result.mount_info
-                if self._is_mount_point_matches_storage(mount_point, storage_config):
-                    # 挂载点匹配，直接使用
-                    return self._list_objects_from_mount_point(mount_point, path, page, page_size)
-                else:
-                    # 挂载点不匹配，返回错误信息
-                    return {
-                        'error': f'挂载点 {mount_point} 已被其他存储使用',
-                        'mount_info': mount_info,
-                        'suggested_action': 'unmount_existing'
-                    }
+            # 检查是否已经挂载
+            if mount_manager.is_mounted(storage_id):
+                mount_point = mount_manager.get_mount_point(storage_id)
+                self.logger.info(f"存储 {storage_id} 已挂载到 {mount_point}")
             else:
-                # 挂载点存在但未挂载，执行挂载
-                mount_result = self.mount_checker.mount_storage(mount_point, storage_config)
-                if mount_result.status.value == 'success':
-                    return self._list_objects_from_mount_point(mount_point, path, page, page_size)
-                else:
+                # 执行挂载
+                mount_point = mount_manager.mount_storage(storage_id, storage_config)
+                if not mount_point:
                     return {
-                        'error': f'挂载失败: {mount_result.error}',
-                        'mount_point': mount_point
+                        'error': '挂载失败',
+                        'storage_id': storage_id
                     }
-        else:
-            # 没有指定挂载点，自动生成并挂载
-            import tempfile
-            import uuid
+                self.logger.info(f"存储 {storage_id} 新挂载到 {mount_point}")
             
-            # 生成唯一的挂载点
-            mount_point = f"/tmp/easysync_nas_{uuid.uuid4().hex[:8]}"
+            # 执行文件列表操作
+            return self._list_objects_from_mount_point(mount_point, path, page, page_size)
             
-            # 执行挂载
-            mount_result = self.mount_checker.mount_storage(mount_point, storage_config)
-            
-            if mount_result.status.value == 'success':
-                try:
-                    # 获取文件列表
-                    result = self._list_objects_from_mount_point(mount_point, path, page, page_size)
-                    
-                    # 在结果中添加挂载点信息，供服务端保存
-                    result['mount_point'] = mount_point
-                    result['auto_mounted'] = True
-                    
-                    return result
-                except Exception as e:
-                    # 清理挂载点
-                    try:
-                        import subprocess
-                        subprocess.run(['umount', mount_point], check=True)
-                        os.rmdir(mount_point)
-                    except:
-                        pass
-                    raise e
-            else:
-                return {
-                    'error': f'自动挂载失败: {mount_result.error}',
-                    'mount_point': mount_point
-                }
+        except Exception as e:
+            self.logger.error(f"执行NAS对象列表操作失败: {e}")
+            return {
+                'error': str(e),
+                'storage_id': storage_id
+            }
     
     def _is_mount_point_matches_storage(self, mount_point: str, storage_config: dict) -> bool:
         """检查挂载点是否匹配当前存储配置"""
@@ -909,4 +873,46 @@ class ProxyAgent:
     
     def check_mount_status(self, mount_point: str):
         """检查挂载状态的外部接口"""
-        return self.mount_checker.check_mount_status(mount_point) 
+        return self.mount_checker.check_mount_status(mount_point)
+    
+    def cleanup_task_resources(self, task):
+        """清理任务相关的资源"""
+        try:
+            task_id = task.get('id', 'unknown')
+            storage_config = task.get('storage_config')
+            
+            if storage_config:
+                storage_id = storage_config.get('id')
+                if storage_id:
+                    # 使用挂载管理器减少引用计数
+                    mount_manager = get_mount_manager()
+                    success = mount_manager.unmount_storage(storage_id)
+                    
+                    if success:
+                        self.logger.info(f"任务 {task_id} 相关存储 {storage_id} 挂载引用计数已减少")
+                    else:
+                        self.logger.warning(f"任务 {task_id} 相关存储 {storage_id} 挂载引用计数减少失败")
+            
+            # 清理进度跟踪
+            self.progress_tracker.cleanup_task_progress(task_id)
+            
+        except Exception as e:
+            self.logger.error(f"清理任务资源失败: {e}")
+    
+    def cleanup_all_mounts(self) -> int:
+        """清理所有废弃的挂载点"""
+        try:
+            mount_manager = get_mount_manager()
+            return mount_manager.cleanup_abandoned_mounts()
+        except Exception as e:
+            self.logger.error(f"清理所有挂载点失败: {e}")
+            return 0
+    
+    def get_active_mounts(self) -> dict:
+        """获取活跃挂载列表"""
+        try:
+            mount_manager = get_mount_manager()
+            return mount_manager.get_active_mounts()
+        except Exception as e:
+            self.logger.error(f"获取活跃挂载列表失败: {e}")
+            return {} 

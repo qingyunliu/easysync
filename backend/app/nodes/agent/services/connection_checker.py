@@ -16,6 +16,7 @@ from dataclasses import dataclass, asdict
 from enum import Enum
 import requests
 import json
+from .mount_manager import get_mount_manager
 
 class CheckStatus(Enum):
     """检查状态枚举"""
@@ -919,3 +920,78 @@ class MountChecker:
         except Exception as e:
             self.logger.error(f"获取挂载信息失败: {e}")
             return []
+    
+    def mount_storage_managed(self, storage_id: str, storage_config: Dict[str, Any]) -> MountResult:
+        """使用挂载管理器挂载存储"""
+        try:
+            mount_manager = get_mount_manager()
+            mount_point = mount_manager.mount_storage(storage_id, storage_config)
+            
+            if mount_point:
+                # 验证挂载结果
+                verify_result = self.check_mount_status(mount_point)
+                return MountResult(
+                    status=CheckStatus.SUCCESS,
+                    mount_point=mount_point,
+                    is_mounted=verify_result.is_mounted,
+                    mount_info=verify_result.mount_info,
+                    check_time=datetime.now()
+                )
+            else:
+                return MountResult(
+                    status=CheckStatus.FAILED,
+                    mount_point="",
+                    is_mounted=False,
+                    mount_info={},
+                    check_time=datetime.now(),
+                    error="挂载管理器挂载失败"
+                )
+                
+        except Exception as e:
+            self.logger.error(f"使用挂载管理器挂载存储失败: {e}")
+            return MountResult(
+                status=CheckStatus.FAILED,
+                mount_point="",
+                is_mounted=False,
+                mount_info={},
+                check_time=datetime.now(),
+                error=str(e)
+            )
+    
+    def unmount_storage_managed(self, storage_id: str) -> bool:
+        """使用挂载管理器卸载存储"""
+        try:
+            mount_manager = get_mount_manager()
+            return mount_manager.unmount_storage(storage_id)
+        except Exception as e:
+            self.logger.error(f"使用挂载管理器卸载存储失败: {e}")
+            return False
+    
+    def get_managed_mount_point(self, storage_id: str) -> Optional[str]:
+        """获取存储的管理挂载点路径"""
+        try:
+            mount_manager = get_mount_manager()
+            if mount_manager.is_mounted(storage_id):
+                return mount_manager.get_mount_point(storage_id)
+            return None
+        except Exception as e:
+            self.logger.error(f"获取管理挂载点失败: {e}")
+            return None
+    
+    def cleanup_abandoned_mounts(self) -> int:
+        """清理废弃的挂载点"""
+        try:
+            mount_manager = get_mount_manager()
+            return mount_manager.cleanup_abandoned_mounts()
+        except Exception as e:
+            self.logger.error(f"清理废弃挂载点失败: {e}")
+            return 0
+    
+    def get_active_managed_mounts(self) -> Dict[str, Dict]:
+        """获取活跃的管理挂载列表"""
+        try:
+            mount_manager = get_mount_manager()
+            return mount_manager.get_active_mounts()
+        except Exception as e:
+            self.logger.error(f"获取活跃管理挂载失败: {e}")
+            return {}
