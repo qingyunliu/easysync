@@ -286,67 +286,7 @@ def test_temporary_connect():
 
 @storages_bp.route('/<string:storage_id>/test-connection', methods=['POST'])
 @require_user
-def test_connect(storage_id):
-    """测试存储连接 - 统一使用任务系统"""
-    try:
-        data = request.get_json()
-        node_id = data.get('node_id')  # 获取指定的节点ID
-        user_id = get_jwt_identity()
-        
-        if not node_id:
-            return jsonify({
-                'status': 'error',
-                'message': '请选择测试节点'
-            }), 400
-        
-        # 获取存储配置
-        storage = storage_service.get_storage(storage_id)
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
-            
-        # 构建存储配置
-        storage_config = {
-            'id': storage.id,
-            'name': storage.name,
-            'type': storage.type,
-            'config': storage.config
-        }
-        
-        # 创建连接测试任务
-        from backend.app.tasks.service import TaskService
-        task_service = TaskService()
-        task = task_service.create_connection_test_task(storage_config, user_id)
-        
-        # 启动任务并分配给指定节点
-        started_task = task_service.start_task(task.id, node_id)
-        
-        return jsonify({
-            'status': 'success',
-            'message': '连接测试任务已创建并分配给节点执行',
-            'data': {
-                'task_id': started_task.id,
-                'task_name': started_task.name,
-                'node_id': started_task.node_id,
-                'status': started_task.status
-            }
-        })
-    except ValueError as e:
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'连接测试失败: {str(e)}'
-        }), 500
-    
-@storages_bp.route('/<string:storage_id>/test-connection-realtime', methods=['POST'])
-@require_user
-def test_storage_connection_realtime(storage_id):
+def test_storage_connection(storage_id):
     """实时测试存储连接"""
     try:
         data = request.get_json()
@@ -415,63 +355,6 @@ def test_storage_connection_realtime(storage_id):
 @storages_bp.route('/<string:storage_id>/stats', methods=['GET'])
 @require_user
 def get_storage_stats(storage_id):
-    """获取存储统计信息"""
-    try:
-        storage = storage_service.get_storage(storage_id)
-        user_id = get_jwt_identity()
-
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
-            
-        # 检查存储是否有绑定的节点
-        if not storage.node_id:
-            return jsonify({
-                'status': 'error',
-                'message': '该存储未绑定任何节点，无法获取统计信息'
-            }), 400
-        
-        AuditService.log_storage_operation(
-            user_id=user_id,
-            action='get_stats',
-            storage_id=storage_id,
-            storage_name=storage.name,
-            details={'msg': '获取存储统计信息'},
-            result='started'
-        )
-
-        # 检查是否使用任务模式
-        use_task = request.args.get('use_task', 'false').lower() == 'true'
-        result = storage_service.get_stats(storage, use_task=use_task)
-
-        AuditService.log_storage_operation(
-            user_id=user_id,
-            action='get_stats',
-            storage_id=storage_id,
-            storage_name=storage.name,
-            details={'msg': '获取存储统计信息', 'result': result},
-            result='success'
-        )
-        return jsonify(result)
-    except Exception as e:
-        AuditService.log_storage_operation(
-            user_id=user_id,
-            action='get_stats',
-            storage_id=storage_id,
-            storage_name=storage.name,
-            details={'error': str(e), 'result': None},
-            result='failed'
-        )
-        return jsonify({
-            'status': 'error',
-            'message': f'获取统计信息失败: {str(e)}'
-        }), 500
-
-@storages_bp.route('/<string:storage_id>/stats-realtime', methods=['GET'])
-@require_user
-def get_storage_stats_realtime(storage_id):
     """实时获取存储统计信息"""
     try:
         node_id = request.args.get('node_id')
@@ -504,39 +387,7 @@ def get_storage_stats_realtime(storage_id):
 
 @storages_bp.route('/<string:storage_id>/buckets', methods=['GET'])
 @require_user
-def get_buckets(storage_id):
-    """获取存储桶列表"""
-    try:
-        storage = storage_service.get_storage(storage_id)
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
-        
-        # 检查存储是否有绑定的节点
-        if not storage.node_id:
-            return jsonify({
-                'status': 'error',
-                'message': '该存储未绑定任何节点，无法获取存储桶列表'
-            }), 400
-        
-        # 检查是否使用任务模式
-        use_task = request.args.get('use_task', 'false').lower() == 'true'
-        
-        page = int(request.args.get('page', 1))
-        page_size = int(request.args.get('page_size', 20))
-        result = storage_service.list_buckets(storage, page, page_size, use_task=use_task)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'获取存储桶列表失败: {str(e)}'
-        }), 500
-
-@storages_bp.route('/<string:storage_id>/buckets-realtime', methods=['GET'])
-@require_user
-def list_buckets_realtime(storage_id):
+def list_buckets(storage_id):
     """实时获取存储桶列表"""
     try:
         page = int(request.args.get('page', 1))
@@ -544,9 +395,28 @@ def list_buckets_realtime(storage_id):
         node_id = request.args.get('node_id')
         user_id = get_jwt_identity()
         storage = storage_service.get_storage(storage_id)
+
+        if not storage:
+            return jsonify({'status': 'error', 'message': '存储节点不存在'}), 404
+        
+        if not node_id:
+            if not storage.node_id:
+                return jsonify({'status': 'error', 'message': '该存储未绑定任何节点，无法获取存储桶列表'}), 400
+            node_id = storage.node_id
+        
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='list_buckets_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'msg': '获取存储桶列表'},
+            result='started'
+        )
+
         result = storage_realtime_service.list_buckets_realtime(
             storage_id, page, page_size, node_id
         )
+
         AuditService.log_storage_operation(
             user_id=user_id,
             action='list_buckets_realtime',
@@ -573,227 +443,7 @@ def list_buckets_realtime(storage_id):
 
 @storages_bp.route('/<string:storage_id>/objects', methods=['GET'])
 @require_user
-def get_objects(storage_id):
-    """获取对象列表"""
-    try:
-        storage = storage_service.get_storage(storage_id)
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
-        
-        # 检查存储是否有绑定的节点
-        if not storage.node_id:
-            return jsonify({
-                'status': 'error',
-                'message': '该存储未绑定任何节点，无法获取对象列表'
-            }), 400
-        
-        # 检查是否使用任务模式
-        use_task = request.args.get('use_task', 'false').lower() == 'true'
-        
-        bucket = request.args.get('bucket')
-        prefix = request.args.get('prefix', '')
-        page = int(request.args.get('page', 1))
-        page_size = int(request.args.get('page_size', 20))
-
-        if not bucket:
-            return jsonify({
-                'status': 'error',
-                'message': '存储桶名称不能为空'
-            }), 400
-
-        result = storage_service.list_objects(storage, bucket, prefix, page, page_size, use_task=use_task)
-        return jsonify(result)
-    except ValueError as e:
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'获取对象列表失败: {str(e)}'
-        }), 500
-
-@storages_bp.route('/<string:storage_id>/download', methods=['GET'])
-@require_user
-def download_object(storage_id):
-    """下载对象"""
-    try:
-        storage = storage_service.get_storage(storage_id)
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
-        
-        # 检查存储是否有绑定的节点
-        if not storage.node_id:
-            return jsonify({
-                'status': 'error',
-                'message': '该存储未绑定任何节点，无法下载对象'
-            }), 400
-        
-        # 检查是否使用任务模式
-        use_task = request.args.get('use_task', 'true').lower() == 'true'
-        
-        bucket = request.args.get('bucket')
-        key = request.args.get('key')
-        
-        if not bucket or not key:
-            return jsonify({
-                'status': 'error',
-                'message': '存储桶名称和对象键不能为空'
-            }), 400
-        
-        result = storage_service.download_object(storage, bucket, key, use_task=use_task)
-        return jsonify(result)
-    except ValueError as e:
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 400
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'下载对象失败: {str(e)}'
-        }), 500
-
-@storages_bp.route('/<string:storage_id>/download-realtime', methods=['POST'])
-@require_user
-def download_file_realtime(storage_id):
-    """实时下载文件"""
-    try:
-        data = request.get_json()
-        file_path = data.get('file_path') if data else None
-        bucket = data.get('bucket', '') if data else ''
-        node_id = data.get('node_id') if data else None
-        user_id = get_jwt_identity()
-        storage = storage_service.get_storage(storage_id)
-        
-        if not file_path:
-            return jsonify({
-                'status': 'error',
-                'message': '文件路径不能为空'
-            }), 400
-        
-        AuditService.log_storage_operation(
-            user_id=user_id,
-            action='download_file_realtime',
-            storage_id=storage_id,
-            storage_name=storage.name,
-            details={'msg': '下载文件', 'result': result},
-            result='started'
-        )
-        result = storage_realtime_service.download_file_realtime(
-            storage_id, file_path, bucket, node_id
-        )
-        AuditService.log_storage_operation(
-            user_id=user_id,
-            action='download_file_realtime',
-            storage_id=storage_id,
-            storage_name=storage.name,
-            details={'msg': '下载文件', 'result': result},
-            result='success' if result.get('status') == 'success' else 'failed'
-        )
-        return jsonify(result)
-    except Exception as e:
-        current_app.logger.error(f"下载文件失败: {e}")
-        AuditService.log_storage_operation(
-            user_id=user_id,
-            action='download_file_realtime',
-            storage_id=storage_id,
-            storage_name=storage.name,
-            details={'error': str(e)},
-            result='failed'
-        )
-        return jsonify({
-            'status': 'error',
-            'message': f'下载文件失败: {str(e)}'
-        }), 500
-
-# NAS 存储相关 API
-@storages_bp.route('/<string:storage_id>/nas/stats', methods=['GET'])
-@require_user
-def get_nas_stats(storage_id):
-    """获取 NAS 存储统计信息"""
-    try:
-        storage = storage_service.get_storage(storage_id)
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
-        
-        # 检查存储是否有绑定的节点
-        if not storage.node_id:
-            return jsonify({
-                'status': 'error',
-                'message': '该存储未绑定任何节点，无法获取 NAS 统计信息'
-            }), 400
-        
-        # 检查是否使用任务模式
-        use_task = request.args.get('use_task', 'false').lower() == 'true'
-            
-        if storage.type != 'nas':
-            return jsonify({
-                'status': 'error',
-                'message': '该存储不是 NAS 类型'
-            }), 400
-            
-        result = storage_service.get_nas_stats(storage, use_task=use_task)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'获取 NAS 统计信息失败: {str(e)}'
-        }), 500
-
-@storages_bp.route('/<string:storage_id>/nas/files', methods=['GET'])
-@require_user
-def get_nas_files(storage_id):
-    """获取 NAS 文件列表"""
-    try:
-        storage = storage_service.get_storage(storage_id)
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
-        
-        # 检查存储是否有绑定的节点
-        if not storage.node_id:
-            return jsonify({
-                'status': 'error',
-                'message': '该存储未绑定任何节点，无法获取文件列表'
-            }), 400
-        
-        # 检查是否使用任务模式
-        use_task = request.args.get('use_task', 'false').lower() == 'true'
-            
-        if storage.type != 'nas':
-            return jsonify({
-                'status': 'error',
-                'message': '该存储不是 NAS 类型'
-            }), 400
-            
-        path = request.args.get('path', '')
-        page = int(request.args.get('page', 1))
-        page_size = int(request.args.get('page_size', 20))
-        
-        result = storage_service.list_nas_files(storage, path, page, page_size, use_task=use_task)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'获取文件列表失败: {str(e)}'
-        }), 500
-
-@storages_bp.route('/<string:storage_id>/objects-realtime', methods=['GET'])
-@require_user
-def list_objects_realtime(storage_id):
+def list_objects(storage_id):
     """实时获取对象存储objects列表"""
     try:
         user_id = get_jwt_identity()
@@ -804,12 +454,7 @@ def list_objects_realtime(storage_id):
 
         # 检查存储是否有绑定的节点
         if not node_id:
-            if not storage.node_id:
-                return jsonify({
-                    'status': 'error',
-                    'message': '该存储未绑定任何节点，无法获取对象列表'
-                }), 400
-            node_id = storage.node_id
+            return jsonify({'status': 'error', 'message': '请选择节点'}), 400
 
         # 只支持S3/OBS类型
         if storage.type not in ['s3', 'obs']:
@@ -886,9 +531,9 @@ def list_objects_realtime(storage_id):
         )
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
-@storages_bp.route('/<string:storage_id>/files-realtime', methods=['GET'])
+@storages_bp.route('/<string:storage_id>/files', methods=['GET'])
 @require_user
-def list_files_realtime(storage_id):
+def list_files(storage_id):
     """实时获取文件列表"""
     try:
         path = request.args.get('path', '')
@@ -939,79 +584,49 @@ def list_files_realtime(storage_id):
             'message': f'获取文件列表失败: {str(e)}'
         }), 500
 
-
-@storages_bp.route('/<string:storage_id>/nas/download', methods=['GET'])
+@storages_bp.route('/<string:storage_id>/download', methods=['POST'])
 @require_user
-def download_nas_file(storage_id):
-    """下载 NAS 文件"""
+def download_file(storage_id):
+    """实时下载文件"""
     try:
-        storage = storage_service.get_storage(storage_id)
+        data = request.get_json()
+        file_path = data.get('file_path') if data else None
+        bucket = data.get('bucket', '') if data else ''
+        node_id = data.get('node_id') if data else None
         user_id = get_jwt_identity()
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
+        storage = storage_service.get_storage(storage_id)
         
-        # 检查存储是否有绑定的节点
-        if not storage.node_id:
-            return jsonify({
-                'status': 'error',
-                'message': '该存储未绑定任何节点，无法下载文件'
-            }), 400
-
-        AuditService.log_storage_operation(
-            user_id=user_id,
-            action='download_nas_file',
-            storage_id=storage_id,
-            storage_name=storage.name,
-            details={'msg': '下载文件', 'result': result},
-            result='started'
-        )
-        
-        # 检查是否使用任务模式
-        use_task = request.args.get('use_task', 'true').lower() == 'true'
-            
-        if storage.type != 'nas':
-            return jsonify({
-                'status': 'error',
-                'message': '该存储不是 NAS 类型'
-            }), 400
-            
-        path = request.args.get('path')
-        if not path:
+        if not file_path:
             return jsonify({
                 'status': 'error',
                 'message': '文件路径不能为空'
             }), 400
         
-        result = storage_service.download_nas_file(storage, path, use_task=use_task)
         AuditService.log_storage_operation(
             user_id=user_id,
-            action='download_nas_file',
+            action='download_file_realtime',
             storage_id=storage_id,
             storage_name=storage.name,
             details={'msg': '下载文件', 'result': result},
-            result='success'
+            result='started'
         )
-        return jsonify(result)
-    except ValueError as e:
+        result = storage_realtime_service.download_file_realtime(
+            storage_id, file_path, bucket, node_id
+        )
         AuditService.log_storage_operation(
             user_id=user_id,
-            action='download_nas_file',
+            action='download_file_realtime',
             storage_id=storage_id,
             storage_name=storage.name,
-            details={'error': str(e)},
-            result='failed'
+            details={'msg': '下载文件', 'result': result},
+            result='success' if result.get('status') == 'success' else 'failed'
         )
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 400
+        return jsonify(result)
     except Exception as e:
+        current_app.logger.error(f"下载文件失败: {e}")
         AuditService.log_storage_operation(
             user_id=user_id,
-            action='download_nas_file',
+            action='download_file_realtime',
             storage_id=storage_id,
             storage_name=storage.name,
             details={'error': str(e)},
@@ -1020,40 +635,6 @@ def download_nas_file(storage_id):
         return jsonify({
             'status': 'error',
             'message': f'下载文件失败: {str(e)}'
-        }), 500
-
-@storages_bp.route('/<string:storage_id>/info', methods=['GET'])
-@require_user
-def get_storage_info(storage_id):
-    """获取存储信息（兼容前端）"""
-    try:
-        storage = storage_service.get_storage(storage_id)
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
-        
-        # 检查存储是否有绑定的节点
-        if not storage.node_id:
-            return jsonify({
-                'status': 'error',
-                'message': '该存储未绑定任何节点，无法获取存储信息'
-            }), 400
-        
-        # 检查是否使用任务模式
-        use_task = request.args.get('use_task', 'false').lower() == 'true'
-            
-        if storage.type == 'nas':
-            result = storage_service.get_nas_stats(storage, use_task=use_task)
-        else:
-            result = storage_service.get_stats(storage, use_task=use_task)
-            
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'获取存储信息失败: {str(e)}'
         }), 500
 
 @storages_bp.route('/<string:storage_id>/mount-check', methods=['POST'])

@@ -5,6 +5,7 @@ import socket
 import subprocess
 import requests
 import os
+import json
 from datetime import datetime
 from .communication import ServerCommunication
 from .task_manager import TaskManager, TaskRetryManager, TaskValidator
@@ -48,6 +49,18 @@ class ProxyAgent:
         self.mount_checker = MountChecker(config)
         
         self._setup_services()
+
+    @staticmethod
+    def _serialize_datetime_objects(obj):
+        """递归序列化datetime对象为ISO格式字符串"""
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        elif isinstance(obj, dict):
+            return {key: ProxyAgent._serialize_datetime_objects(value) for key, value in obj.items()}
+        elif isinstance(obj, list):
+            return [ProxyAgent._serialize_datetime_objects(item) for item in obj]
+        else:
+            return obj
 
     def _setup_services(self):
         self.monitor_service.add_callback(self._on_monitor_update)
@@ -263,9 +276,11 @@ class ProxyAgent:
             
             # 更新命令状态为完成
             self.logger.info(f"更新命令状态为完成: {command_id}, 结果: {result}")
+            # 序列化result中的datetime对象
+            serialized_result = self._serialize_datetime_objects(result)
             success = self.server_comm.update_command_status(command_id, {
                 'status': 'completed',
-                'result': result,
+                'result': serialized_result,
                 'completed_at': datetime.utcnow().isoformat()
             })
             

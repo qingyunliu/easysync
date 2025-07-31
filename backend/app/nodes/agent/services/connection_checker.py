@@ -113,7 +113,7 @@ class StorageConnectionChecker:
     def _check_nas_connection(self, storage_config: Dict[str, Any]) -> ConnectionResult:
         """检查NAS连接"""
         config = storage_config.get('config', {})
-        host = config.get('server') or config.get('host')
+        host = config.get('host') or config.get('server')  # 兼容两种字段名
         port = config.get('port', 2049)  # NFS默认端口
         protocol = config.get('protocol', 'nfs').lower()
         
@@ -714,11 +714,14 @@ class MountChecker:
                 error=str(e)
             )
     
-    def _mount_nfs(self, mount_point: str, config: Dict[str, Any]) -> MountResult:
+    def _mount_nfs(self, mount_point: str, storage_config: Dict[str, Any]) -> MountResult:
         """挂载NFS存储"""
         try:
-            host = config.get('host')
-            share_path = config.get('share_path')
+            # 直接从storage_config获取config
+            config = storage_config.get('config', {})
+            
+            host = config.get('host') or config.get('server')  # 兼容两种字段名
+            share_path = config.get('share_path') or config.get('path')  # 兼容两种字段名
             options = config.get('options', '')
             version = config.get('version', '3')
             
@@ -729,7 +732,7 @@ class MountChecker:
                     is_mounted=False,
                     mount_info={},
                     check_time=datetime.now(),
-                    error="缺少NFS配置信息：host或share_path"
+                    error="缺少NFS配置信息：需要server/host和path/share_path字段"
                 )
             
             # 构建挂载命令
@@ -799,11 +802,14 @@ class MountChecker:
                 error=str(e)
             )
     
-    def _mount_smb(self, mount_point: str, config: Dict[str, Any]) -> MountResult:
+    def _mount_smb(self, mount_point: str, storage_config: Dict[str, Any]) -> MountResult:
         """挂载SMB存储"""
         try:
-            host = config.get('host')
-            share_path = config.get('share_path')
+            # 直接从storage_config获取config
+            config = storage_config.get('config', {})
+            
+            host = config.get('host') or config.get('server')  # 兼容两种字段名
+            share_path = config.get('share_path') or config.get('path')  # 兼容两种字段名
             username = config.get('username', '')
             password = config.get('password', '')
             workgroup = config.get('workgroup', '')
@@ -816,7 +822,7 @@ class MountChecker:
                     is_mounted=False,
                     mount_info={},
                     check_time=datetime.now(),
-                    error="缺少SMB配置信息：host或share_path"
+                    error="缺少SMB配置信息：server和path字段"
                 )
             
             # 构建挂载命令

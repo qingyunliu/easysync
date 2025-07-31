@@ -11,16 +11,16 @@ class NASProvider(StorageProvider):
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
         self.logger = logging.getLogger(__name__)
-        # 修正配置字段映射
-        self.mount_point = config.get('path', '')
-        self.server = config.get('server', '')
+        # 修正配置字段映射，兼容两种字段名
+        self.mount_point = config.get('path', '') or config.get('share_path', '')
+        self.server = config.get('server', '') or config.get('host', '')
         # 协议类型映射：cifs -> smb
         protocol = config.get('protocol', 'smb')
         self.protocol = 'smb' if protocol.lower() == 'cifs' else protocol
         self.workgroup = config.get('workgroup', '')
         self.username = config.get('username', '')
         self.password = config.get('password', '')
-        self.share_path = config.get('path', '')  # 前端发送的是 path，映射到 share_path
+        self.share_path = config.get('path', '') or config.get('share_path', '')  # 兼容两种字段名
 
     def get_stats(self) -> Dict[str, Any]:
         """获取存储统计信息"""

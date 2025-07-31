@@ -160,11 +160,27 @@ class StorageRealTimeService:
             'page_size': page_size
         }
         
-        # 对于NAS存储，添加挂载点信息
+        # 对于NAS存储，添加挂载点信息和完整配置
         if storage.type in ['nas', 'nfs']:
             mount_point = storage.config.get('mount_point')
             if mount_point:
                 params['mount_point'] = mount_point
+            
+            # 确保NFS必要的配置字段存在
+            config = storage.config
+            nas_config = {
+                'server': config.get('server') or config.get('host'),
+                'host': config.get('host') or config.get('server'),
+                'path': config.get('path') or config.get('share_path'),
+                'share_path': config.get('share_path') or config.get('path'),
+                'protocol': config.get('protocol', 'nfs'),
+                'username': config.get('username', ''),
+                'password': config.get('password', ''),
+                'options': config.get('options', ''),
+                'version': config.get('version', '3')
+            }
+            # 更新storage_config中的config部分
+            params['storage_config']['config'].update(nas_config)
         
         # 执行实时命令
         return self.command_service.execute_command_sync(

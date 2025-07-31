@@ -91,13 +91,11 @@ class Task(BaseModel):
         
         # 添加源端存储配置
         if self.source_storage and self.source_storage_id:
-            # 转换存储配置字段名以匹配Proxy端期望的格式
-            config = self._convert_storage_config_for_proxy(self.source_storage.config, self.source_storage.type)
             data['source_storage_config'] = {
                 'id': self.source_storage.id,
                 'name': self.source_storage.name,
                 'type': self.source_storage.type,
-                'config': config,
+                'config': self.source_storage.config,
                 'status': self.source_storage.status
             }
         
@@ -116,33 +114,15 @@ class Task(BaseModel):
         
         # 添加目标端存储配置
         if self.target_storage and self.target_storage_id:
-            # 转换存储配置字段名以匹配Proxy端期望的格式
-            config = self._convert_storage_config_for_proxy(self.target_storage.config, self.target_storage.type)
             data['target_storage_config'] = {
                 'id': self.target_storage.id,
                 'name': self.target_storage.name,
                 'type': self.target_storage.type,
-                'config': config,
+                'config': self.target_storage.config,
                 'status': self.target_storage.status
             }
         
         return data
-    
-    def _convert_storage_config_for_proxy(self, config: dict, storage_type: str) -> dict:
-        """转换存储配置字段名以匹配Proxy端期望的格式"""
-        if not config:
-            return config
-            
-        converted_config = config.copy()
-        
-        # NAS/NFS类型：server -> host, path -> share_path
-        if storage_type in ['nas', 'nfs']:
-            if 'server' in converted_config:
-                converted_config['host'] = converted_config.pop('server')
-            if 'path' in converted_config:
-                converted_config['share_path'] = converted_config.pop('path')
-        
-        return converted_config
 
 
 class TaskLog(BaseModel):
