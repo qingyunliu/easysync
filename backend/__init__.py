@@ -133,6 +133,31 @@ def create_app(config_name=None):
         if os.getenv('FLASK_ENV') == 'production':
             raise
     
+    # 启动后台任务
+    def start_background_tasks():
+        """启动后台任务"""
+        try:
+            # 启动任务调度器
+            from .app.tasks.scheduler import TaskScheduler
+            scheduler = TaskScheduler()
+            scheduler.app = app  # 传递app实例
+            scheduler.start()
+            logger.info("任务调度器已启动")
+            
+            # 启动节点状态监控
+            from .app.nodes.status_monitor import NodeStatusMonitor
+            status_monitor = NodeStatusMonitor()
+            status_monitor.app = app  # 传递app实例
+            status_monitor.start()
+            logger.info("节点状态监控已启动")
+            
+        except Exception as e:
+            logger.error(f"启动后台任务失败: {str(e)}")
+    
+    # 在应用启动时立即启动后台任务
+    with app.app_context():
+        start_background_tasks()
+    
     return app
 
 __version__ = '0.1.0'

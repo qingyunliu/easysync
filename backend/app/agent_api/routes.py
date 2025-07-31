@@ -99,15 +99,46 @@ def agent_register():
 @agent_bp.route('/<string:node_id>/heartbeat', methods=['POST'])
 @agent_token_required
 def agent_heartbeat(node_id):
-    data = request.get_json()
-    node = Node.query.get(node_id)
-    node.last_heartbeat = datetime.datetime.utcnow()
-    node.status = 'online'
-    node.agent_status = data.get('agent_status', 'running')
-    node.system_info = data.get('system_info', {})
-    current_app.logger.info(f"Received node({node_id}) heartbeat: {data}")
-    db.session.commit()
-    return jsonify({'status': 'success', 'message': '心跳成功'})
+    try:
+        data = request.get_json() or {}
+        node = Node.query.get(node_id)
+        
+        if not node:
+            return jsonify({'status': 'error', 'message': '节点不存在'}), 404
+        
+        # 更新心跳时间和状态
+        node.last_heartbeat = datetime.datetime.utcnow()
+        node.status = 'online'
+        
+        # 更新Agent状态，默认为running
+        agent_status = data.get('agent_status', 'running')
+        if agent_status in ['running', 'active', 'inactive', 'error']:
+            node.agent_status = agent_status
+        else:
+            node.agent_status = 'running'  # 默认状态
+            
+        # 更新系统信息
+        if 'system_info' in data:
+            node.system_info = data['system_info']
+            
+        # 更新Agent版本信息
+        if 'version' in data:
+            node.agent_version = data['version']
+            
+        current_app.logger.debug(f"节点 {node_id} ({node.name}) 心跳更新: status={node.status}, agent_status={node.agent_status}")
+        
+        db.session.commit()
+        return jsonify({
+            'status': 'success', 
+            'message': '心跳成功',
+            'node_status': node.status,
+            'agent_status': node.agent_status
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"处理节点 {node_id} 心跳失败: {e}")
+        db.session.rollback()
+        return jsonify({'status': 'error', 'message': '心跳处理失败'}), 500
 
 # 3. 拉取任务（包含存储配置信息）
 @agent_bp.route('/<string:node_id>/tasks', methods=['GET'])

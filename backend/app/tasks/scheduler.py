@@ -16,6 +16,7 @@ class TaskScheduler:
         self.task_service = TaskService()
         self.running = False
         self.thread = None
+        self.app = None  # Flask应用实例
         self.max_tasks_per_node = 5  # 每个节点最大并发任务数
         self.scheduler_interval = 10  # 调度间隔（秒）
         self.node_health_check_interval = 60  # 节点健康检查间隔（秒）
@@ -64,31 +65,32 @@ class TaskScheduler:
     def _dispatch_pending_tasks(self):
         """分发待分配任务"""
         try:
-            # 获取所有待分配任务
-            pending_tasks = self.task_service.get_pending_tasks()
-            
-            if not pending_tasks:
-                return
+            with self.app.app_context():
+                # 获取所有待分配任务
+                pending_tasks = self.task_service.get_pending_tasks()
                 
-            # 获取所有在线节点
-            online_nodes = Node.query.filter_by(status='online').all()
-            
-            if not online_nodes:
-                logger.warning("No online nodes available for task dispatch")
-                return
-                
-            # 为每个任务分配最合适的节点
-            for task in pending_tasks:
-                try:
-                    best_node = self._find_best_node(task, online_nodes)
-                    if best_node:
-                        self.task_service.assign_task(task.id, best_node.id)
-                        logger.info(f"Task {task.id} assigned to node {best_node.id}")
-                    else:
-                        logger.warning(f"No available node for task {task.id}")
-                except Exception as e:
-                    logger.error(f"Failed to assign task {task.id}: {e}")
+                if not pending_tasks:
+                    return
                     
+                # 获取所有在线节点
+                online_nodes = Node.query.filter_by(status='online').all()
+                
+                if not online_nodes:
+                    logger.warning("No online nodes available for task dispatch")
+                    return
+                    
+                # 为每个任务分配最合适的节点
+                for task in pending_tasks:
+                    try:
+                        best_node = self._find_best_node(task, online_nodes)
+                        if best_node:
+                            self.task_service.assign_task(task.id, best_node.id)
+                            logger.info(f"Task {task.id} assigned to node {best_node.id}")
+                        else:
+                            logger.warning(f"No available node for task {task.id}")
+                    except Exception as e:
+                        logger.error(f"Failed to assign task {task.id}: {e}")
+                        
         except Exception as e:
             logger.error(f"Error in dispatch_pending_tasks: {e}")
             
@@ -135,80 +137,83 @@ class TaskScheduler:
     def _check_timeout_tasks(self):
         """检查超时任务"""
         try:
-            timeout_threshold = datetime.utcnow() - timedelta(seconds=self.task_service.task_timeout)
-            
-            # 查找超时的运行中任务
-            timeout_tasks = Task.query.filter(
-                Task.status == 'running',
-                Task.started_at < timeout_threshold
-            ).all()
-            
-            for task in timeout_tasks:
-                try:
-                    # 将超时任务标记为失败
-                    task.status = 'failed'
-                    task.error = 'Task timeout'
-                    task.completed_at = datetime.utcnow()
-                    db.session.commit()
-                    
-                    logger.warning(f"Task {task.id} marked as failed due to timeout")
-                    
-                except Exception as e:
-                    logger.error(f"Failed to handle timeout task {task.id}: {e}")
-                    db.session.rollback()
-                    
+            with self.app.app_context():
+                timeout_threshold = datetime.utcnow() - timedelta(seconds=self.task_service.task_timeout)
+                
+                # 查找超时的运行中任务
+                timeout_tasks = Task.query.filter(
+                    Task.status == 'running',
+                    Task.started_at < timeout_threshold
+                ).all()
+                
+                for task in timeout_tasks:
+                    try:
+                        # 将超时任务标记为失败
+                        task.status = 'failed'
+                        task.error = 'Task timeout'
+                        task.completed_at = datetime.utcnow()
+                        db.session.commit()
+                        
+                        logger.warning(f"Task {task.id} marked as failed due to timeout")
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to handle timeout task {task.id}: {e}")
+                        db.session.rollback()
+                        
         except Exception as e:
             logger.error(f"Error in check_timeout_tasks: {e}")
             
     def _check_node_health(self):
         """检查节点健康状态"""
         try:
-            # 获取所有节点
-            nodes = Node.query.all()
-            
-            for node in nodes:
-                was_online = node.status == 'online'
-                is_healthy = self._is_node_healthy(node)
+            with self.app.app_context():
+                # 获取所有节点
+                nodes = Node.query.all()
                 
-                if was_online and not is_healthy:
-                    # 节点从在线变为离线
-                    node.status = 'offline'
-                    db.session.commit()
+                for node in nodes:
+                    was_online = node.status == 'online'
+                    is_healthy = self._is_node_healthy(node)
                     
-                    # 处理该节点上的运行中任务
-                    self._handle_offline_node_tasks(node.id)
-                    
-                    logger.warning(f"Node {node.id} went offline")
-                    
+                    if was_online and not is_healthy:
+                        # 节点从在线变为离线
+                        node.status = 'offline'
+                        db.session.commit()
+                        
+                        # 处理该节点上的运行中任务
+                        self._handle_offline_node_tasks(node.id)
+                        
+                        logger.warning(f"Node {node.id} went offline")
+                        
         except Exception as e:
             logger.error(f"Error in check_node_health: {e}")
             
     def _handle_offline_node_tasks(self, node_id: str):
         """处理离线节点上的任务"""
         try:
-            # 获取节点上所有运行中的任务
-            running_tasks = Task.query.filter_by(
-                node_id=node_id, 
-                status='running'
-            ).all()
-            
-            for task in running_tasks:
-                try:
-                    # 将任务重新标记为待分配
-                    task.status = 'pending'
-                    task.node_id = None
-                    task.assigned_at = None
-                    task.started_at = None
-                    task.error = 'Node went offline'
-                    
-                    db.session.commit()
-                    
-                    logger.info(f"Task {task.id} reassigned due to node offline")
-                    
-                except Exception as e:
-                    logger.error(f"Failed to reassign task {task.id}: {e}")
-                    db.session.rollback()
-                    
+            with self.app.app_context():
+                # 获取节点上所有运行中的任务
+                running_tasks = Task.query.filter_by(
+                    node_id=node_id, 
+                    status='running'
+                ).all()
+                
+                for task in running_tasks:
+                    try:
+                        # 将任务重新标记为待分配
+                        task.status = 'pending'
+                        task.node_id = None
+                        task.assigned_at = None
+                        task.started_at = None
+                        task.error = 'Node went offline'
+                        
+                        db.session.commit()
+                        
+                        logger.info(f"Task {task.id} reassigned due to node offline")
+                        
+                    except Exception as e:
+                        logger.error(f"Failed to reassign task {task.id}: {e}")
+                        db.session.rollback()
+                        
         except Exception as e:
             logger.error(f"Error in handle_offline_node_tasks: {e}")
             

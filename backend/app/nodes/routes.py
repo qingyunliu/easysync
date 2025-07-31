@@ -8,6 +8,7 @@ from backend.app.models import Node, AuditLog, MonitorData
 from backend.app.utils.ssh_utils import SSHClient
 from backend.app.utils import utils
 from . import nodes_bp
+from .status_monitor import get_status_monitor
 from .service import NodeService
 from .errors import NodeError, NodeNotFoundError, NodeUnhealthyError, NodeOperationError
 from backend.app.auth.services import AuditService
@@ -833,3 +834,147 @@ def batch_delete_nodes():
     except Exception as e:
         db.session.rollback()
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+@nodes_bp.route('/<string:node_id>/status-check', methods=['POST'])
+@jwt_required()
+def force_check_node_status(node_id):
+    """强制检查节点状态"""
+    current_user_id = get_jwt_identity()
+    try:
+        node = Node.query.filter_by(id=node_id, user_id=current_user_id).first()
+        if not node:
+            return jsonify({
+                'status': 'error',
+                'message': '节点不存在'
+            }), 404
+        
+        # 使用状态监控器强制检查节点状态
+        status_monitor = get_status_monitor()
+        result = status_monitor.force_check_node(node_id)
+        
+        if 'error' in result:
+            return jsonify({
+                'status': 'error',
+                'message': result['error']
+            }), 500
+        
+        return jsonify({
+            'status': 'success',
+            'message': '节点状态检查完成',
+            'data': result
+        })
+        
+    except Exception as e:
+        logger.error(f"强制检查节点状态失败: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'检查失败: {str(e)}'
+        }), 500
+
+@nodes_bp.route('/<string:node_id>/health', methods=['GET'])
+@jwt_required()
+def get_node_health(node_id):
+    """获取节点健康信息"""
+    current_user_id = get_jwt_identity()
+    try:
+        node = Node.query.filter_by(id=node_id, user_id=current_user_id).first()
+        if not node:
+            return jsonify({
+                'status': 'error',
+                'message': '节点不存在'
+            }), 404
+        
+        # 获取节点健康信息
+        status_monitor = get_status_monitor()
+        health_info = status_monitor.get_node_health_info(node_id)
+        
+        if 'error' in health_info:
+            return jsonify({
+                'status': 'error',
+                'message': health_info['error']
+            }), 500
+        
+        return jsonify({
+            'status': 'success',
+            'message': '获取节点健康信息成功',
+            'data': health_info
+        })
+        
+    except Exception as e:
+        logger.error(f"获取节点健康信息失败: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取失败: {str(e)}'
+        }), 500
+
+@nodes_bp.route('/status-summary', methods=['GET'])
+@jwt_required()
+def get_nodes_status_summary():
+    """获取所有节点状态摘要"""
+    current_user_id = get_jwt_identity()
+    try:
+        nodes = Node.query.filter_by(user_id=current_user_id).all()
+        
+        summary = {
+            'total_nodes': len(nodes),
+            'online_nodes': 0,
+            'offline_nodes': 0,
+            'healthy_nodes': 0,
+            'unhealthy_nodes': 0,
+            'agent_status_summary': {
+                'running': 0,
+                'active': 0,
+                'inactive': 0,
+                'error': 0,
+                'not_installed': 0
+            },
+            'nodes_detail': []
+        }
+        
+        status_monitor = get_status_monitor()
+        
+        for node in nodes:
+            # 获取健康信息
+            health_info = status_monitor.get_node_health_info(node.id)
+            
+            # 统计在线/离线状态
+            if node.status == 'online':
+                summary['online_nodes'] += 1
+            else:
+                summary['offline_nodes'] += 1
+            
+            # 统计健康状态
+            if health_info.get('is_healthy', False):
+                summary['healthy_nodes'] += 1
+            else:
+                summary['unhealthy_nodes'] += 1
+            
+            # 统计Agent状态
+            agent_status = node.agent_status or 'not_installed'
+            if agent_status in summary['agent_status_summary']:
+                summary['agent_status_summary'][agent_status] += 1
+            
+            # 添加节点详情
+            summary['nodes_detail'].append({
+                'id': node.id,
+                'name': node.name,
+                'ipaddress': node.ipaddress,
+                'status': node.status,
+                'agent_status': node.agent_status,
+                'last_heartbeat': node.last_heartbeat.isoformat() if node.last_heartbeat else None,
+                'is_healthy': health_info.get('is_healthy', False),
+                'heartbeat_status': health_info.get('heartbeat_status', 'unknown')
+            })
+        
+        return jsonify({
+            'status': 'success',
+            'message': '获取节点状态摘要成功',
+            'data': summary
+        })
+        
+    except Exception as e:
+        logger.error(f"获取节点状态摘要失败: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取失败: {str(e)}'
+        }), 500
