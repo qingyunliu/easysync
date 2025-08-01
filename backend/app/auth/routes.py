@@ -154,9 +154,77 @@ def login():
 @jwt_required(refresh=True)
 def refresh():
     """刷新访问令牌"""
-    current_user_id = get_jwt_identity()
-    access_token = create_access_token(identity=str(current_user_id))
-    return jsonify({'access_token': access_token})
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # 验证用户是否仍然存在且有效
+        user = User.query.get(current_user_id)
+        if not user:
+            return jsonify({
+                'status': 'error',
+                'error_code': 'REFRESH_TOKEN_INVALID',
+                'message': '用户不存在，请重新登录'
+            }), 401
+            
+        if not user.email_verified:
+            return jsonify({
+                'status': 'error', 
+                'error_code': 'REFRESH_TOKEN_INVALID',
+                'message': '用户邮箱未验证，请重新登录'
+            }), 401
+        
+        # 创建新的access token
+        access_token = create_access_token(identity=str(current_user_id))
+        
+        # 记录token刷新日志
+        AuditService.log_operation(
+            user_id=current_user_id,
+            action='refresh_token',
+            resource_type='user',
+            resource_id=current_user_id,
+            details={'msg': 'token刷新成功'},
+            result='success'
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'access_token': access_token
+        })
+        
+    except Exception as e:
+        # 处理refresh token过期或无效的情况
+        error_msg = str(e)
+        
+        if 'expired' in error_msg.lower() or 'invalid' in error_msg.lower():
+            # refresh token过期或无效
+            AuditService.log_operation(
+                user_id=None,
+                action='refresh_token',
+                resource_type='user',
+                details={'error': 'refresh token过期或无效'},
+                result='failed'
+            )
+            
+            return jsonify({
+                'status': 'error',
+                'error_code': 'REFRESH_TOKEN_EXPIRED',
+                'message': 'refresh token已过期，请重新登录'
+            }), 401
+        else:
+            # 其他错误
+            AuditService.log_operation(
+                user_id=None,
+                action='refresh_token',
+                resource_type='user',
+                details={'error': error_msg},
+                result='failed'
+            )
+            
+            return jsonify({
+                'status': 'error',
+                'error_code': 'REFRESH_TOKEN_ERROR',
+                'message': 'token刷新失败，请重新登录'
+            }), 401
 
 @auth_bp.route('/profile', methods=['GET'])
 @jwt_required()

@@ -1,7 +1,7 @@
 import { createApp } from "vue";
 import { createPinia } from "pinia";
 import ElementPlus from "element-plus";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import "element-plus/dist/index.css";
 import zhCn from "element-plus/dist/locale/zh-cn.mjs";
 import App from "./App.vue";
@@ -9,6 +9,7 @@ import router from "./router";
 import "./assets/theme.css";
 import axios from "axios";
 import { registerErrorHandler, handleError } from "./utils/error-handler";
+import { AuthHandler } from "./utils/auth-handler";
 import { apiConfig } from "@/config";
 
 // Configure axios
@@ -94,19 +95,29 @@ axios.interceptors.response.use(
         } catch (e) {
           isRefreshing = false;
           onRefreshed(null);
-          // 刷新失败，清除token并跳转登录
-          localStorage.removeItem("access_token");
-          localStorage.removeItem("refresh_token");
-          sessionStorage.removeItem("welcome_shown");
-          router.push("/login");
+          
+          // 检查是否是refresh token相关错误
+          const errorCode = e.response?.data?.error_code;
+          const errorMessage = e.response?.data?.message;
+          
+          if (errorCode === 'REFRESH_TOKEN_EXPIRED') {
+            // refresh token过期，显示确认对话框
+            AuthHandler.handleRefreshTokenExpired();
+            
+          } else if (errorCode === 'REFRESH_TOKEN_INVALID' || errorCode === 'REFRESH_TOKEN_ERROR') {
+            // refresh token无效或其他错误，显示错误对话框
+            AuthHandler.handleRefreshTokenInvalid(errorMessage);
+            
+          } else {
+            // 其他刷新错误，显示简单提示并跳转
+            AuthHandler.showTokenExpiredMessage();
+          }
+          
           return Promise.reject(e);
         }
       } else {
-        // 没有refresh_token
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        sessionStorage.removeItem("welcome_shown");
-        router.push("/login");
+        // 没有refresh_token，直接清理并跳转
+        AuthHandler.showTokenExpiredMessage();
         return Promise.reject(error);
       }
     }

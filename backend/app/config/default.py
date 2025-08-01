@@ -12,8 +12,8 @@ class Config:
     
     # JWT配置
     JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key'
-    JWT_ACCESS_TOKEN_EXPIRES = 3600  # 1小时
-    JWT_REFRESH_TOKEN_EXPIRES = 604800  # 7天
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES_HOURS', 1)))  # 默认1小时
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES_DAYS', 7)))  # 默认7天，可通过环境变量配置
     
     # CORS配置
     CORS_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '*')
@@ -112,6 +112,10 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL', 'mysql+pymysql://root:123456@localhost:3306/easysync_test')
 
 class ProductionConfig(Config):
+    # 生产环境使用更严格的token过期时间
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES_MINUTES', 30)))  # 生产环境30分钟
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES_DAYS', 3)))  # 生产环境3天
+    
     @classmethod
     def init_app(cls, app):
         Config.init_app(app)
