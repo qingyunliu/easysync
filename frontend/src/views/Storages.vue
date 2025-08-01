@@ -1230,12 +1230,20 @@ const fetchBuckets = async () => {
     if (response.data.status === 'task_created') {
       ElMessage.info(`存储桶列表获取任务已创建，任务ID: ${response.data.task_id}`)
     } else if (response.data.status === 'success') {
-      if (response.data.data.buckets && Array.isArray(response.data.data.buckets)) {
-        buckets.value = response.data.data.buckets
-        bucketTotal.value = response.data.data.total
+      const responseData = response.data.data
+      
+      // 处理分页数据结构
+      if (responseData.buckets && Array.isArray(responseData.buckets)) {
+        buckets.value = responseData.buckets
+        // 使用分页信息中的total_count
+        if (responseData.pagination) {
+          bucketTotal.value = responseData.pagination.total_count
+        } else {
+          bucketTotal.value = responseData.total || responseData.buckets.length
+        }
       } else {
-        buckets.value = response.data.data
-        bucketTotal.value = response.data.data.length
+        buckets.value = responseData
+        bucketTotal.value = responseData.length
       }
     } else {
       ElMessage.error(response.data.message || '获取存储桶列表失败')
