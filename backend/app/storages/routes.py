@@ -515,8 +515,7 @@ def list_objects(storage_id):
 
         return jsonify({
             'status': 'success',
-            'data': result.get('objects', []),
-            'pagination': result.get('pagination', {}),
+            'data': result.get('data', []),
             'total': result.get('total', 0),
             'page': page,
             'page_size': page_size

@@ -81,7 +81,7 @@ class StorageRealTimeService:
             node_id=target_node_id,
             command_type='get_stats',
             params=params,
-            timeout=30
+            timeout=300
         )
     
     def list_objects_realtime(self, storage_id: str, bucket: str = '', prefix: str = '', page: int = 1, 
