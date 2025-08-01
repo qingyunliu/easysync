@@ -57,6 +57,12 @@
 
         <!-- 系统管理 -->
         <div class="menu-group-title" v-if="!isCollapsed">系统管理</div>
+        <el-tooltip content="消息通知" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/notifications">
+            <el-icon><Bell /></el-icon>
+            <span v-if="!isCollapsed">消息通知</span>
+          </el-menu-item>
+        </el-tooltip>
         <el-tooltip content="操作审计" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/audit-logs">
             <el-icon><DataAnalysis /></el-icon>
@@ -153,6 +159,7 @@ import {
   Expand,
   Clock,
   Files,
+  Bell,
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import defaultAvatar from '@/assets/avatar/default-avatar.jpeg'

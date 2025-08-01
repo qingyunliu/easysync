@@ -17,6 +17,7 @@ import RegisterMailSent from "../views/RegisterMailSent.vue";
 import ForgotPassword from "../views/ForgotPassword.vue";
 import ResetPassword from "../views/ResetPassword.vue";
 import ResetMailSent from "../views/ResetMailSent.vue";
+import Notifications from "../views/Notifications.vue";
 
 const routes = [
   {
@@ -117,6 +118,12 @@ const routes = [
         name: "AuditLogs",
         component: AuditLogs,
         meta: { requiresAuth: true, requiresAdmin: true },
+      },
+      {
+        path: "notifications",
+        name: "Notifications",
+        component: Notifications,
+        meta: { requiresAuth: true },
       },
     ],
   },
