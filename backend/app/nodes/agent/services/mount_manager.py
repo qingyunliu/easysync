@@ -102,14 +102,17 @@ class MountManager:
             logger.error(f"挂载存储 {storage_id} 时发生异常: {e}")
             return False
             
-    def _mount_nfs(self, config: dict, mount_point: str) -> bool:
+    def _mount_nfs(self, storage_config: dict, mount_point: str) -> bool:
         """挂载NFS存储"""
         try:
+            # 从storage_config中获取实际的配置
+            config = storage_config.get('config', {})
+            
             server = config.get('server') or config.get('host')
             path = config.get('path') or config.get('share_path')
             
             if not server or not path:
-                logger.error("NFS配置缺少server或path")
+                logger.error(f"NFS配置缺少server或path: {config}")
                 return False
                 
             # 构建NFS挂载命令
@@ -134,16 +137,19 @@ class MountManager:
             logger.error(f"NFS挂载异常: {e}")
             return False
             
-    def _mount_smb(self, config: dict, mount_point: str) -> bool:
+    def _mount_smb(self, storage_config: dict, mount_point: str) -> bool:
         """挂载SMB/CIFS存储"""
         try:
+            # 从storage_config中获取实际的配置
+            config = storage_config.get('config', {})
+            
             server = config.get('server') or config.get('host')
             share = config.get('share') or config.get('share_path')
             username = config.get('username', '')
             password = config.get('password', '')
             
             if not server or not share:
-                logger.error("SMB配置缺少server或share")
+                logger.error(f"SMB配置缺少server或share: {config}")
                 return False
                 
             # 构建SMB挂载命令
