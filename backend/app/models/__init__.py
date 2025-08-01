@@ -7,8 +7,7 @@ from .client import Client
 from .node import Node, NodeStatus
 from .sync import SyncRule
 from .alert import Alert, AlertRule
-from .command import Command
-from .realtime_command import RealTimeCommand
+from .command import RealTimeCommand
 
 __all__ = [
     'BaseModel',
@@ -30,6 +29,5 @@ __all__ = [
     'TaskLog',
     'Alert',
     'AlertRule',
-    'Command',
     'RealTimeCommand'
 ] 
