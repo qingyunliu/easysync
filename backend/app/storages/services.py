@@ -670,9 +670,7 @@ class StorageService:
                     'status': 'error',
                     'message': f'下载 NAS 文件失败: {str(e)}'
                 }
-
-    # =============== 通知相关方法 ===============
-    
+   
     def _send_storage_notification(self, storage, operation_type, message, details=None):
         """发送存储操作通知"""
         try:

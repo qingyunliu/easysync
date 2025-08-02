@@ -24,7 +24,7 @@
         <el-card class="stat-card">
           <div class="stat-content stat-flex">
             <div class="stat-icon total">
-              <el-icon><Bell /></el-icon>
+              <el-icon><ChatDotRound /></el-icon>
             </div>
             <div>
               <div class="stat-number">{{ stats.total || 0 }}</div>
@@ -37,7 +37,7 @@
         <el-card class="stat-card unread">
           <div class="stat-content stat-flex">
             <div class="stat-icon unread">
-              <el-icon><CircleDot /></el-icon>
+              <el-icon><ChatDotRound /></el-icon>
             </div>
             <div>
               <div class="stat-number">{{ stats.unread || 0 }}</div>
@@ -257,7 +257,7 @@ import {
   Bell,
   Check,
   Delete,
-  CircleDot,
+  ChatDotRound,
   InfoFilled,
   WarningFilled,
   Search,
