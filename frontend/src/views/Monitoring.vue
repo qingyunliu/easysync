@@ -283,6 +283,8 @@ onMounted(() => {
   fetchSystemStatus()
   fetchAlertStats()
   initCharts()
+  updateCurrentStatus()
+  updateCharts()
   startAutoUpdate()
 })
 
@@ -590,9 +592,6 @@ const updateCharts = async () => {
           ]
         })
       }
-      
-      // 更新当前状态
-      updateCurrentStatus()
     }
   } catch (error) {
     console.error('获取监控数据失败:', error)
