@@ -18,6 +18,8 @@ import ForgotPassword from "../views/ForgotPassword.vue";
 import ResetPassword from "../views/ResetPassword.vue";
 import ResetMailSent from "../views/ResetMailSent.vue";
 import Notifications from "../views/Notifications.vue";
+import Monitoring from "../views/Monitoring.vue";
+import AlertPolicies from "../views/AlertPolicies.vue";
 
 const routes = [
   {
@@ -123,6 +125,18 @@ const routes = [
         path: "notifications",
         name: "Notifications",
         component: Notifications,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: "monitoring",
+        name: "Monitoring",
+        component: Monitoring,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: "alert-policies",
+        name: "AlertPolicies",
+        component: AlertPolicies,
         meta: { requiresAuth: true },
       },
     ],

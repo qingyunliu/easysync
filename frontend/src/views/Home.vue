@@ -63,9 +63,26 @@
             <span v-if="!isCollapsed">消息通知</span>
           </el-menu-item>
         </el-tooltip>
+
+        <!-- 监控告警 -->
+        <div class="menu-group-title" v-if="!isCollapsed">监控告警</div>
+        <el-tooltip content="系统监控" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/monitoring">
+            <el-icon><DataAnalysis /></el-icon>
+            <span v-if="!isCollapsed">系统监控</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="告警策略" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/alert-policies">
+            <el-icon><Warning /></el-icon>
+            <span v-if="!isCollapsed">告警策略</span>
+          </el-menu-item>
+        </el-tooltip>
+
+        <!-- 系统管理续 -->
         <el-tooltip content="操作审计" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/audit-logs">
-            <el-icon><DataAnalysis /></el-icon>
+            <el-icon><Notebook /></el-icon>
             <span v-if="!isCollapsed">操作审计</span>
           </el-menu-item>
         </el-tooltip>
@@ -160,6 +177,8 @@ import {
   Clock,
   Files,
   Bell,
+  Warning,
+  Notebook,
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import defaultAvatar from '@/assets/avatar/default-avatar.jpeg'

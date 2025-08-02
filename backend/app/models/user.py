@@ -120,6 +120,30 @@ class NotificationSetting(BaseModel):
     __tablename__ = 'notification_settings'
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     enabled = db.Column(db.Boolean, default=True)
+    
+    # 通知策略类型配置
+    notification_policies = db.Column(db.JSON, comment='通知策略配置')
+    """
+    通知策略配置示例:
+    {
+        "task_completion": {
+            "enabled": true,
+            "channels": ["email", "webhook"],
+            "severity": ["success", "error"]
+        },
+        "storage_error": {
+            "enabled": true,
+            "channels": ["email"],
+            "severity": ["error", "warning"]
+        },
+        "system_alert": {
+            "enabled": false,
+            "channels": ["webhook"],
+            "severity": ["critical", "error"]
+        }
+    }
+    """
+    
     # 邮件
     email_enabled = db.Column(db.Boolean, default=False)
     smtp_host = db.Column(db.String(255))
@@ -141,6 +165,20 @@ class NotificationSetting(BaseModel):
     sms_api_key = db.Column(db.String(255))  # 可加密
     sms_template_id = db.Column(db.String(255))
     sms_sign_name = db.Column(db.String(255))
+    
+    # 通知偏好设置
+    quiet_hours = db.Column(db.JSON, comment='免打扰时间配置')
+    """
+    免打扰时间配置示例:
+    {
+        "enabled": true,
+        "start_time": "22:00",
+        "end_time": "08:00",
+        "timezone": "Asia/Shanghai",
+        "weekends_only": false
+    }
+    """
+    
     # 关联
     user = db.relationship('User', foreign_keys=[user_id], backref=db.backref('notification_setting', lazy=True))
 
@@ -149,6 +187,7 @@ class NotificationSetting(BaseModel):
         data.update({
             'user_id': self.user_id,
             'enabled': self.enabled,
+            'notification_policies': self.notification_policies or {},
             'email_enabled': self.email_enabled,
             'smtp_host': self.smtp_host,
             'smtp_port': self.smtp_port,
@@ -165,6 +204,7 @@ class NotificationSetting(BaseModel):
             'sms_provider': self.sms_provider,
             'sms_api_key': self.sms_api_key,
             'sms_template_id': self.sms_template_id,
-            'sms_sign_name': self.sms_sign_name
+            'sms_sign_name': self.sms_sign_name,
+            'quiet_hours': self.quiet_hours or {}
         })
         return data

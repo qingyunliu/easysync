@@ -1074,6 +1074,11 @@ class NotificationService:
             metadata: 额外的元数据
         """
         try:
+            # 检查用户通知策略配置
+            if user_id and not self._should_send_notification(user_id, level, metadata):
+                logger.info(f"Notification filtered by user policy: user_id={user_id}, level={level}")
+                return
+            
             # 如果没有指定用户ID，发送给所有管理员
             if user_id is None:
                 self.notify_all_admins(
@@ -1096,11 +1101,245 @@ class NotificationService:
                 db.session.add(notification)
                 db.session.commit()
                 
+                # 检查是否需要发送外部通知（邮件、webhook等）
+                self._send_external_notifications(user_id, notification, metadata)
+                
                 # 记录日志
                 logger.info(f"Notification sent to user {user_id}: {title}")
                 
         except Exception as e:
             logger.error(f"Failed to send notification: {str(e)}")
+    
+    def _should_send_notification(self, user_id: int, level: str, metadata: Dict[str, Any] = None) -> bool:
+        """检查是否应该发送通知"""
+        try:
+            # 获取用户通知设置
+            setting = NotificationSetting.query.filter_by(user_id=user_id).first()
+            if not setting or not setting.enabled:
+                return False
+            
+            # 检查通知策略配置
+            policies = setting.notification_policies or {}
+            
+            # 根据元数据确定通知类型
+            notification_type = self._determine_notification_type(metadata)
+            
+            # 检查该类型的通知是否启用
+            if notification_type in policies:
+                policy = policies[notification_type]
+                
+                # 检查是否启用
+                if not policy.get('enabled', True):
+                    return False
+                
+                # 检查严重级别
+                allowed_severities = policy.get('severity', ['info', 'success', 'warning', 'error'])
+                if level not in allowed_severities:
+                    return False
+            
+            # 检查免打扰时间
+            if self._is_in_quiet_hours(setting):
+                return False
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error checking notification policy: {str(e)}")
+            return True  # 默认发送
+    
+    def _determine_notification_type(self, metadata: Dict[str, Any] = None) -> str:
+        """根据元数据确定通知类型"""
+        if not metadata:
+            return 'general'
+        
+        # 根据元数据中的信息判断通知类型
+        if 'task_id' in metadata or 'task_name' in metadata:
+            return 'task_completion'
+        elif 'storage_id' in metadata or 'storage_name' in metadata:
+            return 'storage_error'
+        elif 'node_id' in metadata or 'node_name' in metadata:
+            return 'node_status'
+        elif 'client_id' in metadata or 'client_name' in metadata:
+            return 'client_status'
+        elif 'error' in metadata or 'alert_id' in metadata:
+            return 'system_alert'
+        else:
+            return 'general'
+    
+    def _is_in_quiet_hours(self, setting: NotificationSetting) -> bool:
+        """检查是否在免打扰时间内"""
+        try:
+            quiet_hours = setting.quiet_hours or {}
+            if not quiet_hours.get('enabled', False):
+                return False
+            
+            from datetime import datetime, timezone
+            import pytz
+            
+            # 获取时区
+            tz_name = quiet_hours.get('timezone', 'Asia/Shanghai')
+            tz = pytz.timezone(tz_name)
+            
+            # 获取当前时间
+            now = datetime.now(tz)
+            current_time = now.time()
+            current_weekday = now.weekday()  # 0=Monday, 6=Sunday
+            
+            # 检查是否仅在周末生效
+            if quiet_hours.get('weekends_only', False):
+                if current_weekday < 5:  # Monday-Friday
+                    return False
+            
+            # 检查时间范围
+            start_time_str = quiet_hours.get('start_time', '22:00')
+            end_time_str = quiet_hours.get('end_time', '08:00')
+            
+            start_time = datetime.strptime(start_time_str, '%H:%M').time()
+            end_time = datetime.strptime(end_time_str, '%H:%M').time()
+            
+            if start_time <= end_time:
+                # 同一天内的时间范围
+                return start_time <= current_time <= end_time
+            else:
+                # 跨天的时间范围
+                return current_time >= start_time or current_time <= end_time
+                
+        except Exception as e:
+            logger.error(f"Error checking quiet hours: {str(e)}")
+            return False
+    
+    def _send_external_notifications(self, user_id: int, notification: Notification, metadata: Dict[str, Any] = None):
+        """发送外部通知（邮件、webhook等）"""
+        try:
+            setting = NotificationSetting.query.filter_by(user_id=user_id).first()
+            if not setting:
+                return
+            
+            # 确定需要发送的渠道
+            notification_type = self._determine_notification_type(metadata)
+            policies = setting.notification_policies or {}
+            
+            channels = []
+            if notification_type in policies:
+                channels = policies[notification_type].get('channels', [])
+            
+            # 如果没有配置策略，使用默认渠道配置
+            if not channels:
+                if setting.email_enabled:
+                    channels.append('email')
+                if setting.webhook_enabled:
+                    channels.append('webhook')
+                if setting.dingtalk_enabled:
+                    channels.append('dingtalk')
+                if setting.sms_enabled:
+                    channels.append('sms')
+            
+            # 发送通知
+            for channel in channels:
+                try:
+                    if channel == 'email' and setting.email_enabled:
+                        self._send_email_notification_external(setting, notification)
+                    elif channel == 'webhook' and setting.webhook_enabled:
+                        self._send_webhook_notification_external(setting, notification)
+                    elif channel == 'dingtalk' and setting.dingtalk_enabled:
+                        self._send_dingtalk_notification_external(setting, notification)
+                    elif channel == 'sms' and setting.sms_enabled:
+                        self._send_sms_notification_external(setting, notification)
+                except Exception as e:
+                    logger.error(f"Failed to send {channel} notification: {str(e)}")
+                    
+        except Exception as e:
+            logger.error(f"Failed to send external notifications: {str(e)}")
+    
+    def _send_email_notification_external(self, setting: NotificationSetting, notification: Notification):
+        """发送外部邮件通知"""
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            
+            msg = MIMEMultipart()
+            msg['From'] = setting.smtp_username
+            msg['To'] = setting.email
+            msg['Subject'] = f'[EasySync] {notification.title}'
+            
+            # 邮件内容
+            body = f"""
+            <html>
+            <body>
+                <h2>{notification.title}</h2>
+                <p>{notification.content}</p>
+                <p><strong>级别:</strong> {notification.level}</p>
+                <p><strong>时间:</strong> {notification.created_at.strftime('%Y-%m-%d %H:%M:%S')}</p>
+                <hr>
+                <p>此邮件由 EasySync 系统自动发送，请勿回复。</p>
+            </body>
+            </html>
+            """
+            msg.attach(MIMEText(body, 'html'))
+            
+            # 发送邮件
+            with smtplib.SMTP(setting.smtp_host, setting.smtp_port) as server:
+                if setting.smtp_port == 587:
+                    server.starttls()
+                server.login(setting.smtp_username, setting.smtp_password)
+                server.send_message(msg)
+                
+            logger.info(f"Email notification sent to {setting.email}")
+            
+        except Exception as e:
+            logger.error(f"Failed to send email notification: {str(e)}")
+            raise
+    
+    def _send_webhook_notification_external(self, setting: NotificationSetting, notification: Notification):
+        """发送外部Webhook通知"""
+        try:
+            import requests
+            import hmac
+            import hashlib
+            import time
+            
+            # 准备数据
+            data = {
+                'id': notification.id,
+                'title': notification.title,
+                'content': notification.content,
+                'level': notification.level,
+                'type': notification.type,
+                'user_id': notification.user_id,
+                'timestamp': notification.created_at.isoformat(),
+                'metadata': notification.metadata or {}
+            }
+            
+            headers = {'Content-Type': 'application/json'}
+            
+            # 如果配置了密钥，添加签名
+            if setting.webhook_secret:
+                timestamp = str(int(time.time()))
+                payload = f"{timestamp}\n{setting.webhook_secret}"
+                signature = hmac.new(
+                    setting.webhook_secret.encode(),
+                    payload.encode(),
+                    hashlib.sha256
+                ).hexdigest()
+                
+                headers['X-Webhook-Signature'] = signature
+                headers['X-Webhook-Timestamp'] = timestamp
+            
+            # 发送请求
+            response = requests.post(
+                setting.webhook_url,
+                json=data,
+                headers=headers,
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            logger.info(f"Webhook notification sent to {setting.webhook_url}")
+            
+        except Exception as e:
+            logger.error(f"Failed to send webhook notification: {str(e)}")
+            raise
     
     # =============== 批量通知方法 ===============
     
