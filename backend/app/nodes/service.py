@@ -242,8 +242,6 @@ class NodeService:
             'created_at': node.created_at.isoformat() if node.created_at else None
         }
     
-    # =============== 通知相关方法 ===============
-    
     def _send_node_status_notification(self, node: Node, previous_status: str, new_status: str) -> None:
         """发送节点状态变更通知"""
         try:

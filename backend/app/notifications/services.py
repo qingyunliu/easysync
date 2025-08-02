@@ -23,7 +23,8 @@ class NotificationService:
     
     def __init__(self):
         self.settings = {}
-        self._load_settings()
+        # 延迟加载设置，避免在应用上下文外执行数据库查询
+        self._settings_loaded = False
         self.notification_types = {
             # 任务相关
             'task_started': '任务开始执行',
@@ -102,9 +103,18 @@ class NotificationService:
     
     def _load_settings(self):
         """加载用户通知设置"""
-        settings = NotificationSetting.query.all()
-        for setting in settings:
-            self.settings[setting.user_id] = setting
+        if self._settings_loaded:
+            return
+            
+        try:
+            settings = NotificationSetting.query.all()
+            for setting in settings:
+                self.settings[setting.user_id] = setting
+            self._settings_loaded = True
+        except Exception as e:
+            # 如果在应用上下文外，记录警告但不抛出异常
+            logger.warning(f"无法加载通知设置: {e}")
+            self._settings_loaded = True  # 标记为已加载，避免重复尝试
     
     def get_user_setting(self, user_id):
         return NotificationSetting.query.filter_by(user_id=user_id).first()
@@ -304,6 +314,7 @@ class NotificationService:
             user = User.query.get(task.user_id)
             
             # 获取用户通知设置
+            self._load_settings()
             setting = self.settings.get(user.id)
             if not setting or not setting.enabled:
                 return
@@ -355,6 +366,7 @@ class NotificationService:
             user = User.query.get(task.user_id)
             
             # 获取用户通知设置
+            self._load_settings()
             setting = self.settings.get(user.id)
             if not setting or not setting.enabled:
                 return
