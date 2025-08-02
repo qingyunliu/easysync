@@ -581,15 +581,16 @@ class NotificationService:
         db.session.add(notification)
         db.session.commit()
         
-        # 发送邮件通知
-        self._send_email_notification(notification)
+        # 根据用户设置发送通知
+        self._send_notification_by_user_settings(notification)
         
         return notification
         
-    def get_user_notifications(self, user_id: int, limit: int = 100) -> List[Notification]:
+    def get_user_notifications(self, user_id: int, limit: int = 100, offset: int = 0) -> List[Notification]:
         """获取用户通知"""
         return Notification.query.filter_by(user_id=user_id)\
             .order_by(Notification.created_at.desc())\
+            .offset(offset)\
             .limit(limit)\
             .all()
             
@@ -606,8 +607,157 @@ class NotificationService:
         db.session.delete(notification)
         db.session.commit()
         
+    def _send_notification_by_user_settings(self, notification: Notification) -> None:
+        """根据用户设置发送通知"""
+        try:
+            user = User.query.get(notification.user_id)
+            if not user:
+                return
+                
+            # 加载用户通知设置
+            self._load_settings()
+            setting = self.settings.get(user.id)
+            
+            if not setting or not setting.enabled:
+                return
+                
+            # 发送邮件通知
+            if setting.email_enabled and user.email:
+                self._send_email_notification_with_settings(notification, setting, user.email)
+                
+            # 发送钉钉通知
+            if setting.dingtalk_enabled and setting.dingtalk_webhook:
+                self._send_dingtalk_notification_with_settings(notification, setting)
+                
+            # 发送Webhook通知
+            if setting.webhook_enabled and setting.webhook_url:
+                self._send_webhook_notification_with_settings(notification, setting)
+                
+            # 发送短信通知
+            if setting.sms_enabled and user.phone:
+                self._send_sms_notification_with_settings(notification, setting, user.phone)
+                
+        except Exception as e:
+            logger.error(f"发送通知失败: {str(e)}")
+            
+    def _send_email_notification_with_settings(self, notification: Notification, setting, user_email: str) -> None:
+        """使用用户设置发送邮件通知"""
+        try:
+            # 创建邮件
+            msg = MIMEMultipart()
+            msg['From'] = setting.smtp_username or 'noreply@easysync.com'
+            msg['To'] = user_email
+            msg['Subject'] = f'[EasySync] {notification.title}'
+            
+            # 邮件内容
+            body = f"""
+            <html>
+            <body>
+                <h2>{notification.title}</h2>
+                <p>{notification.content}</p>
+                <p>时间: {notification.created_at.strftime('%Y-%m-%d %H:%M:%S')}</p>
+                <hr>
+                <p>此邮件由系统自动发送，请勿回复。</p>
+            </body>
+            </html>
+            """
+            msg.attach(MIMEText(body, 'html'))
+            
+            # 发送邮件
+            if setting.smtp_port == 465:
+                server = smtplib.SMTP_SSL(setting.smtp_host, setting.smtp_port)
+            else:
+                server = smtplib.SMTP(setting.smtp_host, setting.smtp_port)
+                server.starttls()
+                
+            server.login(setting.smtp_username, setting.smtp_password)
+            server.send_message(msg)
+            server.quit()
+                
+        except Exception as e:
+            logger.error(f"发送邮件通知失败: {str(e)}")
+            
+    def _send_dingtalk_notification_with_settings(self, notification: Notification, setting) -> None:
+        """使用用户设置发送钉钉通知"""
+        try:
+            webhook = setting.dingtalk_webhook
+            secret = setting.dingtalk_secret or ''
+            timestamp = str(round(time.time() * 1000))
+            string_to_sign = f"{timestamp}\n{secret}"
+            
+            if secret:
+                sign = base64.b64encode(
+                    hmac.new(secret.encode('utf-8'), string_to_sign.encode('utf-8'), digestmod=hashlib.sha256).digest()
+                ).decode('utf-8')
+                webhook = f"{webhook}&timestamp={timestamp}&sign={urllib.parse.quote(sign)}"
+            
+            data = {
+                "msgtype": "text",
+                "text": {
+                    "content": f"[EasySync] {notification.title}\n{notification.content}"
+                }
+            }
+            
+            response = requests.post(webhook, json=data, timeout=10)
+            response.raise_for_status()
+                
+        except Exception as e:
+            logger.error(f"发送钉钉通知失败: {str(e)}")
+            
+    def _send_webhook_notification_with_settings(self, notification: Notification, setting) -> None:
+        """使用用户设置发送Webhook通知"""
+        try:
+            data = {
+                'type': notification.type,
+                'title': notification.title,
+                'content': notification.content,
+                'level': notification.level,
+                'timestamp': notification.created_at.isoformat(),
+                'user_id': notification.user_id
+            }
+            
+            headers = {'Content-Type': 'application/json'}
+            if setting.webhook_secret:
+                # 可以添加签名验证
+                pass
+                
+            response = requests.post(setting.webhook_url, json=data, headers=headers, timeout=10)
+            response.raise_for_status()
+                
+        except Exception as e:
+            logger.error(f"发送Webhook通知失败: {str(e)}")
+            
+    def _send_sms_notification_with_settings(self, notification: Notification, setting, user_phone: str) -> None:
+        """使用用户设置发送短信通知"""
+        try:
+            params = {
+                'title': notification.title,
+                'content': notification.content,
+                'level': notification.level
+            }
+            
+            if setting.sms_provider == 'aliyun':
+                self._send_aliyun_sms(
+                    setting.sms_api_key,
+                    setting.sms_template_id,
+                    setting.sms_sign_name,
+                    user_phone,
+                    params
+                )
+            elif setting.sms_provider == 'tencent':
+                self._send_tencent_sms(
+                    setting.sms_api_key,
+                    setting.sms_template_id,
+                    setting.sms_sign_name,
+                    user_phone,
+                    params
+                )
+                
+        except Exception as e:
+            logger.error(f"发送短信通知失败: {str(e)}")
+            
     def _send_email_notification(self, notification: Notification) -> None:
-        """发送邮件通知"""
+        """发送邮件通知（兼容旧版本）"""
         try:
             user = User.query.get(notification.user_id)
             if not user or not user.email:

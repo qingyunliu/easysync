@@ -9,10 +9,13 @@ from .service import MonitorService
 from .errors import MonitorError, MonitorNotFoundError, MonitorValidationError, MonitorOperationError, AlertRuleError
 import logging
 from backend.app.auth.services import AuditService
+from backend.app.notifications.services import NotificationService
 
 logger = logging.getLogger(__name__)
 
 monitor_service = MonitorService()
+notification_service = NotificationService()
+
 @monitor_bp.errorhandler(MonitorError)
 def handle_monitor_error(error):
     """处理监控错误"""
@@ -231,6 +234,16 @@ def create_alert_rule():
         user_id = get_jwt_identity()
         
         rule = monitor_service.create_alert_rule(data)
+        
+        # 发送告警规则创建通知
+        notification_service.create_notification(
+            user_id=user_id,
+            type='alert_rule_created',
+            title=f'告警规则已创建: {rule.name}',
+            content=f'告警规则 {rule.name} 已成功创建。\n指标: {rule.metric}\n阈值: {rule.operator} {rule.threshold}',
+            level='info'
+        )
+        
         AuditService.log_operation(
             user_id=user_id,
             action='create',
@@ -395,8 +408,19 @@ def delete_alert_rule(rule_id):
                 'message': '告警规则不存在'
             }), 404
             
+        rule_name = rule.name
+        
         db.session.delete(rule)
         db.session.commit()
+        
+        # 发送告警规则删除通知
+        notification_service.create_notification(
+            user_id=user_id,
+            type='alert_rule_deleted',
+            title=f'告警规则已删除: {rule_name}',
+            content=f'告警规则 {rule_name} 已被删除。',
+            level='info'
+        )
         
         AuditService.log_operation(
             user_id=user_id,
@@ -469,9 +493,26 @@ def get_alerts_summary():
 def resolve_alert(alert_id):
     """解决告警"""
     user_id = get_jwt_identity()
+    alert = Alert.query.get(alert_id)
+    
+    if not alert:
+        return jsonify({
+            'status': 'error',
+            'message': '告警不存在'
+        }), 404
+        
     success = Alert.resolve_alert(alert_id, user_id=user_id)
     
     if success:
+        # 发送告警解决通知
+        notification_service.create_notification(
+            user_id=user_id,
+            type='alert_resolved',
+            title=f'告警已解决: {alert.title}',
+            content=f'告警 {alert.title} 已被解决。\n解决时间: {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}',
+            level='success'
+        )
+        
         return jsonify({
             'status': 'success',
             'message': '告警已解决'
@@ -490,9 +531,25 @@ def acknowledge_alert(alert_id):
     data = request.get_json()
     acknowledged_by = data.get('acknowledged_by', user_id)
     
+    alert = Alert.query.get(alert_id)
+    if not alert:
+        return jsonify({
+            'status': 'error',
+            'message': '告警不存在'
+        }), 404
+        
     success = Alert.acknowledge_alert(alert_id, acknowledged_by, user_id=user_id)
     
     if success:
+        # 发送告警确认通知
+        notification_service.create_notification(
+            user_id=user_id,
+            type='alert_acknowledged',
+            title=f'告警已确认: {alert.title}',
+            content=f'告警 {alert.title} 已被确认。\n确认时间: {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}',
+            level='info'
+        )
+        
         return jsonify({
             'status': 'success',
             'message': '告警已确认'

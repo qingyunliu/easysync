@@ -60,10 +60,11 @@ def get_notifications():
     """获取用户通知列表"""
     notification_service = NotificationService()
     limit = request.args.get('limit', 100, type=int)
-    notifications = notification_service.get_user_notifications(get_jwt_identity(), limit)
+    offset = request.args.get('offset', 0, type=int)
+    notifications = notification_service.get_user_notifications(get_jwt_identity(), limit, offset)
     return jsonify([n.to_dict() for n in notifications])
 
-@notifications_bp.route('/<int:notification_id>/read', methods=['POST'])
+@notifications_bp.route('/<string:notification_id>/read', methods=['POST'])
 @jwt_required()
 def mark_as_read(notification_id):
     """标记通知为已读"""
@@ -71,7 +72,7 @@ def mark_as_read(notification_id):
     notification_service.mark_as_read(notification_id)
     return jsonify({'message': '通知已标记为已读'})
 
-@notifications_bp.route('/<int:notification_id>', methods=['DELETE'])
+@notifications_bp.route('/<string:notification_id>', methods=['DELETE'])
 @jwt_required()
 def delete_notification(notification_id):
     """删除通知"""
