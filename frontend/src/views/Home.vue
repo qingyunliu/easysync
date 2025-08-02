@@ -57,12 +57,6 @@
 
         <!-- 系统管理 -->
         <div class="menu-group-title" v-if="!isCollapsed">系统管理</div>
-        <el-tooltip content="消息通知" placement="right" :disabled="!isCollapsed">
-          <el-menu-item index="/notifications">
-            <el-icon><Bell /></el-icon>
-            <span v-if="!isCollapsed">消息通知</span>
-          </el-menu-item>
-        </el-tooltip>
         <el-tooltip content="操作审计" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/audit-logs">
             <el-icon><Notebook /></el-icon>
@@ -94,6 +88,12 @@
           <el-menu-item index="/alert-policies">
             <el-icon><Warning /></el-icon>
             <span v-if="!isCollapsed">告警策略</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="消息通知" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/notifications">
+            <el-icon><Bell /></el-icon>
+            <span v-if="!isCollapsed">消息通知</span>
           </el-menu-item>
         </el-tooltip>
 

@@ -1,6 +1,6 @@
 from flask import jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from . import AlertPolicyService
+from backend.app.alerts.services import AlertPolicyService
 from . import alerts_bp
 
 alert_service = AlertPolicyService()
