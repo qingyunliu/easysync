@@ -63,23 +63,6 @@
             <span v-if="!isCollapsed">消息通知</span>
           </el-menu-item>
         </el-tooltip>
-
-        <!-- 监控告警 -->
-        <div class="menu-group-title" v-if="!isCollapsed">监控告警</div>
-        <el-tooltip content="系统监控" placement="right" :disabled="!isCollapsed">
-          <el-menu-item index="/monitoring">
-            <el-icon><DataAnalysis /></el-icon>
-            <span v-if="!isCollapsed">系统监控</span>
-          </el-menu-item>
-        </el-tooltip>
-        <el-tooltip content="告警策略" placement="right" :disabled="!isCollapsed">
-          <el-menu-item index="/alert-policies">
-            <el-icon><Warning /></el-icon>
-            <span v-if="!isCollapsed">告警策略</span>
-          </el-menu-item>
-        </el-tooltip>
-
-        <!-- 系统管理续 -->
         <el-tooltip content="操作审计" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/audit-logs">
             <el-icon><Notebook /></el-icon>
@@ -96,6 +79,21 @@
           <el-menu-item index="/settings">
             <el-icon><Setting /></el-icon>
             <span v-if="!isCollapsed">系统设置</span>
+          </el-menu-item>
+        </el-tooltip>
+
+        <!-- 监控告警 -->
+        <div class="menu-group-title" v-if="!isCollapsed">监控告警</div>
+        <el-tooltip content="系统监控" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/monitoring">
+            <el-icon><DataAnalysis /></el-icon>
+            <span v-if="!isCollapsed">系统监控</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="告警策略" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/alert-policies">
+            <el-icon><Warning /></el-icon>
+            <span v-if="!isCollapsed">告警策略</span>
           </el-menu-item>
         </el-tooltip>
 

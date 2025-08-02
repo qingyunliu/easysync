@@ -118,7 +118,7 @@ def create_app(config_name=None):
     app.register_blueprint(agent_bp, url_prefix='/api/agent')
     app.register_blueprint(settings_bp, url_prefix='/api/settings')
     app.register_blueprint(commands_bp, url_prefix='/api/commands')
-    app.register_blueprint(alerts_bp)
+    app.register_blueprint(alerts_bp, url_prefix='/api/alerts')
 
     # 注册错误处理
     from .app.errors import register_error_handlers
@@ -134,7 +134,7 @@ def create_app(config_name=None):
         # 在开发环境中，我们可以继续运行，但在生产环境中应该退出
         if os.getenv('FLASK_ENV') == 'production':
             raise
-    
+
     # 启动后台任务
     def start_background_tasks():
         """启动后台任务"""

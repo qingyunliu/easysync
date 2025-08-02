@@ -6,10 +6,10 @@ from .storage import Storage
 from .client import Client
 from .node import Node, NodeStatus
 from .sync import SyncRule
-from .alert import Alert, AlertRule
-from .alert_policy import (
-    AlertPolicy, AlertPolicyRule, NotificationChannel, 
-    NotificationTarget, AlertPolicyAssignment, AlertInstance
+from .alert import (
+    Alert, AlertRule, AlertPolicy, AlertPolicyRule, 
+    NotificationChannel, NotificationTarget, 
+    AlertPolicyAssignment, AlertInstance
 )
 from .command import RealTimeCommand
 

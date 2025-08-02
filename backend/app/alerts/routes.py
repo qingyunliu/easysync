@@ -1,11 +1,9 @@
 from flask import jsonify, request
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.app.alerts.services import AlertPolicyService
+from . import AlertPolicyService
 from . import alerts_bp
 
 alert_service = AlertPolicyService()
-
-# =============== 告警策略相关路由 ===============
 
 @alerts_bp.route('/policies', methods=['GET'])
 @jwt_required()
@@ -113,8 +111,6 @@ def create_policy_rule(policy_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# =============== 通知渠道相关路由 ===============
-
 @alerts_bp.route('/notification-channels', methods=['GET'])
 @jwt_required()
 def get_notification_channels():
@@ -162,8 +158,6 @@ def test_notification_channel(channel_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# =============== 通知对象相关路由 ===============
-
 @alerts_bp.route('/notification-targets', methods=['GET'])
 @jwt_required()
 def get_notification_targets():
@@ -195,8 +189,6 @@ def create_notification_target():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# =============== 系统监控相关路由 ===============
 
 @alerts_bp.route('/system/status', methods=['GET'])
 @jwt_required()
@@ -236,8 +228,6 @@ def get_alert_statistics():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-
-# =============== 预设配置相关路由 ===============
 
 @alerts_bp.route('/templates', methods=['GET'])
 @jwt_required()

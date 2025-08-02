@@ -12,12 +12,10 @@ from backend.app.notifications.services import NotificationService
 logger = logging.getLogger(__name__)
 
 class AlertPolicyService:
-    """告警策略服务类"""
+    """告警策略服务类 - 专注于告警策略管理"""
     
     def __init__(self):
         self.notification_service = NotificationService()
-        
-    # =============== 告警策略管理 ===============
     
     def create_policy(self, user_id: str, policy_data: Dict[str, Any]) -> AlertPolicy:
         """创建告警策略"""
@@ -128,8 +126,6 @@ class AlertPolicyService:
             db.session.rollback()
             raise
     
-    # =============== 策略规则管理 ===============
-    
     def create_policy_rule(self, policy_id: str, rule_data: Dict[str, Any]) -> AlertPolicyRule:
         """创建策略规则"""
         try:
@@ -160,8 +156,6 @@ class AlertPolicyService:
     def get_policy_rules(self, policy_id: str) -> List[AlertPolicyRule]:
         """获取策略规则列表"""
         return AlertPolicyRule.query.filter_by(policy_id=policy_id).all()
-    
-    # =============== 通知渠道管理 ===============
     
     def create_notification_channel(self, user_id: str, channel_data: Dict[str, Any]) -> NotificationChannel:
         """创建通知渠道"""
@@ -202,34 +196,40 @@ class AlertPolicyService:
         return query.all()
     
     def test_notification_channel(self, channel_id: str) -> bool:
-        """测试通知渠道"""
+        """测试通知渠道 - 使用notifications服务发送测试消息"""
         try:
             channel = NotificationChannel.query.get(channel_id)
             if not channel:
                 raise ValueError(f"Channel not found: {channel_id}")
             
-            # 发送测试消息
+            # 使用notifications服务发送测试消息
             test_message = {
-                'title': '测试通知',
-                'content': '这是一条测试通知消息，用于验证通知渠道配置是否正确。',
+                'title': '告警渠道测试',
+                'content': '这是一条测试告警消息，用于验证告警渠道配置是否正确。',
                 'level': 'info',
-                'timestamp': datetime.utcnow().isoformat()
+                'type': 'alert_test',
+                'metadata': {
+                    'channel_id': channel_id,
+                    'channel_type': channel.channel_type,
+                    'test': True
+                }
             }
             
-            success = self._send_notification_via_channel(channel, test_message)
+            # 通过notifications服务发送
+            self.notification_service.send_notification(
+                level='info',
+                title=test_message['title'],
+                content=test_message['content'],
+                user_id=channel.user_id,
+                metadata=test_message['metadata']
+            )
             
-            if success:
-                logger.info(f"Test notification sent successfully via channel: {channel_id}")
-            else:
-                logger.warning(f"Test notification failed via channel: {channel_id}")
-            
-            return success
+            logger.info(f"Test notification sent successfully via channel: {channel_id}")
+            return True
             
         except Exception as e:
             logger.error(f"Failed to test notification channel: {str(e)}")
             return False
-    
-    # =============== 通知对象管理 ===============
     
     def create_notification_target(self, user_id: str, target_data: Dict[str, Any]) -> NotificationTarget:
         """创建通知对象"""
@@ -267,43 +267,73 @@ class AlertPolicyService:
         
         return query.all()
     
-    # =============== 内部辅助方法 ===============
-    
-    def _send_notification_via_channel(self, channel: NotificationChannel, message: Dict[str, Any]) -> bool:
-        """通过指定渠道发送通知"""
+    def trigger_alert(self, user_id: str, alert_data: Dict[str, Any]) -> bool:
+        """触发告警 - 使用notifications服务发送告警通知"""
         try:
-            if channel.channel_type == 'email':
-                return self._send_email_notification(channel, message)
-            elif channel.channel_type == 'webhook':
-                return self._send_webhook_notification(channel, message)
-            elif channel.channel_type == 'dingtalk':
-                return self._send_dingtalk_notification(channel, message)
-            elif channel.channel_type == 'sms':
-                return self._send_sms_notification(channel, message)
-            else:
-                logger.warning(f"Unsupported channel type: {channel.channel_type}")
-                return False
-                
+            # 创建告警实例
+            alert_instance = AlertInstance(
+                policy_id=alert_data.get('policy_id'),
+                user_id=user_id,
+                alert_type=alert_data['alert_type'],
+                severity=alert_data.get('severity', 'warning'),
+                message=alert_data['message'],
+                metadata=alert_data.get('metadata', {}),
+                status='active'
+            )
+            
+            db.session.add(alert_instance)
+            db.session.commit()
+            
+            # 通过notifications服务发送告警通知
+            self.notification_service.send_notification(
+                level=alert_data.get('severity', 'warning'),
+                title=f"告警: {alert_data['alert_type']}",
+                content=alert_data['message'],
+                user_id=user_id,
+                metadata={
+                    'alert_instance_id': alert_instance.id,
+                    'alert_type': alert_data['alert_type'],
+                    'policy_id': alert_data.get('policy_id'),
+                    **alert_data.get('metadata', {})
+                }
+            )
+            
+            logger.info(f"Alert triggered: {alert_instance.id}")
+            return True
+            
         except Exception as e:
-            logger.error(f"Failed to send notification via channel {channel.id}: {str(e)}")
+            logger.error(f"Failed to trigger alert: {str(e)}")
+            db.session.rollback()
             return False
     
-    def _send_email_notification(self, channel: NotificationChannel, message: Dict[str, Any]) -> bool:
-        """发送邮件通知"""
-        # 这里可以复用已有的邮件发送逻辑
-        return True
-    
-    def _send_webhook_notification(self, channel: NotificationChannel, message: Dict[str, Any]) -> bool:
-        """发送Webhook通知"""
-        # 这里可以复用已有的Webhook发送逻辑
-        return True
-    
-    def _send_dingtalk_notification(self, channel: NotificationChannel, message: Dict[str, Any]) -> bool:
-        """发送钉钉通知"""
-        # 这里可以复用已有的钉钉发送逻辑
-        return True
-    
-    def _send_sms_notification(self, channel: NotificationChannel, message: Dict[str, Any]) -> bool:
-        """发送短信通知"""
-        # 这里可以复用已有的短信发送逻辑
-        return True
+    def resolve_alert(self, alert_instance_id: str, user_id: str = None) -> bool:
+        """解决告警"""
+        try:
+            alert_instance = AlertInstance.query.get(alert_instance_id)
+            if not alert_instance:
+                raise ValueError(f"Alert instance not found: {alert_instance_id}")
+            
+            alert_instance.status = 'resolved'
+            alert_instance.resolved_at = datetime.utcnow()
+            db.session.commit()
+            
+            # 发送告警解决通知
+            self.notification_service.send_notification(
+                level='success',
+                title=f"告警已解决: {alert_instance.alert_type}",
+                content=f"告警 {alert_instance.alert_type} 已被解决。",
+                user_id=alert_instance.user_id,
+                metadata={
+                    'alert_instance_id': alert_instance_id,
+                    'alert_type': alert_instance.alert_type,
+                    'resolved': True
+                }
+            )
+            
+            logger.info(f"Alert resolved: {alert_instance_id}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to resolve alert: {str(e)}")
+            db.session.rollback()
+            return False
