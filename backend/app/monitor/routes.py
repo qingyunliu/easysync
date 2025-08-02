@@ -10,6 +10,7 @@ from .errors import MonitorError, MonitorNotFoundError, MonitorValidationError, 
 import logging
 from backend.app.auth.services import AuditService
 from backend.app.notifications.services import NotificationService
+from backend.app.utils.utils import get_system_metrics
 
 logger = logging.getLogger(__name__)
 
@@ -225,364 +226,191 @@ def get_node_history(node_id):
             'message': str(e)
         }), 400
 
-@monitor_bp.route('/alert-rules', methods=['POST'])
+@monitor_bp.route('/system/status', methods=['GET'])
 @jwt_required()
-def create_alert_rule():
-    """创建告警规则"""
+def get_system_status():
+    """获取系统监控状态"""
     try:
-        data = request.get_json()
-        user_id = get_jwt_identity()
+        metrics = get_system_metrics()
         
-        rule = monitor_service.create_alert_rule(data)
+        return jsonify(metrics)
         
-        # 发送告警规则创建通知
-        notification_service.create_notification(
-            user_id=user_id,
-            type='alert_rule_created',
-            title=f'告警规则已创建: {rule.name}',
-            content=f'告警规则 {rule.name} 已成功创建。\n指标: {rule.metric}\n阈值: {rule.operator} {rule.threshold}',
-            level='info'
-        )
-        
-        AuditService.log_operation(
-            user_id=user_id,
-            action='create',
-            resource_type='monitor',
-            resource_id=rule.id,
-            resource_name=rule.name,
-            details={'msg': '告警规则创建成功'},
-            result='success'
-        )
-        return jsonify({
-            'status': 'success',
-            'message': '告警规则创建成功',
-            'data': rule.to_dict()
-        }), 201
-    except AlertRuleError as e:
-        AuditService.log_operation(
-            user_id=user_id,
-            action='create',
-            resource_type='monitor',
-            resource_id=None,
-            resource_name=data.get('name'),
-            details={'error': str(e)},
-            result='failed'
-        )
+    except Exception as e:
         return jsonify({
             'status': 'error',
             'message': str(e)
-        }), 400
-    except Exception as e:
-        AuditService.log_operation(
-            user_id=user_id,
-            action='create',
-            resource_type='monitor',
-            resource_id=None,
-            resource_name=data.get('name'),
-            details={'error': str(e)},
-            result='failed'
-        )
-        return jsonify({
-            'status': 'error',
-            'message': f'创建告警规则失败: {str(e)}'
         }), 500
 
-@monitor_bp.route('/alert-rules', methods=['GET'])
-@jwt_required()
-def get_alert_rules():
-    """获取告警规则列表"""
-    rules = AlertRule.query.all()
-    return jsonify({
-        'status': 'success',
-        'message': '告警规则列表获取成功',
-        'data': [rule.to_dict() for rule in rules]
-    })
 
-@monitor_bp.route('/alert-rules/<int:rule_id>', methods=['PUT'])
+@monitor_bp.route('/system/metrics', methods=['GET'])
 @jwt_required()
-def update_alert_rule(rule_id):
-    """更新告警规则"""
+def get_system_metrics_history():
+    """获取系统监控数据"""
     try:
-        data = request.get_json()
-        user_id = get_jwt_identity()
-        rule = AlertRule.query.get(rule_id)
+        current_user_id = get_jwt_identity()
         
-        if not rule:
-            AuditService.log_operation(
-                user_id=user_id,
-                action='update',
-                resource_type='monitor',
-                resource_id=rule_id,
-                resource_name=data.get('name'),
-                details={'error': '告警规则不存在'},
-                result='failed'
-            )
+        # 获取查询参数
+        start_time = request.args.get('start_time')
+        end_time = request.args.get('end_time')
+        interval = request.args.get('interval', '1m')  # 默认1分钟
+        limit = request.args.get('limit', 24, type=int)  # 默认24个数据点
+        
+        # 构建查询 - 获取系统级别的监控数据（node_id为None表示系统级别）
+        query = MonitorData.query.filter_by(
+            user_id=current_user_id,
+            node_id=None,
+            client_id=None
+        )
+        
+        # 时间范围过滤
+        if start_time:
+            query = query.filter(MonitorData.timestamp >= datetime.fromisoformat(start_time))
+        if end_time:
+            query = query.filter(MonitorData.timestamp <= datetime.fromisoformat(end_time))
+        
+        # 按时间排序并限制数量
+        query = query.order_by(MonitorData.timestamp.desc()).limit(limit)
+        
+        # 执行查询
+        monitor_data = query.all()
+        
+        # 处理返回数据
+        result = []
+        for data in monitor_data:
+            data_dict = data.to_dict()
+            if data_dict['data']:
+                # 提取系统指标
+                system_data = data_dict.get('data', {})
+                result.append({
+                    'timestamp': data_dict['timestamp'],
+                    'cpu_usage': system_data.get('cpu_usage', 0),
+                    'memory_usage': system_data.get('memory_usage', 0),
+                    'disk_usage': system_data.get('disk_usage', 0),
+                    'network_in': system_data.get('network_in', 0),
+                    'network_out': system_data.get('network_out', 0),
+                    'load_average': system_data.get('load_average', 0)
+                })
+        
+        # 按时间正序排列
+        result.reverse()
+        
+        return jsonify({
+            'status': 'success',
+            'message': '系统监控数据获取成功',
+            'data': result
+        })
+        
+    except Exception as e:
+        logger.error(f"获取系统监控数据失败: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取系统监控数据失败: {str(e)}'
+        }), 500
+
+
+@monitor_bp.route('/system/current', methods=['GET'])
+@jwt_required()
+def get_system_current():
+    """获取当前系统状态"""
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # 获取最新的系统监控数据
+        latest_data = MonitorData.query.filter_by(
+            user_id=current_user_id,
+            node_id=None,
+            client_id=None
+        ).order_by(MonitorData.timestamp.desc()).first()
+        
+        if not latest_data or not latest_data.data:
+            # 如果没有数据，返回实时系统指标
+            from backend.app.utils.utils import get_system_metrics
+            system_metrics = get_system_metrics()
             return jsonify({
-                'status': 'error',
-                'message': '告警规则不存在'
-            }), 404
-            
-        # 更新规则
-        if 'name' in data:
-            rule.name = data['name']
-        if 'description' in data:
-            rule.description = data['description']
-        if 'metric' in data:
-            rule.metric = data['metric']
-        if 'operator' in data:
-            rule.operator = data['operator']
-        if 'threshold' in data:
-            rule.threshold = data['threshold']
-        if 'duration' in data:
-            rule.duration = data['duration']
-        if 'severity' in data:
-            rule.severity = data['severity']
-        if 'enabled' in data:
-            rule.enabled = data['enabled']
-            
+                'status': 'success',
+                'message': '当前系统状态获取成功',
+                'data': {
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'cpu_usage': system_metrics.get('cpu_usage', 0),
+                    'memory_usage': system_metrics.get('memory_usage', 0),
+                    'disk_usage': system_metrics.get('disk_usage', 0),
+                    'network_in': system_metrics.get('network_in', 0),
+                    'network_out': system_metrics.get('network_out', 0),
+                    'load_average': system_metrics.get('load_avg', [0, 0, 0])[0] if system_metrics.get('load_avg') else 0
+                }
+            })
+        
+        # 返回最新的监控数据
+        system_data = latest_data.data
+        return jsonify({
+            'status': 'success',
+            'message': '当前系统状态获取成功',
+            'data': {
+                'timestamp': latest_data.timestamp.isoformat(),
+                'cpu_usage': system_data.get('cpu_usage', 0),
+                'memory_usage': system_data.get('memory_usage', 0),
+                'disk_usage': system_data.get('disk_usage', 0),
+                'network_in': system_data.get('network_in', 0),
+                'network_out': system_data.get('network_out', 0),
+                'load_average': system_data.get('load_average', 0)
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"获取当前系统状态失败: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取当前系统状态失败: {str(e)}'
+        }), 500
+
+
+@monitor_bp.route('/system/collect', methods=['POST'])
+@jwt_required()
+def collect_system_metrics():
+    """手动触发系统指标收集"""
+    try:
+        current_user_id = get_jwt_identity()
+        
+        # 获取当前系统指标
+        from backend.app.utils.utils import get_system_metrics
+        system_metrics = get_system_metrics()
+        
+        # 创建监控数据记录
+        monitor_data = MonitorData(
+            user_id=current_user_id,
+            node_id=None,  # 系统级别
+            client_id=None,  # 系统级别
+            data={
+                'system': system_metrics,
+                'timestamp': datetime.utcnow().isoformat()
+            },
+            timestamp=datetime.utcnow()
+        )
+        
+        db.session.add(monitor_data)
         db.session.commit()
         
-        AuditService.log_operation(
-            user_id=user_id,
-            action='update',
-            resource_type='monitor',
-            resource_id=rule.id,
-            resource_name=rule.name,
-            details={'msg': '告警规则更新成功'},
+        # 记录审计日志
+        AuditService.log_system_operation(
+            user_id=current_user_id,
+            action='collect_metrics',
+            details={'metrics': system_metrics},
             result='success'
         )
+        
         return jsonify({
             'status': 'success',
-            'message': '告警规则更新成功',
-            'data': rule.to_dict()
+            'message': '系统指标收集成功',
+            'data': {
+                'timestamp': monitor_data.timestamp.isoformat(),
+                'metrics': system_metrics
+            }
         })
-    except AlertRuleError as e:
-        AuditService.log_operation(
-            user_id=user_id,
-            action='update',
-            resource_type='monitor',
-            resource_id=rule_id,
-            resource_name=data.get('name'),
-            details={'error': str(e)},
-            result='failed'
-        )
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 400
+        
     except Exception as e:
-        AuditService.log_operation(
-            user_id=user_id,
-            action='update',
-            resource_type='monitor',
-            resource_id=rule_id,
-            resource_name=data.get('name'),
-            details={'error': str(e)},
-            result='failed'
-        )
+        logger.error(f"系统指标收集失败: {str(e)}")
+        db.session.rollback()
         return jsonify({
             'status': 'error',
-            'message': f'更新告警规则失败: {str(e)}'
+            'message': f'系统指标收集失败: {str(e)}'
         }), 500
-
-@monitor_bp.route('/alert-rules/<int:rule_id>', methods=['DELETE'])
-@jwt_required()
-def delete_alert_rule(rule_id):
-    """删除告警规则"""
-    try:
-        user_id = get_jwt_identity()
-        rule = AlertRule.query.get(rule_id)
-        
-        if not rule:
-            AuditService.log_operation(
-                user_id=user_id,
-                action='delete',
-                resource_type='monitor',
-                resource_id=rule_id,
-                resource_name=None,
-                details={'error': '告警规则不存在'},
-                result='failed'
-            )
-            return jsonify({
-                'status': 'error',
-                'message': '告警规则不存在'
-            }), 404
-            
-        rule_name = rule.name
-        
-        db.session.delete(rule)
-        db.session.commit()
-        
-        # 发送告警规则删除通知
-        notification_service.create_notification(
-            user_id=user_id,
-            type='alert_rule_deleted',
-            title=f'告警规则已删除: {rule_name}',
-            content=f'告警规则 {rule_name} 已被删除。',
-            level='info'
-        )
-        
-        AuditService.log_operation(
-            user_id=user_id,
-            action='delete',
-            resource_type='monitor',
-            resource_id=rule.id,
-            resource_name=rule.name,
-            details={'msg': '告警规则删除成功'},
-            result='success'
-        )
-        return jsonify({
-            'status': 'success',
-            'message': '告警规则删除成功'
-        })
-    except Exception as e:
-        AuditService.log_operation(
-            user_id=user_id,
-            action='delete',
-            resource_type='monitor',
-            resource_id=rule_id,
-            resource_name=None,
-            details={'error': str(e)},
-            result='failed'
-        )
-        return jsonify({
-            'status': 'error',
-            'message': f'删除告警规则失败: {str(e)}'
-        }), 500
-
-@monitor_bp.route('/alerts', methods=['GET'])
-@jwt_required()
-def get_alerts():
-    """获取告警列表"""
-    user_id = get_jwt_identity()
-    node_id = request.args.get('node_id')
-    status = request.args.get('status', 'active')
-    limit = int(request.args.get('limit', 100))
-    
-    if status == 'active':
-        alerts = Alert.get_active_alerts(user_id=user_id, node_id=node_id, limit=limit)
-    else:
-        query = Alert.query.filter_by(user_id=user_id)
-        if node_id:
-            query = query.filter_by(node_id=node_id)
-        if status != 'all':
-            query = query.filter_by(status=status)
-        alerts = query.order_by(Alert.timestamp.desc()).limit(limit).all()
-    
-    return jsonify({
-        'status': 'success',
-        'message': '告警列表获取成功',
-        'data': [alert.to_dict() for alert in alerts]
-    })
-
-@monitor_bp.route('/alerts/summary', methods=['GET'])
-@jwt_required()
-def get_alerts_summary():
-    """获取告警汇总信息"""
-    user_id = get_jwt_identity()
-    summary = Alert.get_alert_summary(user_id=user_id)
-    
-    return jsonify({
-        'status': 'success',
-        'message': '告警汇总获取成功',
-        'data': summary
-    })
-
-@monitor_bp.route('/alerts/<int:alert_id>/resolve', methods=['PUT'])
-@jwt_required()
-def resolve_alert(alert_id):
-    """解决告警"""
-    user_id = get_jwt_identity()
-    alert = Alert.query.get(alert_id)
-    
-    if not alert:
-        return jsonify({
-            'status': 'error',
-            'message': '告警不存在'
-        }), 404
-        
-    success = Alert.resolve_alert(alert_id, user_id=user_id)
-    
-    if success:
-        # 发送告警解决通知
-        notification_service.create_notification(
-            user_id=user_id,
-            type='alert_resolved',
-            title=f'告警已解决: {alert.title}',
-            content=f'告警 {alert.title} 已被解决。\n解决时间: {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}',
-            level='success'
-        )
-        
-        return jsonify({
-            'status': 'success',
-            'message': '告警已解决'
-        })
-    else:
-        return jsonify({
-            'status': 'error',
-            'message': '告警解决失败'
-        }), 400
-
-@monitor_bp.route('/alerts/<int:alert_id>/acknowledge', methods=['PUT'])
-@jwt_required()
-def acknowledge_alert(alert_id):
-    """确认告警"""
-    user_id = get_jwt_identity()
-    data = request.get_json()
-    acknowledged_by = data.get('acknowledged_by', user_id)
-    
-    alert = Alert.query.get(alert_id)
-    if not alert:
-        return jsonify({
-            'status': 'error',
-            'message': '告警不存在'
-        }), 404
-        
-    success = Alert.acknowledge_alert(alert_id, acknowledged_by, user_id=user_id)
-    
-    if success:
-        # 发送告警确认通知
-        notification_service.create_notification(
-            user_id=user_id,
-            type='alert_acknowledged',
-            title=f'告警已确认: {alert.title}',
-            content=f'告警 {alert.title} 已被确认。\n确认时间: {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}',
-            level='info'
-        )
-        
-        return jsonify({
-            'status': 'success',
-            'message': '告警已确认'
-        })
-    else:
-        return jsonify({
-            'status': 'error',
-            'message': '告警确认失败'
-        }), 400
-
-@monitor_bp.route('/alerts/<int:alert_id>', methods=['PUT'])
-@jwt_required()
-def update_alert(alert_id):
-    """更新告警状态"""
-    data = request.get_json()
-    alert = Alert.query.get(alert_id)
-    
-    if not alert:
-        return jsonify({
-            'status': 'error',
-            'message': '告警不存在'
-        }), 404
-        
-    # 更新告警状态
-    if 'status' in data:
-        alert.status = data['status']
-    if 'resolution' in data:
-        alert.resolution = data['resolution']
-        
-    db.session.commit()
-    
-    return jsonify({
-        'status': 'success',
-        'message': '告警状态更新成功',
-        'data': alert.to_dict()
-    }) 

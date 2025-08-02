@@ -190,32 +190,6 @@ def create_notification_target():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@alerts_bp.route('/system/status', methods=['GET'])
-@jwt_required()
-def get_system_status():
-    """获取系统监控状态"""
-    try:
-        # 这里可以获取系统各种状态信息
-        status = {
-            'cpu_usage': 65.4,
-            'memory_usage': 72.8,
-            'disk_usage': 45.2,
-            'network_in': 1024.5,
-            'network_out': 856.3,
-            'active_connections': 156,
-            'services_status': {
-                'database': 'healthy',
-                'redis': 'healthy',
-                'queue': 'healthy'
-            },
-            'last_updated': '2024-01-20T10:30:00Z'
-        }
-        
-        return jsonify(status)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
 @alerts_bp.route('/statistics', methods=['GET'])
 @jwt_required()
 def get_alert_statistics():

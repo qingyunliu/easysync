@@ -271,6 +271,116 @@ class MonitorService:
             
         return alerts
         
+    def collect_system_metrics(self, user_id: str = None) -> Dict[str, Any]:
+        """收集系统监控指标"""
+        try:
+            # 获取系统指标
+            from backend.app.utils.utils import get_system_metrics
+            system_metrics = get_system_metrics()
+            
+            # 创建监控数据记录
+            monitor_data = MonitorData.create_monitor_data(
+                user_id=user_id,
+                node_id=None,
+                client_id=None,
+                data=system_metrics
+            )
+            
+            logger.info(f"系统监控数据收集成功: {monitor_data.id}")
+            return system_metrics
+            
+        except Exception as e:
+            logger.error(f"系统监控数据收集失败: {str(e)}")
+            db.session.rollback()
+            raise MonitorOperationError(f"系统监控数据收集失败: {str(e)}")
+    
+    def get_system_metrics_history(self, user_id: str, start_time: datetime = None, 
+                                 end_time: datetime = None, limit: int = 24) -> List[Dict[str, Any]]:
+        """获取系统监控历史数据"""
+        try:
+            # 构建查询
+            query = MonitorData.query.filter_by(
+                user_id=user_id,
+                node_id=None,
+                client_id=None
+            )
+            
+            # 时间范围过滤
+            if start_time:
+                query = query.filter(MonitorData.timestamp >= start_time)
+            if end_time:
+                query = query.filter(MonitorData.timestamp <= end_time)
+            
+            # 按时间排序并限制数量
+            query = query.order_by(MonitorData.timestamp.desc()).limit(limit)
+            
+            # 执行查询
+            monitor_data = query.all()
+            
+            # 处理返回数据
+            result = []
+            for data in monitor_data:
+                data_dict = data.to_dict()
+                if data_dict['data']:
+                    system_data = data_dict['data'].get('system', {})
+                    result.append({
+                        'timestamp': data_dict['timestamp'],
+                        'cpu_usage': system_data.get('cpu_usage', 0),
+                        'memory_usage': system_data.get('memory_usage', 0),
+                        'disk_usage': system_data.get('disk_usage', 0),
+                        'network_in': system_data.get('network_in', 0),
+                        'network_out': system_data.get('network_out', 0),
+                        'load_average': system_data.get('load_average', 0)
+                    })
+            
+            # 按时间正序排列
+            result.reverse()
+            return result
+            
+        except Exception as e:
+            logger.error(f"获取系统监控历史数据失败: {str(e)}")
+            raise MonitorOperationError(f"获取系统监控历史数据失败: {str(e)}")
+    
+    def get_system_current_status(self, user_id: str) -> Dict[str, Any]:
+        """获取当前系统状态"""
+        try:
+            # 获取最新的系统监控数据
+            latest_data = MonitorData.query.filter_by(
+                user_id=user_id,
+                node_id=None,
+                client_id=None
+            ).order_by(MonitorData.timestamp.desc()).first()
+            
+            if not latest_data or not latest_data.data:
+                # 如果没有数据，返回实时系统指标
+                from backend.app.utils.utils import get_system_metrics
+                system_metrics = get_system_metrics()
+                return {
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'cpu_usage': system_metrics.get('cpu_usage', 0),
+                    'memory_usage': system_metrics.get('memory_usage', 0),
+                    'disk_usage': system_metrics.get('disk_usage', 0),
+                    'network_in': system_metrics.get('network_in', 0),
+                    'network_out': system_metrics.get('network_out', 0),
+                    'load_average': system_metrics.get('load_avg', [0, 0, 0])[0] if system_metrics.get('load_avg') else 0
+                }
+            
+            # 返回最新的监控数据
+            system_data = latest_data.data.get('system', {})
+            return {
+                'timestamp': latest_data.timestamp.isoformat(),
+                'cpu_usage': system_data.get('cpu_usage', 0),
+                'memory_usage': system_data.get('memory_usage', 0),
+                'disk_usage': system_data.get('disk_usage', 0),
+                'network_in': system_data.get('network_in', 0),
+                'network_out': system_data.get('network_out', 0),
+                'load_average': system_data.get('load_average', 0)
+            }
+            
+        except Exception as e:
+            logger.error(f"获取当前系统状态失败: {str(e)}")
+            raise MonitorOperationError(f"获取当前系统状态失败: {str(e)}")
+        
     def _validate_metrics(self, metrics: Dict[str, Any]) -> None:
         """验证监控指标
         
