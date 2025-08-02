@@ -258,7 +258,7 @@
         <div v-else class="notification-list">
           <div
             v-for="(notification, index) in recentNotifications"
-            :key="index"
+            :key="notification.id || index"
             class="notification-item"
             :class="{ 'unread': !notification.is_read }"
             @click="handleNotificationClick(notification)"
@@ -610,7 +610,20 @@ const loadMoreNotifications = async () => {
         limit: 10
       }
     })
-    recentNotifications.value.push(...response.data.data)
+    
+    const newNotifications = response.data.filter(newNotification => 
+      !recentNotifications.value.some(existingNotification => 
+        existingNotification.id === newNotification.id
+      )
+    )
+    
+    if (newNotifications.length > 0) {
+      recentNotifications.value.push(...newNotifications)
+    }
+    
+    if (newNotifications.length === 0) {
+      ElMessage.info('已加载全部通知')
+    }
   } catch (error) {
     ElMessage.error('加载更多失败')
   } finally {

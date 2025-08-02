@@ -84,11 +84,7 @@ def get_dashboard_data():
         ).order_by(
             Notification.created_at.desc()
         ).limit(5).all()
-        recent_notifications_data = [{
-            'type': notification.type,
-            'message': notification.message,
-            'created_at': notification.created_at.isoformat()
-        } for notification in recent_notifications]
+        recent_notifications_data = [notification.to_dict() for notification in recent_notifications]
         
         return jsonify({
             'status': 'success',

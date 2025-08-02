@@ -586,10 +586,11 @@ class NotificationService:
         
         return notification
         
-    def get_user_notifications(self, user_id: int, limit: int = 100) -> List[Notification]:
+    def get_user_notifications(self, user_id: int, limit: int = 100, offset: int = 0) -> List[Notification]:
         """获取用户通知"""
         return Notification.query.filter_by(user_id=user_id)\
             .order_by(Notification.created_at.desc())\
+            .offset(offset)\
             .limit(limit)\
             .all()
             
