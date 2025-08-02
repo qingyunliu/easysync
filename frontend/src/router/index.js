@@ -20,6 +20,8 @@ import ResetMailSent from "../views/ResetMailSent.vue";
 import Notifications from "../views/Notifications.vue";
 import Monitoring from "../views/Monitoring.vue";
 import AlertPolicies from "../views/AlertPolicies.vue";
+import NotificationChannels from "../views/NotificationChannels.vue";
+import NotificationTargets from "../views/NotificationTargets.vue";
 
 const routes = [
   {
@@ -137,6 +139,18 @@ const routes = [
         path: "alert-policies",
         name: "AlertPolicies",
         component: AlertPolicies,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: "notification-channels",
+        name: "NotificationChannels",
+        component: NotificationChannels,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: "notification-targets",
+        name: "NotificationTargets",
+        component: NotificationTargets,
         meta: { requiresAuth: true },
       },
     ],

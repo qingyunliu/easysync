@@ -90,6 +90,18 @@
             <span v-if="!isCollapsed">告警策略</span>
           </el-menu-item>
         </el-tooltip>
+        <el-tooltip content="通知渠道" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/notification-channels">
+            <el-icon><Message /></el-icon>
+            <span v-if="!isCollapsed">通知渠道</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="通知对象" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/notification-targets">
+            <el-icon><User /></el-icon>
+            <span v-if="!isCollapsed">通知对象</span>
+          </el-menu-item>
+        </el-tooltip>
         <el-tooltip content="消息通知" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/notifications">
             <el-icon><Bell /></el-icon>
@@ -177,6 +189,7 @@ import {
   Bell,
   Warning,
   Notebook,
+  Message,
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import defaultAvatar from '@/assets/avatar/default-avatar.jpeg'

@@ -273,12 +273,17 @@ class AlertPolicyService:
             # 创建告警实例
             alert_instance = AlertInstance(
                 policy_id=alert_data.get('policy_id'),
-                user_id=user_id,
-                alert_type=alert_data['alert_type'],
+                rule_id=alert_data.get('rule_id'),
+                alert_name=alert_data['alert_type'],
                 severity=alert_data.get('severity', 'warning'),
-                message=alert_data['message'],
-                metadata=alert_data.get('metadata', {}),
-                status='active'
+                metric_name=alert_data.get('metric_name', 'unknown'),
+                current_value=alert_data.get('current_value'),
+                threshold_value=alert_data.get('threshold_value'),
+                labels=alert_data.get('labels', {}),
+                annotations={'message': alert_data['message']},
+                fingerprint=alert_data.get('fingerprint', ''),
+                starts_at=datetime.utcnow(),
+                **alert_data.get('metadata', {})
             )
             
             db.session.add(alert_instance)
@@ -320,12 +325,12 @@ class AlertPolicyService:
             # 发送告警解决通知
             self.notification_service.send_notification(
                 level='success',
-                title=f"告警已解决: {alert_instance.alert_type}",
-                content=f"告警 {alert_instance.alert_type} 已被解决。",
-                user_id=alert_instance.user_id,
+                title=f"告警已解决: {alert_instance.alert_name}",
+                content=f"告警 {alert_instance.alert_name} 已被解决。",
+                user_id=user_id or alert_instance.policy.user_id,
                 metadata={
                     'alert_instance_id': alert_instance_id,
-                    'alert_type': alert_instance.alert_type,
+                    'alert_type': alert_instance.alert_name,
                     'resolved': True
                 }
             )
