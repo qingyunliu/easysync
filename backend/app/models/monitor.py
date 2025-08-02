@@ -12,7 +12,7 @@ class MonitorData(BaseModel):
         db.Index('idx_monitor_timestamp', 'timestamp'),
         db.Index('idx_monitor_client', 'client_id'),
         db.Index('idx_monitor_node', 'node_id'),
-        CheckConstraint('client_id IS NOT NULL OR node_id IS NOT NULL', 
+        CheckConstraint('(client_id IS NOT NULL OR node_id IS NOT NULL) OR (client_id IS NULL AND node_id IS NULL)', 
                        name='check_client_or_node'),
     )
     
@@ -32,6 +32,7 @@ class MonitorData(BaseModel):
              'id': self.id,
              'user_id': self.user_id,
              'client_id': self.client_id,
+             'node_id': self.node_id,
              'timestamp': self.timestamp.isoformat(),
              'data': self.data
         }
@@ -48,13 +49,7 @@ class MonitorData(BaseModel):
             
         Returns:
             MonitorData: 创建的监控数据记录
-            
-        Raises:
-            ValueError: 当client_id和node_id都为空时
         """
-        if not client_id and not node_id:
-            raise ValueError("Either client_id or node_id must be provided")
-            
         try:
             monitor_data = MonitorData(
                 user_id=user_id,
@@ -90,6 +85,26 @@ class MonitorData(BaseModel):
     def get_by_node(cls, node_id, start_time=None, end_time=None):
         """获取指定节点的监控数据"""
         query = cls.query.filter_by(node_id=node_id)
+        if start_time:
+            query = query.filter(cls.timestamp >= start_time)
+        if end_time:
+            query = query.filter(cls.timestamp <= end_time)
+        return query.order_by(cls.timestamp.desc()).all()
+
+    @classmethod
+    def get_by_user(cls, user_id, start_time=None, end_time=None):
+        """获取指定用户的监控数据"""
+        query = cls.query.filter_by(user_id=user_id)
+        if start_time:
+            query = query.filter(cls.timestamp >= start_time)
+        if end_time:
+            query = query.filter(cls.timestamp <= end_time)
+        return query.order_by(cls.timestamp.desc()).all()
+
+    @classmethod
+    def get_by_system(cls, start_time=None, end_time=None):
+        """获取系统级别的监控数据"""
+        query = cls.query.filter_by(client_id=None, node_id=None)
         if start_time:
             query = query.filter(cls.timestamp >= start_time)
         if end_time:

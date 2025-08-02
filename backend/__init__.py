@@ -153,6 +153,12 @@ def create_app(config_name=None):
             status_monitor.start()
             logger.info("节点状态监控已启动")
             
+            # 启动系统监控调度器
+            from .app.monitor.scheduler import monitor_scheduler
+            monitor_scheduler.app = app  # 传递app实例
+            monitor_scheduler.start()
+            logger.info("系统监控调度器已启动")
+            
         except Exception as e:
             logger.error(f"启动后台任务失败: {str(e)}")
     

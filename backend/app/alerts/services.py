@@ -156,7 +156,85 @@ class AlertPolicyService:
     def get_policy_rules(self, policy_id: str) -> List[AlertPolicyRule]:
         """获取策略规则列表"""
         return AlertPolicyRule.query.filter_by(policy_id=policy_id).all()
-    
+
+    def get_alert_statistics(self, time_range: str) -> Dict[str, Any]:
+        """获取告警统计信息"""
+        try:
+            # 解析时间范围
+            time_range = time_range.lower()
+            if time_range == '24h':
+                start_time = datetime.now() - timedelta(hours=24)
+                end_time = datetime.now()
+            elif time_range == '7d':
+                start_time = datetime.now() - timedelta(days=7)
+                end_time = datetime.now()
+            elif time_range == '30d':
+                start_time = datetime.now() - timedelta(days=30)
+                end_time = datetime.now()
+            else:
+                raise ValueError(f"Invalid time range: {time_range}")
+            
+            # 获取告警统计数据
+            stats = {
+                'total_alerts': AlertInstance.query.filter(
+                    AlertInstance.created_at >= start_time,
+                    AlertInstance.created_at <= end_time
+                ).count(),
+                'active_alerts': AlertInstance.query.filter(
+                    AlertInstance.created_at >= start_time,
+                    AlertInstance.created_at <= end_time,
+                    AlertInstance.status == 'active'
+                ).count(),
+                'resolved_alerts': AlertInstance.query.filter(
+                    AlertInstance.created_at >= start_time,
+                    AlertInstance.created_at <= end_time,
+                    AlertInstance.status == 'resolved'
+                ).count(),
+                'suppressed_alerts': AlertInstance.query.filter(
+                    AlertInstance.created_at >= start_time, 
+                    AlertInstance.created_at <= end_time,
+                    AlertInstance.status == 'suppressed'
+                ).count(),
+                'firing_alerts': AlertInstance.query.filter(
+                    AlertInstance.created_at >= start_time,
+                    AlertInstance.created_at <= end_time,
+                    AlertInstance.status == 'firing'
+                ).count(),
+                'alert_types': {
+                    'cpu_high': AlertInstance.query.filter(
+                        AlertInstance.created_at >= start_time,
+                        AlertInstance.created_at <= end_time,
+                        AlertInstance.alert_type == 'cpu_high'
+                    ).count(),
+                    'memory_high': AlertInstance.query.filter(
+                        AlertInstance.created_at >= start_time,
+                        AlertInstance.created_at <= end_time,   
+                        AlertInstance.alert_type == 'memory_high'
+                    ).count(),
+                    'disk_high': AlertInstance.query.filter(
+                        AlertInstance.created_at >= start_time,
+                        AlertInstance.created_at <= end_time,
+                        AlertInstance.alert_type == 'disk_high'
+                    ).count(),
+                    'load_high': AlertInstance.query.filter(
+                        AlertInstance.created_at >= start_time,
+                        AlertInstance.created_at <= end_time,
+                        AlertInstance.alert_type == 'load_high'
+                    ).count(),
+                    'network_high': AlertInstance.query.filter(
+                        AlertInstance.created_at >= start_time,
+                        AlertInstance.created_at <= end_time,
+                        AlertInstance.alert_type == 'network_high'
+                    ).count()
+                }
+            }
+            
+            return stats
+            
+        except Exception as e:
+            logger.error(f"Failed to get alert statistics: {str(e)}")
+            return {}
+
     def create_notification_channel(self, user_id: str, channel_data: Dict[str, Any]) -> NotificationChannel:
         """创建通知渠道"""
         try:

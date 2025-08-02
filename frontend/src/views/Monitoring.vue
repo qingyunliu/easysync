@@ -283,6 +283,8 @@ onMounted(() => {
   fetchSystemStatus()
   fetchAlertStats()
   initCharts()
+  updateCurrentStatus()
+  updateCharts()
   startAutoUpdate()
 })
 
@@ -301,7 +303,7 @@ onUnmounted(() => {
 // 方法
 const fetchSystemStatus = async () => {
   try {
-    const response = await axios.get('/api/alerts/system/status')
+    const response = await axios.get('/api/monitor/system/status')
     Object.assign(systemStatus, response.data)
   } catch (error) {
     console.error('获取系统状态失败:', error)
@@ -539,46 +541,91 @@ const initNetworkChart = () => {
   networkChartInstance.setOption(option)
 }
 
-const updateCharts = () => {
-  // 生成模拟数据用于演示
-  const now = new Date()
-  const timeLabels = []
-  const cpuData = []
-  const memoryData = []
-  const networkInData = []
-  const networkOutData = []
-  
-  for (let i = 23; i >= 0; i--) {
-    const time = new Date(now.getTime() - i * 60000) // 每分钟一个点
-    timeLabels.push(time.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }))
+const updateCharts = async () => {
+  try {
+    // 获取当前时间
+    const now = new Date()
+    const endTime = now.toISOString()
+    const startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString() // 24小时前
     
-    // 模拟数据，实际应该从API获取
-    cpuData.push(Math.random() * 30 + 40)
-    memoryData.push(Math.random() * 20 + 60)
-    networkInData.push(Math.random() * 1024 * 1024 + 512 * 1024)
-    networkOutData.push(Math.random() * 1024 * 1024 + 256 * 1024)
-  }
-  
-  // 更新CPU/内存图表
-  if (cpuMemoryChartInstance) {
-    cpuMemoryChartInstance.setOption({
-      xAxis: { data: timeLabels },
-      series: [
-        { data: cpuData },
-        { data: memoryData }
-      ]
+    // 从API获取系统监控数据
+    const response = await axios.get('/api/monitor/system/metrics', {
+      params: {
+        start_time: startTime,
+        end_time: endTime,
+        limit: 24
+      }
     })
+    
+    if (response.data.status === 'success') {
+      const monitorData = response.data.data
+      
+      // 提取时间标签和数据
+      const timeLabels = monitorData.map(item => {
+        const date = new Date(item.timestamp)
+        return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+      })
+      
+      const cpuData = monitorData.map(item => item.cpu_usage || 0)
+      const memoryData = monitorData.map(item => item.memory_usage || 0)
+      const networkInData = monitorData.map(item => item.network_in || 0)
+      const networkOutData = monitorData.map(item => item.network_out || 0)
+      
+      // 更新CPU/内存图表
+      if (cpuMemoryChartInstance) {
+        cpuMemoryChartInstance.setOption({
+          xAxis: { data: timeLabels },
+          series: [
+            { data: cpuData },
+            { data: memoryData }
+          ]
+        })
+      }
+      
+      // 更新网络图表
+      if (networkChartInstance) {
+        networkChartInstance.setOption({
+          xAxis: { data: timeLabels },
+          series: [
+            { data: networkInData },
+            { data: networkOutData }
+          ]
+        })
+      }
+    }
+  } catch (error) {
+    console.error('获取监控数据失败:', error)
+    ElMessage.error('获取监控数据失败')
   }
-  
-  // 更新网络图表
-  if (networkChartInstance) {
-    networkChartInstance.setOption({
-      xAxis: { data: timeLabels },
-      series: [
-        { data: networkInData },
-        { data: networkOutData }
-      ]
-    })
+}
+
+const updateCurrentStatus = async () => {
+  try {
+    const response = await axios.get('/api/monitor/system/current')
+    
+    if (response.data.status === 'success') {
+      const currentData = response.data.data
+      
+      // 更新当前状态显示
+      systemStatus.cpu_usage = currentData.cpu_usage || 0
+      systemStatus.memory_usage = currentData.memory_usage || 0
+      systemStatus.disk_usage = currentData.disk_usage || 0
+      systemStatus.network_in = currentData.network_in || 0
+      systemStatus.network_out = currentData.network_out || 0
+      systemStatus.active_connections = currentData.active_connections || 0
+      systemStatus.last_updated = new Date().toISOString()
+
+      // 更新服务状态
+      systemStatus.services_status = currentData.services_status || {}
+
+      // 更新告警统计
+      alertStats.total_alerts = currentData.total_alerts || 0
+      alertStats.firing_alerts = currentData.firing_alerts || 0
+      alertStats.resolved_alerts = currentData.resolved_alerts || 0
+      alertStats.severity_stats = currentData.severity_stats || {}
+    }
+  } catch (error) {
+    console.error('获取当前状态失败:', error)
   }
 }
 </script>

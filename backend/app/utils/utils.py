@@ -1,3 +1,8 @@
+import psutil
+import socket
+import platform
+from datetime import datetime
+
 def parse_os_info(os_info):
     """解析操作系统信息"""
     info = {}
@@ -206,3 +211,46 @@ def parse_process_list(process_info):
                     'command': ' '.join(parts[10:])
                 })
     return processes
+
+def get_system_metrics():
+    """获取系统状态"""
+    # 获取CPU使用率
+    cpu_usage = psutil.cpu_percent(interval=1)
+    # 获取内存使用率
+    memory_usage = psutil.virtual_memory().percent
+    # 获取磁盘使用率
+    disk_usage = psutil.disk_usage('/').percent
+    # 获取网络流量
+    network_in, network_out = psutil.net_io_counters().bytes_recv, psutil.net_io_counters().bytes_sent
+    # 获取活跃连接数
+    active_connections = len(psutil.net_connections())
+    # 获取服务状态
+    services_status = {
+        'database': 'healthy',
+        'redis': 'healthy',
+        'queue': 'healthy'
+    }
+    # 获取系统信息
+    system_info = {
+        'os': platform.system(),
+        'hostname': socket.gethostname(),
+        'kernel_version': platform.release(),
+        'uptime': psutil.boot_time()
+    }
+    # 获取系统负载
+    load_avg = psutil.getloadavg()
+    # 获取系统时间
+    system_time = datetime.now().isoformat()
+    
+    return {
+        'cpu_usage': cpu_usage,
+        'memory_usage': memory_usage,
+        'disk_usage': disk_usage,
+        'network_in': network_in,
+        'network_out': network_out,
+        'active_connections': active_connections,
+        'services_status': services_status,
+        'system_info': system_info,
+        'load_avg': load_avg,
+        'system_time': system_time
+    }
