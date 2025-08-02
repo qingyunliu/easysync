@@ -7,5 +7,3 @@ const service = axios.create({
   baseURL: apiConfig.baseURL,
   timeout: 5000
 })
-
-// ... 其他代码 ... 

@@ -316,7 +316,7 @@
 import { ref, reactive, onMounted, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Search, Edit, Delete, Promotion, Message, Link, ChatDotRound, Phone, Monitor } from '@element-plus/icons-vue'
-import request from '@/utils/request'
+import axios from 'axios'
 
 // 响应式数据
 const loading = ref(false)
@@ -390,7 +390,7 @@ const fetchChannels = async () => {
     if (filters.enabled !== '') params.enabled = filters.enabled === 'true'
     if (filters.search) params.search = filters.search
 
-    const response = await request.get('/api/alerts/notification-channels', { params })
+    const response = await axios.get('/api/alerts/notification-channels', { params })
     channels.value = response.data || []
   } catch (error) {
     ElMessage.error('获取通知渠道列表失败')
@@ -491,10 +491,10 @@ const submitForm = async () => {
     const data = { ...form }
     
     if (dialogType.value === 'create') {
-      await request.post('/api/alerts/notification-channels', data)
+      await axios.post('/api/alerts/notification-channels', data)
       ElMessage.success('通知渠道创建成功')
     } else {
-      await request.put(`/api/alerts/notification-channels/${form.id}`, data)
+      await axios.put(`/api/alerts/notification-channels/${form.id}`, data)
       ElMessage.success('通知渠道更新成功')
     }
 
@@ -515,7 +515,7 @@ const submitForm = async () => {
 const handleStatusChange = async (row) => {
   row.updating = true
   try {
-    await request.put(`/api/alerts/notification-channels/${row.id}`, {
+    await axios.put(`/api/alerts/notification-channels/${row.id}`, {
       enabled: row.enabled
     })
     ElMessage.success('状态更新成功')
@@ -530,7 +530,7 @@ const handleStatusChange = async (row) => {
 // 测试渠道
 const testChannel = async (row) => {
   try {
-    await request.post(`/api/alerts/notification-channels/${row.id}/test`)
+    await axios.post(`/api/alerts/notification-channels/${row.id}/test`)
     ElMessage.success('测试通知已发送，请检查接收情况')
   } catch (error) {
     ElMessage.error('测试发送失败: ' + (error.message || '未知错误'))
@@ -550,7 +550,7 @@ const deleteChannel = async (row) => {
       }
     )
 
-    await request.delete(`/api/alerts/notification-channels/${row.id}`)
+    await axios.delete(`/api/alerts/notification-channels/${row.id}`)
     ElMessage.success('删除成功')
     fetchChannels()
   } catch (error) {

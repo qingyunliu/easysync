@@ -378,7 +378,7 @@
 import { ref, reactive, onMounted, nextTick, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, Search, Edit, Delete, User, UserFilled, Avatar, Message, Phone, Clock } from '@element-plus/icons-vue'
-import request from '@/utils/request'
+import axios from 'axios'
 
 // 响应式数据
 const loading = ref(false)
@@ -464,7 +464,7 @@ const fetchTargets = async () => {
     if (filters.enabled !== '') params.enabled = filters.enabled === 'true'
     if (filters.search) params.search = filters.search
 
-    const response = await request.get('/api/alerts/notification-targets', { params })
+    const response = await axios.get('/api/alerts/notification-targets', { params })
     targets.value = response.data || []
   } catch (error) {
     ElMessage.error('获取通知对象列表失败')
@@ -476,7 +476,7 @@ const fetchTargets = async () => {
 // 获取可用用户列表
 const fetchUsers = async () => {
   try {
-    const response = await request.get('/api/users')
+    const response = await axios.get('/api/users')
     availableUsers.value = response.data || []
   } catch (error) {
     console.error('获取用户列表失败:', error)
@@ -669,10 +669,10 @@ const submitForm = async () => {
     }
     
     if (dialogType.value === 'create') {
-      await request.post('/api/alerts/notification-targets', data)
+      await axios.post('/api/alerts/notification-targets', data)
       ElMessage.success('通知对象创建成功')
     } else {
-      await request.put(`/api/alerts/notification-targets/${form.id}`, data)
+      await axios.put(`/api/alerts/notification-targets/${form.id}`, data)
       ElMessage.success('通知对象更新成功')
     }
 
@@ -693,7 +693,7 @@ const submitForm = async () => {
 const handleStatusChange = async (row) => {
   row.updating = true
   try {
-    await request.put(`/api/alerts/notification-targets/${row.id}`, {
+    await axios.put(`/api/alerts/notification-targets/${row.id}`, {
       enabled: row.enabled
     })
     ElMessage.success('状态更新成功')
@@ -718,7 +718,7 @@ const deleteTarget = async (row) => {
       }
     )
 
-    await request.delete(`/api/alerts/notification-targets/${row.id}`)
+    await axios.delete(`/api/alerts/notification-targets/${row.id}`)
     ElMessage.success('删除成功')
     fetchTargets()
   } catch (error) {
