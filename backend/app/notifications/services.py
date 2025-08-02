@@ -25,12 +25,79 @@ class NotificationService:
         self.settings = {}
         self._load_settings()
         self.notification_types = {
+            # 任务相关
             'task_started': '任务开始执行',
             'task_completed': '任务执行完成',
             'task_failed': '任务执行失败',
-            'storage_mounted': '存储节点已挂载',
-            'storage_unmounted': '存储节点已卸载',
-            'system_error': '系统错误'
+            'task_paused': '任务已暂停',
+            'task_resumed': '任务已恢复',
+            'task_cancelled': '任务已取消',
+            'task_retry': '任务重试执行',
+            
+            # 存储相关
+            'storage_mounted': '存储已挂载',
+            'storage_unmounted': '存储已卸载',
+            'storage_connected': '存储连接成功',
+            'storage_disconnected': '存储连接中断',
+            'storage_error': '存储访问错误',
+            'storage_quota_warning': '存储空间不足警告',
+            'storage_created': '存储创建成功',
+            'storage_updated': '存储配置更新',
+            'storage_deleted': '存储已删除',
+            
+            # 节点相关
+            'node_online': '节点上线',
+            'node_offline': '节点离线',
+            'node_connected': '节点连接成功',
+            'node_disconnected': '节点连接断开',
+            'node_error': '节点运行错误',
+            'node_status_changed': '节点状态变更',
+            'node_created': '节点创建成功',
+            'node_updated': '节点配置更新',
+            'node_deleted': '节点已删除',
+            'node_heartbeat_timeout': '节点心跳超时',
+            'node_resource_warning': '节点资源使用警告',
+            
+            # 客户端相关
+            'client_connected': '客户端连接成功',
+            'client_disconnected': '客户端连接断开',
+            'client_registered': '客户端注册成功',
+            'client_unregistered': '客户端注销',
+            'client_error': '客户端运行错误',
+            'client_status_changed': '客户端状态变更',
+            'client_version_updated': '客户端版本更新',
+            'client_config_updated': '客户端配置更新',
+            
+            # 系统相关
+            'system_error': '系统错误',
+            'system_warning': '系统警告',
+            'system_maintenance': '系统维护',
+            'system_backup_completed': '系统备份完成',
+            'system_backup_failed': '系统备份失败',
+            'system_update_available': '系统更新可用',
+            'system_resource_warning': '系统资源警告',
+            
+            # 用户相关
+            'user_login': '用户登录',
+            'user_logout': '用户登出',
+            'user_registered': '用户注册',
+            'user_password_changed': '密码已修改',
+            'user_profile_updated': '用户资料更新',
+            'user_permission_changed': '用户权限变更',
+            
+            # 安全相关
+            'security_login_failed': '登录失败',
+            'security_suspicious_activity': '可疑活动检测',
+            'security_token_expired': '访问令牌过期',
+            'security_unauthorized_access': '未授权访问',
+            'security_password_reset': '密码重置请求',
+            
+            # 数据同步相关
+            'sync_started': '数据同步开始',
+            'sync_completed': '数据同步完成',
+            'sync_failed': '数据同步失败',
+            'sync_conflict': '数据同步冲突',
+            'sync_progress_update': '同步进度更新'
         }
     
     def _load_settings(self):
@@ -602,4 +669,453 @@ class NotificationService:
             if bytes < 1024:
                 return f"{bytes:.2f} {unit}"
             bytes /= 1024
-        return f"{bytes:.2f} PB" 
+        return f"{bytes:.2f} PB"
+    
+    # =============== 节点相关通知 ===============
+    
+    def notify_node_online(self, user_id: int, node_name: str, node_ip: str = None) -> None:
+        """通知节点上线"""
+        content = f'节点 {node_name} 已成功上线。'
+        if node_ip:
+            content += f'\nIP地址: {node_ip}'
+        
+        self.create_notification(
+            user_id=user_id,
+            type='node_online',
+            title=f'节点上线: {node_name}',
+            content=content,
+            level='success'
+        )
+    
+    def notify_node_offline(self, user_id: int, node_name: str, reason: str = None) -> None:
+        """通知节点离线"""
+        content = f'节点 {node_name} 已离线。'
+        if reason:
+            content += f'\n原因: {reason}'
+        
+        self.create_notification(
+            user_id=user_id,
+            type='node_offline',
+            title=f'节点离线: {node_name}',
+            content=content,
+            level='warning'
+        )
+    
+    def notify_node_error(self, user_id: int, node_name: str, error_message: str) -> None:
+        """通知节点错误"""
+        self.create_notification(
+            user_id=user_id,
+            type='node_error',
+            title=f'节点错误: {node_name}',
+            content=f'节点 {node_name} 发生错误。\n错误信息: {error_message}',
+            level='error'
+        )
+    
+    def notify_node_heartbeat_timeout(self, user_id: int, node_name: str, last_heartbeat: str) -> None:
+        """通知节点心跳超时"""
+        self.create_notification(
+            user_id=user_id,
+            type='node_heartbeat_timeout',
+            title=f'节点心跳超时: {node_name}',
+            content=f'节点 {node_name} 心跳超时，可能已断开连接。\n最后心跳时间: {last_heartbeat}',
+            level='warning'
+        )
+    
+    def notify_node_resource_warning(self, user_id: int, node_name: str, resource_type: str, usage: float) -> None:
+        """通知节点资源使用警告"""
+        self.create_notification(
+            user_id=user_id,
+            type='node_resource_warning',
+            title=f'节点资源警告: {node_name}',
+            content=f'节点 {node_name} 的{resource_type}使用率已达到 {usage:.1f}%，请及时处理。',
+            level='warning'
+        )
+    
+    # =============== 存储相关通知 ===============
+    
+    def notify_storage_connected(self, user_id: int, storage_name: str, storage_type: str) -> None:
+        """通知存储连接成功"""
+        self.create_notification(
+            user_id=user_id,
+            type='storage_connected',
+            title=f'存储连接成功: {storage_name}',
+            content=f'{storage_type}存储 {storage_name} 连接成功，可以正常使用。',
+            level='success'
+        )
+    
+    def notify_storage_disconnected(self, user_id: int, storage_name: str, reason: str = None) -> None:
+        """通知存储连接中断"""
+        content = f'存储 {storage_name} 连接中断。'
+        if reason:
+            content += f'\n原因: {reason}'
+        
+        self.create_notification(
+            user_id=user_id,
+            type='storage_disconnected',
+            title=f'存储连接中断: {storage_name}',
+            content=content,
+            level='error'
+        )
+    
+    def notify_storage_error(self, user_id: int, storage_name: str, error_message: str) -> None:
+        """通知存储访问错误"""
+        self.create_notification(
+            user_id=user_id,
+            type='storage_error',
+            title=f'存储访问错误: {storage_name}',
+            content=f'访问存储 {storage_name} 时发生错误。\n错误信息: {error_message}',
+            level='error'
+        )
+    
+    def notify_storage_quota_warning(self, user_id: int, storage_name: str, used_space: int, total_space: int) -> None:
+        """通知存储空间不足"""
+        usage_percent = (used_space / total_space) * 100 if total_space > 0 else 0
+        
+        self.create_notification(
+            user_id=user_id,
+            type='storage_quota_warning',
+            title=f'存储空间不足: {storage_name}',
+            content=f'存储 {storage_name} 空间使用率已达到 {usage_percent:.1f}%。\n'
+                   f'已用空间: {self._format_bytes(used_space)}\n'
+                   f'总空间: {self._format_bytes(total_space)}',
+            level='warning'
+        )
+    
+    def notify_storage_created(self, user_id: int, storage_name: str, storage_type: str) -> None:
+        """通知存储创建成功"""
+        self.create_notification(
+            user_id=user_id,
+            type='storage_created',
+            title=f'存储创建成功: {storage_name}',
+            content=f'{storage_type}存储 {storage_name} 已成功创建并配置。',
+            level='success'
+        )
+    
+    def notify_storage_deleted(self, user_id: int, storage_name: str) -> None:
+        """通知存储删除"""
+        self.create_notification(
+            user_id=user_id,
+            type='storage_deleted',
+            title=f'存储已删除: {storage_name}',
+            content=f'存储 {storage_name} 已被删除，相关数据已清理。',
+            level='info'
+        )
+    
+    # =============== 客户端相关通知 ===============
+    
+    def notify_client_connected(self, user_id: int, client_name: str, client_ip: str = None) -> None:
+        """通知客户端连接成功"""
+        content = f'客户端 {client_name} 已成功连接。'
+        if client_ip:
+            content += f'\nIP地址: {client_ip}'
+        
+        self.create_notification(
+            user_id=user_id,
+            type='client_connected',
+            title=f'客户端连接: {client_name}',
+            content=content,
+            level='success'
+        )
+    
+    def notify_client_disconnected(self, user_id: int, client_name: str, reason: str = None) -> None:
+        """通知客户端断开连接"""
+        content = f'客户端 {client_name} 已断开连接。'
+        if reason:
+            content += f'\n原因: {reason}'
+        
+        self.create_notification(
+            user_id=user_id,
+            type='client_disconnected',
+            title=f'客户端断开: {client_name}',
+            content=content,
+            level='warning'
+        )
+    
+    def notify_client_registered(self, user_id: int, client_name: str, version: str = None) -> None:
+        """通知客户端注册成功"""
+        content = f'客户端 {client_name} 已成功注册。'
+        if version:
+            content += f'\n版本: {version}'
+        
+        self.create_notification(
+            user_id=user_id,
+            type='client_registered',
+            title=f'客户端注册: {client_name}',
+            content=content,
+            level='success'
+        )
+    
+    def notify_client_error(self, user_id: int, client_name: str, error_message: str) -> None:
+        """通知客户端运行错误"""
+        self.create_notification(
+            user_id=user_id,
+            type='client_error',
+            title=f'客户端错误: {client_name}',
+            content=f'客户端 {client_name} 运行异常。\n错误信息: {error_message}',
+            level='error'
+        )
+    
+    def notify_client_version_updated(self, user_id: int, client_name: str, old_version: str, new_version: str) -> None:
+        """通知客户端版本更新"""
+        self.create_notification(
+            user_id=user_id,
+            type='client_version_updated',
+            title=f'客户端版本更新: {client_name}',
+            content=f'客户端 {client_name} 版本已更新。\n旧版本: {old_version}\n新版本: {new_version}',
+            level='info'
+        )
+    
+    # =============== 任务扩展通知 ===============
+    
+    def notify_task_paused(self, user_id: int, task_name: str, reason: str = None) -> None:
+        """通知任务暂停"""
+        content = f'同步任务 {task_name} 已暂停。'
+        if reason:
+            content += f'\n原因: {reason}'
+        
+        self.create_notification(
+            user_id=user_id,
+            type='task_paused',
+            title=f'任务已暂停: {task_name}',
+            content=content,
+            level='warning'
+        )
+    
+    def notify_task_resumed(self, user_id: int, task_name: str) -> None:
+        """通知任务恢复"""
+        self.create_notification(
+            user_id=user_id,
+            type='task_resumed',
+            title=f'任务已恢复: {task_name}',
+            content=f'同步任务 {task_name} 已恢复执行。',
+            level='info'
+        )
+    
+    def notify_task_cancelled(self, user_id: int, task_name: str, reason: str = None) -> None:
+        """通知任务取消"""
+        content = f'同步任务 {task_name} 已被取消。'
+        if reason:
+            content += f'\n原因: {reason}'
+        
+        self.create_notification(
+            user_id=user_id,
+            type='task_cancelled',
+            title=f'任务已取消: {task_name}',
+            content=content,
+            level='warning'
+        )
+    
+    def notify_task_retry(self, user_id: int, task_name: str, retry_count: int, max_retries: int) -> None:
+        """通知任务重试"""
+        self.create_notification(
+            user_id=user_id,
+            type='task_retry',
+            title=f'任务重试执行: {task_name}',
+            content=f'同步任务 {task_name} 正在进行第 {retry_count} 次重试（最多 {max_retries} 次）。',
+            level='info'
+        )
+    
+    # =============== 系统相关通知 ===============
+    
+    def notify_system_error(self, user_id: int, component: str, error_message: str) -> None:
+        """通知系统错误"""
+        self.create_notification(
+            user_id=user_id,
+            type='system_error',
+            title=f'系统错误: {component}',
+            content=f'系统组件 {component} 发生错误。\n错误信息: {error_message}',
+            level='error'
+        )
+    
+    def notify_system_warning(self, user_id: int, component: str, warning_message: str) -> None:
+        """通知系统警告"""
+        self.create_notification(
+            user_id=user_id,
+            type='system_warning',
+            title=f'系统警告: {component}',
+            content=f'系统组件 {component} 发出警告。\n警告信息: {warning_message}',
+            level='warning'
+        )
+    
+    def notify_system_backup_completed(self, user_id: int, backup_size: int, backup_path: str) -> None:
+        """通知系统备份完成"""
+        self.create_notification(
+            user_id=user_id,
+            type='system_backup_completed',
+            title='系统备份完成',
+            content=f'系统备份已成功完成。\n备份大小: {self._format_bytes(backup_size)}\n备份路径: {backup_path}',
+            level='success'
+        )
+    
+    def notify_system_backup_failed(self, user_id: int, error_message: str) -> None:
+        """通知系统备份失败"""
+        self.create_notification(
+            user_id=user_id,
+            type='system_backup_failed',
+            title='系统备份失败',
+            content=f'系统备份执行失败。\n错误信息: {error_message}',
+            level='error'
+        )
+    
+    def notify_system_resource_warning(self, user_id: int, resource_type: str, usage: float, threshold: float) -> None:
+        """通知系统资源警告"""
+        self.create_notification(
+            user_id=user_id,
+            type='system_resource_warning',
+            title=f'系统资源警告: {resource_type}',
+            content=f'系统{resource_type}使用率已达到 {usage:.1f}%，超过阈值 {threshold:.1f}%。',
+            level='warning'
+        )
+    
+    # =============== 安全相关通知 ===============
+    
+    def notify_security_login_failed(self, user_id: int, ip_address: str, attempts: int) -> None:
+        """通知登录失败"""
+        self.create_notification(
+            user_id=user_id,
+            type='security_login_failed',
+            title='登录失败警告',
+            content=f'检测到来自 {ip_address} 的多次登录失败尝试（{attempts} 次）。',
+            level='warning'
+        )
+    
+    def notify_security_suspicious_activity(self, user_id: int, activity: str, ip_address: str) -> None:
+        """通知可疑活动"""
+        self.create_notification(
+            user_id=user_id,
+            type='security_suspicious_activity',
+            title='可疑活动检测',
+            content=f'检测到可疑活动: {activity}\nIP地址: {ip_address}',
+            level='error'
+        )
+    
+    def notify_security_unauthorized_access(self, user_id: int, resource: str, ip_address: str) -> None:
+        """通知未授权访问"""
+        self.create_notification(
+            user_id=user_id,
+            type='security_unauthorized_access',
+            title='未授权访问警告',
+            content=f'检测到未授权访问尝试。\n目标资源: {resource}\nIP地址: {ip_address}',
+            level='error'
+        )
+    
+    # =============== 数据同步相关通知 ===============
+    
+    def notify_sync_started(self, user_id: int, source: str, destination: str) -> None:
+        """通知数据同步开始"""
+        self.create_notification(
+            user_id=user_id,
+            type='sync_started',
+            title='数据同步开始',
+            content=f'数据同步已开始。\n源: {source}\n目标: {destination}',
+            level='info'
+        )
+    
+    def notify_sync_completed(self, user_id: int, source: str, destination: str, 
+                            files_synced: int, data_size: int, duration: int) -> None:
+        """通知数据同步完成"""
+        self.create_notification(
+            user_id=user_id,
+            type='sync_completed',
+            title='数据同步完成',
+            content=f'数据同步已成功完成。\n'
+                   f'源: {source}\n目标: {destination}\n'
+                   f'同步文件数: {files_synced}\n'
+                   f'数据大小: {self._format_bytes(data_size)}\n'
+                   f'耗时: {duration} 秒',
+            level='success'
+        )
+    
+    def notify_sync_failed(self, user_id: int, source: str, destination: str, error_message: str) -> None:
+        """通知数据同步失败"""
+        self.create_notification(
+            user_id=user_id,
+            type='sync_failed',
+            title='数据同步失败',
+            content=f'数据同步执行失败。\n'
+                   f'源: {source}\n目标: {destination}\n'
+                   f'错误信息: {error_message}',
+            level='error'
+        )
+    
+    def notify_sync_conflict(self, user_id: int, file_path: str, conflict_type: str) -> None:
+        """通知数据同步冲突"""
+        self.create_notification(
+            user_id=user_id,
+            type='sync_conflict',
+            title='数据同步冲突',
+            content=f'文件同步过程中发生冲突。\n文件路径: {file_path}\n冲突类型: {conflict_type}',
+            level='warning'
+        )
+    
+    # =============== 通用通知方法 ===============
+    
+    def send_notification(self, level: str, title: str, content: str, 
+                         user_id: int = None, metadata: Dict[str, Any] = None) -> None:
+        """发送通用通知
+        
+        Args:
+            level: 通知级别 (info, success, warning, error)
+            title: 通知标题
+            content: 通知内容
+            user_id: 用户ID（可选，默认发送给所有管理员）
+            metadata: 额外的元数据
+        """
+        try:
+            # 如果没有指定用户ID，发送给所有管理员
+            if user_id is None:
+                self.notify_all_admins(
+                    notification_type='system_notification',
+                    title=title,
+                    content=content,
+                    level=level
+                )
+            else:
+                # 发送给指定用户
+                notification = Notification(
+                    user_id=user_id,
+                    type='general_notification',
+                    title=title,
+                    content=content,
+                    level=level,
+                    metadata=metadata or {},
+                    created_at=datetime.utcnow()
+                )
+                db.session.add(notification)
+                db.session.commit()
+                
+                # 记录日志
+                logger.info(f"Notification sent to user {user_id}: {title}")
+                
+        except Exception as e:
+            logger.error(f"Failed to send notification: {str(e)}")
+    
+    # =============== 批量通知方法 ===============
+    
+    def notify_all_admins(self, notification_type: str, title: str, content: str, level: str = 'info') -> None:
+        """向所有管理员发送通知"""
+        from backend.app.models.user import User
+        
+        admin_users = User.query.filter_by(is_admin=True).all()
+        for admin in admin_users:
+            self.create_notification(
+                user_id=admin.id,
+                type=notification_type,
+                title=title,
+                content=content,
+                level=level
+            )
+    
+    def notify_users_by_role(self, role: str, notification_type: str, title: str, content: str, level: str = 'info') -> None:
+        """向特定角色的用户发送通知"""
+        from backend.app.models.user import User
+        
+        users = User.query.filter_by(role=role).all()
+        for user in users:
+            self.create_notification(
+                user_id=user.id,
+                type=notification_type,
+                title=title,
+                content=content,
+                level=level
+            ) 

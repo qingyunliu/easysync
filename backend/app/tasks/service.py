@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from backend import db
 from backend.app.models import Task, TaskLog, TaskStatus, TaskPriority
 from backend.app.models import Node, NodeStatus
+from backend.app.notifications.services import NotificationService
 from .errors import TaskNotFoundError, TaskOperationError, TaskValidationError, TaskStateError
 
 logger = logging.getLogger(__name__)
@@ -15,6 +16,7 @@ class TaskService:
         self.max_retries = 3  # 最大重试次数
         self.retry_delay = 300  # 重试延迟（秒）
         self.task_timeout = 3600  # 任务超时时间（秒）
+        self.notification_service = NotificationService()
         
     def create_task(self, task_data: Dict[str, Any]) -> Task:
         """创建任务，支持新的业务逻辑结构"""
@@ -105,6 +107,9 @@ class TaskService:
             task.completed_at = datetime.utcnow()
         elif task.status == 'running' and previous_status != 'running':
             task.started_at = datetime.utcnow()
+        
+        # 发送状态变更通知
+        self._send_task_notification(task, previous_status)
         
         db.session.commit()
         
@@ -453,6 +458,119 @@ class TaskService:
             stats['by_priority'][priority] = stats['by_priority'].get(priority, 0) + 1
         
         return stats
+    
+    # =============== 通知相关方法 ===============
+    
+    def _send_task_notification(self, task: Task, previous_status: str) -> None:
+        """发送任务状态变更通知"""
+        try:
+            current_status = task.status
+            
+            # 任务开始执行
+            if current_status == 'running' and previous_status != 'running':
+                self.notification_service.notify_task_started(
+                    user_id=task.user_id,
+                    task_name=task.name
+                )
+            
+            # 任务暂停
+            elif current_status == 'paused' and previous_status != 'paused':
+                reason = task.error or "用户手动暂停"
+                self.notification_service.notify_task_paused(
+                    user_id=task.user_id,
+                    task_name=task.name,
+                    reason=reason
+                )
+            
+            # 任务恢复
+            elif current_status == 'running' and previous_status == 'paused':
+                self.notification_service.notify_task_resumed(
+                    user_id=task.user_id,
+                    task_name=task.name
+                )
+            
+            # 任务完成
+            elif current_status == 'completed' and previous_status != 'completed':
+                # 获取处理统计信息
+                files_processed = getattr(task, 'files_processed', 0)
+                bytes_processed = getattr(task, 'bytes_processed', 0)
+                
+                self.notification_service.notify_task_completed(
+                    user_id=task.user_id,
+                    task_name=task.name,
+                    files_processed=files_processed,
+                    bytes_processed=bytes_processed
+                )
+            
+            # 任务失败
+            elif current_status == 'failed' and previous_status != 'failed':
+                error_message = task.error or "未知错误"
+                self.notification_service.notify_task_failed(
+                    user_id=task.user_id,
+                    task_name=task.name,
+                    error=error_message
+                )
+            
+            # 任务取消
+            elif current_status == 'cancelled' and previous_status != 'cancelled':
+                reason = task.error or "用户手动取消"
+                self.notification_service.notify_task_cancelled(
+                    user_id=task.user_id,
+                    task_name=task.name,
+                    reason=reason
+                )
+            
+        except Exception as e:
+            logger.error(f"发送任务通知失败: {str(e)}")
+    
+    def retry_failed_task(self, task_id: str, user_id: str) -> Task:
+        """重试失败的任务"""
+        task = self.get_task(task_id)
+        
+        # 验证任务状态
+        if task.status != 'failed':
+            raise TaskStateError(f"只能重试失败的任务，当前状态: {task.status}")
+        
+        if task.user_id != user_id:
+            raise TaskOperationError("无权限操作此任务")
+        
+        # 增加重试计数
+        retry_count = getattr(task, 'retry_count', 0) + 1
+        task.retry_count = retry_count
+        
+        # 检查重试次数限制
+        if retry_count > self.max_retries:
+            raise TaskOperationError(f"已达到最大重试次数 ({self.max_retries})")
+        
+        # 重置任务状态
+        task.status = 'pending'
+        task.error = None
+        task.progress = 0
+        task.updated_at = datetime.utcnow()
+        
+        db.session.commit()
+        
+        # 发送重试通知
+        try:
+            self.notification_service.notify_task_retry(
+                user_id=task.user_id,
+                task_name=task.name,
+                retry_count=retry_count,
+                max_retries=self.max_retries
+            )
+        except Exception as e:
+            logger.error(f"发送任务重试通知失败: {str(e)}")
+        
+        # 记录重试日志
+        self._add_task_log(
+            task.id, 
+            'retrying', 
+            f"Task retry attempt {retry_count}/{self.max_retries}",
+            {'retry_count': retry_count, 'max_retries': self.max_retries}
+        )
+        
+        logger.info(f"Task {task_id} marked for retry ({retry_count}/{self.max_retries})")
+        return task
     
     def _find_available_node(self) -> Optional[Node]:
         """查找可用节点

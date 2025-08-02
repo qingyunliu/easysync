@@ -3,6 +3,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from backend import db
 from backend.app.models import MonitorData, Alert, AlertRule, Node
+from backend.app.notifications.services import NotificationService
 from .errors import MonitorNotFoundError, MonitorValidationError, MonitorOperationError, AlertRuleError
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,7 @@ class MonitorService:
     def __init__(self):
         self.metrics_retention_days = 30  # 指标保留天数
         self.alert_retention_days = 90    # 告警保留天数
+        self.notification_service = NotificationService()
         
     def save_metrics(self, node_id: str, metrics: Dict[str, Any]) -> None:
         """保存监控指标
@@ -24,23 +26,50 @@ class MonitorService:
         Raises:
             MonitorValidationError: 数据验证失败
         """
-        # 验证指标数据
-        self._validate_metrics(metrics)
-        
-        # 创建监控记录
-        monitor = MonitorData(
-            node_id=node_id,
-            data=metrics,
-            timestamp=datetime.utcnow()
-        )
-        
-        db.session.add(monitor)
-        db.session.commit()
-        
-        # 检查告警规则
-        self._check_alert_rules(node_id, metrics)
-        
-        logger.info(f"Metrics saved for node: {node_id}")
+        try:
+            # 验证指标数据
+            self._validate_metrics(metrics)
+            
+            # 创建监控记录
+            monitor = MonitorData(
+                node_id=node_id,
+                data=metrics,
+                timestamp=datetime.utcnow()
+            )
+            
+            db.session.add(monitor)
+            db.session.commit()
+            
+            # 检查告警规则
+            self._check_alert_rules(node_id, metrics)
+            
+            logger.info(f"Metrics saved for node: {node_id}")
+            
+            # 发送通知
+            self.notification_service.send_notification(
+                'info',
+                f'监控指标已保存',
+                f'节点 {node_id} 的监控指标已成功保存',
+                metadata={
+                    'node_id': node_id,
+                    'metrics_count': len(metrics),
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+            )
+            
+        except Exception as e:
+            logger.error(f"Failed to save metrics for node {node_id}: {str(e)}")
+            self.notification_service.send_notification(
+                'error',
+                f'监控指标保存失败',
+                f'节点 {node_id} 的监控指标保存失败: {str(e)}',
+                metadata={
+                    'node_id': node_id,
+                    'error': str(e),
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+            )
+            raise
         
     def get_node_stats(self, node_id: str) -> Dict[str, Any]:
         """获取节点统计信息
@@ -127,26 +156,57 @@ class MonitorService:
         Raises:
             AlertRuleError: 规则创建失败
         """
-        # 验证规则数据
-        self._validate_alert_rule(rule_data)
-        
-        # 创建规则
-        rule = AlertRule(
-            name=rule_data['name'],
-            description=rule_data.get('description'),
-            metric=rule_data['metric'],
-            operator=rule_data['operator'],
-            threshold=rule_data['threshold'],
-            duration=rule_data.get('duration', 300),
-            severity=rule_data.get('severity', 'warning'),
-            enabled=rule_data.get('enabled', True)
-        )
-        
-        db.session.add(rule)
-        db.session.commit()
-        
-        logger.info(f"Alert rule created: {rule.id}")
-        return rule
+        try:
+            # 验证规则数据
+            self._validate_alert_rule(rule_data)
+            
+            # 创建规则
+            rule = AlertRule(
+                name=rule_data['name'],
+                description=rule_data.get('description'),
+                metric=rule_data['metric'],
+                operator=rule_data['operator'],
+                threshold=rule_data['threshold'],
+                duration=rule_data.get('duration', 300),
+                severity=rule_data.get('severity', 'warning'),
+                enabled=rule_data.get('enabled', True)
+            )
+            
+            db.session.add(rule)
+            db.session.commit()
+            
+            logger.info(f"Alert rule created: {rule.id}")
+            
+            # 发送通知
+            self.notification_service.send_notification(
+                'success',
+                f'告警规则已创建',
+                f'新的告警规则 "{rule.name}" 已成功创建',
+                metadata={
+                    'rule_id': rule.id,
+                    'rule_name': rule.name,
+                    'metric': rule.metric,
+                    'threshold': rule.threshold,
+                    'severity': rule.severity,
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+            )
+            
+            return rule
+            
+        except Exception as e:
+            logger.error(f"Failed to create alert rule: {str(e)}")
+            self.notification_service.send_notification(
+                'error',
+                f'告警规则创建失败',
+                f'创建告警规则失败: {str(e)}',
+                metadata={
+                    'rule_data': rule_data,
+                    'error': str(e),
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+            )
+            raise
         
     def check_alert_rules(self, node_id: str, metrics: Dict[str, Any]) -> List[Alert]:
         """检查告警规则
@@ -176,9 +236,38 @@ class MonitorService:
                 db.session.add(alert)
                 alerts.append(alert)
                 
+                # 发送告警通知
+                self.notification_service.send_notification(
+                    'warning' if rule.severity == 'warning' else 'error',
+                    f'触发告警: {rule.name}',
+                    f'节点 {node_id} 触发告警规则 "{rule.name}": {rule.metric} {rule.operator} {rule.threshold}',
+                    metadata={
+                        'node_id': node_id,
+                        'rule_id': rule.id,
+                        'rule_name': rule.name,
+                        'metric': rule.metric,
+                        'current_value': metrics.get(rule.metric, {}).get('value'),
+                        'threshold': rule.threshold,
+                        'severity': rule.severity,
+                        'timestamp': datetime.utcnow().isoformat()
+                    }
+                )
+                
         if alerts:
             db.session.commit()
             logger.info(f"Alerts created for node: {node_id}, count: {len(alerts)}")
+            
+            # 发送批量告警通知
+            self.notification_service.send_notification(
+                'warning',
+                f'批量告警触发',
+                f'节点 {node_id} 触发了 {len(alerts)} 个告警',
+                metadata={
+                    'node_id': node_id,
+                    'alert_count': len(alerts),
+                    'timestamp': datetime.utcnow().isoformat()
+                }
+            )
             
         return alerts
         

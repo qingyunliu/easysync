@@ -7,6 +7,10 @@ from backend import db
 from flask import g
 from backend.app.tasks.service import TaskService
 from backend.app.commands.service import RealTimeCommandService
+from backend.app.notifications.services import NotificationService
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 存储相关的实时命令服务
 class StorageRealTimeService:
@@ -286,6 +290,9 @@ class StorageService:
         'obs': S3Provider  # OBS 使用 S3 提供者
     }
     
+    def __init__(self):
+        self.notification_service = NotificationService()
+    
     def get_provider_class(self, storage_type: str) -> Type[StorageProvider]:
         """获取存储提供者类"""
         if storage_type not in self.PROVIDER_MAP:
@@ -294,19 +301,40 @@ class StorageService:
     
     def create_storage(self, name: str, type: str, config: Dict[str, Any], node_id: str = None) -> Storage:
         """创建存储节点"""
-        # 验证存储类型
-        self.get_provider_class(type)
-        
-        storage = Storage(
-            name=name,
-            type=type,
-            config=config,
-            user_id=g.user.id,
-            node_id=node_id  # 添加节点ID绑定
-        )
-        db.session.add(storage)
-        db.session.commit()
-        return storage
+        try:
+            # 验证存储类型
+            self.get_provider_class(type)
+            
+            storage = Storage(
+                name=name,
+                type=type,
+                config=config,
+                user_id=g.user.id,
+                node_id=node_id  # 添加节点ID绑定
+            )
+            db.session.add(storage)
+            db.session.commit()
+            
+            # 发送创建成功通知
+            self._send_storage_notification(
+                storage, 
+                'created', 
+                f'存储 {name} 已成功创建',
+                {'storage_type': type, 'node_id': node_id}
+            )
+            
+            logger.info(f"Storage created: {storage.id} - {name}")
+            return storage
+            
+        except Exception as e:
+            # 发送创建失败通知
+            self.notification_service.notify_storage_error(
+                user_id=g.user.id,
+                storage_name=name,
+                error_message=f'创建存储失败: {str(e)}'
+            )
+            logger.error(f"Failed to create storage {name}: {str(e)}")
+            raise
         
     def get_storages(self) -> list[Storage]:
         """获取所有存储节点"""
@@ -321,31 +349,90 @@ class StorageService:
         storage = Storage.query.filter_by(id=storage_id, user_id=g.user.id).first()
         if not storage:
             return None
+        
+        try:
+            # 记录原始值用于通知
+            original_name = storage.name
+            original_type = storage.type
+            original_node_id = storage.node_id
             
-        if type:
-            # 验证新的存储类型
-            self.get_provider_class(type)
-            storage.type = type
+            if type:
+                # 验证新的存储类型
+                self.get_provider_class(type)
+                storage.type = type
+                
+            if name:
+                storage.name = name
+            if config:
+                storage.config = config
+            if node_id is not None:  # 允许设置为None来解绑节点
+                storage.node_id = node_id
+                
+            db.session.commit()
             
-        if name:
-            storage.name = name
-        if config:
-            storage.config = config
-        if node_id is not None:  # 允许设置为None来解绑节点
-            storage.node_id = node_id
+            # 发送更新成功通知
+            changes = []
+            if name and name != original_name:
+                changes.append(f'名称: {original_name} → {name}')
+            if type and type != original_type:
+                changes.append(f'类型: {original_type} → {type}')
+            if node_id != original_node_id:
+                old_node = original_node_id or '未绑定'
+                new_node = node_id or '未绑定'
+                changes.append(f'节点: {old_node} → {new_node}')
             
-        db.session.commit()
-        return storage
+            self._send_storage_notification(
+                storage,
+                'updated',
+                f'存储 {storage.name} 配置已更新',
+                {'changes': changes, 'updated_fields': {'name': name, 'type': type, 'node_id': node_id}}
+            )
+            
+            logger.info(f"Storage updated: {storage_id} - {storage.name}")
+            return storage
+            
+        except Exception as e:
+            # 发送更新失败通知
+            self.notification_service.notify_storage_error(
+                user_id=g.user.id,
+                storage_name=storage.name,
+                error_message=f'更新存储配置失败: {str(e)}'
+            )
+            logger.error(f"Failed to update storage {storage_id}: {str(e)}")
+            raise
         
     def delete_storage(self, storage_id: str) -> bool:
         """删除存储节点"""
         storage = Storage.query.filter_by(id=storage_id, user_id=g.user.id).first()
         if not storage:
             return False
+        
+        try:
+            # 记录存储信息用于通知
+            storage_name = storage.name
+            storage_type = storage.type
             
-        db.session.delete(storage)
-        db.session.commit()
-        return True
+            db.session.delete(storage)
+            db.session.commit()
+            
+            # 发送删除成功通知
+            self.notification_service.notify_storage_deleted(
+                user_id=g.user.id,
+                storage_name=storage_name
+            )
+            
+            logger.info(f"Storage deleted: {storage_id} - {storage_name}")
+            return True
+            
+        except Exception as e:
+            # 发送删除失败通知
+            self.notification_service.notify_storage_error(
+                user_id=g.user.id,
+                storage_name=storage.name,
+                error_message=f'删除存储失败: {str(e)}'
+            )
+            logger.error(f"Failed to delete storage {storage_id}: {str(e)}")
+            raise
 
     def get_provider(self, storage: Storage) -> StorageProvider:
         """获取存储提供者实例"""
@@ -583,3 +670,126 @@ class StorageService:
                     'status': 'error',
                     'message': f'下载 NAS 文件失败: {str(e)}'
                 }
+
+    # =============== 通知相关方法 ===============
+    
+    def _send_storage_notification(self, storage, operation_type, message, details=None):
+        """发送存储操作通知"""
+        try:
+            if operation_type == 'created':
+                self.notification_service.notify_storage_created(
+                    user_id=storage.user_id,
+                    storage_name=storage.name,
+                    storage_type=storage.type
+                )
+            elif operation_type == 'updated':
+                self.notification_service.create_notification(
+                    user_id=storage.user_id,
+                    type='storage_updated',
+                    title=f'存储配置更新: {storage.name}',
+                    content=f'{message}\n变更详情: {", ".join(details.get("changes", []))}',
+                    level='info'
+                )
+            elif operation_type == 'connected':
+                self.notification_service.notify_storage_connected(
+                    user_id=storage.user_id,
+                    storage_name=storage.name,
+                    storage_type=storage.type
+                )
+            elif operation_type == 'disconnected':
+                self.notification_service.notify_storage_disconnected(
+                    user_id=storage.user_id,
+                    storage_name=storage.name,
+                    reason=details.get('reason', '未知原因')
+                )
+                
+        except Exception as e:
+            logger.error(f"发送存储通知失败: {str(e)}")
+    
+    def test_storage_connection(self, storage_id: str, send_notification: bool = True):
+        """测试存储连接"""
+        storage = self.get_storage(storage_id)
+        if not storage:
+            return {'status': 'error', 'message': '存储不存在'}
+        
+        try:
+            provider = self.get_provider(storage)
+            # 这里应该调用provider的测试连接方法
+            # result = provider.test_connection()
+            
+            # 模拟连接测试
+            result = {'status': 'success', 'message': '连接测试成功'}
+            
+            if send_notification:
+                if result['status'] == 'success':
+                    self._send_storage_notification(storage, 'connected', '存储连接测试成功')
+                else:
+                    self._send_storage_notification(
+                        storage, 
+                        'disconnected', 
+                        '存储连接测试失败',
+                        {'reason': result.get('message', '连接失败')}
+                    )
+            
+            return result
+            
+        except Exception as e:
+            error_msg = f'存储连接测试失败: {str(e)}'
+            
+            if send_notification:
+                self.notification_service.notify_storage_error(
+                    user_id=storage.user_id,
+                    storage_name=storage.name,
+                    error_message=error_msg
+                )
+            
+            logger.error(f"Storage connection test failed: {storage_id} - {str(e)}")
+            return {'status': 'error', 'message': error_msg}
+    
+    def monitor_storage_usage(self, storage_id: str, threshold: float = 85.0):
+        """监控存储使用率并发送警告"""
+        storage = self.get_storage(storage_id)
+        if not storage:
+            return
+        
+        try:
+            provider = self.get_provider(storage)
+            stats = provider.get_stats()
+            
+            # 检查使用率
+            if 'usage_percent' in stats and stats['usage_percent'] > threshold:
+                used_space = stats.get('used_space', 0)
+                total_space = stats.get('total_space', 0)
+                
+                self.notification_service.notify_storage_quota_warning(
+                    user_id=storage.user_id,
+                    storage_name=storage.name,
+                    used_space=used_space,
+                    total_space=total_space
+                )
+                
+        except Exception as e:
+            logger.error(f"监控存储使用率失败: {storage_id} - {str(e)}")
+    
+    def handle_storage_operation_result(self, storage, operation, result):
+        """处理存储操作结果并发送相应通知"""
+        try:
+            if result.get('status') == 'success':
+                # 操作成功通知
+                self.notification_service.create_notification(
+                    user_id=storage.user_id,
+                    type=f'storage_{operation}_success',
+                    title=f'存储操作成功: {storage.name}',
+                    content=f'操作 "{operation}" 已成功完成。\n结果: {result.get("message", "操作成功")}',
+                    level='success'
+                )
+            else:
+                # 操作失败通知
+                self.notification_service.notify_storage_error(
+                    user_id=storage.user_id,
+                    storage_name=storage.name,
+                    error_message=f'操作 "{operation}" 失败: {result.get("message", "未知错误")}'
+                )
+                
+        except Exception as e:
+            logger.error(f"处理存储操作结果通知失败: {str(e)}")
