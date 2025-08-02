@@ -7,10 +7,12 @@ from .service import TaskService
 import logging
 from .errors import TaskError, TaskNotFoundError, TaskOperationError, TaskValidationError, TaskStateError
 from backend.app.auth.services import AuditService
+from backend.app.notifications.services import NotificationService
 
 logger = logging.getLogger(__name__)
 
 task_service = TaskService()
+notification_service = NotificationService()
 
 @tasks_bp.errorhandler(TaskError)
 def handle_task_error(error):
@@ -113,6 +115,16 @@ def create_task():
         }
             
         task = task_service.create_task(task_data)
+        
+        # 发送任务创建通知
+        notification_service.create_notification(
+            user_id=user_id,
+            type='task_created',
+            title=f'任务已创建: {task.name}',
+            content=f'同步任务 {task.name} 已成功创建，等待执行。',
+            level='info'
+        )
+        
         AuditService.log_task_operation(
             user_id=user_id,
             action='create',
@@ -220,6 +232,12 @@ def cancel_task(task_id):
     
     try:
         task = task_service.cancel_task(task_id)
+        # 发送任务取消通知
+        notification_service.notify_task_cancelled(
+            user_id=user_id,
+            task_name=task.name,
+            reason='用户手动取消'
+        )
         return jsonify({
             'status': 'success',
             'message': '任务取消成功',
@@ -244,6 +262,13 @@ def retry_task(task_id):
     
     try:
         task = task_service.retry_task(task_id)
+        # 发送任务重试通知
+        notification_service.notify_task_retry(
+            user_id=user_id,
+            task_name=task.name,
+            retry_count=task.retry_count or 1,
+            max_retries=task.max_retries or 3
+        )
         return jsonify({
             'status': 'success',
             'message': '任务重试成功',
@@ -307,6 +332,11 @@ def start_task(task_id):
     if task.user_id != current_user_id:
         return jsonify({'error': '任务不属于当前用户'}), 403
     if task_service.start_task(task_id):
+        # 发送任务启动通知
+        notification_service.notify_task_started(
+            user_id=current_user_id,
+            task_name=task.name
+        )
         return jsonify({
             'status': 'success',
             'message': '任务已启动'
@@ -487,6 +517,12 @@ def pause_task(task_id):
     """暂停任务"""
     try:
         task = task_service.pause_task(task_id)
+        # 发送任务暂停通知
+        notification_service.notify_task_paused(
+            user_id=task.user_id,
+            task_name=task.name,
+            reason='用户手动暂停'
+        )
         return jsonify({
             'status': 'success',
             'message': f'Task {task_id} pause requested',
@@ -502,6 +538,11 @@ def resume_task(task_id):
     """恢复任务"""
     try:
         task = task_service.resume_task(task_id)
+        # 发送任务恢复通知
+        notification_service.notify_task_resumed(
+            user_id=task.user_id,
+            task_name=task.name
+        )
         return jsonify({
             'status': 'success',
             'message': f'Task {task_id} resume requested',
@@ -581,6 +622,10 @@ def update_task(task_id):
 def delete_task(task_id):
     user_id = get_jwt_identity()
     try:
+        task = Task.query.get_or_404(task_id)
+        if task.user_id != user_id:
+            return jsonify({'error': '任务不属于当前用户'}), 403
+            
         if not task_service.delete_task(task_id):
             AuditService.log_task_operation(
                 user_id=user_id,
@@ -594,6 +639,16 @@ def delete_task(task_id):
                 'status': 'error',
                 'message': '任务不存在'
             }), 404
+            
+        # 发送任务删除通知
+        notification_service.create_notification(
+            user_id=user_id,
+            type='task_deleted',
+            title=f'任务已删除: {task.name}',
+            content=f'同步任务 {task.name} 已被删除。',
+            level='info'
+        )
+        
         AuditService.log_task_operation(
             user_id=user_id,
             action='delete',

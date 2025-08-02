@@ -8,10 +8,12 @@ import io
 from botocore.exceptions import ClientError
 from backend.app.auth.services import AuditService
 from backend.app.storages.services import StorageRealTimeService
+from backend.app.notifications.services import NotificationService
 
 storage_realtime_service = StorageRealTimeService()
 
 storage_service = StorageService()
+notification_service = NotificationService()
 
 @storages_bp.route('', methods=['POST'])
 @require_user
@@ -40,6 +42,14 @@ def create_storage():
             }), 400
 
         storage = storage_service.create_storage(name, type, config, node_id)
+        
+        # 发送存储创建通知
+        notification_service.notify_storage_created(
+            user_id=user_id,
+            storage_name=storage.name,
+            storage_type=storage.type
+        )
+        
         AuditService.log_storage_operation(
             user_id=user_id,
             action='create',
@@ -192,6 +202,24 @@ def delete_storage(storage_id):
     """删除存储节点"""
     user_id = get_jwt_identity()
     try:
+        storage = storage_service.get_storage(storage_id)
+        if not storage:
+            AuditService.log_storage_operation(
+                user_id=user_id,
+                action='delete',
+                storage_id=storage_id,
+                storage_name=None,
+                details={'error': '存储节点不存在'},
+                result='failed'
+            )
+            return jsonify({
+                'status': 'error',
+                'message': '存储节点不存在'
+            }), 404
+            
+        storage_name = storage.name
+        storage_type = storage.type
+        
         if not storage_service.delete_storage(storage_id):
             AuditService.log_storage_operation(
                 user_id=user_id,
@@ -205,6 +233,13 @@ def delete_storage(storage_id):
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
+            
+        # 发送存储删除通知
+        notification_service.notify_storage_deleted(
+            user_id=user_id,
+            storage_name=storage_name
+        )
+        
         AuditService.log_storage_operation(
             user_id=user_id,
             action='delete',
@@ -294,6 +329,13 @@ def test_storage_connection(storage_id):
         data = request.get_json()
         node_id = data.get('node_id') if data else None
         user_id = get_jwt_identity()
+        storage = storage_service.get_storage(storage_id)
+        
+        if not storage:
+            return jsonify({
+                'status': 'error',
+                'message': '存储节点不存在'
+            }), 404
         
         if not node_id:
             return jsonify({
@@ -306,7 +348,7 @@ def test_storage_connection(storage_id):
             user_id=user_id,
             action='test_connection_realtime',
             storage_id=storage_id,
-            storage_name=None,
+            storage_name=storage.name,
             details={'node_id': node_id, 'method': 'realtime'},
             result='started'
         )
@@ -314,12 +356,26 @@ def test_storage_connection(storage_id):
         # 执行实时连接测试
         result = storage_realtime_service.test_connection_realtime(storage_id, node_id)
         
+        # 根据测试结果发送通知
+        if result.get('status') == 'success':
+            notification_service.notify_storage_connected(
+                user_id=user_id,
+                storage_name=storage.name,
+                storage_type=storage.type
+            )
+        else:
+            notification_service.notify_storage_disconnected(
+                user_id=user_id,
+                storage_name=storage.name,
+                reason=result.get('message', '连接测试失败')
+            )
+        
         # 记录结果
         AuditService.log_storage_operation(
             user_id=user_id,
             action='test_connection_realtime',
             storage_id=storage_id,
-            storage_name=None,
+            storage_name=storage.name,
             details={'node_id': node_id, 'result': result},
             result='success' if result.get('status') == 'success' else 'failed'
         )
@@ -331,7 +387,7 @@ def test_storage_connection(storage_id):
             user_id=user_id,
             action='test_connection_realtime',
             storage_id=storage_id,
-            storage_name=None,
+            storage_name=storage.name,
             details={'error': str(e)},
             result='failed'
         )
@@ -345,7 +401,7 @@ def test_storage_connection(storage_id):
             user_id=user_id,
             action='test_connection_realtime',
             storage_id=storage_id,
-            storage_name=None,
+            storage_name=storage.name,
             details={'error': str(e)},
             result='failed'
         )

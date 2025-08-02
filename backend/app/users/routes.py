@@ -12,8 +12,10 @@ import io
 from backend import db
 from backend.app.utils.email_utils import send_email
 from backend.app.auth.services import AuditService
+from backend.app.notifications.services import NotificationService
 
 user_service = UserService()
+notification_service = NotificationService()
 
 def allowed_file(filename):
     """检查文件类型是否允许"""
@@ -94,6 +96,16 @@ def create_user():
             f"请点击以下链接验证您的邮箱：<a href='{verify_url}'>{verify_url}</a>"
         )
         db.session.commit()
+        
+        # 发送用户注册通知
+        notification_service.create_notification(
+            user_id=user.id,
+            type='user_registered',
+            title=f'用户注册成功: {username}',
+            content=f'用户 {username} 已成功注册，邮箱: {email}',
+            level='success'
+        )
+        
         AuditService.log_user_operation(
             user_id=None,
             action='create',
@@ -190,6 +202,16 @@ def update_user(user_id):
                 result='failed'
             )
             return jsonify({'error': '用户不存在'}), 404
+            
+        # 发送用户信息更新通知
+        notification_service.create_notification(
+            user_id=user.id,
+            type='user_profile_updated',
+            title=f'用户信息已更新: {user.username}',
+            content=f'用户 {user.username} 的信息已更新。\n邮箱: {user.email}\n角色: {user.role}',
+            level='info'
+        )
+        
         AuditService.log_user_operation(
             user_id=None,
             action='update',
@@ -221,6 +243,20 @@ def update_user(user_id):
 def delete_user(user_id):
     """删除用户"""
     try:
+        user = User.query.get(user_id)
+        if not user:
+            AuditService.log_user_operation(
+                user_id=None,
+                action='delete',
+                target_user_id=user_id,
+                target_username=None,
+                details={'error': '用户不存在'},
+                result='failed'
+            )
+            return jsonify({'error': '用户不存在'}), 404
+            
+        username = user.username
+        
         if not user_service.delete_user(user_id):
             AuditService.log_user_operation(
                 user_id=None,
@@ -231,6 +267,16 @@ def delete_user(user_id):
                 result='failed'
             )
             return jsonify({'error': '用户不存在'}), 404
+            
+        # 发送用户删除通知
+        notification_service.create_notification(
+            user_id=user_id,
+            type='user_deleted',
+            title=f'用户已删除: {username}',
+            content=f'用户 {username} 已被删除。',
+            level='warning'
+        )
+        
         AuditService.log_user_operation(
             user_id=None,
             action='delete',
@@ -336,4 +382,14 @@ def verify_email():
     user.email_verified = True
     user.email_verification_token = None
     db.session.commit()
+    
+    # 发送邮箱验证成功通知
+    notification_service.create_notification(
+        user_id=user.id,
+        type='user_email_verified',
+        title=f'邮箱验证成功: {user.username}',
+        content=f'用户 {user.username} 的邮箱验证已成功完成。',
+        level='success'
+    )
+    
     return jsonify({'status': 'success', 'msg': '邮箱验证成功'}) 

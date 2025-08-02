@@ -12,10 +12,12 @@ from .status_monitor import get_status_monitor
 from .service import NodeService
 from .errors import NodeError, NodeNotFoundError, NodeUnhealthyError, NodeOperationError
 from backend.app.auth.services import AuditService
+from backend.app.notifications.services import NotificationService
 
 logger = logging.getLogger(__name__)
 
 node_service = NodeService()
+notification_service = NotificationService()
 
 @nodes_bp.errorhandler(NodeError)
 def handle_node_error(error):
@@ -85,6 +87,15 @@ def create_node():
         db.session.add(node)
         db.session.commit()
         
+        # 发送节点创建通知
+        notification_service.create_notification(
+            user_id=user_id,
+            type='node_created',
+            title=f'节点已创建: {node.name}',
+            content=f'节点 {node.name} ({ipaddress}) 已成功创建。',
+            level='success'
+        )
+        
         AuditService.log_node_operation(
             user_id=user_id,
             action='create',
@@ -139,6 +150,13 @@ def test_connection(node_id):
             node.last_seen = datetime.utcnow()
             db.session.commit()
             
+            # 发送节点上线通知
+            notification_service.notify_node_online(
+                user_id=node.user_id,
+                node_name=node.name,
+                node_ip=node.ipaddress
+            )
+            
             # 记录审计日志
             audit_log = AuditLog(
                 user_id=node.user_id,
@@ -159,6 +177,13 @@ def test_connection(node_id):
         # 更新状态为离线
         node.status = 'offline'
         db.session.commit()
+        
+        # 发送节点离线通知
+        notification_service.notify_node_offline(
+            user_id=node.user_id,
+            node_name=node.name,
+            reason=f'连接测试失败: {str(e)}'
+        )
         
         # 记录审计日志
         audit_log = AuditLog(
@@ -349,8 +374,20 @@ def delete_node(node_id):
         # 删除相关监控数据
         MonitorData.query.filter_by(node_id=node.id).delete()
 
+        node_name = node.name
+        node_ip = node.ipaddress
+        
         db.session.delete(node)
         db.session.commit()
+        
+        # 发送节点删除通知
+        notification_service.create_notification(
+            user_id=current_user_id,
+            type='node_deleted',
+            title=f'节点已删除: {node_name}',
+            content=f'节点 {node_name} ({node_ip}) 已被删除。',
+            level='info'
+        )
         
         AuditService.log_node_operation(
             user_id=current_user_id,
@@ -612,6 +649,15 @@ def install_node_agent(node_id):
             node.agent_version = '1.0.0'
             db.session.commit()
             
+            # 发送Agent安装成功通知
+            notification_service.create_notification(
+                user_id=current_user_id,
+                type='node_agent_installed',
+                title=f'Agent安装成功: {node.name}',
+                content=f'节点 {node.name} 的Proxy Agent已成功安装并启动。',
+                level='success'
+            )
+            
             return jsonify({
                 'status': 'success',
                 'message': 'EasySync Proxy Agent安装成功'
@@ -621,6 +667,14 @@ def install_node_agent(node_id):
         logger.error(f"安装Proxy Agent失败: {str(e)}")
         node.agent_status = 'install_error'
         db.session.commit()
+        
+        # 发送Agent安装失败通知
+        notification_service.notify_node_error(
+            user_id=current_user_id,
+            node_name=node.name,
+            error_message=f'Agent安装失败: {str(e)}'
+        )
+        
         return jsonify({
             'status': 'error',
             'message': f'安装失败: {str(e)}'

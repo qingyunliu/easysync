@@ -11,8 +11,10 @@ import uuid
 from backend.app.utils.email_utils import send_email
 from datetime import datetime, timedelta
 import os
+from backend.app.notifications.services import NotificationService
 
 auth_service = AuthService()
+notification_service = NotificationService()
 
 @auth_bp.route('/captcha', methods=['GET'])
 def get_captcha():
@@ -106,6 +108,15 @@ def login():
     # 生成令牌
     access_token = create_access_token(identity=user.id)
     refresh_token = create_refresh_token(identity=user.id)
+    
+    # 发送用户登录通知
+    notification_service.create_notification(
+        user_id=user.id,
+        type='user_login',
+        title=f'用户登录: {user.username}',
+        content=f'用户 {user.username} 已成功登录。\n登录时间: {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}\nIP地址: {request.headers.get("X-Forwarded-For", request.remote_addr)}',
+        level='info'
+    )
     
     # 登录审计日志
     try:
@@ -279,6 +290,16 @@ def forgot_password():
             "重置密码",
             f"请点击以下链接重置您的密码（1小时内有效）：<a href='{reset_url}'>{reset_url}</a>"
         )
+        
+        # 发送密码重置请求通知
+        notification_service.create_notification(
+            user_id=user.id,
+            type='security_password_reset',
+            title=f'密码重置请求: {user.username}',
+            content=f'用户 {user.username} 已请求重置密码。\n重置链接已发送到邮箱: {email}',
+            level='warning'
+        )
+        
         AuditService.log_operation(
             user_id=user.id,
             action='forgot_password',
@@ -329,6 +350,16 @@ def reset_password():
         user.reset_password_expire = None
         from backend import db
         db.session.commit()
+        
+        # 发送密码重置成功通知
+        notification_service.create_notification(
+            user_id=user.id,
+            type='user_password_changed',
+            title=f'密码已重置: {user.username}',
+            content=f'用户 {user.username} 的密码已成功重置。\n重置时间: {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}',
+            level='success'
+        )
+        
         AuditService.log_operation(
             user_id=user.id,
             action='reset_password',
@@ -355,6 +386,15 @@ def logout():
     """用户退出登录"""
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)
+    
+    # 发送用户登出通知
+    notification_service.create_notification(
+        user_id=user.id,
+        type='user_logout',
+        title=f'用户登出: {user.username}',
+        content=f'用户 {user.username} 已退出登录。\n登出时间: {datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")}',
+        level='info'
+    )
     
     # 退出登录审计日志
     try:

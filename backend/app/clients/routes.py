@@ -11,8 +11,10 @@ import yaml
 import uuid
 from ..utils.ssh_utils import SSHClient
 from ..utils import utils
+from backend.app.notifications.services import NotificationService
 
 logger = logging.getLogger(__name__)
+notification_service = NotificationService()
 
 @clients_bp.route('', methods=['GET'])
 @jwt_required()
@@ -59,6 +61,15 @@ def create_client():
     try:
         db.session.add(client)
         db.session.commit()
+        
+        # 发送客户端创建通知
+        notification_service.create_notification(
+            user_id=current_user_id,
+            type='client_created',
+            title=f'客户端已创建: {client.name}',
+            content=f'客户端 {client.name} ({client.ip_address}) 已成功创建。',
+            level='success'
+        )
         
         # 记录审计日志
         audit_log = AuditLog(
@@ -132,6 +143,9 @@ def delete_client(client_id):
         # 删除相关监控数据
         MonitorData.query.filter_by(client_id=client.id).delete()
 
+        client_name = client.name
+        client_ip = client.ip_address
+        
         # 记录审计日志
         audit_log = AuditLog(
             user_id=current_user_id,
@@ -144,6 +158,16 @@ def delete_client(client_id):
         
         db.session.delete(client)
         db.session.commit()
+        
+        # 发送客户端删除通知
+        notification_service.create_notification(
+            user_id=current_user_id,
+            type='client_deleted',
+            title=f'客户端已删除: {client_name}',
+            content=f'客户端 {client_name} ({client_ip}) 已被删除。',
+            level='info'
+        )
+        
         return jsonify({
             'status': 'success',
             'message': '服务器删除成功'
@@ -228,6 +252,15 @@ def install_agent(client_id):
             client.agent_install_path = install_path
             db.session.commit()
             
+            # 发送Agent安装成功通知
+            notification_service.create_notification(
+                user_id=current_user_id,
+                type='client_agent_installed',
+                title=f'Agent安装成功: {client.name}',
+                content=f'客户端 {client.name} 的Agent已成功安装并启动。',
+                level='success'
+            )
+            
             return jsonify({
                 'status': 'success',
                 'message': 'Agent安装成功'
@@ -237,6 +270,14 @@ def install_agent(client_id):
         logger.error(f"安装Agent失败: {str(e)}")
         client.agent_status = 'install_error'
         db.session.commit()
+        
+        # 发送Agent安装失败通知
+        notification_service.notify_client_error(
+            user_id=current_user_id,
+            client_name=client.name,
+            error_message=f'Agent安装失败: {str(e)}'
+        )
+        
         return jsonify({
             'status': 'error',
             'message': f'安装失败: {str(e)}'
@@ -396,6 +437,13 @@ def test_connection(client_id):
             client.last_seen = datetime.utcnow()
             db.session.commit()
             
+            # 发送客户端连接成功通知
+            notification_service.notify_client_connected(
+                user_id=client.user_id,
+                client_name=client.name,
+                client_ip=client.ip_address
+            )
+            
             # 记录审计日志
             audit_log = AuditLog(
                 user_id=client.user_id,
@@ -416,6 +464,13 @@ def test_connection(client_id):
         # 更新状态为离线
         client.status = 'offline'
         db.session.commit()
+        
+        # 发送客户端连接失败通知
+        notification_service.notify_client_disconnected(
+            user_id=client.user_id,
+            client_name=client.name,
+            reason=f'连接测试失败: {str(e)}'
+        )
         
         # 记录审计日志
         audit_log = AuditLog(
