@@ -3,7 +3,7 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h1>告警策略管理</h1>
+        <h2>告警策略管理</h2>
         <p class="page-description">管理系统的告警策略，监控资源状态和事件</p>
       </div>
       <div class="header-actions">
@@ -46,66 +46,96 @@
 
     <!-- 策略列表 -->
     <div class="policies-container">
-      <el-row :gutter="20">
-        <el-col 
-          v-for="policy in filteredPolicies" 
-          :key="policy.id" 
-          :xs="24" 
-          :sm="12" 
-          :md="8" 
-          :lg="6"
-        >
-          <div class="policy-card" :class="{ disabled: !policy.enabled }">
-            <div class="card-header">
-              <div class="policy-info">
-                <h3 class="policy-name">{{ policy.name }}</h3>
-                <el-tag :type="getLevelTagType(policy.level)" size="small">
-                  {{ getLevelLabel(policy.level) }}
-                </el-tag>
-                <el-tag :type="getPolicyTypeTagType(policy.policy_type)" size="small">
-                  {{ getPolicyTypeLabel(policy.policy_type) }}
-                </el-tag>
+      <el-table 
+        :data="filteredPolicies" 
+        style="width: 100%"
+        @selection-change="handleSelectionChange"
+        v-loading="loading"
+      >
+        <el-table-column type="selection" width="55" />
+        
+        <el-table-column prop="name" label="报警器名称" sortable>
+          <template #default="{ row }">
+            <el-link type="primary" @click="showPolicyDetail(row)">
+              {{ row.name }}
+            </el-link>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="resource_type" label="资源类型" sortable>
+          <template #default="{ row }">
+            {{ getResourceTypeLabel(row.resource_type) }}
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="报警条目" sortable>
+          <template #default="{ row }">
+            <div v-if="row.alert_items && row.alert_items.length > 0">
+              <div v-for="item in row.alert_items.slice(0, 2)" :key="item">
+                {{ getAlertItemLabel(item) }}{{ row.trigger_rules && row.trigger_rules[item] ? 
+                  `${row.trigger_rules[item].operator === 'gt' ? '>' : row.trigger_rules[item].operator === 'lt' ? '<' : '='}${row.trigger_rules[item].threshold}%` : '' }}
               </div>
-              <div class="policy-status">
-                <el-switch 
-                  v-model="policy.enabled" 
-                  @change="togglePolicy(policy)"
-                  :loading="policy.toggling"
-                />
-              </div>
-            </div>
-            
-            <div class="card-content">
-              <p class="policy-description">{{ policy.description || '暂无描述' }}</p>
-              
-              <div class="policy-details">
-                <div class="detail-item">
-                  <span class="label">监控资源:</span>
-                  <span class="value">{{ policy.monitored_resources?.length || 0 }}个</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">通知渠道:</span>
-                  <span class="value">{{ policy.notification_channels?.length || 0 }}个</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">通知对象:</span>
-                  <span class="value">{{ policy.notification_targets?.length || 0 }}个</span>
-                </div>
-                <div class="detail-item">
-                  <span class="label">创建时间:</span>
-                  <span class="value">{{ formatDate(policy.created_at) }}</span>
-                </div>
+              <div v-if="row.alert_items.length > 2" class="more-items">
+                +{{ row.alert_items.length - 2 }}个
               </div>
             </div>
-            
-            <div class="card-actions">
-              <el-button size="small" @click="editPolicy(policy)">编辑</el-button>
-              <el-button size="small" type="primary" @click="testPolicy(policy)">测试</el-button>
-              <el-button size="small" type="danger" @click="deletePolicy(policy)">删除</el-button>
+            <span v-else>-</span>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="level" label="报警级别" sortable>
+          <template #default="{ row }">
+            <el-tag :type="getLevelTagType(row.level)" size="small">
+              {{ getLevelLabel(row.level) }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="enabled" label="启用状态" sortable>
+          <template #default="{ row }">
+            <el-tag :type="row.enabled ? 'success' : 'info'" size="small">
+              {{ row.enabled ? '启用' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="通知对象数量" sortable>
+          <template #default="{ row }">
+            {{ row.notification_targets?.length || 0 }}
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="监控资源数量" sortable>
+          <template #default="{ row }">
+            {{ row.monitored_resources?.length || 0 }}
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="created_at" label="创建时间" sortable>
+          <template #default="{ row }">
+            <div class="time-display">
+              <div>{{ formatDate(row.created_at).split(' ')[0] }}</div>
+              <div class="time">{{ formatDate(row.created_at).split(' ')[1] }}</div>
             </div>
-          </div>
-        </el-col>
-      </el-row>
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button 
+              size="small" 
+              :type="row.enabled ? 'success' : 'info'"
+              @click="togglePolicy(row)"
+              :loading="row.toggling"
+            >
+              {{ row.enabled ? '禁用' : '启用' }}
+            </el-button>
+            <el-button size="small" @click="editPolicy(row)">编辑</el-button>
+            <el-button size="small" type="danger" @click="deletePolicy(row)">删除</el-button>
+            <el-button size="small" type="warning" @click="testPolicy(row)">测试</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
       
       <div v-if="filteredPolicies.length === 0" class="empty-state">
         <el-empty description="暂无告警策略" />
@@ -186,20 +216,24 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="资源类型" prop="resource_type">
-                <el-select v-model="policyForm.resource_type" placeholder="请选择资源类型">
-                  <el-option label="源端同步代理" value="source_agent" />
-                  <el-option label="目标端同步代理" value="target_agent" />
-                  <el-option label="存储节点" value="storage_node" />
+                <el-select v-model="policyForm.resource_type" placeholder="请选择资源类型" @change="handleResourceTypeChange">
                   <el-option label="客户端" value="client" />
-                  <el-option label="系统" value="system" />
+                  <el-option label="同步代理节点" value="proxy_node" />
+                  <el-option label="存储节点" value="storage_node" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="监控资源" prop="monitored_resources">
-                <el-button @click="openResourceSelector" type="primary" plain>
+                <el-button 
+                  @click="openResourceSelector" 
+                  type="primary" 
+                  plain
+                  :disabled="!policyForm.resource_type"
+                >
                   选择资源 ({{ policyForm.monitored_resources?.length || 0 }})
                 </el-button>
+                <div class="form-tip">请先选择资源类型</div>
               </el-form-item>
             </el-col>
           </el-row>
@@ -236,7 +270,7 @@
                     </el-select>
                   </el-form-item>
                 </el-col>
-                <el-col :span="8">
+                <el-col :span="10">
                   <el-form-item :label="'阈值'" :prop="`trigger_rules.${item}.threshold`">
                     <el-input-number 
                       v-model="policyForm.trigger_rules[item].threshold" 
@@ -246,7 +280,7 @@
                     />
                   </el-form-item>
                 </el-col>
-                <el-col :span="8">
+                <el-col :span="10">
                   <el-form-item :label="'持续时间(秒)'" :prop="`trigger_rules.${item}.duration`">
                     <el-input-number 
                       v-model="policyForm.trigger_rules[item].duration" 
@@ -359,20 +393,35 @@
           <el-row :gutter="20">
             <el-col :span="8">
               <el-form-item label="重试次数" prop="retry_count">
-                <el-input-number v-model="policyForm.retry_count" :min="0" :max="10" />
-                <div class="form-tip">发送失败时的重试次数</div>
+                <el-input-number 
+                  v-model="policyForm.retry_count" 
+                  :min="0" 
+                  :max="10"
+                  controls-position="right"
+                />
+                <div class="form-tip">告警发送失败时的重试次数</div>
               </el-form-item>
             </el-col>
             <el-col :span="8">
               <el-form-item label="频率限制(秒)" prop="rate_limit">
-                <el-input-number v-model="policyForm.rate_limit" :min="60" :max="3600" />
-                <div class="form-tip">相同告警的发送间隔</div>
+                <el-input-number 
+                  v-model="policyForm.rate_limit" 
+                  :min="60" 
+                  :max="3600"
+                  controls-position="right"
+                />
+                <div class="form-tip">相同告警的最小发送间隔</div>
               </el-form-item>
             </el-col>
             <el-col :span="8">
               <el-form-item label="超时时间(秒)" prop="timeout">
-                <el-input-number v-model="policyForm.timeout" :min="5" :max="300" />
-                <div class="form-tip">发送通知的超时时间</div>
+                <el-input-number 
+                  v-model="policyForm.timeout" 
+                  :min="10" 
+                  :max="300"
+                  controls-position="right"
+                />
+                <div class="form-tip">告警发送的超时时间</div>
               </el-form-item>
             </el-col>
           </el-row>
@@ -388,15 +437,25 @@
     </el-dialog>
 
     <!-- 资源选择器 -->
-    <el-dialog v-model="showResourceSelector" title="选择监控资源" width="600px">
+    <el-dialog v-model="showResourceSelector" :title="`选择监控资源 - ${getResourceTypeLabel(policyForm.resource_type)}`" width="600px">
       <div class="selector-content">
+        <div class="selector-header">
+          <div class="resource-type-info">
+            当前资源类型: <el-tag size="small">{{ getResourceTypeLabel(policyForm.resource_type) }}</el-tag>
+          </div>
+          <div class="resource-count">
+            共 {{ filteredResources.length }} 个资源
+          </div>
+        </div>
         <el-input
           v-model="resourceSearchKeyword"
           placeholder="搜索资源..."
-          prefix-icon="Search"
           clearable
-        />
-        
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
         <div class="resource-list">
           <el-checkbox-group v-model="selectedResources">
             <div 
@@ -407,7 +466,7 @@
               <el-checkbox :label="resource.id">
                 <div class="resource-info">
                   <span class="resource-name">{{ resource.name }}</span>
-                  <span class="resource-type">{{ getResourceTypeLabel(resource.type) }}</span>
+                  <span class="resource-type">{{ getResourceTypeLabel(policyForm.resource_type) }}</span>
                 </div>
               </el-checkbox>
             </div>
@@ -421,16 +480,161 @@
       </template>
     </el-dialog>
 
+    <!-- 策略详情侧拉抽屉 -->
+    <el-drawer
+      v-model="showPolicyDetailDrawer"
+      title="策略详情"
+      direction="rtl"
+      size="50%"
+    >
+      <div v-if="selectedPolicy" class="policy-detail">
+        <div class="detail-section">
+          <h3>基本信息</h3>
+          <div class="detail-item">
+            <span class="label">策略名称:</span>
+            <span class="value">{{ selectedPolicy.name }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">策略描述:</span>
+            <span class="value">{{ selectedPolicy.description || '暂无描述' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">策略类型:</span>
+            <span class="value">{{ selectedPolicy.policy_type === 'resource' ? '资源监控' : '事件监控' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">告警级别:</span>
+            <span class="value">
+              <el-tag :type="getLevelTagType(selectedPolicy.level)" size="small">
+                {{ getLevelLabel(selectedPolicy.level) }}
+              </el-tag>
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="label">启用状态:</span>
+            <span class="value">
+              <el-tag :type="selectedPolicy.enabled ? 'success' : 'info'" size="small">
+                {{ selectedPolicy.enabled ? '启用' : '禁用' }}
+              </el-tag>
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-section" v-if="selectedPolicy.policy_type === 'resource'">
+          <h3>监控配置</h3>
+          <div class="detail-item">
+            <span class="label">资源类型:</span>
+            <span class="value">{{ getResourceTypeLabel(selectedPolicy.resource_type) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">监控资源:</span>
+            <span class="value">{{ selectedPolicy.monitored_resources?.length || 0 }}个</span>
+          </div>
+          <div class="detail-item" v-if="selectedPolicy.monitored_resources && selectedPolicy.monitored_resources.length > 0">
+            <span class="label">资源列表:</span>
+            <div class="value">
+              <el-tag 
+                v-for="resource in selectedPolicy.monitored_resources" 
+                :key="resource.id"
+                size="small"
+                style="margin-right: 8px; margin-bottom: 4px;"
+              >
+                {{ resource.name }}
+              </el-tag>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>告警配置</h3>
+          <div class="detail-item">
+            <span class="label">告警条目:</span>
+            <span class="value">{{ selectedPolicy.alert_items?.length || 0 }}个</span>
+          </div>
+          <div class="detail-item" v-if="selectedPolicy.alert_items && selectedPolicy.alert_items.length > 0">
+            <span class="label">告警规则:</span>
+            <div class="value">
+              <div v-for="item in selectedPolicy.alert_items" :key="item" class="rule-item">
+                <span class="rule-name">{{ getAlertItemLabel(item) }}</span>
+                <span v-if="selectedPolicy.trigger_rules && selectedPolicy.trigger_rules[item]" class="rule-condition">
+                  {{ selectedPolicy.trigger_rules[item].operator === 'gt' ? '>' : 
+                     selectedPolicy.trigger_rules[item].operator === 'lt' ? '<' : 
+                     selectedPolicy.trigger_rules[item].operator === 'eq' ? '=' : '!=' }}
+                  {{ selectedPolicy.trigger_rules[item].threshold }}%
+                  (持续{{ selectedPolicy.trigger_rules[item].duration }}秒)
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>通知配置</h3>
+          <div class="detail-item">
+            <span class="label">通知模板:</span>
+            <span class="value">{{ selectedPolicy.template_name || '未设置' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">通知对象:</span>
+            <span class="value">{{ selectedPolicy.notification_targets?.length || 0 }}个</span>
+          </div>
+          <div class="detail-item" v-if="selectedPolicy.notification_targets && selectedPolicy.notification_targets.length > 0">
+            <span class="label">通知列表:</span>
+            <div class="value">
+              <el-tag 
+                v-for="target in selectedPolicy.notification_targets" 
+                :key="target.id"
+                size="small"
+                style="margin-right: 8px; margin-bottom: 4px;"
+              >
+                {{ target.name }}
+              </el-tag>
+            </div>
+          </div>
+          <div class="detail-item">
+            <span class="label">通知周期:</span>
+            <span class="value">{{ selectedPolicy.notification_cycle || '立即' }}</span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>其他信息</h3>
+          <div class="detail-item">
+            <span class="label">创建时间:</span>
+            <span class="value">{{ formatDate(selectedPolicy.created_at) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">更新时间:</span>
+            <span class="value">{{ formatDate(selectedPolicy.updated_at) }}</span>
+          </div>
+        </div>
+
+        <div class="detail-actions">
+          <el-button type="primary" @click="editPolicy(selectedPolicy)">编辑策略</el-button>
+          <el-button @click="testPolicy(selectedPolicy)">测试策略</el-button>
+          <el-button 
+            :type="selectedPolicy.enabled ? 'warning' : 'success'"
+            @click="togglePolicy(selectedPolicy)"
+            :loading="selectedPolicy.toggling"
+          >
+            {{ selectedPolicy.enabled ? '禁用' : '启用' }}
+          </el-button>
+        </div>
+      </div>
+    </el-drawer>
+
     <!-- 通知对象选择器 -->
     <el-dialog v-model="showNotificationSelector" title="选择通知对象" width="600px">
       <div class="selector-content">
         <el-input
           v-model="notificationSearchKeyword"
           placeholder="搜索通知对象..."
-          prefix-icon="Search"
           clearable
-        />
-        
+        >
+          <template #prefix>
+            <el-icon><Search /></el-icon>
+          </template>
+        </el-input>
         <div class="notification-list">
           <el-checkbox-group v-model="selectedNotifications">
             <div 
@@ -458,9 +662,9 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Search } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 // 响应式数据
@@ -523,19 +727,28 @@ const policyRules = {
 const showCreateDialog = ref(false)
 const showResourceSelector = ref(false)
 const showNotificationSelector = ref(false)
+const showPolicyDetailDrawer = ref(false)
 const editingPolicy = ref(null)
+const selectedPolicy = ref(null)
 const saving = ref(false)
 
 // 选择器数据
 const resourceSearchKeyword = ref('')
 const selectedResources = ref([])
 const filteredResources = computed(() => {
-  if (!resourceSearchKeyword.value) return availableResources.value
-  const keyword = resourceSearchKeyword.value.toLowerCase()
-  return availableResources.value.filter(resource => 
-    resource.name.toLowerCase().includes(keyword) ||
-    resource.type.toLowerCase().includes(keyword)
-  )
+  let filtered = availableResources.value
+  
+  // 只根据搜索关键词过滤
+  if (resourceSearchKeyword.value) {
+    const keyword = resourceSearchKeyword.value.toLowerCase()
+    filtered = filtered.filter(resource => 
+      resource.name.toLowerCase().includes(keyword) ||
+      (resource.type && resource.type.toLowerCase().includes(keyword)) ||
+      (resource.group && resource.group.toLowerCase().includes(keyword))
+    )
+  }
+  
+  return filtered
 })
 
 const notificationSearchKeyword = ref('')
@@ -576,7 +789,7 @@ const loadPolicies = async () => {
   try {
     loading.value = true
     const response = await axios.get('/api/alerts/policies')
-    policies.value = response.data.data || []
+    policies.value = response.data.policies || []
   } catch (error) {
     ElMessage.error('加载告警策略失败')
   } finally {
@@ -586,7 +799,22 @@ const loadPolicies = async () => {
 
 const loadResources = async () => {
   try {
-    const response = await axios.get('/api/nodes')
+    let apiUrl = ''
+    switch (policyForm.resource_type) {
+      case 'client':
+        apiUrl = '/api/clients'
+        break
+      case 'proxy_node':
+        apiUrl = '/api/nodes'
+        break
+      case 'storage_node':
+        apiUrl = '/api/storages'
+        break
+      default:
+        apiUrl = '/api/nodes'
+    }
+    
+    const response = await axios.get(apiUrl)
     availableResources.value = response.data.data || []
   } catch (error) {
     console.error('加载资源失败:', error)
@@ -656,6 +884,20 @@ const editPolicy = (policy) => {
     rate_limit: policy.rate_limit || 300,
     timeout: policy.timeout || 30
   })
+  
+  // 确保trigger_rules中的每个alert_item都有完整的规则对象
+  if (policyForm.alert_items && policyForm.alert_items.length > 0) {
+    policyForm.alert_items.forEach(item => {
+      if (!policyForm.trigger_rules[item] || !policyForm.trigger_rules[item].operator) {
+        policyForm.trigger_rules[item] = {
+          operator: policyForm.trigger_rules[item]?.operator || 'gt',
+          threshold: policyForm.trigger_rules[item]?.threshold || 80,
+          duration: policyForm.trigger_rules[item]?.duration || 60
+        }
+      }
+    })
+  }
+  
   showCreateDialog.value = true
 }
 
@@ -698,13 +940,22 @@ const handlePolicyTypeChange = () => {
   }
 }
 
+const handleResourceTypeChange = () => {
+  policyForm.monitored_resources = []
+  loadResources()
+}
+
 const openResourceSelector = () => {
+  if (!policyForm.resource_type) {
+    ElMessage.warning('请先选择资源类型')
+    return
+  }
   showResourceSelector.value = true
   selectedResources.value = policyForm.monitored_resources.map(r => r.id)
 }
 
 const confirmResourceSelection = () => {
-  policyForm.monitored_resources = availableResources.value.filter(r => selectedResources.value.includes(r.id))
+  policyForm.monitored_resources = filteredResources.value.filter(r => selectedResources.value.includes(r.id))
   showResourceSelector.value = false
 }
 
@@ -716,6 +967,16 @@ const openNotificationSelector = () => {
 const confirmNotificationSelection = () => {
   policyForm.notification_targets = notificationTargets.value.filter(target => selectedNotifications.value.includes(target.id))
   showNotificationSelector.value = false
+}
+
+const showPolicyDetail = (policy) => {
+  selectedPolicy.value = policy
+  showPolicyDetailDrawer.value = true
+}
+
+const handleSelectionChange = (selection) => {
+  // 处理表格选择变化
+  console.log('选中的策略:', selection)
 }
 
 const removeTriggerRule = (item) => {
@@ -838,11 +1099,9 @@ const getPolicyTypeTagType = (type) => {
 
 const getResourceTypeLabel = (type) => {
   const labels = {
-    source_agent: '源端同步代理',
-    target_agent: '目标端同步代理',
+    proxy_node: '源端同步代理',
     storage_node: '存储节点',
-    client: '客户端',
-    system: '系统'
+    client: '客户端'
   }
   return labels[type] || type
 }
@@ -864,6 +1123,29 @@ const formatDate = (date) => {
   return new Date(date).toLocaleString('zh-CN')
 }
 
+// 监听告警条目变化，初始化触发规则
+watch(() => policyForm.alert_items, (newItems, oldItems) => {
+  // 初始化新选择的告警条目的触发规则
+  newItems.forEach(item => {
+    if (!policyForm.trigger_rules[item]) {
+      policyForm.trigger_rules[item] = {
+        operator: 'gt',
+        threshold: 80,
+        duration: 60
+      }
+    }
+  })
+  
+  // 清理已移除的告警条目的触发规则
+  if (oldItems) {
+    oldItems.forEach(item => {
+      if (!newItems.includes(item)) {
+        delete policyForm.trigger_rules[item]
+      }
+    })
+  }
+}, { deep: true })
+
 // 生命周期
 onMounted(() => {
   loadPolicies()
@@ -877,36 +1159,34 @@ onMounted(() => {
 <style scoped>
 .alert-policies-page {
   padding: 20px;
-  background: #f5f7fa;
   min-height: 100vh;
 }
 
 .page-header {
-  background: white;
-  padding: 24px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.header-left h1 {
-  margin: 0 0 8px 0;
+.header-left h2 {
+  margin: 0 0 5px 0;
+  color: var(--text-color);
   font-size: 24px;
-  font-weight: 600;
-  color: #303133;
 }
 
 .page-description {
   margin: 0;
-  color: #606266;
+  color: var(--text-secondary);
   font-size: 14px;
 }
 
 .filter-bar {
-  background: white;
+  background: var(--card-bg);
   padding: 20px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -918,12 +1198,12 @@ onMounted(() => {
 }
 
 .policy-card {
-  background: white;
+  background: var(--card-bg);
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   margin-bottom: 20px;
   transition: all 0.3s ease;
-  border: 1px solid #e4e7ed;
+  border: 1px solid var(--border-color);
 }
 
 .policy-card:hover {
@@ -933,6 +1213,93 @@ onMounted(() => {
 
 .policy-card.disabled {
   opacity: 0.6;
+}
+
+/* 表格样式 */
+.el-table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.time-display {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.time-display .time {
+  font-size: 12px;
+  color: (--text-color);
+  margin-top: 2px;
+}
+
+.more-items {
+  font-size: 12px;
+  color: (--text-color);
+  margin-top: 4px;
+}
+
+/* 侧拉抽屉样式 */
+.policy-detail {
+  padding: 20px;
+}
+
+.detail-section {
+  margin-bottom: 30px;
+}
+
+.detail-section h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: (--text-color);
+  border-bottom: 1px solid #ebeef5;
+  padding-bottom: 8px;
+}
+
+.detail-item {
+  display: flex;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+
+.detail-item .label {
+  width: 100px;
+  font-weight: 500;
+  color: (--text-color);
+  flex-shrink: 0;
+}
+
+.detail-item .value {
+  flex: 1;
+  color: (--text-color);
+}
+
+.rule-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: var(--card-bg);
+  border-radius: 4px;
+}
+
+.rule-name {
+  font-weight: 500;
+  margin-right: 8px;
+}
+
+.rule-condition {
+  color: var(--text-color);
+  font-size: 14px;
+}
+
+.detail-actions {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
+  display: flex;
+  gap: 10px;
 }
 
 .card-header {
@@ -950,7 +1317,7 @@ onMounted(() => {
   margin: 0 0 12px 0;
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: (--text-color);
 }
 
 .policy-info .el-tag {
@@ -967,7 +1334,7 @@ onMounted(() => {
 
 .policy-description {
   margin: 0 0 16px 0;
-  color: #606266;
+  color: var(--text-color);
   font-size: 14px;
   line-height: 1.5;
 }
@@ -982,16 +1349,15 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .detail-item .label {
-  color: #909399;
+  color: var(--text-color);
 }
 
 .detail-item .value {
-  color: #303133;
-  font-weight: 500;
+  color: var(--text-color);
 }
 
 .card-actions {
@@ -1012,11 +1378,11 @@ onMounted(() => {
 
 .section-title {
   font-weight: 600;
-  color: #303133;
+  color: var(--text-color);
 }
 
 .trigger-rule {
-  background: #f8f9fa;
+  background: var(--card-bg);
   padding: 16px;
   border-radius: 6px;
   margin-bottom: 16px;
@@ -1031,7 +1397,7 @@ onMounted(() => {
 
 .rule-title {
   font-weight: 600;
-  color: #303133;
+  color: var(--text-color);
 }
 
 .selector-content {
@@ -1066,24 +1432,24 @@ onMounted(() => {
 .resource-name,
 .notification-name {
   font-weight: 500;
-  color: #303133;
+  color: var(--text-color);
 }
 
 .resource-type,
 .notification-type {
-  color: #909399;
+  color: var(--text-color);
   font-size: 12px;
 }
 
 :deep(.el-card__header) {
   padding: 16px 20px;
   border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
+  background: var(--card-bg);
 }
 
 :deep(.el-form-item__label) {
   font-weight: 500;
-  color: #303133;
+  color: var(--text-color);
 }
 
 :deep(.el-checkbox-group) {
@@ -1099,8 +1465,28 @@ onMounted(() => {
 
 .form-tip {
   font-size: 12px;
-  color: #909399;
+  color: var(--text-secondary);
   margin-top: 4px;
   line-height: 1.4;
+}
+
+.selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--card-bg);
+  border-radius: 6px;
+}
+
+.resource-type-info {
+  font-size: 14px;
+  color: var(--text-color);
+}
+
+.resource-count {
+  font-size: 12px;
+  color: var(--text-color);
 }
 </style>

@@ -49,7 +49,7 @@ def create_alert_policy():
     return jsonify({
         'message': '告警策略创建成功',
         'policy': policy.to_dict()
-    }), 201
+    })
 
 @alerts_bp.route('/policies/<policy_id>', methods=['GET'])
 @jwt_required()

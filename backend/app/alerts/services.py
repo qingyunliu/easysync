@@ -681,32 +681,31 @@ class AlertService:
     
     def _validate_template_data(self, data: Dict[str, Any]) -> None:
         """验证模板数据"""
-        required_fields = ['name', 'template_type', 'category']
+        # 必填字段校验
+        required_fields = ['name', 'template_type', 'category', 'title_template', 'content_template', 'variables']
         for field in required_fields:
-            if field not in data or not data[field]:
+            if field not in data or data[field] in (None, '', []):
                 raise AlertOperationError(f"缺少必填字段: {field}")
-        
-        # 验证模板类型
-        if data['template_type'] not in ['resource', 'event']:
-            raise AlertOperationError("模板类型必须是 resource 或 event")
-        
-        # 验证资源模板
-        if data['template_type'] == 'resource':
-            if not data.get('resource_type'):
-                raise AlertOperationError("资源模板必须指定资源类型")
-            if not data.get('alert_items'):
-                raise AlertOperationError("资源模板必须指定报警条目")
-            if not data.get('trigger_rules'):
-                raise AlertOperationError("资源模板必须指定触发规则")
-        
-        # 验证事件模板
-        if data['template_type'] == 'event':
-            if not data.get('event_type'):
-                raise AlertOperationError("事件模板必须指定事件类型")
-            if not data.get('event_actions'):
-                raise AlertOperationError("事件模板必须指定事件动作")
-            if not data.get('event_results'):
-                raise AlertOperationError("事件模板必须指定事件结果")
+
+        # 类型校验
+        if not isinstance(data['variables'], list):
+            raise AlertOperationError("variables 字段必须为列表类型")
+        if 'variable_descriptions' in data and not isinstance(data['variable_descriptions'], dict):
+            raise AlertOperationError("variable_descriptions 字段必须为字典类型")
+
+        # 模板类型和分类校验
+        valid_template_types = ['email', 'sms', 'dingtalk', 'wechat', 'webhook']
+        valid_categories = ['email', 'sms', 'dingtalk', 'wechat', 'webhook']
+        if data['template_type'] not in valid_template_types:
+            raise AlertOperationError(f"不支持的模板类型: {data['template_type']}")
+        if data['category'] not in valid_categories:
+            raise AlertOperationError(f"不支持的模板分类: {data['category']}")
+
+        # 模板内容校验
+        if not isinstance(data['title_template'], str) or not data['title_template'].strip():
+            raise AlertOperationError("title_template 不能为空")
+        if not isinstance(data['content_template'], str) or not data['content_template'].strip():
+            raise AlertOperationError("content_template 不能为空")
     
     def _convert_template_to_policy(self, template: AlertTemplate, user_id: str) -> Dict[str, Any]:
         """将模板转换为策略数据"""

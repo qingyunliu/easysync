@@ -1,7 +1,11 @@
 <template>
-  <div class="alert-templates">
+  <div class="alert-templates-page">
+    <!-- 页面头部 -->
     <div class="page-header">
-      <h2>告警通知模板管理</h2>
+      <div class="header-left">
+        <h2>告警通知模板管理</h2>
+        <p class="page-description">管理系统告警通知模板，支持邮件、短信、钉钉等多种通知方式</p>
+      </div>
       <div class="header-actions">
         <el-button type="primary" @click="showCreateDialog = true">
           <el-icon><Plus /></el-icon>
@@ -14,10 +18,10 @@
       </div>
     </div>
 
-    <!-- 筛选器 -->
-    <div class="filter-section">
-      <el-row :gutter="20">
-        <el-col :span="6">
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <el-form :model="filters" inline>
+        <el-form-item label="模板分类">
           <el-select v-model="filters.category" placeholder="选择分类" clearable @change="loadTemplates">
             <el-option label="邮件" value="email" />
             <el-option label="短信" value="sms" />
@@ -25,8 +29,8 @@
             <el-option label="企业微信" value="wechat" />
             <el-option label="Webhook" value="webhook" />
           </el-select>
-        </el-col>
-        <el-col :span="6">
+        </el-form-item>
+        <el-form-item label="模板类型">
           <el-select v-model="filters.template_type" placeholder="选择类型" clearable @change="loadTemplates">
             <el-option label="邮件" value="email" />
             <el-option label="短信" value="sms" />
@@ -34,8 +38,8 @@
             <el-option label="企业微信" value="wechat" />
             <el-option label="Webhook" value="webhook" />
           </el-select>
-        </el-col>
-        <el-col :span="6">
+        </el-form-item>
+        <el-form-item label="模板名称">
           <el-input
             v-model="filters.keyword"
             placeholder="搜索模板名称"
@@ -46,123 +50,106 @@
               <el-icon><Search /></el-icon>
             </template>
           </el-input>
-        </el-col>
-        <el-col :span="6">
+        </el-form-item>
+        <el-form-item>
           <el-button type="primary" @click="loadTemplates">
             <el-icon><Search /></el-icon>
             搜索
           </el-button>
-        </el-col>
-      </el-row>
+          <el-button @click="resetFilter">重置</el-button>
+        </el-form-item>
+      </el-form>
     </div>
 
     <!-- 模板列表 -->
-    <div class="templates-grid">
-      <el-row :gutter="20">
-        <el-col
-          v-for="template in templates"
-          :key="template.id"
-          :xs="24"
-          :sm="12"
-          :md="8"
-          :lg="6"
-        >
-          <el-card class="template-card" :class="{ 'system-template': template.is_system }">
-            <template #header>
-              <div class="card-header">
-                <div class="template-title">
-                  <el-tag v-if="template.is_system" type="success" size="small">系统</el-tag>
-                  <el-tag v-if="template.is_default" type="warning" size="small">默认</el-tag>
-                  <span class="template-name">{{ template.name }}</span>
-                </div>
-                <div class="template-actions">
-                  <el-dropdown @command="handleTemplateAction">
-                    <el-button type="text" size="small">
-                      <el-icon><MoreFilled /></el-icon>
-                    </el-button>
-                    <template #dropdown>
-                      <el-dropdown-menu>
-                        <el-dropdown-item :command="{ action: 'preview', template }">
-                          <el-icon><View /></el-icon>
-                          预览
-                        </el-dropdown-item>
-                        <el-dropdown-item :command="{ action: 'edit', template }">
-                          <el-icon><Edit /></el-icon>
-                          编辑
-                        </el-dropdown-item>
-                        <el-dropdown-item 
-                          v-if="!template.is_system"
-                          :command="{ action: 'delete', template }"
-                          divided
-                        >
-                          <el-icon><Delete /></el-icon>
-                          删除
-                        </el-dropdown-item>
-                      </el-dropdown-menu>
-                    </template>
-                  </el-dropdown>
-                </div>
-              </div>
-            </template>
-            
-            <div class="template-content">
-              <p class="template-description">{{ template.description }}</p>
-              
-              <div class="template-info">
-                <div class="info-item">
-                  <span class="label">分类:</span>
-                  <el-tag size="small">{{ template.category }}</el-tag>
-                </div>
-                <div class="info-item">
-                  <span class="label">类型:</span>
-                  <el-tag :type="getTemplateTypeColor(template.template_type)" size="small">
-                    {{ template.template_type }}
-                  </el-tag>
-                </div>
-                <div class="info-item">
-                  <span class="label">使用次数:</span>
-                  <span>{{ template.usage_count || 0 }}</span>
-                </div>
-              </div>
-              
-              <div class="template-preview">
-                <div class="preview-title">
-                  <strong>标题预览:</strong>
-                  <span class="preview-text">{{ template.title_template }}</span>
-                </div>
-                <div class="preview-content">
-                  <strong>内容预览:</strong>
-                  <div class="preview-text">{{ template.content_template }}</div>
-                </div>
-              </div>
-              
-              <div class="template-variables" v-if="template.variables && template.variables.length > 0">
-                <div class="variables-title">
-                  <strong>支持的变量:</strong>
-                </div>
-                <div class="variables-list">
-                                     <el-tag 
-                     v-for="variable in template.variables" 
-                     :key="variable" 
-                     size="small" 
-                     type="info"
-                     style="margin-right: 4px; margin-bottom: 4px;"
-                   >
-                     {{ '{' + variable + '}' }}
-                   </el-tag>
-                </div>
-              </div>
+    <div class="templates-container">
+      <el-table 
+        :data="filteredTemplates" 
+        style="width: 100%"
+        @selection-change="handleSelectionChange"
+        v-loading="loading"
+      >
+        <el-table-column type="selection" width="55" />
+        
+        <el-table-column prop="name" label="模板名称" sortable>
+          <template #default="{ row }">
+            <el-link type="primary" @click="showTemplateDetail(row)">
+              {{ row.name }}
+            </el-link>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="category" label="模板分类" sortable>
+          <template #default="{ row }">
+            <el-tag size="small">{{ row.category }}</el-tag>
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="template_type" label="模板类型" sortable>
+          <template #default="{ row }">
+            <el-tag :type="getTemplateTypeColor(row.template_type)" size="small">
+              {{ row.template_type }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="模板状态" sortable>
+          <template #default="{ row }">
+            <div class="template-status">
+              <el-tag v-if="row.is_system" type="success" size="small">系统</el-tag>
+              <el-tag v-if="row.is_default" type="warning" size="small">默认</el-tag>
+              <span v-if="!row.is_system && !row.is_default" class="custom-tag">自定义</span>
             </div>
-          </el-card>
-        </el-col>
-      </el-row>
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="使用次数" sortable>
+          <template #default="{ row }">
+            {{ row.usage_count || 0 }}
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="变量数量" sortable>
+          <template #default="{ row }">
+            {{ row.variables?.length || 0 }}
+          </template>
+        </el-table-column>
+        
+        <el-table-column prop="created_at" label="创建时间" sortable>
+          <template #default="{ row }">
+            <div class="time-display">
+              <div>{{ formatDate(row.created_at).split(' ')[0] }}</div>
+              <div class="time">{{ formatDate(row.created_at).split(' ')[1] }}</div>
+            </div>
+          </template>
+        </el-table-column>
+        
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button size="small" @click="previewTemplate(row)">预览</el-button>
+            <el-button size="small" @click="editTemplate(row)">编辑</el-button>
+            <el-button 
+              v-if="!row.is_system"
+              size="small" 
+              type="danger" 
+              @click="deleteTemplate(row)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      
+      <div v-if="filteredTemplates.length === 0" class="empty-state">
+        <el-empty description="暂无告警模板" />
+      </div>
     </div>
 
     <!-- 创建/编辑模板对话框 -->
     <el-dialog
       v-model="showCreateDialog"
       :title="editingTemplate ? '编辑模板' : '创建模板'"
-      width="70%"
+      width="35%"
       @close="resetForm"
     >
       <el-form ref="templateFormRef" :model="templateForm" :rules="templateRules" label-width="120px">
@@ -273,7 +260,7 @@
     </el-dialog>
 
     <!-- 预览对话框 -->
-    <el-dialog v-model="showPreviewDialog" title="模板预览" width="60%">
+    <el-dialog v-model="showPreviewDialog" title="模板预览" width="30%">
       <div class="preview-dialog-content">
         <div class="preview-section">
           <h4>标题:</h4>
@@ -285,18 +272,121 @@
         </div>
       </div>
     </el-dialog>
+
+    <!-- 模板详情侧拉抽屉 -->
+    <el-drawer
+      v-model="showTemplateDetailDrawer"
+      title="模板详情"
+      direction="rtl"
+      size="50%"
+    >
+      <div v-if="selectedTemplate" class="template-detail">
+        <div class="detail-section">
+          <h3>基本信息</h3>
+          <div class="detail-item">
+            <span class="label">模板名称:</span>
+            <span class="value">{{ selectedTemplate.name }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">模板描述:</span>
+            <span class="value">{{ selectedTemplate.description || '暂无描述' }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">模板分类:</span>
+            <span class="value">
+              <el-tag size="small">{{ selectedTemplate.category }}</el-tag>
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="label">模板类型:</span>
+            <span class="value">
+              <el-tag :type="getTemplateTypeColor(selectedTemplate.template_type)" size="small">
+                {{ selectedTemplate.template_type }}
+              </el-tag>
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="label">模板状态:</span>
+            <span class="value">
+              <el-tag v-if="selectedTemplate.is_system" type="success" size="small">系统</el-tag>
+              <el-tag v-if="selectedTemplate.is_default" type="warning" size="small">默认</el-tag>
+              <span v-if="!selectedTemplate.is_system && !selectedTemplate.is_default" class="custom-tag">自定义</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>模板内容</h3>
+          <div class="detail-item">
+            <span class="label">标题模板:</span>
+            <div class="value template-content">{{ selectedTemplate.title_template }}</div>
+          </div>
+          <div class="detail-item">
+            <span class="label">内容模板:</span>
+            <div class="value template-content">{{ selectedTemplate.content_template }}</div>
+          </div>
+        </div>
+
+        <div class="detail-section" v-if="selectedTemplate.variables && selectedTemplate.variables.length > 0">
+          <h3>支持变量</h3>
+          <div class="detail-item">
+            <span class="label">变量列表:</span>
+            <div class="value">
+              <el-tag 
+                v-for="variable in selectedTemplate.variables" 
+                :key="variable"
+                size="small"
+                type="info"
+                style="margin-right: 8px; margin-bottom: 4px;"
+              >
+                {{ '{' + variable + '}' }}
+              </el-tag>
+            </div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <h3>使用统计</h3>
+          <div class="detail-item">
+            <span class="label">使用次数:</span>
+            <span class="value">{{ selectedTemplate.usage_count || 0 }}次</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">创建时间:</span>
+            <span class="value">{{ formatDate(selectedTemplate.created_at) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="label">更新时间:</span>
+            <span class="value">{{ formatDate(selectedTemplate.updated_at) }}</span>
+          </div>
+        </div>
+
+        <div class="detail-actions">
+          <el-button type="primary" @click="editTemplate(selectedTemplate)">编辑模板</el-button>
+          <el-button @click="previewTemplate(selectedTemplate)">预览模板</el-button>
+          <el-button 
+            v-if="!selectedTemplate.is_system"
+            type="danger" 
+            @click="deleteTemplate(selectedTemplate)"
+          >
+            删除模板
+          </el-button>
+        </div>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
-  Plus, Refresh, Search, MoreFilled, Edit, Delete, View
+  Plus, Refresh, Search
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 // 响应式数据
+const loading = ref(false)
 const templates = ref([])
 const templateFormRef = ref(null)
 const filters = reactive({
@@ -307,6 +397,7 @@ const filters = reactive({
 
 const showCreateDialog = ref(false)
 const showPreviewDialog = ref(false)
+const showTemplateDetailDrawer = ref(false)
 const editingTemplate = ref(null)
 const selectedTemplate = ref(null)
 const saving = ref(false)
@@ -338,34 +429,66 @@ const templateRules = {
   content_template: [{ required: true, message: '请输入内容模板', trigger: 'blur' }]
 }
 
+// 计算属性
+const filteredTemplates = computed(() => {
+  let result = templates.value
+  
+  if (filters.category) {
+    result = result.filter(template => template.category === filters.category)
+  }
+  
+  if (filters.template_type) {
+    result = result.filter(template => template.template_type === filters.template_type)
+  }
+  
+  if (filters.keyword) {
+    const keyword = filters.keyword.toLowerCase()
+    result = result.filter(template => 
+      template.name.toLowerCase().includes(keyword) ||
+      template.description?.toLowerCase().includes(keyword)
+    )
+  }
+  
+  return result
+})
+
 // 方法
 const loadTemplates = async () => {
   try {
+    loading.value = true
     const params = {}
     if (filters.category) params.category = filters.category
     if (filters.template_type) params.template_type = filters.template_type
     
     const response = await axios.get('/api/alerts/templates', { params })
-    templates.value = response.data.templates
+    templates.value = response.data.templates || []
   } catch (error) {
     ElMessage.error('加载模板列表失败')
+  } finally {
+    loading.value = false
   }
 }
 
-const handleTemplateAction = ({ action, template }) => {
-  switch (action) {
-    case 'preview':
-      previewTemplate(template)
-      break
-    case 'edit':
-      editingTemplate.value = template
-      Object.assign(templateForm, template)
-      showCreateDialog.value = true
-      break
-    case 'delete':
-      deleteTemplate(template)
-      break
-  }
+const resetFilter = () => {
+  filters.category = ''
+  filters.template_type = ''
+  filters.keyword = ''
+  loadTemplates()
+}
+
+const showTemplateDetail = (template) => {
+  selectedTemplate.value = template
+  showTemplateDetailDrawer.value = true
+}
+
+const handleSelectionChange = (selection) => {
+  console.log('选中的模板:', selection)
+}
+
+const editTemplate = (template) => {
+  editingTemplate.value = template
+  Object.assign(templateForm, template)
+  showCreateDialog.value = true
 }
 
 const previewTemplate = async (template) => {
@@ -505,6 +628,11 @@ const updatePreview = (variables) => {
   previewData.content = content
 }
 
+const formatDate = (date) => {
+  if (!date) return '-'
+  return new Date(date).toLocaleString('zh-CN')
+}
+
 // 监听器
 watch([() => templateForm.title_template, () => templateForm.content_template], () => {
   if (templateForm.title_template || templateForm.content_template) {
@@ -519,15 +647,32 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.alert-templates {
+.alert-templates-page {
   padding: 20px;
+  min-height: 100vh;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 30px;
+  padding: 20px;
+  background: var(--card-bg);
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.header-left h2 {
+  margin: 0 0 5px 0;
+  color: var(--text-color);
+  font-size: 24px;
+}
+
+.page-description {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 14px;
 }
 
 .header-actions {
@@ -535,107 +680,103 @@ onMounted(() => {
   gap: 10px;
 }
 
-.filter-section {
-  margin-bottom: 20px;
+.filter-bar {
+  background: var(--card-bg);
   padding: 20px;
-  background: #f5f7fa;
   border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
 }
 
-.templates-grid {
+.templates-container {
   margin-top: 20px;
 }
 
-.template-card {
-  margin-bottom: 20px;
-  transition: all 0.3s;
+/* 表格样式 */
+.el-table {
+  border-radius: 8px;
+  overflow: hidden;
 }
 
-.template-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-.system-template {
-  border: 2px solid #67c23a;
-}
-
-.card-header {
+.time-display {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-.template-title {
+.time-display .time {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.template-status {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  gap: 4px;
 }
 
-.template-name {
-  font-weight: bold;
+.custom-tag {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* 侧拉抽屉样式 */
+.template-detail {
+  padding: 20px;
+}
+
+.detail-section {
+  margin-bottom: 30px;
+}
+
+.detail-section h3 {
+  margin: 0 0 15px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color);
+  border-bottom: 1px solid #ebeef5;
+  padding-bottom: 8px;
+}
+
+.detail-item {
+  display: flex;
+  margin-bottom: 12px;
+  align-items: flex-start;
+}
+
+.detail-item .label {
+  width: 100px;
+  font-weight: 500;
+  color: var(--text-color);
+  flex-shrink: 0;
+}
+
+.detail-item .value {
+  flex: 1;
+  color: var(--text-color);
 }
 
 .template-content {
-  padding: 10px 0;
-}
-
-.template-description {
-  color: #666;
-  margin-bottom: 15px;
-  line-height: 1.5;
-}
-
-.template-info {
-  margin-bottom: 15px;
-}
-
-.info-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-
-.label {
-  font-weight: bold;
-  color: #333;
-}
-
-.template-preview {
-  border-top: 1px solid #eee;
-  padding-top: 15px;
-  margin-bottom: 15px;
-}
-
-.preview-title, .preview-content {
-  margin-bottom: 10px;
-}
-
-.preview-text {
-  color: #666;
-  font-family: monospace;
-  background: #f5f7fa;
+  background: var(--card-bg);
   padding: 8px;
   border-radius: 4px;
-  margin-top: 5px;
+  font-family: monospace;
   white-space: pre-wrap;
   word-break: break-all;
+  margin-top: 4px;
 }
 
-.template-variables {
-  border-top: 1px solid #eee;
-  padding-top: 15px;
-}
-
-.variables-title {
-  margin-bottom: 10px;
-}
-
-.variables-list {
+.detail-actions {
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #ebeef5;
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  gap: 10px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
 }
 
 .preview-section {
@@ -647,7 +788,7 @@ onMounted(() => {
 }
 
 .preview-content {
-  background: #f5f7fa;
+  background: var(--card-bg);
   padding: 10px;
   border-radius: 4px;
   margin-top: 5px;
@@ -665,7 +806,7 @@ onMounted(() => {
 }
 
 .preview-dialog-content .preview-text {
-  background: #f5f7fa;
+  background: var(--card-bg);
   padding: 15px;
   border-radius: 6px;
   margin-top: 10px;
