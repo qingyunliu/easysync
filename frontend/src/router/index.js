@@ -23,6 +23,7 @@ import AlertPolicies from "../views/AlertPolicies.vue";
 import NotificationChannels from "../views/NotificationChannels.vue";
 import NotificationTargets from "../views/NotificationTargets.vue";
 import Events from "../views/Events.vue";
+import AlertTemplates from "../views/AlertTemplates.vue";
 
 const routes = [
   {
@@ -118,11 +119,18 @@ const routes = [
         name: "Profile",
         component: Profile,
       },
+
+      {
+        path: "alert-templates",
+        name: "AlertTemplates",
+        component: AlertTemplates,
+        meta: { requiresAuth: true },
+      },
       {
         path: "audit-logs",
         name: "AuditLogs",
         component: AuditLogs,
-        meta: { requiresAuth: true, requiresAdmin: true },
+        meta: { requiresAuth: true },
       },
       {
         path: "notifications",

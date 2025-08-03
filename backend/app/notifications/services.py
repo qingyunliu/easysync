@@ -11,7 +11,9 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask import current_app
 from backend import db
-from backend.app.models import User, NotificationSetting, TaskLog, Notification, SystemSetting
+from backend.app.models import (
+    User, NotificationSetting, TaskLog, Notification, NotificationChannel, NotificationTarget, SystemSetting
+)
 from backend.app.utils.encryption import encrypt_data, decrypt_data
 from typing import Dict, Any, List
 from datetime import datetime
@@ -118,6 +120,145 @@ class NotificationService:
     
     def get_user_setting(self, user_id):
         return NotificationSetting.query.filter_by(user_id=user_id).first()
+
+    def get_channels(self, user_id: str) -> List[Dict[str, Any]]:
+        """获取通知渠道列表"""
+        channels = NotificationChannel.query.filter(NotificationChannel.user_id == user_id).all()
+        return [channel.to_dict() for channel in channels]
+
+    def create_channel(self, data: Dict[str, Any]) -> NotificationChannel:
+        """创建通知渠道"""
+        # 验证数据
+        self._validate_channel_data(data)
+        
+        # 如果设置为默认，先取消其他默认渠道
+        if data.get('is_default', False):
+            NotificationChannel.query.filter(
+                and_(NotificationChannel.user_id == data['user_id'], NotificationChannel.is_default == True)
+            ).update({'is_default': False})
+        
+            channel = NotificationChannel(
+            name=data['name'],
+            channel_type=data['channel_type'],
+            enabled=data.get('enabled', True),
+            config=data['config'],
+            retry_count=data.get('retry_count', 3),
+            rate_limit=data.get('rate_limit', 100),
+            timeout=data.get('timeout', 30),
+            is_default=data.get('is_default', False),
+            user_id=data['user_id']
+            )
+            
+            db.session.add(channel)
+            db.session.commit()
+            
+            logger.info(f"Notification channel created: {channel.id}")
+            return channel
+            
+    def update_channel(self, channel_id: str, user_id: str, data: Dict[str, Any]) -> NotificationChannel:
+        """更新通知渠道"""
+        channel = NotificationChannel.query.filter(
+            and_(NotificationChannel.id == channel_id, NotificationChannel.user_id == user_id)
+        ).first()
+        
+        if not channel:
+            raise ValueError("通知渠道不存在")
+        
+        # 更新字段
+        for key, value in data.items():
+            if hasattr(channel, key):
+                setattr(channel, key, value)
+        
+        # 如果设置为默认，先取消其他默认渠道
+        if data.get('is_default', False):
+            NotificationChannel.query.filter(
+                and_(
+                    NotificationChannel.user_id == user_id,
+                    NotificationChannel.is_default == True,
+                    NotificationChannel.id != channel_id
+                )
+            ).update({'is_default': False})
+        
+        channel.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        logger.info(f"Notification channel updated: {channel_id}")
+        return channel
+    
+    def delete_channel(self, channel_id: str, user_id: str) -> None:
+        """删除通知渠道"""
+        channel = NotificationChannel.query.filter(
+            and_(NotificationChannel.id == channel_id, NotificationChannel.user_id == user_id)
+        ).first()
+        
+        if not channel:
+            raise ValueError("通知渠道不存在")
+        
+        db.session.delete(channel)
+        db.session.commit()
+        
+        logger.info(f"Notification channel deleted: {channel_id}")
+    
+    def get_targets(self, user_id: str) -> List[Dict[str, Any]]:
+        """获取通知对象列表"""
+        targets = NotificationTarget.query.filter(NotificationTarget.user_id == user_id).all()
+        return [target.to_dict() for target in targets]
+    
+    def create_target(self, data: Dict[str, Any]) -> NotificationTarget:
+        """创建通知对象"""
+        # 验证数据
+        self._validate_target_data(data)
+        
+        target = NotificationTarget(
+            name=data['name'],
+            enabled=data.get('enabled', True),
+            description=data.get('description', ''),
+            alert_policies=data.get('alert_policies', []),
+            channels=data.get('channels', []),
+            target_type=data['target_type'],
+            target_config=data['target_config'],
+            user_id=data['user_id']
+        )
+            
+        db.session.add(target)
+        db.session.commit()
+            
+        logger.info(f"Notification target created: {target.id}")
+        return target
+            
+    def update_target(self, target_id: str, user_id: str, data: Dict[str, Any]) -> NotificationTarget:
+        """更新通知对象"""
+        target = NotificationTarget.query.filter(
+            and_(NotificationTarget.id == target_id, NotificationTarget.user_id == user_id)
+        ).first()
+        
+        if not target:
+            raise ValueError("通知对象不存在")
+        
+        # 更新字段
+        for key, value in data.items():
+            if hasattr(target, key):
+                setattr(target, key, value)
+        
+        target.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        logger.info(f"Notification target updated: {target_id}")
+        return target
+    
+    def delete_target(self, target_id: str, user_id: str) -> None:
+        """删除通知对象"""
+        target = NotificationTarget.query.filter(
+            and_(NotificationTarget.id == target_id, NotificationTarget.user_id == user_id)
+        ).first()
+        
+        if not target:
+            raise ValueError("通知对象不存在")
+        
+        db.session.delete(target)
+        db.session.commit()
+        
+        logger.info(f"Notification target deleted: {target_id}")
 
     def test_notification(self, user_id, type=None):
         """测试通知发送"""

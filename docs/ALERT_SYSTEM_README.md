@@ -117,16 +117,16 @@ class NotificationTarget(BaseModel):
 - `POST /api/alerts/policies/{id}/test` - 测试告警策略
 
 ### 通知渠道接口
-- `GET /api/alerts/channels` - 获取通知渠道列表
-- `POST /api/alerts/channels` - 创建通知渠道
-- `PUT /api/alerts/channels/{id}` - 更新通知渠道
-- `DELETE /api/alerts/channels/{id}` - 删除通知渠道
+- `GET /api/notifications/channels` - 获取通知渠道列表
+- `POST /api/notifications/channels` - 创建通知渠道
+- `PUT /api/notifications/channels/{id}` - 更新通知渠道
+- `DELETE /api/notifications/channels/{id}` - 删除通知渠道
 
 ### 通知对象接口
-- `GET /api/alerts/targets` - 获取通知对象列表
-- `POST /api/alerts/targets` - 创建通知对象
-- `PUT /api/alerts/targets/{id}` - 更新通知对象
-- `DELETE /api/alerts/targets/{id}` - 删除通知对象
+- `GET /api/notifications/targets` - 获取通知对象列表
+- `POST /api/notifications/targets` - 创建通知对象
+- `PUT /api/notifications/targets/{id}` - 更新通知对象
+- `DELETE /api/notifications/targets/{id}` - 删除通知对象
 
 ### 辅助接口
 - `GET /api/alerts/resources` - 获取可监控的资源列表

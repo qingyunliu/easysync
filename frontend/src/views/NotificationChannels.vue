@@ -178,7 +178,7 @@ onMounted(() => {
 const fetchChannels = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/alerts/channels')
+    const response = await axios.get('/api/notifications/channels')
     channels.value = response.data.channels
   } catch (error) {
     ElMessage.error('获取通知渠道失败')
@@ -237,10 +237,10 @@ const handleChannelTypeChange = () => {
 const submitChannel = async () => {
   try {
     if (dialogMode.value === 'create') {
-      await axios.post('/api/alerts/channels', channelForm)
+      await axios.post('/api/notifications/channels', channelForm)
       ElMessage.success('通知渠道创建成功')
     } else {
-      await axios.put(`/api/alerts/channels/${editingChannel.value.id}`, channelForm)
+      await axios.put(`/api/notifications/channels/${editingChannel.value.id}`, channelForm)
       ElMessage.success('通知渠道更新成功')
     }
     
@@ -271,7 +271,7 @@ const editChannel = (channel) => {
 
 const toggleChannel = async (channel) => {
   try {
-    await axios.put(`/api/alerts/channels/${channel.id}`, { enabled: channel.enabled })
+    await axios.put(`/api/notifications/channels/${channel.id}`, { enabled: channel.enabled })
     ElMessage.success(`通知渠道已${channel.enabled ? '启用' : '禁用'}`)
   } catch (error) {
     channel.enabled = !channel.enabled
@@ -281,7 +281,7 @@ const toggleChannel = async (channel) => {
 
 const testChannel = async (channel) => {
   try {
-    await axios.post(`/api/alerts/channels/${channel.id}/test`)
+    await axios.post(`/api/notifications/channels/${channel.id}/test`)
     ElMessage.success('测试通知发送成功')
   } catch (error) {
     ElMessage.error('测试通知发送失败')
@@ -300,7 +300,7 @@ const deleteChannel = async (channel) => {
       }
     )
     
-    await axios.delete(`/api/alerts/channels/${channel.id}`)
+    await axios.delete(`/api/notifications/channels/${channel.id}`)
     ElMessage.success('通知渠道删除成功')
     fetchChannels()
   } catch (error) {

@@ -84,6 +84,12 @@
             <span v-if="!isCollapsed">告警策略</span>
           </el-menu-item>
         </el-tooltip>
+        <el-tooltip content="告警模板" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/alert-templates">
+            <el-icon><Document /></el-icon>
+            <span v-if="!isCollapsed">告警模板</span>
+          </el-menu-item>
+        </el-tooltip>
         <el-tooltip content="通知渠道" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/notification-channels">
             <el-icon><Message /></el-icon>

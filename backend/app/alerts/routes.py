@@ -2,11 +2,11 @@ from flask import Blueprint, request, jsonify, current_app
 from flask_login import login_required, current_user
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend import db
-from backend.app.models.alert import AlertPolicy, NotificationChannel, NotificationTarget, AlertInstance
 from backend.app.alerts.services import AlertService
 from backend.app.utils.decorators import handle_errors, require_user
 from . import alerts_bp
 import logging
+from backend.app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +44,8 @@ def create_alert_policy():
     """创建告警策略"""
     data = request.get_json()
     user_id = get_jwt_identity()
-    data['user_id'] = user_id
     
-    policy = alert_service.create_policy(data)
+    policy = alert_service.create_policy(data, user_id)
     return jsonify({
         'message': '告警策略创建成功',
         'policy': policy.to_dict()
@@ -68,7 +67,8 @@ def update_alert_policy(policy_id):
     """更新告警策略"""
     data = request.get_json()
     user_id = get_jwt_identity()
-    policy = alert_service.update_policy(policy_id, user_id, data)
+    
+    policy = alert_service.update_policy(policy_id, data, user_id)
     return jsonify({
         'message': '告警策略更新成功',
         'policy': policy.to_dict()
@@ -96,7 +96,6 @@ def toggle_alert_policy(policy_id):
         'policy': policy.to_dict()
     })
 
-
 @alerts_bp.route('/policies/<policy_id>/test', methods=['POST'])
 @jwt_required()
 @handle_errors
@@ -123,105 +122,6 @@ def get_alert_statistics():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@alerts_bp.route('/channels', methods=['GET'])
-@jwt_required()
-@handle_errors
-def get_notification_channels():
-    """获取通知渠道列表"""
-    user_id = get_jwt_identity()
-    channels = alert_service.get_channels(user_id)
-    return jsonify({'channels': channels})
-
-
-@alerts_bp.route('/channels', methods=['POST'])
-@jwt_required()
-@handle_errors
-def create_notification_channel():
-    """创建通知渠道"""
-    data = request.get_json()
-    user_id = get_jwt_identity()
-    data['user_id'] = user_id
-    
-    channel = alert_service.create_channel(data)
-    return jsonify({
-        'message': '通知渠道创建成功',
-        'channel': channel.to_dict()
-    }), 201
-
-
-@alerts_bp.route('/channels/<channel_id>', methods=['PUT'])
-@jwt_required()
-@handle_errors
-def update_notification_channel(channel_id):
-    """更新通知渠道"""
-    data = request.get_json()
-    user_id = get_jwt_identity()
-    channel = alert_service.update_channel(channel_id, user_id, data)
-    return jsonify({
-        'message': '通知渠道更新成功',
-        'channel': channel.to_dict()
-    })
-
-
-@alerts_bp.route('/channels/<channel_id>', methods=['DELETE'])
-@jwt_required()
-@handle_errors
-def delete_notification_channel(channel_id):
-    """删除通知渠道"""
-    alert_service.delete_channel(channel_id, current_user.id)
-    return jsonify({'message': '通知渠道删除成功'})
-
-
-@alerts_bp.route('/targets', methods=['GET'])
-@jwt_required()
-@handle_errors
-def get_notification_targets():
-    """获取通知对象列表"""
-    user_id = get_jwt_identity()
-    targets = alert_service.get_targets(user_id)
-    return jsonify({'targets': targets})
-
-
-@alerts_bp.route('/targets', methods=['POST'])
-@jwt_required()
-@handle_errors
-def create_notification_target():
-    """创建通知对象"""
-    data = request.get_json()
-    user_id = get_jwt_identity()
-    data['user_id'] = user_id
-    
-    target = alert_service.create_target(data)
-    return jsonify({
-        'message': '通知对象创建成功',
-        'target': target.to_dict()
-    }), 201
-
-
-@alerts_bp.route('/targets/<target_id>', methods=['PUT'])
-@jwt_required()
-@handle_errors
-def update_notification_target(target_id):
-    """更新通知对象"""
-    data = request.get_json()
-    user_id = get_jwt_identity()
-    target = alert_service.update_target(target_id, user_id, data)
-    return jsonify({
-        'message': '通知对象更新成功',
-        'target': target.to_dict()
-    })
-
-
-@alerts_bp.route('/targets/<target_id>', methods=['DELETE'])
-@jwt_required()
-@handle_errors
-def delete_notification_target(target_id):
-    """删除通知对象"""
-    user_id = get_jwt_identity()
-    alert_service.delete_target(target_id, user_id)
-    return jsonify({'message': '通知对象删除成功'})
-
-
 @alerts_bp.route('/instances', methods=['GET'])
 @jwt_required()
 @handle_errors
@@ -243,7 +143,6 @@ def get_alert_instances():
     
     return jsonify(instances)
 
-
 @alerts_bp.route('/instances/<instance_id>/resolve', methods=['PUT'])
 @jwt_required()
 @handle_errors
@@ -252,7 +151,6 @@ def resolve_alert_instance(instance_id):
     user_id = get_jwt_identity()
     alert_service.resolve_instance(instance_id, user_id)
     return jsonify({'message': '告警已解决'})
-
 
 @alerts_bp.route('/resources', methods=['GET'])
 @jwt_required()
@@ -263,7 +161,6 @@ def get_monitorable_resources():
     resources = alert_service.get_monitorable_resources(user_id)
     return jsonify({'resources': resources})
 
-
 @alerts_bp.route('/events', methods=['GET'])
 @jwt_required()
 @handle_errors
@@ -273,12 +170,167 @@ def get_monitorable_events():
     events = alert_service.get_monitorable_events()
     return jsonify({'events': events})
 
-
 @alerts_bp.route('/templates', methods=['GET'])
 @jwt_required()
 @handle_errors
 def get_alert_templates():
     """获取告警策略模板"""
     user_id = get_jwt_identity()
-    templates = alert_service.get_templates()
+    category = request.args.get('category', '')
+    template_type = request.args.get('template_type', '')
+    
+    templates = alert_service.get_templates(
+        user_id=user_id,
+        category=category,
+        template_type=template_type
+    )
     return jsonify({'templates': templates})
+
+@alerts_bp.route('/templates', methods=['POST'])
+@jwt_required()
+@handle_errors
+def create_alert_template():
+    """创建告警模板"""
+    data = request.get_json()
+    user_id = get_jwt_identity()
+    data['user_id'] = user_id
+    
+    template = alert_service.create_template(data)
+    return jsonify({
+        'message': '告警模板创建成功',
+        'template': template.to_dict()
+    }), 201
+
+@alerts_bp.route('/templates/<template_id>', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_alert_template(template_id):
+    """获取告警模板详情"""
+    user_id = get_jwt_identity()
+    template = alert_service.get_template(template_id, user_id)
+    return jsonify({'template': template.to_dict()})
+
+@alerts_bp.route('/templates/<template_id>', methods=['PUT'])
+@jwt_required()
+@handle_errors
+def update_alert_template(template_id):
+    """更新告警模板"""
+    data = request.get_json()
+    user_id = get_jwt_identity()
+    template = alert_service.update_template(template_id, user_id, data)
+    return jsonify({
+        'message': '告警模板更新成功',
+        'template': template.to_dict()
+    })
+
+@alerts_bp.route('/templates/<template_id>', methods=['DELETE'])
+@jwt_required()
+@handle_errors
+def delete_alert_template(template_id):
+    """删除告警模板"""
+    user_id = get_jwt_identity()
+    alert_service.delete_template(template_id, user_id)
+    return jsonify({'message': '告警模板删除成功'})
+
+@alerts_bp.route('/templates/<template_id>/use', methods=['POST'])
+@jwt_required()
+@handle_errors
+def use_alert_template(template_id):
+    """使用告警模板"""
+    user_id = get_jwt_identity()
+    result = alert_service.use_template(template_id, user_id)
+    return jsonify({
+        'message': '模板使用成功',
+        'data': result
+    })
+
+@alerts_bp.route('/templates/categories', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_template_categories():
+    """获取模板分类列表"""
+    categories = alert_service.get_template_categories()
+    return jsonify({'categories': categories})
+
+@alerts_bp.route('/templates/init', methods=['POST'])
+@jwt_required()
+@handle_errors
+def init_system_templates():
+    """初始化系统模板"""
+    user_id = get_jwt_identity()
+    # 检查是否为管理员
+    user = User.query.get(user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'message': '只有管理员可以初始化系统模板'}), 403
+    
+    alert_service._init_system_templates()
+    return jsonify({'message': '系统模板初始化成功'})
+
+@alerts_bp.route('/templates/<template_id>/render', methods=['POST'])
+@jwt_required()
+@handle_errors
+def render_alert_template(template_id):
+    """渲染告警模板"""
+    data = request.get_json()
+    variables = data.get('variables', {})
+    
+    result = alert_service.render_template(template_id, variables)
+    return jsonify({
+        'status': 'success',
+        'data': result
+    })
+
+@alerts_bp.route('/templates/<template_id>/variables', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_template_variables(template_id):
+    """获取模板支持的变量"""
+    result = alert_service.get_template_variables(template_id)
+    return jsonify({
+        'status': 'success',
+        'data': result
+    })
+
+@alerts_bp.route('/templates/preview', methods=['POST'])
+@jwt_required()
+@handle_errors
+def preview_template():
+    """预览模板效果"""
+    data = request.get_json()
+    template_data = data.get('template', {})
+    variables = data.get('variables', {})
+    
+    # 创建临时模板进行预览
+    title = template_data.get('title_template', '')
+    content = template_data.get('content_template', '')
+    
+    # 替换变量
+    for key, value in variables.items():
+        placeholder = f"{{{key}}}"
+        title = title.replace(placeholder, str(value))
+        content = content.replace(placeholder, str(value))
+    
+    return jsonify({
+        'status': 'success',
+        'data': {
+            'title': title,
+            'content': content
+        }
+    })
+
+@alerts_bp.route('/policies/with-templates', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_policies_with_templates():
+    """获取告警策略列表（包含模板信息）"""
+    user_id = get_jwt_identity()
+    policy_type = request.args.get('policy_type', '')
+    enabled = request.args.get('enabled')
+    if enabled is not None:
+        enabled = enabled.lower() == 'true'
+    
+    policies = alert_service.get_policies_with_templates(user_id, policy_type, enabled)
+    return jsonify({
+        'status': 'success',
+        'data': policies
+    })

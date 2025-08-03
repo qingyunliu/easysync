@@ -3,13 +3,13 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 from sqlalchemy import and_, or_, desc
 from backend import db
-from backend.app.models.alert import (
-    AlertPolicy, NotificationChannel, NotificationTarget, AlertInstance
-)
+from backend.app.models.alert import AlertPolicy, AlertInstance, AlertTemplate
+from backend.app.models.notification import NotificationChannel, NotificationTarget
 from backend.app.models.client import Client
 from backend.app.models.node import Node
 from backend.app.models.user import User
 from backend.app.notifications.services import NotificationService
+from backend.app.exceptions import AlertOperationError
 
 logger = logging.getLogger(__name__)
 
@@ -53,35 +53,49 @@ class AlertService:
             'total_pages': (total + per_page - 1) // per_page
         }
     
-    def create_policy(self, data: Dict[str, Any]) -> AlertPolicy:
+    def create_policy(self, data: dict, user_id: str) -> AlertPolicy:
         """创建告警策略"""
-        # 验证数据
-        self._validate_policy_data(data)
-        
-        # 创建策略
-        policy = AlertPolicy(
-            name=data['name'],
-            description=data.get('description', ''),
-            level=data.get('level', 'warning'),
-            enabled=data.get('enabled', True),
-            policy_type=data['policy_type'],
-            resource_type=data.get('resource_type'),
-            monitored_resources=data.get('monitored_resources', []),
-            alert_items=data.get('alert_items', []),
-            trigger_rules=data.get('trigger_rules', {}),
-            event_type=data.get('event_type'),
-            event_actions=data.get('event_actions', []),
-            event_results=data.get('event_results', []),
-            notification_targets=data.get('notification_targets', []),
-            user_id=data['user_id']
-        )
+        try:
+            # 验证模板是否存在
+            template_id = data.get('template_id')
+            if template_id:
+                template = AlertTemplate.query.get(template_id)
+                if not template:
+                    raise AlertOperationError("指定的通知模板不存在")
             
-        db.session.add(policy)
-        db.session.commit()
+            policy = AlertPolicy(
+                name=data['name'],
+                description=data.get('description', ''),
+                policy_type=data['policy_type'],
+                resource_type=data.get('resource_type'),
+                alert_items=data.get('alert_items'),
+                trigger_rules=data.get('trigger_rules'),
+                event_type=data.get('event_type'),
+                event_actions=data.get('event_actions'),
+                event_results=data.get('event_results'),
+                monitored_resources=data.get('monitored_resources'),
+                level=data.get('level', 'warning'),
+                notification_targets=data.get('notification_targets'),
+                retry_count=data.get('retry_count', 3),
+                rate_limit=data.get('rate_limit', 300),
+                timeout=data.get('timeout', 30),
+                enabled=data.get('enabled', True),
+                is_default=data.get('is_default', False),
+                template_id=template_id,
+                user_id=user_id
+            )
             
-        logger.info(f"Alert policy created: {policy.id}")
-        return policy
+            db.session.add(policy)
+            db.session.commit()
             
+            logger.info(f"Alert policy created: {policy.id}")
+            return policy
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"创建告警策略失败: {e}")
+            raise AlertOperationError(f"创建告警策略失败: {str(e)}")
+
     def get_policy(self, policy_id: str, user_id: str) -> AlertPolicy:
         """获取告警策略详情"""
         policy = AlertPolicy.query.filter(
@@ -93,28 +107,51 @@ class AlertService:
         
         return policy
     
-    def update_policy(self, policy_id: str, user_id: str, data: Dict[str, Any]) -> AlertPolicy:
+    def update_policy(self, policy_id: str, data: dict, user_id: str) -> AlertPolicy:
         """更新告警策略"""
-        policy = self.get_policy(policy_id, user_id)
-        
-        # 更新字段
-        for key, value in data.items():
-            if hasattr(policy, key):
-                setattr(policy, key, value)
+        try:
+            policy = self.get_policy(policy_id, user_id)
             
-            policy.updated_at = datetime.utcnow()
+            # 验证模板是否存在
+            template_id = data.get('template_id')
+            if template_id:
+                template = AlertTemplate.query.get(template_id)
+                if not template:
+                    raise AlertOperationError("指定的通知模板不存在")
+            
+            # 更新字段
+            for key, value in data.items():
+                if hasattr(policy, key):
+                    setattr(policy, key, value)
+            
             db.session.commit()
             
             logger.info(f"Alert policy updated: {policy_id}")
             return policy
             
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"更新告警策略失败: {e}")
+            raise AlertOperationError(f"更新告警策略失败: {str(e)}")
+    
     def delete_policy(self, policy_id: str, user_id: str) -> None:
         """删除告警策略"""
-        policy = self.get_policy(policy_id, user_id)
-        db.session.delete(policy)
-        db.session.commit()
+        try:
+            policy = self.get_policy(policy_id, user_id)
             
-        logger.info(f"Alert policy deleted: {policy_id}")
+            # 先删除关联的告警实例
+            AlertInstance.query.filter_by(policy_id=policy_id).delete()
+            
+            # 删除策略
+            db.session.delete(policy)
+            db.session.commit()
+            
+            logger.info(f"Alert policy deleted: {policy_id}")
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"删除告警策略失败: {e}")
+            raise AlertOperationError(f"删除告警策略失败: {str(e)}")
     
     def toggle_policy(self, policy_id: str, user_id: str) -> AlertPolicy:
         """切换告警策略启用状态"""
@@ -234,145 +271,6 @@ class AlertService:
         except Exception as e:
             logger.error(f"Failed to get alert statistics: {str(e)}")
             return {}
-
-    def get_channels(self, user_id: str) -> List[Dict[str, Any]]:
-        """获取通知渠道列表"""
-        channels = NotificationChannel.query.filter(NotificationChannel.user_id == user_id).all()
-        return [channel.to_dict() for channel in channels]
-    
-    def create_channel(self, data: Dict[str, Any]) -> NotificationChannel:
-        """创建通知渠道"""
-        # 验证数据
-        self._validate_channel_data(data)
-        
-        # 如果设置为默认，先取消其他默认渠道
-        if data.get('is_default', False):
-            NotificationChannel.query.filter(
-                and_(NotificationChannel.user_id == data['user_id'], NotificationChannel.is_default == True)
-            ).update({'is_default': False})
-        
-            channel = NotificationChannel(
-            name=data['name'],
-            channel_type=data['channel_type'],
-            enabled=data.get('enabled', True),
-            config=data['config'],
-            retry_count=data.get('retry_count', 3),
-            rate_limit=data.get('rate_limit', 100),
-            timeout=data.get('timeout', 30),
-            is_default=data.get('is_default', False),
-            user_id=data['user_id']
-            )
-            
-            db.session.add(channel)
-            db.session.commit()
-            
-            logger.info(f"Notification channel created: {channel.id}")
-            return channel
-            
-    def update_channel(self, channel_id: str, user_id: str, data: Dict[str, Any]) -> NotificationChannel:
-        """更新通知渠道"""
-        channel = NotificationChannel.query.filter(
-            and_(NotificationChannel.id == channel_id, NotificationChannel.user_id == user_id)
-        ).first()
-        
-        if not channel:
-            raise ValueError("通知渠道不存在")
-        
-        # 更新字段
-        for key, value in data.items():
-            if hasattr(channel, key):
-                setattr(channel, key, value)
-        
-        # 如果设置为默认，先取消其他默认渠道
-        if data.get('is_default', False):
-            NotificationChannel.query.filter(
-                and_(
-                    NotificationChannel.user_id == user_id,
-                    NotificationChannel.is_default == True,
-                    NotificationChannel.id != channel_id
-                )
-            ).update({'is_default': False})
-        
-        channel.updated_at = datetime.utcnow()
-        db.session.commit()
-        
-        logger.info(f"Notification channel updated: {channel_id}")
-        return channel
-    
-    def delete_channel(self, channel_id: str, user_id: str) -> None:
-        """删除通知渠道"""
-        channel = NotificationChannel.query.filter(
-            and_(NotificationChannel.id == channel_id, NotificationChannel.user_id == user_id)
-        ).first()
-        
-        if not channel:
-            raise ValueError("通知渠道不存在")
-        
-        db.session.delete(channel)
-        db.session.commit()
-        
-        logger.info(f"Notification channel deleted: {channel_id}")
-    
-    def get_targets(self, user_id: str) -> List[Dict[str, Any]]:
-        """获取通知对象列表"""
-        targets = NotificationTarget.query.filter(NotificationTarget.user_id == user_id).all()
-        return [target.to_dict() for target in targets]
-    
-    def create_target(self, data: Dict[str, Any]) -> NotificationTarget:
-        """创建通知对象"""
-        # 验证数据
-        self._validate_target_data(data)
-        
-        target = NotificationTarget(
-            name=data['name'],
-            enabled=data.get('enabled', True),
-            description=data.get('description', ''),
-            alert_policies=data.get('alert_policies', []),
-            channels=data.get('channels', []),
-            target_type=data['target_type'],
-            target_config=data['target_config'],
-            user_id=data['user_id']
-        )
-            
-        db.session.add(target)
-        db.session.commit()
-            
-        logger.info(f"Notification target created: {target.id}")
-        return target
-            
-    def update_target(self, target_id: str, user_id: str, data: Dict[str, Any]) -> NotificationTarget:
-        """更新通知对象"""
-        target = NotificationTarget.query.filter(
-            and_(NotificationTarget.id == target_id, NotificationTarget.user_id == user_id)
-        ).first()
-        
-        if not target:
-            raise ValueError("通知对象不存在")
-        
-        # 更新字段
-        for key, value in data.items():
-            if hasattr(target, key):
-                setattr(target, key, value)
-        
-        target.updated_at = datetime.utcnow()
-        db.session.commit()
-        
-        logger.info(f"Notification target updated: {target_id}")
-        return target
-    
-    def delete_target(self, target_id: str, user_id: str) -> None:
-        """删除通知对象"""
-        target = NotificationTarget.query.filter(
-            and_(NotificationTarget.id == target_id, NotificationTarget.user_id == user_id)
-        ).first()
-        
-        if not target:
-            raise ValueError("通知对象不存在")
-        
-        db.session.delete(target)
-        db.session.commit()
-        
-        logger.info(f"Notification target deleted: {target_id}")
     
     def get_instances(self, user_id: str, page: int = 1, per_page: int = 20,
                      status: str = '', severity: str = '') -> Dict[str, Any]:
@@ -478,90 +376,156 @@ class AlertService:
             ]
         }
     
-    def get_templates(self) -> List[Dict[str, Any]]:
+    def get_templates(self, user_id: str = None, category: str = '', template_type: str = '') -> List[Dict[str, Any]]:
         """获取告警策略模板"""
-        templates = [
-            {
-                'id': 'cpu_high',
-                'name': 'CPU使用率过高',
-                'policy_type': 'resource',
-                'description': '当CPU使用率超过阈值时触发告警',
-                'template': {
-                    'resource_type': 'system',
-                    'alert_items': ['cpu'],
-                    'trigger_rules': {
-                        'cpu': {
-                            'operator': '>',
-                            'threshold': 80,
-                            'duration': 300
-                        }
-                    },
-                    'level': 'warning'
-                }
-            },
-            {
-                'id': 'memory_high',
-                'name': '内存使用率过高',
-                'policy_type': 'resource',
-                'description': '当内存使用率超过阈值时触发告警',
-                'template': {
-                    'resource_type': 'system',
-                    'alert_items': ['memory'],
-                    'trigger_rules': {
-                        'memory': {
-                            'operator': '>',
-                            'threshold': 85,
-                            'duration': 300
-                        }
-                    },
-                    'level': 'warning'
-                }
-            },
-            {
-                'id': 'disk_space_low',
-                'name': '磁盘空间不足',
-                'policy_type': 'resource',
-                'description': '当磁盘使用率超过阈值时触发告警',
-                'template': {
-                    'resource_type': 'system',
-                    'alert_items': ['disk'],
-                    'trigger_rules': {
-                        'disk': {
-                            'operator': '>',
-                            'threshold': 90,
-                            'duration': 300
-                        }
-                    },
-                    'level': 'critical'
-                }
-            },
-            {
-                'id': 'storage_error',
-                'name': '存储访问错误',
-                'policy_type': 'event',
-                'description': '当存储访问出现错误时触发告警',
-                'template': {
-                    'event_type': 'storage',
-                    'event_actions': ['create', 'delete', 'update'],
-                    'event_results': ['failed', 'error'],
-                    'level': 'error'
-                }
-            },
-            {
-                'id': 'client_connection_failed',
-                'name': '客户端连接失败',
-                'policy_type': 'event',
-                'description': '当客户端连接失败时触发告警',
-                'template': {
-                    'event_type': 'client',
-                    'event_actions': ['connect'],
-                    'event_results': ['failed', 'timeout'],
-                    'level': 'warning'
-                }
+        try:
+            # 构建查询
+            query = AlertTemplate.query
+            
+            # 过滤条件
+            if category:
+                query = query.filter(AlertTemplate.category == category)
+            if template_type:
+                query = query.filter(AlertTemplate.template_type == template_type)
+            
+            # 获取系统模板和用户自定义模板
+            if user_id:
+                query = query.filter(
+                    db.or_(
+                        AlertTemplate.is_system == True,
+                        AlertTemplate.user_id == user_id
+                    )
+                )
+            else:
+                query = query.filter(AlertTemplate.is_system == True)
+            
+            # 按分类和名称排序
+            templates = query.order_by(AlertTemplate.category, AlertTemplate.name).all()
+            
+            return [template.to_dict() for template in templates]
+            
+        except Exception as e:
+            logger.error(f"获取告警模板失败: {e}")
+            return []
+    
+    def create_template(self, data: Dict[str, Any]) -> AlertTemplate:
+        """创建告警模板"""
+        try:
+            self._validate_template_data(data)
+            
+            template = AlertTemplate(**data)
+            db.session.add(template)
+            db.session.commit()
+            
+            logger.info(f"告警模板创建成功: {template.id}")
+            return template
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"创建告警模板失败: {e}")
+            raise AlertOperationError(f"创建告警模板失败: {str(e)}")
+    
+    def get_template(self, template_id: str, user_id: str = None) -> AlertTemplate:
+        """获取告警模板详情"""
+        try:
+            query = AlertTemplate.query.filter_by(id=template_id)
+            
+            if user_id:
+                query = query.filter(
+                    db.or_(
+                        AlertTemplate.is_system == True,
+                        AlertTemplate.user_id == user_id
+                    )
+                )
+            
+            template = query.first()
+            if not template:
+                raise AlertOperationError("告警模板不存在")
+            
+            return template
+            
+        except Exception as e:
+            logger.error(f"获取告警模板失败: {e}")
+            raise AlertOperationError(f"获取告警模板失败: {str(e)}")
+    
+    def update_template(self, template_id: str, user_id: str, data: Dict[str, Any]) -> AlertTemplate:
+        """更新告警模板"""
+        try:
+            template = self.get_template(template_id, user_id)
+            
+            # 系统模板只能由管理员修改
+            if template.is_system and not self._is_admin(user_id):
+                raise AlertOperationError("系统模板只能由管理员修改")
+            
+            # 更新字段
+            for key, value in data.items():
+                if hasattr(template, key):
+                    setattr(template, key, value)
+            
+            template.updated_at = datetime.utcnow()
+            db.session.commit()
+            
+            logger.info(f"告警模板更新成功: {template_id}")
+            return template
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"更新告警模板失败: {e}")
+            raise AlertOperationError(f"更新告警模板失败: {str(e)}")
+    
+    def delete_template(self, template_id: str, user_id: str) -> None:
+        """删除告警模板"""
+        try:
+            template = self.get_template(template_id, user_id)
+            
+            # 系统模板不能删除
+            if template.is_system:
+                raise AlertOperationError("系统模板不能删除")
+            
+            # 检查是否有策略在使用此模板
+            policies_count = AlertPolicy.query.filter_by(template_id=template_id).count()
+            if policies_count > 0:
+                raise AlertOperationError(f"该模板正在被 {policies_count} 个策略使用，无法删除")
+            
+            db.session.delete(template)
+            db.session.commit()
+            
+            logger.info(f"告警模板删除成功: {template_id}")
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"删除告警模板失败: {e}")
+            raise AlertOperationError(f"删除告警模板失败: {str(e)}")
+    
+    def use_template(self, template_id: str, user_id: str) -> Dict[str, Any]:
+        """使用模板创建策略"""
+        try:
+            template = self.get_template(template_id, user_id)
+            
+            # 更新使用统计
+            template.usage_count += 1
+            template.last_used_at = datetime.utcnow()
+            db.session.commit()
+            
+            # 返回模板配置
+            return {
+                'template': template.to_dict(),
+                'policy_data': self._convert_template_to_policy(template, user_id)
             }
-        ]
-        
-        return templates
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"使用模板失败: {e}")
+            raise AlertOperationError(f"使用模板失败: {str(e)}")
+    
+    def get_template_categories(self) -> List[Dict[str, Any]]:
+        """获取模板分类列表"""
+        try:
+            categories = db.session.query(AlertTemplate.category).distinct().all()
+            return [{'id': cat[0], 'name': cat[0]} for cat in categories]
+        except Exception as e:
+            logger.error(f"获取模板分类失败: {e}")
+            return []
     
     def _validate_policy_data(self, data: Dict[str, Any]) -> None:
         """验证告警策略数据"""
@@ -632,73 +596,351 @@ class AlertService:
             if not config.get('url'):
                 raise ValueError("WebHook通知对象必须配置URL")
     
-    def _send_notifications(self, policy: AlertPolicy, instance: AlertInstance) -> None:
-        """发送通知"""
-        if not policy.notification_targets:
-            return
-        
-        # 获取通知对象
-        targets = NotificationTarget.query.filter(
-            NotificationTarget.id.in_(policy.notification_targets)
-        ).all()
-        
-        for target in targets:
-            if not target.enabled:
-                continue
+    def _send_notifications(self, policy: AlertPolicy, alert_instance: AlertInstance):
+        """发送告警通知"""
+        try:
+            # 渲染通知内容
+            notification_content = self.render_policy_notification(policy.id, alert_instance)
             
-            # 获取通知渠道
-            if not target.channels:
-                continue
+            if not notification_content:
+                logger.warning(f"无法渲染策略 {policy.id} 的通知内容")
+                return
             
-            channels = NotificationChannel.query.filter(
-                NotificationChannel.id.in_(target.channels)
-            ).all()
+            # 获取通知目标
+            notification_targets = policy.notification_targets or []
             
-            for channel in channels:
-                if not channel.enabled:
-                    continue
-                
+            for target_config in notification_targets:
                 try:
-                    self._send_notification(channel, target, instance)
+                    target_type = target_config.get('type')
+                    target_data = target_config.get('data', {})
+                    
+                    if target_type == 'email':
+                        self._send_email_notification(target_data, notification_content)
+                    elif target_type == 'sms':
+                        self._send_sms_notification(target_data, notification_content)
+                    elif target_type == 'dingtalk':
+                        self._send_dingtalk_notification(target_data, notification_content)
+                    elif target_type == 'wechat':
+                        self._send_wechat_notification(target_data, notification_content)
+                    elif target_type == 'webhook':
+                        self._send_webhook_notification(target_data, notification_content)
+                    else:
+                        logger.warning(f"不支持的通知类型: {target_type}")
+                        
                 except Exception as e:
                     logger.error(f"发送通知失败: {e}")
+                    
+        except Exception as e:
+            logger.error(f"发送告警通知失败: {e}")
+
+    def _send_email_notification(self, target_data: dict, content: dict):
+        """发送邮件通知"""
+        try:
+            # 这里实现邮件发送逻辑
+            # 可以使用SMTP或其他邮件服务
+            logger.info(f"发送邮件通知: {content['title']}")
+            # TODO: 实现实际的邮件发送
+        except Exception as e:
+            logger.error(f"发送邮件通知失败: {e}")
+
+    def _send_sms_notification(self, target_data: dict, content: dict):
+        """发送短信通知"""
+        try:
+            # 这里实现短信发送逻辑
+            logger.info(f"发送短信通知: {content['content']}")
+            # TODO: 实现实际的短信发送
+        except Exception as e:
+            logger.error(f"发送短信通知失败: {e}")
+
+    def _send_dingtalk_notification(self, target_data: dict, content: dict):
+        """发送钉钉通知"""
+        try:
+            # 这里实现钉钉通知逻辑
+            logger.info(f"发送钉钉通知: {content['title']}")
+            # TODO: 实现实际的钉钉通知
+        except Exception as e:
+            logger.error(f"发送钉钉通知失败: {e}")
+
+    def _send_wechat_notification(self, target_data: dict, content: dict):
+        """发送企业微信通知"""
+        try:
+            # 这里实现企业微信通知逻辑
+            logger.info(f"发送企业微信通知: {content['title']}")
+            # TODO: 实现实际的企业微信通知
+        except Exception as e:
+            logger.error(f"发送企业微信通知失败: {e}")
+
+    def _send_webhook_notification(self, target_data: dict, content: dict):
+        """发送Webhook通知"""
+        try:
+            # 这里实现Webhook通知逻辑
+            logger.info(f"发送Webhook通知: {content['title']}")
+            # TODO: 实现实际的Webhook通知
+        except Exception as e:
+            logger.error(f"发送Webhook通知失败: {e}")
     
-    def _send_notification(self, channel: NotificationChannel, target: NotificationTarget, instance: AlertInstance) -> None:
-        """发送单个通知"""
-        message = {
-            'title': f"告警: {instance.alert_name}",
-            'content': f"告警级别: {instance.severity}\n当前值: {instance.current_value}\n阈值: {instance.threshold_value}",
-            'timestamp': instance.starts_at.isoformat(),
-            'labels': instance.labels or {},
-            'annotations': instance.annotations or {}
+    def _validate_template_data(self, data: Dict[str, Any]) -> None:
+        """验证模板数据"""
+        required_fields = ['name', 'template_type', 'category']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                raise AlertOperationError(f"缺少必填字段: {field}")
+        
+        # 验证模板类型
+        if data['template_type'] not in ['resource', 'event']:
+            raise AlertOperationError("模板类型必须是 resource 或 event")
+        
+        # 验证资源模板
+        if data['template_type'] == 'resource':
+            if not data.get('resource_type'):
+                raise AlertOperationError("资源模板必须指定资源类型")
+            if not data.get('alert_items'):
+                raise AlertOperationError("资源模板必须指定报警条目")
+            if not data.get('trigger_rules'):
+                raise AlertOperationError("资源模板必须指定触发规则")
+        
+        # 验证事件模板
+        if data['template_type'] == 'event':
+            if not data.get('event_type'):
+                raise AlertOperationError("事件模板必须指定事件类型")
+            if not data.get('event_actions'):
+                raise AlertOperationError("事件模板必须指定事件动作")
+            if not data.get('event_results'):
+                raise AlertOperationError("事件模板必须指定事件结果")
+    
+    def _convert_template_to_policy(self, template: AlertTemplate, user_id: str) -> Dict[str, Any]:
+        """将模板转换为策略数据"""
+        policy_data = {
+            'name': f"{template.name} - 策略",
+            'description': template.description,
+            'policy_type': template.template_type,
+            'level': template.level,
+            'user_id': user_id,
+            'enabled': True
         }
         
-        # 根据渠道类型发送通知
-        if channel.channel_type == 'email':
-            self._send_email_notification(channel, target, message)
-        elif channel.channel_type == 'sms':
-            self._send_sms_notification(channel, target, message)
-        elif channel.channel_type == 'webhook':
-            self._send_webhook_notification(channel, target, message)
-        elif channel.channel_type in ['dingtalk', 'slack']:
-            self._send_webhook_notification(channel, target, message)
+        if template.template_type == 'resource':
+            policy_data.update({
+                'resource_type': template.resource_type,
+                'alert_items': template.alert_items,
+                'trigger_rules': template.trigger_rules
+            })
+        else:
+            policy_data.update({
+                'event_type': template.event_type,
+                'event_actions': template.event_actions,
+                'event_results': template.event_results
+            })
+        
+        return policy_data
     
-    def _send_email_notification(self, channel: NotificationChannel, target: NotificationTarget, message: Dict[str, Any]) -> None:
-        """发送邮件通知"""
-        # 使用现有的通知服务
-        self.notification_service.send_email_notification(
-            to_email=target.target_config.get('email'),
-            subject=message['title'],
-            content=message['content'],
-            smtp_config=channel.config
-        )
+    def _is_admin(self, user_id: str) -> bool:
+        """检查用户是否为管理员"""
+        try:
+            user = User.query.get(user_id)
+            return user and user.role == 'admin'
+        except:
+            return False
     
-    def _send_sms_notification(self, channel: NotificationChannel, target: NotificationTarget, message: Dict[str, Any]) -> None:
-        """发送短信通知"""
-        # 实现短信发送逻辑
-        logger.info(f"发送短信通知到 {target.target_config.get('phone')}: {message['content']}")
-    
-    def _send_webhook_notification(self, channel: NotificationChannel, target: NotificationTarget, message: Dict[str, Any]) -> None:
-        """发送WebHook通知"""
-        # 实现WebHook发送逻辑
-        logger.info(f"发送WebHook通知到 {channel.config.get('url')}: {message}")
+    def _init_system_templates(self):
+        """初始化系统通知模板"""
+        try:
+            # 检查是否已有系统模板
+            existing_templates = AlertTemplate.query.filter_by(is_system=True).count()
+            if existing_templates > 0:
+                return
+            
+            # 系统默认模板
+            system_templates = [
+                {
+                    'name': '默认邮件模板',
+                    'description': '系统默认的邮件通知模板',
+                    'category': 'email',
+                    'template_type': 'email',
+                    'title_template': '[{severity}] {alert_name} - {resource_name}',
+                    'content_template': '''告警详情：
+告警名称: {alert_name}
+告警级别: {severity}
+资源名称: {resource_name}
+当前值: {current_value}
+阈值: {threshold}
+触发时间: {triggered_at}
+告警描述: {description}
+
+请及时处理此告警。''',
+                    'variables': ['alert_name', 'severity', 'resource_name', 'current_value', 'threshold', 'triggered_at', 'description'],
+                    'variable_descriptions': {
+                        'alert_name': '告警策略名称',
+                        'severity': '告警级别',
+                        'resource_name': '资源名称',
+                        'current_value': '当前监控值',
+                        'threshold': '触发阈值',
+                        'triggered_at': '触发时间',
+                        'description': '告警描述'
+                    },
+                    'is_system': True,
+                    'is_default': True
+                },
+                {
+                    'name': '默认钉钉模板',
+                    'description': '系统默认的钉钉通知模板',
+                    'category': 'dingtalk',
+                    'template_type': 'dingtalk',
+                    'title_template': '[{severity}] {alert_name}',
+                    'content_template': '''## 告警通知
+
+**告警名称**: {alert_name}
+**告警级别**: {severity}
+**资源名称**: {resource_name}
+**当前值**: {current_value}
+**阈值**: {threshold}
+**触发时间**: {triggered_at}
+
+{description}''',
+                    'variables': ['alert_name', 'severity', 'resource_name', 'current_value', 'threshold', 'triggered_at', 'description'],
+                    'variable_descriptions': {
+                        'alert_name': '告警策略名称',
+                        'severity': '告警级别',
+                        'resource_name': '资源名称',
+                        'current_value': '当前监控值',
+                        'threshold': '触发阈值',
+                        'triggered_at': '触发时间',
+                        'description': '告警描述'
+                    },
+                    'is_system': True,
+                    'is_default': True
+                },
+                {
+                    'name': '默认短信模板',
+                    'description': '系统默认的短信通知模板',
+                    'category': 'sms',
+                    'template_type': 'sms',
+                    'title_template': '',
+                    'content_template': '[{severity}] {alert_name}: {resource_name} {current_value}/{threshold}',
+                    'variables': ['severity', 'alert_name', 'resource_name', 'current_value', 'threshold'],
+                    'variable_descriptions': {
+                        'severity': '告警级别',
+                        'alert_name': '告警策略名称',
+                        'resource_name': '资源名称',
+                        'current_value': '当前监控值',
+                        'threshold': '触发阈值'
+                    },
+                    'is_system': True,
+                    'is_default': True
+                }
+            ]
+            
+            for template_data in system_templates:
+                template = AlertTemplate(**template_data)
+                db.session.add(template)
+            
+            db.session.commit()
+            logger.info("系统通知模板初始化完成")
+            
+        except Exception as e:
+            logger.error(f"初始化系统通知模板失败: {e}")
+            db.session.rollback()
+
+    def render_template(self, template_id: str, variables: dict) -> dict:
+        """渲染通知模板"""
+        try:
+            template = AlertTemplate.query.get(template_id)
+            if not template:
+                raise AlertOperationError("模板不存在")
+            
+            # 渲染标题和内容
+            title = template.title_template
+            content = template.content_template
+            
+            # 替换变量
+            for key, value in variables.items():
+                placeholder = f"{{{key}}}"
+                title = title.replace(placeholder, str(value))
+                content = content.replace(placeholder, str(value))
+            
+            return {
+                'title': title,
+                'content': content,
+                'template_type': template.template_type
+            }
+            
+        except Exception as e:
+            logger.error(f"渲染模板失败: {e}")
+            raise AlertOperationError(f"渲染模板失败: {str(e)}")
+
+    def get_template_variables(self, template_id: str) -> dict:
+        """获取模板支持的变量"""
+        try:
+            template = AlertTemplate.query.get(template_id)
+            if not template:
+                raise AlertOperationError("模板不存在")
+            
+            return {
+                'variables': template.variables or [],
+                'descriptions': template.variable_descriptions or {}
+            }
+            
+        except Exception as e:
+            logger.error(f"获取模板变量失败: {e}")
+            raise AlertOperationError(f"获取模板变量失败: {str(e)}")
+
+    def get_policies_with_templates(self, user_id: str = None, policy_type: str = '', enabled: bool = None) -> List[Dict[str, Any]]:
+        """获取告警策略列表（包含模板信息）"""
+        try:
+            query = AlertPolicy.query
+            
+            if user_id:
+                query = query.filter(AlertPolicy.user_id == user_id)
+            if policy_type:
+                query = query.filter(AlertPolicy.policy_type == policy_type)
+            if enabled is not None:
+                query = query.filter(AlertPolicy.enabled == enabled)
+            
+            policies = query.order_by(AlertPolicy.created_at.desc()).all()
+            
+            result = []
+            for policy in policies:
+                policy_data = policy.to_dict()
+                
+                # 添加模板信息
+                if policy.template:
+                    policy_data['template'] = {
+                        'id': policy.template.id,
+                        'name': policy.template.name,
+                        'template_type': policy.template.template_type,
+                        'title_template': policy.template.title_template,
+                        'content_template': policy.template.content_template
+                    }
+                
+                result.append(policy_data)
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"获取告警策略列表失败: {e}")
+            return []
+
+    def render_policy_notification(self, policy_id: str, alert_instance: AlertInstance) -> dict:
+        """渲染策略的通知内容"""
+        try:
+            policy = AlertPolicy.query.get(policy_id)
+            if not policy or not policy.template:
+                return None
+            
+            # 准备变量数据
+            variables = {
+                'alert_name': policy.name,
+                'severity': policy.level,
+                'resource_name': alert_instance.resource_name or '未知资源',
+                'current_value': alert_instance.current_value or '未知',
+                'threshold': alert_instance.threshold or '未知',
+                'triggered_at': alert_instance.triggered_at.strftime('%Y-%m-%d %H:%M:%S') if alert_instance.triggered_at else '未知',
+                'description': policy.description or '无描述'
+            }
+            
+            # 渲染模板
+            return self.render_template(policy.template.id, variables)
+            
+        except Exception as e:
+            logger.error(f"渲染策略通知失败: {e}")
+            return None

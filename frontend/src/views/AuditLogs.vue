@@ -530,14 +530,14 @@ import { DataAnalysis, Clock, Operation, ArrowDown, ArrowUp } from '@element-plu
 // 登录审计相关
 const loginLogs = ref([])
 const loginPage = ref(1)
-const loginPerPage = ref(20)
+const loginPerPage = ref(10)
 const loginTotal = ref(0)
 const loginActionFilter = ref('all')
 
 // 操作审计相关
 const operationLogs = ref([])
 const operationPage = ref(1)
-const operationPerPage = ref(20)
+const operationPerPage = ref(10)
 const operationTotal = ref(0)
 const operationActionFilter = ref('all')
 const resourceTypeFilter = ref('all')

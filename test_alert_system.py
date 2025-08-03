@@ -39,7 +39,7 @@ def test_alert_system():
     }
     
     try:
-        response = requests.post(f"{BASE_URL}/alerts/channels", 
+        response = requests.post(f"{BASE_URL}/notifications/channels", 
                                headers=HEADERS, 
                                json=channel_data)
         if response.status_code == 201:
@@ -179,7 +179,7 @@ def test_alert_system():
     # 5. 测试获取通知渠道列表
     print("\n5. 测试获取通知渠道列表...")
     try:
-        response = requests.get(f"{BASE_URL}/alerts/channels", headers=HEADERS)
+        response = requests.get(f"{BASE_URL}/notifications/channels", headers=HEADERS)
         if response.status_code == 200:
             channels = response.json()["channels"]
             print(f"✓ 获取到 {len(channels)} 个通知渠道")
@@ -193,7 +193,7 @@ def test_alert_system():
     # 6. 测试获取通知对象列表
     print("\n6. 测试获取通知对象列表...")
     try:
-        response = requests.get(f"{BASE_URL}/alerts/targets", headers=HEADERS)
+        response = requests.get(f"{BASE_URL}/notifications/targets", headers=HEADERS)
         if response.status_code == 200:
             targets = response.json()["targets"]
             print(f"✓ 获取到 {len(targets)} 个通知对象")

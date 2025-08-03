@@ -1,16 +1,13 @@
 from .base import BaseModel, SystemSetting
-from .user import User, AuditLog, Notification, NotificationSetting
+from .user import User, AuditLog
 from .monitor import MonitorData, PerformanceMetric
 from .task import Task, TaskStatus, TaskPriority, TaskLog
 from .storage import Storage
 from .client import Client
 from .node import Node, NodeStatus
 from .sync import SyncRule
-from .alert import (
-    AlertPolicy, 
-    NotificationChannel, NotificationTarget, 
-    AlertInstance
-)
+from .alert import AlertPolicy, AlertInstance, AlertTemplate
+from .notification import Notification, NotificationChannel, NotificationTarget, NotificationSetting
 from .command import RealTimeCommand
 
 __all__ = [

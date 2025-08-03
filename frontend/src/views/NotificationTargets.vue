@@ -159,7 +159,7 @@ onMounted(() => {
 const fetchTargets = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/alerts/targets')
+    const response = await axios.get('/api/notifications/targets')
     targets.value = response.data.targets
   } catch (error) {
     ElMessage.error('获取通知对象失败')
@@ -179,7 +179,7 @@ const fetchAlertPolicies = async () => {
 
 const fetchNotificationChannels = async () => {
   try {
-    const response = await axios.get('/api/alerts/channels')
+    const response = await axios.get('/api/notifications/channels')
     notificationChannels.value = response.data.channels
   } catch (error) {
     console.error('获取通知渠道失败:', error)
@@ -227,10 +227,10 @@ const handleTargetTypeChange = () => {
 const submitTarget = async () => {
   try {
     if (dialogMode.value === 'create') {
-      await axios.post('/api/alerts/targets', targetForm)
+      await axios.post('/api/notifications/targets', targetForm)
       ElMessage.success('通知对象创建成功')
     } else {
-      await axios.put(`/api/alerts/targets/${editingTarget.value.id}`, targetForm)
+      await axios.put(`/api/notifications/targets/${editingTarget.value.id}`, targetForm)
       ElMessage.success('通知对象更新成功')
     }
     
@@ -260,7 +260,7 @@ const editTarget = (target) => {
 
 const toggleTarget = async (target) => {
   try {
-    await axios.put(`/api/alerts/targets/${target.id}`, { enabled: target.enabled })
+    await axios.put(`/api/notifications/targets/${target.id}`, { enabled: target.enabled })
     ElMessage.success(`通知对象已${target.enabled ? '启用' : '禁用'}`)
   } catch (error) {
     target.enabled = !target.enabled
@@ -280,7 +280,7 @@ const deleteTarget = async (target) => {
       }
     )
     
-    await axios.delete(`/api/alerts/targets/${target.id}`)
+    await axios.delete(`/api/notifications/targets/${target.id}`)
     ElMessage.success('通知对象删除成功')
     fetchTargets()
   } catch (error) {
