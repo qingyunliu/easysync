@@ -50,3 +50,13 @@ def require_user(f):
         g.user = user
         return f(*args, **kwargs)
     return decorated_function 
+
+def handle_errors(f):
+    """错误处理装饰器"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        try:
+            return f(*args, **kwargs)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    return decorated_function

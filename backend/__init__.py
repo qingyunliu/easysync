@@ -104,6 +104,7 @@ def create_app(config_name=None):
     from .app.settings import settings_bp
     from .app.commands import commands_bp
     from .app.alerts import alerts_bp
+    from .app.events import events_bp
 
     app.register_blueprint(auth_bp, url_prefix='/api/auth')
     app.register_blueprint(users_bp, url_prefix='/api/users')
@@ -119,6 +120,7 @@ def create_app(config_name=None):
     app.register_blueprint(settings_bp, url_prefix='/api/settings')
     app.register_blueprint(commands_bp, url_prefix='/api/commands')
     app.register_blueprint(alerts_bp, url_prefix='/api/alerts')
+    app.register_blueprint(events_bp, url_prefix='/api/events')
 
     # 注册错误处理
     from .app.errors import register_error_handlers

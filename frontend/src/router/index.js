@@ -22,6 +22,7 @@ import Monitoring from "../views/Monitoring.vue";
 import AlertPolicies from "../views/AlertPolicies.vue";
 import NotificationChannels from "../views/NotificationChannels.vue";
 import NotificationTargets from "../views/NotificationTargets.vue";
+import Events from "../views/Events.vue";
 
 const routes = [
   {
@@ -151,6 +152,12 @@ const routes = [
         path: "notification-targets",
         name: "NotificationTargets",
         component: NotificationTargets,
+        meta: { requiresAuth: true },
+      },
+      {
+        path: "events",
+        name: "Events",
+        component: Events,
         meta: { requiresAuth: true },
       },
     ],

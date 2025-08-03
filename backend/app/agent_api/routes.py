@@ -269,16 +269,42 @@ def agent_report_metrics(node_id):
     metrics = data.get('metrics', {})
     node.system_info = metrics
     db.session.commit()
+    
     try:
-        MonitorData.create_monitor_data(
+        # 创建监控数据记录
+        monitor_data = MonitorData.create_monitor_data(
             user_id=node.user_id,
             node_id=node.id,
             data=metrics
         )
+        
+        # 评估告警策略
+        from backend.app.alerts.evaluator import AlertEvaluator
+        evaluator = AlertEvaluator()
+        triggered_alerts = evaluator.evaluate_monitor_data(monitor_data)
+        
+        # 处理触发的告警
+        for alert_info in triggered_alerts:
+            policy = alert_info['policy']
+            triggered_at = alert_info['triggered_at']
+            
+            # 创建告警实例
+            alert_instance = evaluator.create_alert_instance(policy, monitor_data, triggered_at)
+            
+            if alert_instance:
+                # 发送通知
+                from backend.app.alerts.services import AlertService
+                alert_service = AlertService()
+                alert_service._send_notifications(policy, alert_instance)
+        
         current_app.logger.info(f"Received node({node_id}) metrics: {metrics}")
+        current_app.logger.info(f"Triggered {len(triggered_alerts)} alerts")
+        
     except Exception as e:
         db.session.rollback()
-        return jsonify({'status': 'error', 'message': f'监控数据写入失败: {e}'})
+        current_app.logger.error(f"Error processing metrics: {e}")
+        return jsonify({'status': 'error', 'message': f'监控数据处理失败: {e}'})
+    
     return jsonify({'status': 'success', 'message': '监控数据已上报'})
 
 # 6. 上报错误
@@ -300,18 +326,24 @@ def agent_send_alert(node_id):
         return jsonify({'status': 'error', 'message': '节点不存在'}), 404
     
     try:
-        # 创建告警记录
-        from backend.app.models.alert import Alert
-        alert = Alert(
-            node_id=node_id,
-            user_id=node.user_id,
-            alert_type=data.get('alert_type'),
-            level=data.get('level', 'warning'),
-            message=data.get('message'),
-            value=data.get('value'),
-            threshold=data.get('threshold'),
-            timestamp=datetime.datetime.fromisoformat(data.get('timestamp', datetime.datetime.utcnow().isoformat())),
-            status='active'
+        # 创建告警记录 - 使用新的AlertInstance模型
+        from backend.app.models.alert import AlertInstance
+        alert = AlertInstance(
+            policy_id=None,  # 这里需要关联到具体的策略
+            alert_name=data.get('alert_type', 'Node Alert'),
+            severity=data.get('level', 'warning'),
+            metric_name=data.get('metric', 'unknown'),
+            current_value=data.get('value', 0),
+            threshold_value=data.get('threshold', 0),
+            starts_at=datetime.datetime.fromisoformat(data.get('timestamp', datetime.datetime.utcnow().isoformat())),
+            status='firing',
+            labels={
+                'node_id': node_id,
+                'alert_type': data.get('alert_type')
+            },
+            annotations={
+                'message': data.get('message')
+            }
         )
         db.session.add(alert)
         db.session.commit()

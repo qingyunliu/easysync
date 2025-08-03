@@ -1,211 +1,58 @@
 from datetime import datetime
 from backend import db
 from backend.app.models.base import BaseModel
-import enum
 
-
-class AlertLevel(enum.Enum):
-    """告警级别"""
-    INFO = "info"
-    WARNING = "warning"
-    CRITICAL = "critical"
-
-
-class AlertStatus(enum.Enum):
-    """告警状态"""
-    ACTIVE = "active"
-    RESOLVED = "resolved"
-    ACKNOWLEDGED = "acknowledged"
-
-
-class Alert(BaseModel):
-    """告警模型"""
-    __tablename__ = 'alerts'
-    
-    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
-    client_id = db.Column(db.String(36), db.ForeignKey('clients.id'), nullable=True)
-    node_id = db.Column(db.String(36), db.ForeignKey('nodes.id'), nullable=True)
-    rule_id = db.Column(db.String(36), db.ForeignKey('alert_rules.id'), nullable=True)
-    alert_type = db.Column(db.String(50), nullable=False)
-    metric = db.Column(db.String(50), nullable=False)
-    value = db.Column(db.Float, nullable=False)
-    threshold = db.Column(db.Float, nullable=False)
-    level = db.Column(db.Enum(AlertLevel), nullable=False, default=AlertLevel.WARNING)
-    severity = db.Column(db.String(20), nullable=False)
-    message = db.Column(db.Text)
-    status = db.Column(db.Enum(AlertStatus), nullable=False, default=AlertStatus.ACTIVE)
-    resolved_at = db.Column(db.DateTime, nullable=True)
-    acknowledged_at = db.Column(db.DateTime, nullable=True)
-    acknowledged_by = db.Column(db.String(100), nullable=True)
-    timestamp = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-    
-    # 关联
-    rule = db.relationship('AlertRule', backref=db.backref('alerts', lazy=True))
-    client = db.relationship('Client', backref=db.backref('alerts', lazy=True))
-    node = db.relationship('Node', backref=db.backref('alerts', lazy=True))
-    user = db.relationship('User', backref=db.backref('alerts', lazy=True))
-    
-    # 索引
-    __table_args__ = (
-        db.Index('idx_node_status', 'node_id', 'status'),
-        db.Index('idx_user_level', 'user_id', 'level'),
-        db.Index('idx_timestamp', 'timestamp'),
-    )
-
-    def to_dict(self):
-        """转换为字典"""
-        return {
-            'id': self.id,
-            'user_id': self.user_id,
-            'client_id': self.client_id,
-            'node_id': self.node_id,
-            'rule_id': self.rule_id,
-            'alert_type': self.alert_type,
-            'metric': self.metric,
-            'value': self.value,
-            'threshold': self.threshold,
-            'level': self.level.value if self.level else None,
-            'severity': self.severity,
-            'message': self.message,
-            'status': self.status.value if self.status else None,
-            'resolved_at': self.resolved_at.isoformat() if self.resolved_at else None,
-            'acknowledged_at': self.acknowledged_at.isoformat() if self.acknowledged_at else None,
-            'acknowledged_by': self.acknowledged_by,
-            'timestamp': self.timestamp.isoformat() if self.timestamp else None,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-
-
-class AlertRule(BaseModel):
-    """告警规则模型 - monitor模块使用的简单告警规则"""
-    __tablename__ = 'alert_rules'
-    
-    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
-    name = db.Column(db.String(100), nullable=False)
-    description = db.Column(db.Text)
-    metric = db.Column(db.String(50), nullable=False)
-    operator = db.Column(db.String(20), nullable=False)
-    threshold = db.Column(db.Float, nullable=False)
-    duration = db.Column(db.Integer, nullable=False)
-    severity = db.Column(db.String(20), nullable=False)
-    enabled = db.Column(db.Boolean, nullable=False, default=True)
-
-    # 添加关联
-    user = db.relationship('User', backref=db.backref('alert_rules', lazy=True))
-
-    def to_dict(self):
-        """转换为字典"""
-        return {
-            'id': self.id,
-            'name': self.name,
-            'user_id': self.user_id,
-            'description': self.description,
-            'metric': self.metric,
-            'operator': self.operator,
-            'threshold': self.threshold,
-            'duration': self.duration,
-            'severity': self.severity,
-            'enabled': self.enabled,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'updated_at': self.updated_at.isoformat() if self.updated_at else None
-        }
-
-
-# ========================= 新的告警策略模型 =========================
-# 用于alerts模块的策略化告警管理
 
 class AlertPolicy(BaseModel):
     """告警策略模型"""
     __tablename__ = 'alert_policies'
     
-    name = db.Column(db.String(100), nullable=False, comment='策略名称')
-    description = db.Column(db.Text, comment='策略描述')
-    enabled = db.Column(db.Boolean, default=True, comment='是否启用')
+    name = db.Column(db.String(100), nullable=False, comment='告警器名称')
+    description = db.Column(db.Text, comment='告警器描述')
+    level = db.Column(db.String(20), default='warning', comment='告警级别: info, warning, error, critical')
+    enabled = db.Column(db.Boolean, default=True, comment='启动状态')
     
-    # 策略类型和分类
-    category = db.Column(db.String(50), nullable=False, comment='策略分类: system, task, storage, node, client')
-    severity = db.Column(db.String(20), default='warning', comment='告警级别: info, warning, error, critical')
+    # 策略类型
+    policy_type = db.Column(db.String(20), nullable=False, comment='策略类型: resource, event')
     
-    # 触发条件
-    conditions = db.Column(db.JSON, comment='触发条件配置')
+    # 资源告警配置
+    resource_type = db.Column(db.String(50), comment='资源类型: Nodes, Clients, 系统')
+    monitored_resources = db.Column(db.JSON, comment='监控资源列表')
+    alert_items = db.Column(db.JSON, comment='报警条目: CPU、内存、磁盘等')
+    trigger_rules = db.Column(db.JSON, comment='触发规则配置')
     
-    # 执行配置
-    repeat_interval = db.Column(db.Integer, default=3600, comment='重复通知间隔(秒)')
-    max_alerts = db.Column(db.Integer, default=10, comment='最大告警次数')
-    cooldown_period = db.Column(db.Integer, default=300, comment='冷却期(秒)')
+    # 事件告警配置
+    event_type = db.Column(db.String(50), comment='事件类型: 存储、客户端、代理等')
+    event_actions = db.Column(db.JSON, comment='事件动作: 创建、删除、获取等')
+    event_results = db.Column(db.JSON, comment='事件结果: success, failed, timeout等')
     
-    # 恢复条件
-    auto_resolve = db.Column(db.Boolean, default=True, comment='是否自动恢复')
-    resolve_threshold = db.Column(db.Float, comment='恢复阈值')
-    resolve_duration = db.Column(db.Integer, default=300, comment='恢复持续时间(秒)')
+    # 通知配置
+    notification_targets = db.Column(db.JSON, comment='关联的通知对象ID列表')
     
-    # 创建者和权限
+    # 创建者
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False, comment='创建用户')
-    is_system = db.Column(db.Boolean, default=False, comment='是否为系统策略')
     
     # 关联关系
     user = db.relationship('User', backref='alert_policies')
-    alert_rules = db.relationship('AlertPolicyRule', backref='policy', cascade='all, delete-orphan')
     
     def to_dict(self):
         data = super().to_dict()
         data.update({
             'name': self.name,
             'description': self.description,
+            'level': self.level,
             'enabled': self.enabled,
-            'category': self.category,
-            'severity': self.severity,
-            'conditions': self.conditions,
-            'repeat_interval': self.repeat_interval,
-            'max_alerts': self.max_alerts,
-            'cooldown_period': self.cooldown_period,
-            'auto_resolve': self.auto_resolve,
-            'resolve_threshold': self.resolve_threshold,
-            'resolve_duration': self.resolve_duration,
+            'policy_type': self.policy_type,
+            'resource_type': self.resource_type,
+            'monitored_resources': self.monitored_resources,
+            'alert_items': self.alert_items,
+            'trigger_rules': self.trigger_rules,
+            'event_type': self.event_type,
+            'event_actions': self.event_actions,
+            'event_results': self.event_results,
+            'notification_targets': self.notification_targets,
             'user_id': self.user_id,
-            'is_system': self.is_system,
-            'username': self.user.username if self.user else None,
-            'rules_count': len(self.alert_rules) if self.alert_rules else 0
-        })
-        return data
-
-
-class AlertPolicyRule(BaseModel):
-    """告警策略规则模型"""
-    __tablename__ = 'alert_policy_rules'
-    
-    policy_id = db.Column(db.String(36), db.ForeignKey('alert_policies.id'), nullable=False)
-    
-    # 规则配置
-    name = db.Column(db.String(100), nullable=False, comment='规则名称')
-    metric_name = db.Column(db.String(100), nullable=False, comment='监控指标名称')
-    operator = db.Column(db.String(10), nullable=False, comment='比较操作符: >, >=, <, <=, ==, !=')
-    threshold_value = db.Column(db.Float, nullable=False, comment='阈值')
-    duration = db.Column(db.Integer, default=300, comment='持续时间(秒)')
-    
-    # 聚合配置
-    aggregation_method = db.Column(db.String(20), default='avg', comment='聚合方式: avg, max, min, sum, count')
-    evaluation_interval = db.Column(db.Integer, default=60, comment='评估间隔(秒)')
-    
-    # 标签过滤
-    label_filters = db.Column(db.JSON, comment='标签过滤条件')
-    
-    enabled = db.Column(db.Boolean, default=True, comment='是否启用')
-    
-    def to_dict(self):
-        data = super().to_dict()
-        data.update({
-            'policy_id': self.policy_id,
-            'name': self.name,
-            'metric_name': self.metric_name,
-            'operator': self.operator,
-            'threshold_value': self.threshold_value,
-            'duration': self.duration,
-            'aggregation_method': self.aggregation_method,
-            'evaluation_interval': self.evaluation_interval,
-            'label_filters': self.label_filters,
-            'enabled': self.enabled
+            'username': self.user.username if self.user else None
         })
         return data
 
@@ -215,21 +62,22 @@ class NotificationChannel(BaseModel):
     __tablename__ = 'notification_channels'
     
     name = db.Column(db.String(100), nullable=False, comment='渠道名称')
-    description = db.Column(db.Text, comment='渠道描述')
-    channel_type = db.Column(db.String(50), nullable=False, comment='渠道类型: email, webhook, dingtalk, sms, slack')
-    enabled = db.Column(db.Boolean, default=True, comment='是否启用')
+    channel_type = db.Column(db.String(50), nullable=False, comment='渠道类型: email, sms, webhook, dingtalk, slack')
+    enabled = db.Column(db.Boolean, default=True, comment='启动状态')
     
     # 渠道配置
     config = db.Column(db.JSON, nullable=False, comment='渠道配置')
     
     # 发送限制
+    retry_count = db.Column(db.Integer, default=3, comment='重试发送次数')
     rate_limit = db.Column(db.Integer, default=100, comment='速率限制(次/小时)')
-    retry_attempts = db.Column(db.Integer, default=3, comment='重试次数')
     timeout = db.Column(db.Integer, default=30, comment='超时时间(秒)')
+    
+    # 默认设置
+    is_default = db.Column(db.Boolean, default=False, comment='是否设置为默认')
     
     # 创建者
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
-    is_default = db.Column(db.Boolean, default=False, comment='是否为默认渠道')
     
     # 关联关系
     user = db.relationship('User', backref='notification_channels')
@@ -247,15 +95,14 @@ class NotificationChannel(BaseModel):
             
         data.update({
             'name': self.name,
-            'description': self.description,
             'channel_type': self.channel_type,
             'enabled': self.enabled,
             'config': safe_config,
+            'retry_count': self.retry_count,
             'rate_limit': self.rate_limit,
-            'retry_attempts': self.retry_attempts,
             'timeout': self.timeout,
-            'user_id': self.user_id,
             'is_default': self.is_default,
+            'user_id': self.user_id,
             'username': self.user.username if self.user else None
         })
         return data
@@ -265,16 +112,19 @@ class NotificationTarget(BaseModel):
     """通知对象模型"""
     __tablename__ = 'notification_targets'
     
-    name = db.Column(db.String(100), nullable=False, comment='对象名称')
-    description = db.Column(db.Text, comment='对象描述')
-    target_type = db.Column(db.String(50), nullable=False, comment='对象类型: user, group, role, external')
-    enabled = db.Column(db.Boolean, default=True, comment='是否启用')
+    name = db.Column(db.String(100), nullable=False, comment='通知对象名称')
+    enabled = db.Column(db.Boolean, default=True, comment='启动状态')
+    description = db.Column(db.Text, comment='描述')
     
-    # 目标配置
-    target_config = db.Column(db.JSON, nullable=False, comment='目标配置')
+    # 关联的告警器
+    alert_policies = db.Column(db.JSON, comment='关联的告警器ID列表')
     
-    # 通知时间配置
-    notification_schedule = db.Column(db.JSON, comment='通知时间计划')
+    # 发送通道
+    channels = db.Column(db.JSON, comment='关联的通知渠道ID列表')
+    
+    # 通知对象配置
+    target_type = db.Column(db.String(50), nullable=False, comment='通知对象类型: email, sms, webhook等')
+    target_config = db.Column(db.JSON, nullable=False, comment='通知对象配置')
     
     # 创建者
     user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
@@ -286,48 +136,14 @@ class NotificationTarget(BaseModel):
         data = super().to_dict()
         data.update({
             'name': self.name,
-            'description': self.description,
-            'target_type': self.target_type,
             'enabled': self.enabled,
+            'description': self.description,
+            'alert_policies': self.alert_policies,
+            'channels': self.channels,
+            'target_type': self.target_type,
             'target_config': self.target_config,
-            'notification_schedule': self.notification_schedule,
             'user_id': self.user_id,
             'username': self.user.username if self.user else None
-        })
-        return data
-
-
-class AlertPolicyAssignment(BaseModel):
-    """告警策略分配模型 - 关联策略、渠道和目标"""
-    __tablename__ = 'alert_policy_assignments'
-    
-    policy_id = db.Column(db.String(36), db.ForeignKey('alert_policies.id'), nullable=False)
-    channel_id = db.Column(db.String(36), db.ForeignKey('notification_channels.id'), nullable=False)
-    target_id = db.Column(db.String(36), db.ForeignKey('notification_targets.id'), nullable=False)
-    
-    enabled = db.Column(db.Boolean, default=True, comment='是否启用')
-    priority = db.Column(db.Integer, default=0, comment='优先级，数字越大优先级越高')
-    
-    # 过滤条件
-    filters = db.Column(db.JSON, comment='附加过滤条件')
-    
-    # 关联关系
-    policy = db.relationship('AlertPolicy', backref='assignments')
-    channel = db.relationship('NotificationChannel', backref='assignments')
-    target = db.relationship('NotificationTarget', backref='assignments')
-    
-    def to_dict(self):
-        data = super().to_dict()
-        data.update({
-            'policy_id': self.policy_id,
-            'channel_id': self.channel_id,
-            'target_id': self.target_id,
-            'enabled': self.enabled,
-            'priority': self.priority,
-            'filters': self.filters,
-            'policy_name': self.policy.name if self.policy else None,
-            'channel_name': self.channel.name if self.channel else None,
-            'target_name': self.target.name if self.target else None
         })
         return data
 
@@ -337,7 +153,6 @@ class AlertInstance(BaseModel):
     __tablename__ = 'alert_instances'
     
     policy_id = db.Column(db.String(36), db.ForeignKey('alert_policies.id'), nullable=False)
-    rule_id = db.Column(db.String(36), db.ForeignKey('alert_policy_rules.id'), nullable=False)
     
     # 告警信息
     alert_name = db.Column(db.String(200), nullable=False, comment='告警名称')
@@ -365,13 +180,11 @@ class AlertInstance(BaseModel):
     
     # 关联关系
     policy = db.relationship('AlertPolicy', backref='instances')
-    rule = db.relationship('AlertPolicyRule', backref='instances')
     
     def to_dict(self):
         data = super().to_dict()
         data.update({
             'policy_id': self.policy_id,
-            'rule_id': self.rule_id,
             'alert_name': self.alert_name,
             'severity': self.severity,
             'status': self.status,
@@ -386,10 +199,6 @@ class AlertInstance(BaseModel):
             'resolved_at': self.resolved_at.isoformat() if self.resolved_at else None,
             'notification_count': self.notification_count,
             'last_notification_at': self.last_notification_at.isoformat() if self.last_notification_at else None,
-            'policy_name': self.policy.name if self.policy else None,
-            'rule_name': self.rule.name if self.rule else None
+            'policy_name': self.policy.name if self.policy else None
         })
         return data
-
-
- 

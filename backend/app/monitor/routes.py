@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, g
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend import db
-from backend.app.models import MonitorData, Client, Node, Alert, AlertRule
+from backend.app.models import MonitorData, Client, Node
 from datetime import datetime, timedelta
 from sqlalchemy import func
 from . import monitor_bp

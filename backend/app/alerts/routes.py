@@ -1,197 +1,117 @@
-from flask import jsonify, request
+from flask import Blueprint, request, jsonify, current_app
+from flask_login import login_required, current_user
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.app.alerts.services import AlertPolicyService
+from backend import db
+from backend.app.models.alert import AlertPolicy, NotificationChannel, NotificationTarget, AlertInstance
+from backend.app.alerts.services import AlertService
+from backend.app.utils.decorators import handle_errors, require_user
 from . import alerts_bp
+import logging
 
-alert_service = AlertPolicyService()
+logger = logging.getLogger(__name__)
+
+alert_service = AlertService()
 
 @alerts_bp.route('/policies', methods=['GET'])
 @jwt_required()
-def get_policies():
+@handle_errors
+def get_alert_policies():
     """获取告警策略列表"""
-    try:
-        user_id = get_jwt_identity()
-        category = request.args.get('category')
-        enabled = request.args.get('enabled')
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 20, type=int)
-        
-        if enabled is not None:
-            enabled = enabled.lower() == 'true'
-        
-        result = alert_service.get_policies(
-            user_id=user_id,
-            category=category,
-            enabled=enabled,
-            page=page,
-            per_page=per_page
-        )
-        
-        return jsonify(result)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    user_id = get_jwt_identity()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 12, type=int)
+    policy_type = request.args.get('policy_type', '')
+    level = request.args.get('level', '')
+    enabled = request.args.get('enabled', '')
+    keyword = request.args.get('keyword', '')
+    
+    policies = alert_service.get_policies(
+        user_id=user_id,
+        page=page,
+        per_page=per_page,
+        policy_type=policy_type,
+        level=level,
+        enabled=enabled,
+        keyword=keyword
+    )
+    
+    return jsonify(policies)
 
 @alerts_bp.route('/policies', methods=['POST'])
 @jwt_required()
-def create_policy():
+@handle_errors
+def create_alert_policy():
     """创建告警策略"""
-    try:
-        user_id = get_jwt_identity()
-        policy_data = request.json
-        
-        policy = alert_service.create_policy(user_id, policy_data)
-        return jsonify(policy.to_dict()), 201
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    data = request.get_json()
+    user_id = get_jwt_identity()
+    data['user_id'] = user_id
+    
+    policy = alert_service.create_policy(data)
+    return jsonify({
+        'message': '告警策略创建成功',
+        'policy': policy.to_dict()
+    }), 201
 
 @alerts_bp.route('/policies/<policy_id>', methods=['GET'])
 @jwt_required()
-def get_policy(policy_id):
+@handle_errors
+def get_alert_policy(policy_id):
     """获取告警策略详情"""
-    try:
-        policy = alert_service.get_policy(policy_id)
-        if not policy:
-            return jsonify({'error': 'Policy not found'}), 404
-        
-        return jsonify(policy.to_dict())
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    user_id = get_jwt_identity()
+    policy = alert_service.get_policy(policy_id, user_id)
+    return jsonify(policy.to_dict())
 
 @alerts_bp.route('/policies/<policy_id>', methods=['PUT'])
 @jwt_required()
-def update_policy(policy_id):
+@handle_errors
+def update_alert_policy(policy_id):
     """更新告警策略"""
-    try:
-        policy_data = request.json
-        policy = alert_service.update_policy(policy_id, policy_data)
-        
-        return jsonify(policy.to_dict())
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    data = request.get_json()
+    user_id = get_jwt_identity()
+    policy = alert_service.update_policy(policy_id, user_id, data)
+    return jsonify({
+        'message': '告警策略更新成功',
+        'policy': policy.to_dict()
+    })
 
 @alerts_bp.route('/policies/<policy_id>', methods=['DELETE'])
 @jwt_required()
-def delete_policy(policy_id):
+@handle_errors
+def delete_alert_policy(policy_id):
     """删除告警策略"""
-    try:
-        success = alert_service.delete_policy(policy_id)
-        if success:
-            return jsonify({'message': 'Policy deleted successfully'})
-        else:
-            return jsonify({'error': 'Failed to delete policy'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+    user_id = get_jwt_identity()
+    alert_service.delete_policy(policy_id, user_id)
+    return jsonify({'message': '告警策略删除成功'})
 
-@alerts_bp.route('/policies/<policy_id>/rules', methods=['GET'])
-@jwt_required()
-def get_policy_rules(policy_id):
-    """获取策略规则列表"""
-    try:
-        rules = alert_service.get_policy_rules(policy_id)
-        return jsonify([rule.to_dict() for rule in rules])
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
-@alerts_bp.route('/policies/<policy_id>/rules', methods=['POST'])
+@alerts_bp.route('/policies/<policy_id>/toggle', methods=['PUT'])
 @jwt_required()
-def create_policy_rule(policy_id):
-    """创建策略规则"""
-    try:
-        rule_data = request.json
-        rule = alert_service.create_policy_rule(policy_id, rule_data)
-        
-        return jsonify(rule.to_dict()), 201
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@handle_errors
+def toggle_alert_policy(policy_id):
+    """切换告警策略启用状态"""
+    user_id = get_jwt_identity()
+    policy = alert_service.toggle_policy(policy_id, user_id)
+    return jsonify({
+        'message': f'告警策略已{"启用" if policy.enabled else "禁用"}',
+        'policy': policy.to_dict()
+    })
 
-@alerts_bp.route('/notification-channels', methods=['GET'])
-@jwt_required()
-def get_notification_channels():
-    """获取通知渠道列表"""
-    try:
-        user_id = get_jwt_identity()
-        channel_type = request.args.get('type')
-        
-        channels = alert_service.get_notification_channels(
-            user_id=user_id,
-            channel_type=channel_type
-        )
-        
-        return jsonify([channel.to_dict() for channel in channels])
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
 
-@alerts_bp.route('/notification-channels', methods=['POST'])
+@alerts_bp.route('/policies/<policy_id>/test', methods=['POST'])
 @jwt_required()
-def create_notification_channel():
-    """创建通知渠道"""
-    try:
-        user_id = get_jwt_identity()
-        channel_data = request.json
-        
-        channel = alert_service.create_notification_channel(user_id, channel_data)
-        return jsonify(channel.to_dict()), 201
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@alerts_bp.route('/notification-channels/<channel_id>/test', methods=['POST'])
-@jwt_required()
-def test_notification_channel(channel_id):
-    """测试通知渠道"""
-    try:
-        success = alert_service.test_notification_channel(channel_id)
-        
-        if success:
-            return jsonify({'message': '测试通知发送成功'})
-        else:
-            return jsonify({'error': '测试通知发送失败'}), 500
-            
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@alerts_bp.route('/notification-targets', methods=['GET'])
-@jwt_required()
-def get_notification_targets():
-    """获取通知对象列表"""
-    try:
-        user_id = get_jwt_identity()
-        target_type = request.args.get('type')
-        
-        targets = alert_service.get_notification_targets(
-            user_id=user_id,
-            target_type=target_type
-        )
-        
-        return jsonify([target.to_dict() for target in targets])
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@alerts_bp.route('/notification-targets', methods=['POST'])
-@jwt_required()
-def create_notification_target():
-    """创建通知对象"""
-    try:
-        user_id = get_jwt_identity()
-        target_data = request.json
-        
-        target = alert_service.create_notification_target(user_id, target_data)
-        return jsonify(target.to_dict()), 201
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@handle_errors
+def test_alert_policy(policy_id):
+    """测试告警策略"""
+    user_id = get_jwt_identity()
+    result = alert_service.test_policy(policy_id, user_id)
+    return jsonify({
+        'message': '告警策略测试完成',
+        'result': result
+    })
 
 @alerts_bp.route('/statistics', methods=['GET'])
 @jwt_required()
+@handle_errors
 def get_alert_statistics():
     """获取告警统计信息"""
     try:
@@ -203,173 +123,162 @@ def get_alert_statistics():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@alerts_bp.route('/channels', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_notification_channels():
+    """获取通知渠道列表"""
+    user_id = get_jwt_identity()
+    channels = alert_service.get_channels(user_id)
+    return jsonify({'channels': channels})
+
+
+@alerts_bp.route('/channels', methods=['POST'])
+@jwt_required()
+@handle_errors
+def create_notification_channel():
+    """创建通知渠道"""
+    data = request.get_json()
+    user_id = get_jwt_identity()
+    data['user_id'] = user_id
+    
+    channel = alert_service.create_channel(data)
+    return jsonify({
+        'message': '通知渠道创建成功',
+        'channel': channel.to_dict()
+    }), 201
+
+
+@alerts_bp.route('/channels/<channel_id>', methods=['PUT'])
+@jwt_required()
+@handle_errors
+def update_notification_channel(channel_id):
+    """更新通知渠道"""
+    data = request.get_json()
+    user_id = get_jwt_identity()
+    channel = alert_service.update_channel(channel_id, user_id, data)
+    return jsonify({
+        'message': '通知渠道更新成功',
+        'channel': channel.to_dict()
+    })
+
+
+@alerts_bp.route('/channels/<channel_id>', methods=['DELETE'])
+@jwt_required()
+@handle_errors
+def delete_notification_channel(channel_id):
+    """删除通知渠道"""
+    alert_service.delete_channel(channel_id, current_user.id)
+    return jsonify({'message': '通知渠道删除成功'})
+
+
+@alerts_bp.route('/targets', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_notification_targets():
+    """获取通知对象列表"""
+    user_id = get_jwt_identity()
+    targets = alert_service.get_targets(user_id)
+    return jsonify({'targets': targets})
+
+
+@alerts_bp.route('/targets', methods=['POST'])
+@jwt_required()
+@handle_errors
+def create_notification_target():
+    """创建通知对象"""
+    data = request.get_json()
+    user_id = get_jwt_identity()
+    data['user_id'] = user_id
+    
+    target = alert_service.create_target(data)
+    return jsonify({
+        'message': '通知对象创建成功',
+        'target': target.to_dict()
+    }), 201
+
+
+@alerts_bp.route('/targets/<target_id>', methods=['PUT'])
+@jwt_required()
+@handle_errors
+def update_notification_target(target_id):
+    """更新通知对象"""
+    data = request.get_json()
+    user_id = get_jwt_identity()
+    target = alert_service.update_target(target_id, user_id, data)
+    return jsonify({
+        'message': '通知对象更新成功',
+        'target': target.to_dict()
+    })
+
+
+@alerts_bp.route('/targets/<target_id>', methods=['DELETE'])
+@jwt_required()
+@handle_errors
+def delete_notification_target(target_id):
+    """删除通知对象"""
+    user_id = get_jwt_identity()
+    alert_service.delete_target(target_id, user_id)
+    return jsonify({'message': '通知对象删除成功'})
+
+
+@alerts_bp.route('/instances', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_alert_instances():
+    """获取告警实例列表"""
+    user_id = get_jwt_identity()
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 20, type=int)
+    status = request.args.get('status', '')
+    severity = request.args.get('severity', '')
+    
+    instances = alert_service.get_instances(
+        user_id=user_id,
+        page=page,
+        per_page=per_page,
+        status=status,
+        severity=severity
+    )
+    
+    return jsonify(instances)
+
+
+@alerts_bp.route('/instances/<instance_id>/resolve', methods=['PUT'])
+@jwt_required()
+@handle_errors
+def resolve_alert_instance(instance_id):
+    """解决告警实例"""
+    user_id = get_jwt_identity()
+    alert_service.resolve_instance(instance_id, user_id)
+    return jsonify({'message': '告警已解决'})
+
+
+@alerts_bp.route('/resources', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_monitorable_resources():
+    """获取可监控的资源列表"""
+    user_id = get_jwt_identity()
+    resources = alert_service.get_monitorable_resources(user_id)
+    return jsonify({'resources': resources})
+
+
+@alerts_bp.route('/events', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_monitorable_events():
+    """获取可监控的事件列表"""
+    user_id = get_jwt_identity()
+    events = alert_service.get_monitorable_events()
+    return jsonify({'events': events})
+
+
 @alerts_bp.route('/templates', methods=['GET'])
 @jwt_required()
-def get_policy_templates():
-    """获取策略模板"""
-    try:
-        templates = [
-            {
-                'id': 'cpu_high',
-                'name': 'CPU使用率过高',
-                'category': 'system',
-                'description': '当CPU使用率超过阈值时触发告警',
-                'template': {
-                    'conditions': {
-                        'metric': 'cpu_usage',
-                        'operator': '>',
-                        'threshold': 80,
-                        'duration': 300
-                    },
-                    'severity': 'warning'
-                }
-            },
-            {
-                'id': 'memory_high',
-                'name': '内存使用率过高',
-                'category': 'system',
-                'description': '当内存使用率超过阈值时触发告警',
-                'template': {
-                    'conditions': {
-                        'metric': 'memory_usage',
-                        'operator': '>',
-                        'threshold': 85,
-                        'duration': 300
-                    },
-                    'severity': 'warning'
-                }
-            },
-            {
-                'id': 'disk_space_low',
-                'name': '磁盘空间不足',
-                'category': 'system',
-                'description': '当磁盘使用率超过阈值时触发告警',
-                'template': {
-                    'conditions': {
-                        'metric': 'disk_usage',
-                        'operator': '>',
-                        'threshold': 90,
-                        'duration': 300
-                    },
-                    'severity': 'error'
-                }
-            },
-            {
-                'id': 'task_failure',
-                'name': '任务执行失败',
-                'category': 'task',
-                'description': '当任务执行失败时触发告警',
-                'template': {
-                    'conditions': {
-                        'metric': 'task_failure_rate',
-                        'operator': '>',
-                        'threshold': 5,
-                        'duration': 60
-                    },
-                    'severity': 'error'
-                }
-            },
-            {
-                'id': 'storage_error',
-                'name': '存储访问错误',
-                'category': 'storage',
-                'description': '当存储访问出现错误时触发告警',
-                'template': {
-                    'conditions': {
-                        'metric': 'storage_error_rate',
-                        'operator': '>',
-                        'threshold': 1,
-                        'duration': 60
-                    },
-                    'severity': 'error'
-                }
-            }
-        ]
-        
-        return jsonify(templates)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@alerts_bp.route('/metrics', methods=['GET'])
-@jwt_required()
-def get_available_metrics():
-    """获取可用的监控指标"""
-    try:
-        metrics = [
-            {
-                'name': 'cpu_usage',
-                'display_name': 'CPU使用率',
-                'category': 'system',
-                'unit': '%',
-                'description': '系统CPU使用百分比'
-            },
-            {
-                'name': 'memory_usage',
-                'display_name': '内存使用率',
-                'category': 'system',
-                'unit': '%',
-                'description': '系统内存使用百分比'
-            },
-            {
-                'name': 'disk_usage',
-                'display_name': '磁盘使用率',
-                'category': 'system',
-                'unit': '%',
-                'description': '磁盘空间使用百分比'
-            },
-            {
-                'name': 'network_in',
-                'display_name': '网络入流量',
-                'category': 'network',
-                'unit': 'Mbps',
-                'description': '网络接收流量速率'
-            },
-            {
-                'name': 'network_out',
-                'display_name': '网络出流量',
-                'category': 'network',
-                'unit': 'Mbps',
-                'description': '网络发送流量速率'
-            },
-            {
-                'name': 'task_completion_rate',
-                'display_name': '任务完成率',
-                'category': 'task',
-                'unit': '%',
-                'description': '任务成功完成的百分比'
-            },
-            {
-                'name': 'task_failure_rate',
-                'display_name': '任务失败率',
-                'category': 'task',
-                'unit': 'count/min',
-                'description': '每分钟失败的任务数'
-            },
-            {
-                'name': 'storage_error_rate',
-                'display_name': '存储错误率',
-                'category': 'storage',
-                'unit': 'count/min',
-                'description': '每分钟存储访问错误数'
-            },
-            {
-                'name': 'node_online_count',
-                'display_name': '在线节点数',
-                'category': 'node',
-                'unit': 'count',
-                'description': '当前在线的节点数量'
-            },
-            {
-                'name': 'client_connection_count',
-                'display_name': '客户端连接数',
-                'category': 'client',
-                'unit': 'count',
-                'description': '当前活跃的客户端连接数'
-            }
-        ]
-        
-        return jsonify(metrics)
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+@handle_errors
+def get_alert_templates():
+    """获取告警策略模板"""
+    user_id = get_jwt_identity()
+    templates = alert_service.get_templates()
+    return jsonify({'templates': templates})

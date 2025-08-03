@@ -33,7 +33,7 @@ class MonitorScheduler:
             # 添加系统监控数据收集任务
             self.scheduler.add_job(
                 func=self._collect_system_metrics,
-                trigger=IntervalTrigger(seconds=10),
+                trigger=IntervalTrigger(seconds=60),
                 id='system_monitoring_collection',
                 name='系统监控数据收集',
                 replace_existing=True

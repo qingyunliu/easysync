@@ -55,24 +55,18 @@
           </el-menu-item>
         </el-tooltip>
 
-        <!-- 系统管理 -->
-        <div class="menu-group-title" v-if="!isCollapsed">系统管理</div>
+        <!-- 运维管理 -->
+        <div class="menu-group-title" v-if="!isCollapsed">运维管理</div>
         <el-tooltip content="操作审计" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/audit-logs">
             <el-icon><Notebook /></el-icon>
             <span v-if="!isCollapsed">操作审计</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="日志管理" placement="right" :disabled="!isCollapsed">
-          <el-menu-item index="/logs">
-            <el-icon><Document /></el-icon>
-            <span v-if="!isCollapsed">日志管理</span>
-          </el-menu-item>
-        </el-tooltip>
-        <el-tooltip content="系统设置" placement="right" :disabled="!isCollapsed">
-          <el-menu-item index="/settings">
-            <el-icon><Setting /></el-icon>
-            <span v-if="!isCollapsed">系统设置</span>
+        <el-tooltip content="事件管理" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/events">
+            <el-icon><List /></el-icon>
+            <span v-if="!isCollapsed">事件管理</span>
           </el-menu-item>
         </el-tooltip>
 
@@ -106,6 +100,21 @@
           <el-menu-item index="/notifications">
             <el-icon><Bell /></el-icon>
             <span v-if="!isCollapsed">消息通知</span>
+          </el-menu-item>
+        </el-tooltip>
+
+        <!-- 系统管理 -->
+        <div class="menu-group-title" v-if="!isCollapsed">系统管理</div>
+        <el-tooltip content="日志管理" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/logs">
+            <el-icon><Document /></el-icon>
+            <span v-if="!isCollapsed">日志管理</span>
+          </el-menu-item>
+        </el-tooltip>
+        <el-tooltip content="系统设置" placement="right" :disabled="!isCollapsed">
+          <el-menu-item index="/settings">
+            <el-icon><Setting /></el-icon>
+            <span v-if="!isCollapsed">系统设置</span>
           </el-menu-item>
         </el-tooltip>
 
@@ -190,6 +199,7 @@ import {
   Warning,
   Notebook,
   Message,
+  List,
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 import defaultAvatar from '@/assets/avatar/default-avatar.jpeg'
