@@ -42,7 +42,7 @@ class RealTimeCommandService:
         # 验证命令类型
         valid_commands = [
             'test_connection', 'list_objects', 'get_stats', 
-            'download_file', 'list_buckets'
+            'download_file', 'list_buckets', 'mount_check'
         ]
         if command_type not in valid_commands:
             raise ValueError(f"不支持的命令类型: {command_type}")

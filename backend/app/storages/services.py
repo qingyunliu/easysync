@@ -280,6 +280,35 @@ class StorageRealTimeService:
             params=params,
             timeout=60  # 下载允许更长时间
         )
+    
+    def check_mount_status_realtime(self, storage_id: str, node_id: str = None) -> Dict[str, Any]:
+        """实时检查挂载状态"""
+        storage = Storage.query.get(storage_id)
+        if not storage:
+            return {'status': 'error', 'message': '存储不存在'}
+        
+        # 确定使用的节点
+        target_node_id = node_id or storage.node_id
+        if not target_node_id:
+            return {'status': 'error', 'message': '存储未绑定节点'}
+        
+        # 构建参数
+        params = {
+            'storage_config': {
+                'id': storage.id,
+                'name': storage.name,
+                'type': storage.type,
+                'config': storage.config
+            }
+        }
+
+        # 执行实时命令
+        return self.command_service.execute_command_sync(
+            node_id=target_node_id,
+            command_type='mount_check',
+            params=params,
+            timeout=30
+        )
 
 class StorageService:
     """存储服务类"""

@@ -101,6 +101,7 @@ def get_storages():
         storages = storage_service.get_storages()
         return jsonify({
             'status': 'success',
+            'message': '存储节点列表获取成功',
             'storages': [storage.to_dict() for storage in storages]
         })
     except Exception as e:
@@ -124,6 +125,7 @@ def get_storage(storage_id):
         
         return jsonify({
             'status': 'success',
+            'message': '存储节点详情获取成功',
             'storage': storage.to_dict()
         })
     except Exception as e:
@@ -145,19 +147,20 @@ def update_storage(storage_id):
         node_id = data.get('node_id')
         user_id = get_jwt_identity()
         
-        if not all([name, type]):
+        storage = storage_service.update_storage(storage_id, name, type, config, node_id)
+        if not storage:
             AuditService.log_storage_operation(
                 user_id=user_id,
                 action='update',
                 storage_id=storage_id,
                 storage_name=name,
-                details={'error': '名称和类型不能为空'},
+                details={'error': '存储节点不存在'},
                 result='failed'
             )
             return jsonify({
                 'status': 'error',
-                'message': '名称和类型不能为空'
-            }), 400
+                'message': '存储节点不存在'
+            }), 404
 
         storage = storage_service.update_storage(storage_id, name, type, config, node_id)
         
@@ -218,16 +221,30 @@ def delete_storage(storage_id):
         
         # 获取存储信息用于审计
         storage = storage_service.get_storage(storage_id)
-        storage_name = storage.name if storage else 'unknown'
-        
+        if not storage:
+            AuditService.log_storage_operation(
+                user_id=user_id,
+                action='delete',
+                storage_id=storage_id,
+                storage_name=None,
+                details={'error': '存储节点不存在'},
+                result='failed'
+            )
+            return jsonify({
+                'status': 'error',
+                'message': '存储节点不存在'
+            }), 404
+
+        storage_name = storage.name
+        storage_type = storage.type
         storage_service.delete_storage(storage_id)
-        
+            
         # 发送存储删除通知
         if storage:
             notification_service.notify_storage_deleted(
                 user_id=user_id,
-                storage_name=storage.name,
-                storage_type=storage.type
+                storage_name=storage_name,
+                storage_type=storage_type
             )
         
         AuditService.log_storage_operation(
@@ -286,7 +303,7 @@ def test_temporary_connect():
             }), 400
         
         # 测试连接
-        result = storage_service.test_connection(type, config)
+        result = storage_realtime_service.test_connection_realtime(type, config)
         
         return jsonify({
             'status': 'success',
@@ -303,24 +320,87 @@ def test_temporary_connect():
 @require_user
 @record_storage_event('test_connection', lambda storage_id: storage_id)
 def test_storage_connection(storage_id):
-    """测试存储连接"""
+    """实时测试存储连接"""
     try:
+        data = request.get_json()
+        node_id = data.get('node_id') if data else None
+        user_id = get_jwt_identity()
         storage = storage_service.get_storage(storage_id)
+        
         if not storage:
             return jsonify({
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
         
-        # 测试连接
-        result = storage_service.test_storage_connection(storage)
+        if not node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '请选择测试节点'
+            }), 400
         
+        # 记录审计日志
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='test_connection_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'node_id': node_id, 'method': 'realtime'},
+            result='started'
+        )
+        
+        # 执行实时连接测试
+        result = storage_realtime_service.test_connection_realtime(storage_id, node_id)
+        
+        # 根据测试结果发送通知
+        if result.get('status') == 'success':
+            notification_service.notify_storage_connected(
+                user_id=user_id,
+                storage_name=storage.name,
+                storage_type=storage.type
+            )
+        else:
+            notification_service.notify_storage_disconnected(
+                user_id=user_id,
+                storage_name=storage.name,
+                reason=result.get('message', '连接测试失败')
+            )
+        
+        # 记录结果
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='test_connection_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'node_id': node_id, 'result': result},
+            result='success' if result.get('status') == 'success' else 'failed'
+        )
+        
+        return jsonify(result)
+        
+    except ValueError as e:
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='test_connection_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
-            'status': 'success',
-            'message': '连接测试成功',
-            'result': result
-        })
+            'status': 'error',
+            'message': str(e)
+        }), 400
     except Exception as e:
+        current_app.logger.error(f"实时连接测试失败: {e}")
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='test_connection_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': f'连接测试失败: {str(e)}'
@@ -330,47 +410,88 @@ def test_storage_connection(storage_id):
 @require_user
 @record_storage_event('get_stats', lambda storage_id: storage_id)
 def get_storage_stats(storage_id):
-    """获取存储统计信息"""
+    """实时获取存储统计信息"""
     try:
+        node_id = request.args.get('node_id')
+        user_id = get_jwt_identity()
         storage = storage_service.get_storage(storage_id)
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
-        
-        stats = storage_service.get_storage_stats(storage)
-        
-        return jsonify({
-            'status': 'success',
-            'stats': stats
-        })
+        result = storage_realtime_service.get_storage_stats_realtime(storage_id, node_id)
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='get_stats_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'msg': '获取存储统计信息', 'result': result},
+            result='success'
+        )
+        return jsonify(result)
     except Exception as e:
+        current_app.logger.error(f"获取存储统计信息失败: {e}")
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='get_stats_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'error': str(e), 'result': None},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
-            'message': f'获取存储统计失败: {str(e)}'
+            'message': f'获取统计信息失败: {str(e)}'
         }), 500
 
 @storages_bp.route('/<string:storage_id>/buckets', methods=['GET'])
 @require_user
 @record_storage_event('list_buckets', lambda storage_id: storage_id)
 def list_buckets(storage_id):
-    """获取存储桶列表"""
+    """实时获取存储桶列表"""
     try:
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 20))
+        node_id = request.args.get('node_id')
+        user_id = get_jwt_identity()
         storage = storage_service.get_storage(storage_id)
+
         if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
+            return jsonify({'status': 'error', 'message': '存储节点不存在'}), 404
         
-        buckets = storage_service.list_buckets(storage)
+        if not node_id:
+            if not storage.node_id:
+                return jsonify({'status': 'error', 'message': '该存储未绑定任何节点，无法获取存储桶列表'}), 400
+            node_id = storage.node_id
         
-        return jsonify({
-            'status': 'success',
-            'buckets': buckets
-        })
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='list_buckets_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'msg': '获取存储桶列表'},
+            result='started'
+        )
+
+        result = storage_realtime_service.list_buckets_realtime(
+            storage_id, page, page_size, node_id
+        )
+
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='list_buckets_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'msg': '获取存储桶列表', 'result': result},
+            result='success'
+        )
+        return jsonify(result)
     except Exception as e:
+        current_app.logger.error(f"获取存储桶列表失败: {e}")
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='list_buckets_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': f'获取存储桶列表失败: {str(e)}'
@@ -380,59 +501,141 @@ def list_buckets(storage_id):
 @require_user
 @record_storage_event('list_objects', lambda storage_id: storage_id)
 def list_objects(storage_id):
-    """获取对象列表"""
+    """实时获取对象存储objects列表"""
     try:
+        user_id = get_jwt_identity()
+        node_id = request.args.get("node_id")
         storage = storage_service.get_storage(storage_id)
         if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
-        
-        bucket = request.args.get('bucket')
+            return jsonify({'status': 'error', 'message': '存储不存在'}), 404
+
+        # 检查存储是否有绑定的节点
+        if not node_id:
+            return jsonify({'status': 'error', 'message': '请选择节点'}), 400
+
+        # 只支持S3/OBS类型
+        if storage.type not in ['s3', 'obs']:
+            return jsonify({'status': 'error', 'message': '仅支持对象存储类型'}), 400
+
+        # 获取参数
+        bucket = request.args.get('bucket', storage.config.get('bucket', ''))
         prefix = request.args.get('prefix', '')
-        delimiter = request.args.get('delimiter', '/')
-        
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 20))
+
         if not bucket:
             return jsonify({
                 'status': 'error',
                 'message': '存储桶名称不能为空'
-            }), 400
+            }), 400        
+
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='list_objects_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'msg': f'开始获取{bucket}对象列表'},
+            result='started'
+        )
+
+        # 调用agent实时获取对象列表
+        result = storage_realtime_service.list_objects_realtime(
+            storage_id=storage_id,
+            bucket=bucket,
+            prefix=prefix,
+            page=page,
+            page_size=page_size,
+            node_id=node_id
+        )
+
+        if result.get('status') == 'error':
+            AuditService.log_storage_operation(
+                user_id=user_id,
+                action='list_objects_realtime',
+                storage_id=storage_id,
+                storage_name=storage.name,
+                details={'msg': f'获取{bucket}对象列表错误', 'result': result},
+                result='failed'
+            ) 
+            return jsonify({'status': 'error', 'message': result.get('message', '获取失败')}), 500
         
-        objects = storage_service.list_objects(storage, bucket, prefix, delimiter)
-        
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='list_objects_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'msg': f'获取{bucket}对象列表成功', 'result': result},
+            result='success'
+        )
+
         return jsonify({
             'status': 'success',
-            'objects': objects
+            'data': result.get('data', []),
+            'total': result.get('total', 0),
+            'page': page,
+            'page_size': page_size
         })
+
     except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': f'获取对象列表失败: {str(e)}'
-        }), 500
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='list_objects_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'error': str(e)},
+            result='failed'
+        )
+        return jsonify({'status': 'error', 'message': str(e)}), 500
 
 @storages_bp.route('/<string:storage_id>/files', methods=['GET'])
 @require_user
 @record_storage_event('list_files', lambda storage_id: storage_id)
 def list_files(storage_id):
-    """获取文件列表"""
+    """实时获取文件列表"""
     try:
+        path = request.args.get('path', '')
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 20))
+        node_id = request.args.get('node_id')
+        user_id = get_jwt_identity()
         storage = storage_service.get_storage(storage_id)
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
+
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='list_files_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'msg': '获取文件列表'},
+            result='started'
+        )
         
-        path = request.args.get('path', '/')
-        
-        files = storage_service.list_files(storage, path)
-        
-        return jsonify({
-            'status': 'success',
-            'files': files
-        })
+        result = storage_realtime_service.list_files_realtime(
+            storage_id=storage_id,
+            path=path,
+            page=page,
+            page_size=page_size,
+            node_id=node_id
+        )
+
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='list_files_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'msg': '获取文件列表', 'result': result},
+            result='success'
+        )
+        return jsonify(result)
     except Exception as e:
+        current_app.logger.error(f"获取文件列表失败: {e}")
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='list_files_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': f'获取文件列表失败: {str(e)}'
@@ -442,33 +645,51 @@ def list_files(storage_id):
 @require_user
 @record_storage_event('download', lambda storage_id: storage_id)
 def download_file(storage_id):
-    """下载文件"""
+    """实时下载文件"""
     try:
-        storage = storage_service.get_storage(storage_id)
-        if not storage:
-            return jsonify({
-                'status': 'error',
-                'message': '存储节点不存在'
-            }), 404
-        
         data = request.get_json()
-        file_path = data.get('file_path')
+        path = data.get('path') if data else None
+        bucket = data.get('bucket', '') if data else ''
+        node_id = data.get('node_id') if data else None
+        user_id = get_jwt_identity()
+        storage = storage_service.get_storage(storage_id)
         
-        if not file_path:
+        if not path:
             return jsonify({
                 'status': 'error',
                 'message': '文件路径不能为空'
             }), 400
         
-        file_data = storage_service.download_file(storage, file_path)
-        
-        return send_file(
-            io.BytesIO(file_data),
-            mimetype='application/octet-stream',
-            as_attachment=True,
-            download_name=file_path.split('/')[-1]
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='download_file_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'msg': '下载文件', 'result': result},
+            result='started'
         )
+        result = storage_realtime_service.download_file_realtime(
+            storage_id, path, bucket, node_id
+        )
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='download_file_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'msg': '下载文件', 'result': result},
+            result='success' if result.get('status') == 'success' else 'failed'
+        )
+        return jsonify(result)
     except Exception as e:
+        current_app.logger.error(f"下载文件失败: {e}")
+        AuditService.log_storage_operation(
+            user_id=user_id,
+            action='download_file_realtime',
+            storage_id=storage_id,
+            storage_name=storage.name,
+            details={'error': str(e)},
+            result='failed'
+        )
         return jsonify({
             'status': 'error',
             'message': f'下载文件失败: {str(e)}'
@@ -486,8 +707,11 @@ def mount_check(storage_id):
                 'status': 'error',
                 'message': '存储节点不存在'
             }), 404
+
+        if storage.type not in ['nas', 'nfs']:
+            return jsonify({'status': 'error', 'message': '仅支持 NAS/NFS 挂载检测'}), 400
         
-        result = storage_service.check_mount_status(storage)
+        result = storage_realtime_service.check_mount_status_realtime(storage)
         
         return jsonify({
             'status': 'success',

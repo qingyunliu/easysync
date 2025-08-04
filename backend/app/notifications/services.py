@@ -17,6 +17,7 @@ from backend.app.models import (
 from backend.app.utils.encryption import encrypt_data, decrypt_data
 from typing import Dict, Any, List
 from datetime import datetime
+from sqlalchemy import and_
 
 logger = logging.getLogger(__name__)
 
@@ -1034,8 +1035,6 @@ class NotificationService:
             level='warning'
         )
     
-    # =============== 存储相关通知 ===============
-    
     def notify_storage_connected(self, user_id: int, storage_name: str, storage_type: str) -> None:
         """通知存储连接成功"""
         self.create_notification(
@@ -1094,18 +1093,26 @@ class NotificationService:
             level='success'
         )
     
-    def notify_storage_deleted(self, user_id: int, storage_name: str) -> None:
+    def notify_storage_deleted(self, user_id: int, storage_name: str, storage_type: str) -> None:
         """通知存储删除"""
         self.create_notification(
             user_id=user_id,
             type='storage_deleted',
             title=f'存储已删除: {storage_name}',
-            content=f'存储 {storage_name} 已被删除，相关数据已清理。',
+            content=f'{storage_type}存储 {storage_name} 已被删除，相关数据已清理。',
             level='info'
         )
     
-    # =============== 客户端相关通知 ===============
-    
+    def notify_storage_updated(self, user_id: int, storage_name: str, storage_type: str) -> None:
+        """通知存储更新"""
+        self.create_notification(
+            user_id=user_id,
+            type='storage_updated',
+            title=f'存储更新: {storage_name}',
+            content=f'{storage_type}存储 {storage_name} 已更新，相关配置已保存。',
+            level='info'
+        )
+
     def notify_client_connected(self, user_id: int, client_name: str, client_ip: str = None) -> None:
         """通知客户端连接成功"""
         content = f'客户端 {client_name} 已成功连接。'
