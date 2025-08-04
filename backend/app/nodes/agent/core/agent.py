@@ -23,7 +23,9 @@ class ProxyAgent:
     
     def __init__(self, config: dict):
         self.config = config
-        self.logger = get_log_manager().get_logger('ProxyAgent')
+        # 使用配置初始化日志管理器
+        from ..utils.logger import get_log_manager_with_config
+        self.logger = get_log_manager_with_config(config).get_logger('ProxyAgent')
         self.server_comm = ServerCommunication(config)
         self.monitor_service = MonitorService(config, None, None)  # node_id/token后续赋值
         self.sync_service = SyncService(config)
@@ -150,93 +152,100 @@ class ProxyAgent:
             time.sleep(self.heartbeat_interval)
 
     def _task_poll_loop(self):
-        while self.running:
-            try:
-                # 获取分配给当前节点的任务
-                tasks = self.server_comm.get_tasks()
-                if tasks:
-                    for task in tasks:
-                        # 检查任务状态，只处理assigned状态的任务
-                        if task.get('status') == 'assigned':
-                            # 验证任务配置
-                            is_valid, error_message = self.task_validator.validate_task(task)
-                            if not is_valid:
-                                self.logger.error(f"任务验证失败: {task['id']}, {error_message}")
-                                self.server_comm.update_task_status(task['id'], {
-                                    'status': 'failed',
-                                    'error': f'任务验证失败: {error_message}'
-                                })
-                                continue
+        """任务轮询循环 - 支持并发处理"""
+        import concurrent.futures
+        
+        # 创建线程池，最大并发数从配置中获取，默认为3
+        max_workers = self.config.get('task', {}).get('max_concurrent', 3)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            while self.running:
+                try:
+                    # 获取分配给当前节点的任务
+                    tasks = self.server_comm.get_tasks()
+                    if tasks:
+                        # 提交所有assigned状态的任务到线程池并发执行
+                        futures = []
+                        for task in tasks:
+                            if task.get('status') == 'assigned':
+                                # 验证任务配置
+                                is_valid, error_message = self.task_validator.validate_task(task)
+                                if not is_valid:
+                                    self.logger.error(f"任务验证失败: {task['id']}, {error_message}")
+                                    self.server_comm.update_task_status(task['id'], {
+                                        'status': 'failed',
+                                        'error': f'任务验证失败: {error_message}'
+                                    })
+                                    continue
+                                
+                                # 提交任务到线程池
+                                future = executor.submit(self._execute_task_in_thread, task)
+                                futures.append(future)
                             
-                            # 检查是否需要连接检查
-                            if task.get('type') == 'test-connection':
-                                self._handle_connection_test_task(task)
-                                continue
+                            # 处理任务取消请求
+                            elif task.get('status') == 'cancel_requested':
+                                self.logger.info(f"收到任务取消请求: {task['id']}")
+                                success = self.task_manager.cancel_task(task['id'])
+                                if success:
+                                    self.logger.info(f"任务 {task['id']} 取消成功")
+                                else:
+                                    self.logger.warning(f"任务 {task['id']} 取消失败")
                             
-                            # 检查是否需要挂载检查
-                            if task.get('type') == 'mount-check':
-                                self._handle_mount_check_task(task)
-                                continue
+                            # 处理任务暂停请求
+                            elif task.get('status') == 'pause_requested':
+                                self.logger.info(f"收到任务暂停请求: {task['id']}")
+                                success = self.task_manager.pause_task(task['id'])
+                                if success:
+                                    self.logger.info(f"任务 {task['id']} 暂停成功")
+                                else:
+                                    self.logger.warning(f"任务 {task['id']} 暂停失败")
                             
-                            # 检查是否需要存储操作
-                            if task.get('type') == 'storage-operation':
-                                self._handle_storage_operation_task(task)
-                                continue
-                            
-                            # 开始执行任务
-                            self.sync_service.add_task(task)
-                            
-                            # 更新任务状态为running
-                            self.server_comm.update_task_status(task['id'], {
-                                'status': 'running',
-                                'progress': 0,
-                                'started_at': datetime.utcnow().isoformat()
-                            })
-                            
-                            self.logger.info(f"Started executing task {task['id']} of type {task.get('type', 'unknown')}")
+                            # 处理任务恢复请求
+                            elif task.get('status') == 'resume_requested':
+                                self.logger.info(f"收到任务恢复请求: {task['id']}")
+                                success = self.task_manager.resume_task(task['id'])
+                                if success:
+                                    self.logger.info(f"任务 {task['id']} 恢复成功")
+                                else:
+                                    self.logger.warning(f"任务 {task['id']} 恢复失败")
                         
-                        # 处理任务取消请求
-                        elif task.get('status') == 'cancel_requested':
-                            self.logger.info(f"收到任务取消请求: {task['id']}")
-                            success = self.task_manager.cancel_task(task['id'])
-                            if success:
-                                self.logger.info(f"任务 {task['id']} 取消成功")
-                            else:
-                                self.logger.warning(f"任务 {task['id']} 取消失败")
-                        
-                        # 处理任务暂停请求
-                        elif task.get('status') == 'pause_requested':
-                            self.logger.info(f"收到任务暂停请求: {task['id']}")
-                            success = self.task_manager.pause_task(task['id'])
-                            if success:
-                                self.logger.info(f"任务 {task['id']} 暂停成功")
-                            else:
-                                self.logger.warning(f"任务 {task['id']} 暂停失败")
-                        
-                        # 处理任务恢复请求
-                        elif task.get('status') == 'resume_requested':
-                            self.logger.info(f"收到任务恢复请求: {task['id']}")
-                            success = self.task_manager.resume_task(task['id'])
-                            if success:
-                                self.logger.info(f"任务 {task['id']} 恢复成功")
-                            else:
-                                self.logger.warning(f"任务 {task['id']} 恢复失败")
+                        # 等待所有任务完成（可选）
+                        # for future in concurrent.futures.as_completed(futures):
+                        #     try:
+                        #         future.result()
+                        #     except Exception as e:
+                        #         self.logger.error(f"Task execution failed: {e}")
                             
-            except Exception as e:
-                self.logger.error(f"Error in task poll loop: {e}")
-            time.sleep(self.task_poll_interval)
+                except Exception as e:
+                    self.logger.error(f"Error in task poll loop: {e}")
+                time.sleep(self.task_poll_interval)
 
     def _command_poll_loop(self):
         """实时命令轮询循环"""
-        while self.running:
-            try:
-                # 获取待执行的实时命令
-                commands = self.server_comm.get_realtime_commands()
-                for command in commands:
-                    self._execute_realtime_command(command)
-            except Exception as e:
-                self.logger.error(f"Error in command poll loop: {e}")
-            time.sleep(self.command_interval)
+        import concurrent.futures
+        
+        # 创建线程池，最大并发数从配置中获取，默认为3
+        max_workers = self.config.get('command', {}).get('max_concurrent', 3)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            while self.running:
+                try:
+                    # 获取待执行的实时命令
+                    commands = self.server_comm.get_realtime_commands()
+                    # 提交所有命令到线程池并发执行
+                    futures = []
+                    for command in commands:
+                        future = executor.submit(self._execute_realtime_command, command)
+                        futures.append(future)
+                    
+                    # 等待所有命令完成（可选，也可以不等待）
+                    # for future in concurrent.futures.as_completed(futures):
+                    #     try:
+                    #         future.result()
+                    #     except Exception as e:
+                    #         self.logger.error(f"Command execution failed: {e}")
+                        
+                except Exception as e:
+                    self.logger.error(f"Error in command poll loop: {e}")
+                time.sleep(self.config.get('command', {}).get('interval', 3))
 
     def _execute_realtime_command(self, command):
         """执行实时命令"""
@@ -685,6 +694,43 @@ class ProxyAgent:
                 'error': str(e)
             })
     
+    def _execute_task_in_thread(self, task):
+        """在线程中执行任务"""
+        task_id = task['id']
+        task_type = task.get('type', 'unknown')
+        
+        try:
+            self.logger.info(f"开始在线程中执行任务 {task_id}, 类型: {task_type}")
+            
+            # 根据任务类型执行相应的处理
+            if task_type == 'test-connection':
+                self._handle_connection_test_task(task)
+            elif task_type == 'mount-check':
+                self._handle_mount_check_task(task)
+            elif task_type == 'storage-operation':
+                self._handle_storage_operation_task(task)
+            else:
+                # 对于其他类型的任务，添加到sync_service
+                self.sync_service.add_task(task)
+                
+                # 更新任务状态为running
+                self.server_comm.update_task_status(task['id'], {
+                    'status': 'running',
+                    'progress': 0,
+                    'started_at': datetime.utcnow().isoformat()
+                })
+                
+                self.logger.info(f"任务 {task_id} 已添加到同步服务队列")
+                
+        except Exception as e:
+            self.logger.error(f"在线程中执行任务 {task_id} 失败: {str(e)}")
+            # 更新任务状态为failed
+            self.server_comm.update_task_status(task['id'], {
+                'status': 'failed',
+                'error': str(e),
+                'failed_at': datetime.utcnow().isoformat()
+            })
+
     def _handle_mount_check_task(self, task):
         """处理挂载检查任务"""
         task_id = task['id']

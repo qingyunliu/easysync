@@ -16,6 +16,11 @@ def parse_args():
 
 def setup_logging(log_level: str):
     """设置日志"""
+    # 检查是否已经设置过日志
+    root_logger = logging.getLogger()
+    if root_logger.handlers:
+        return
+    
     # 创建日志目录
     log_dir = os.path.join(os.path.dirname(__file__), 'logs')
     os.makedirs(log_dir, exist_ok=True)
@@ -36,7 +41,6 @@ def setup_logging(log_level: str):
     file_handler.setFormatter(formatter)
     
     # 配置根日志记录器
-    root_logger = logging.getLogger()
     root_logger.setLevel(getattr(logging, log_level.upper()))
     root_logger.addHandler(console_handler)
     root_logger.addHandler(file_handler)
@@ -66,6 +70,10 @@ def main():
     signal.signal(signal.SIGQUIT, handle_signal)
     
     try:
+        # 初始化日志管理器
+        from .utils.logger import get_log_manager_with_config
+        get_log_manager_with_config(config)
+        
         # 创建代理
         agent = ProxyAgent(config)
         handle_signal.agent = agent  # 保存agent引用用于信号处理

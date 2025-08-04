@@ -66,7 +66,7 @@ cat > $INSTALL_DIR/config/config.json << EOF
     "sync": {
         "max_retries": 3,
         "retry_delay": 5,
-        "max_concurrent": 1
+        "max_concurrent": 3
     },
     "state_dir": "state",
     "log_level": "INFO"

@@ -45,7 +45,13 @@ class Settings:
                 'token': ''
             },
             'heartbeat_interval': 30,
-            'command_interval': 3,
+            'command': {
+                'interval': 3,
+                'max_concurrent': 3
+            },
+            'task': {
+                'max_concurrent': 3
+            },
             'monitor': {
                 'interval': 5,
                 'max_history': 1000,
@@ -58,7 +64,7 @@ class Settings:
             'sync': {
                 'max_retries': 3,
                 'retry_delay': 5,
-                'max_concurrent': 1
+                'max_concurrent': 3
             },
             'state_dir': 'state',
             'log_level': 'INFO'

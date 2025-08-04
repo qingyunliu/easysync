@@ -17,12 +17,16 @@ class LogManager:
         
     def setup_logging(self):
         """设置日志"""
+        # 检查是否已经设置过日志
+        root_logger = logging.getLogger()
+        if root_logger.handlers:
+            return  # 如果已经有处理器，直接返回
+        
         # 创建日志目录
         log_dir = self.config.get('log_dir', 'logs')
         os.makedirs(log_dir, exist_ok=True)
         
         # 设置根日志记录器
-        root_logger = logging.getLogger()
         root_logger.setLevel(self.config.get('log_level', 'INFO'))
         
         # 创建格式化器
@@ -257,6 +261,13 @@ def get_log_manager() -> LogManager:
             'log_dir': 'logs',
             'log_level': 'INFO'
         }
+        _log_manager = LogManager(config)
+    return _log_manager
+
+def get_log_manager_with_config(config: Dict[str, Any]) -> LogManager:
+    """使用指定配置获取日志管理器实例"""
+    global _log_manager
+    if _log_manager is None:
         _log_manager = LogManager(config)
     return _log_manager
 
