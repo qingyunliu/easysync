@@ -335,7 +335,7 @@ def agent_send_alert(node_id):
             metric_name=data.get('metric', 'unknown'),
             current_value=data.get('value', 0),
             threshold_value=data.get('threshold', 0),
-            starts_at=datetime.datetime.fromisoformat(data.get('timestamp', datetime.datetime.utcnow().isoformat())),
+            starts_at=datetime.datetime.fromisoformat(data.get('timestamp', datetime.datetime.utcnow().isoformat()).replace('Z', '+00:00')),
             status='firing',
             labels={
                 'node_id': node_id,

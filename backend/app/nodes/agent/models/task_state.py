@@ -112,7 +112,7 @@ class TaskState:
                     state_file = os.path.join(self.state_dir, filename)
                     state = self.load_state(filename[:-5])
                     if state:
-                        updated_at = datetime.fromisoformat(state['updated_at'])
+                        updated_at = datetime.fromisoformat(state['updated_at'].replace('Z', '+00:00'))
                         age_days = (now - updated_at).days
                         if age_days > max_age_days:
                             os.remove(state_file)

@@ -73,9 +73,9 @@ def get_monitor_history(resource_id):
 
         # 时间范围过滤
         if start_time:
-            query = query.filter(MonitorData.timestamp >= datetime.fromisoformat(start_time))
+            query = query.filter(MonitorData.timestamp >= datetime.fromisoformat(start_time.replace('Z', '+00:00')))
         if end_time:
-            query = query.filter(MonitorData.timestamp <= datetime.fromisoformat(end_time))
+            query = query.filter(MonitorData.timestamp <= datetime.fromisoformat(end_time.replace('Z', '+00:00')))
         
         # 按时间间隔聚合
         if interval == '1m':
@@ -264,9 +264,9 @@ def get_system_metrics_history():
         
         # 时间范围过滤
         if start_time:
-            query = query.filter(MonitorData.timestamp >= datetime.fromisoformat(start_time))
+            query = query.filter(MonitorData.timestamp >= datetime.fromisoformat(start_time.replace('Z', '+00:00')))
         if end_time:
-            query = query.filter(MonitorData.timestamp <= datetime.fromisoformat(end_time))
+            query = query.filter(MonitorData.timestamp <= datetime.fromisoformat(end_time.replace('Z', '+00:00')))
         
         # 按时间排序并限制数量
         query = query.order_by(MonitorData.timestamp.desc()).limit(limit)
