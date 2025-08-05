@@ -354,230 +354,19 @@
       </div>
     </div>
     
-    <!-- 创建/编辑任务对话框 -->
+    <!-- 任务创建向导对话框 -->
     <el-dialog
-      :title="dialogType === 'create' ? '创建任务' : '编辑任务'"
-      v-model="taskDialogVisible"
-      width="700px"
-      :before-close="handleDialogClose"
+      title="创建任务"
+      v-model="taskWizardVisible"
+      width="90vw"
+      :before-close="handleWizardClose"
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
     >
-      <el-form
-        ref="taskFormRef"
-        :model="taskForm"
-        :rules="taskRules"
-        label-width="120px"
-        size="default"
-      >
-        <el-row :gutter="20">
-          <el-col :span="12">
-        <el-form-item label="任务名称" prop="name">
-              <el-input v-model="taskForm.name" placeholder="请输入任务名称" />
-        </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="任务类型" prop="type">
-              <el-select v-model="taskForm.type" placeholder="选择任务类型" style="width: 100%">
-                <el-option label="文件同步" value="sync" />
-                <el-option label="文件复制" value="copy" />
-                <el-option label="挂载检测" value="mount-check" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-row :gutter="20">
-          <el-col :span="12">
-            <el-form-item label="优先级" prop="priority">
-              <el-select v-model="taskForm.priority" placeholder="选择优先级" style="width: 100%">
-                <el-option label="低" :value="1" />
-                <el-option label="普通" :value="2" />
-                <el-option label="高" :value="3" />
-                <el-option label="紧急" :value="4" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item label="执行节点" prop="node_id">
-              <el-select v-model="taskForm.node_id" placeholder="选择执行节点（可选）" style="width: 100%" clearable>
-                <el-option
-                  v-for="node in nodes"
-                  :key="node.id"
-                  :label="node.name"
-                  :value="node.id"
-                />
-              </el-select>
-            </el-form-item>
-          </el-col>
-        </el-row>
-
-        <el-form-item label="任务描述" prop="description">
-          <el-input v-model="taskForm.description" type="textarea" :rows="2" placeholder="请输入任务描述" />
-        </el-form-item>
-
-        <!-- 源端配置 -->
-        <el-form-item label="源端类型" prop="source_type">
-          <el-radio-group v-model="taskForm.source_type" @change="handleSourceTypeChange">
-            <el-radio-button label="client">客户端(Client)</el-radio-button>
-            <el-radio-button label="storage">存储系统</el-radio-button>
-          </el-radio-group>
-        </el-form-item>
-
-        <!-- 源端为客户端时的配置 -->
-        <el-form-item v-if="taskForm.source_type === 'client'" label="源端客户端" prop="source_client_id">
-          <el-select v-model="taskForm.source_client_id" placeholder="选择源端客户端" style="width: 100%">
-            <el-option
-              v-for="client in clients"
-              :key="client.id"
-              :label="`${client.name} (${client.ip_address})`"
-              :value="client.id"
-            >
-              <div>
-                <span>{{ client.name }}</span>
-                <span style="color: #8492a6; font-size: 12px; margin-left: 10px">{{ client.ip_address }}</span>
-                <el-tag v-if="client.status === 'online'" type="success" size="small" style="margin-left: 10px">在线</el-tag>
-                <el-tag v-else type="danger" size="small" style="margin-left: 10px">离线</el-tag>
-              </div>
-            </el-option>
-          </el-select>
-        </el-form-item>
-
-        <!-- 源端为存储时的配置 -->
-        <el-form-item v-if="taskForm.source_type === 'storage'" label="源端存储" prop="source_storage_id">
-          <el-select v-model="taskForm.source_storage_id" placeholder="选择源端存储" style="width: 100%">
-            <el-option
-              v-for="storage in storages"
-              :key="storage.id"
-              :label="`${storage.name} (${storage.type})`"
-              :value="storage.id"
-            >
-              <div>
-                <span>{{ storage.name }}</span>
-                <el-tag :type="getStorageTypeColor(storage.type)" size="small" style="margin-left: 10px">
-                  {{ getStorageTypeText(storage.type) }}
-                </el-tag>
-                <span style="color: #8492a6; font-size: 12px; margin-left: 10px">{{ storage.config?.host || storage.config?.bucket || '本地' }}</span>
-              </div>
-            </el-option>
-          </el-select>
-        </el-form-item>
-
-        <!-- 源端路径配置 -->
-        <el-form-item :label="getSourcePathLabel()" prop="source_path">
-          <el-input 
-            v-model="taskForm.source_path" 
-            :placeholder="getSourcePathPlaceholder()"
-          />
-          <div v-if="isS3Storage(getSourceStorage())" style="margin-top: 5px; font-size: 12px; color: #909399">
-            <el-icon><InfoFilled /></el-icon>
-            S3对象存储路径格式：bucket/path/to/object（无需挂载点）
-          </div>
-        </el-form-item>
-
-        <!-- 目标端配置 -->
-        <el-form-item label="目标端存储" prop="target_storage_id">
-          <el-select v-model="taskForm.target_storage_id" placeholder="选择目标端存储" style="width: 100%">
-            <el-option
-              v-for="storage in storages"
-              :key="storage.id"
-              :label="`${storage.name} (${storage.type})`"
-              :value="storage.id"
-            >
-              <div>
-                <span>{{ storage.name }}</span>
-                <el-tag :type="getStorageTypeColor(storage.type)" size="small" style="margin-left: 10px">
-                  {{ getStorageTypeText(storage.type) }}
-                </el-tag>
-                <span style="color: #8492a6; font-size: 12px; margin-left: 10px">{{ storage.config?.host || storage.config?.bucket || '本地' }}</span>
-              </div>
-            </el-option>
-          </el-select>
-        </el-form-item>
-
-        <!-- 目标端路径配置 -->
-        <el-form-item label="目标端存储路径" prop="target_path">
-          <el-input 
-            v-model="taskForm.target_path" 
-            :placeholder="getTargetPathPlaceholder()"
-          />
-          <div v-if="isS3Storage(getTargetStorage())" style="margin-top: 5px; font-size: 12px; color: #909399">
-            <el-icon><InfoFilled /></el-icon>
-            S3对象存储路径格式：bucket/path/to/object（无需挂载点）
-          </div>
-        </el-form-item>
-
-        <!-- 节点分配 (仅当源端为存储时显示) -->
-        <el-form-item v-if="taskForm.source_type === 'storage'" label="执行节点" prop="node_id">
-          <el-select v-model="taskForm.node_id" placeholder="选择执行节点" style="width: 100%">
-            <el-option label="自动分配" value="" />
-            <el-option
-              v-for="node in onlineNodes"
-              :key="node.id"
-              :label="`${node.name} (${node.ipaddress})`"
-              :value="node.id"
-            >
-              <div>
-                <span>{{ node.name }}</span>
-                <span style="color: #8492a6; font-size: 12px; margin-left: 10px">{{ node.ipaddress }}</span>
-                <el-tag type="success" size="small" style="margin-left: 10px">在线</el-tag>
-                <span style="color: #8492a6; font-size: 12px; margin-left: 10px">负载: {{ node.current_tasks || 0 }}</span>
-              </div>
-            </el-option>
-          </el-select>
-          <div style="margin-top: 5px; font-size: 12px; color: #909399">
-            <el-icon><InfoFilled /></el-icon>
-            {{ taskForm.source_type === 'storage' ? '节点将负责挂载源存储和目标存储，并执行同步任务' : '如不选择将自动分配负载最低的节点' }}
-          </div>
-        </el-form-item>
-
-        <el-form-item label="同步选项">
-          <el-card class="config-card">
-            <el-row :gutter="20">
-              <el-col :span="8">
-                <el-checkbox v-model="taskForm.options.delete">删除目标多余文件</el-checkbox>
-              </el-col>
-              <el-col :span="8">
-                <el-checkbox v-model="taskForm.options.compress">启用压缩传输</el-checkbox>
-              </el-col>
-              <el-col :span="8">
-                <el-checkbox v-model="taskForm.options.checksum">校验文件完整性</el-checkbox>
-              </el-col>
-            </el-row>
-            <el-row :gutter="20" style="margin-top: 10px">
-              <el-col :span="12">
-                <el-form-item label="带宽限制(MB/s)" style="margin-bottom: 0">
-                  <el-input-number
-                    v-model="taskForm.options.bandwidth_limit"
-                    :min="0"
-                    :max="1000"
-                    placeholder="0表示无限制"
-                    style="width: 100%"
-                  />
-        </el-form-item>
-              </el-col>
-              <el-col :span="12">
-                <el-form-item label="并发连接数" style="margin-bottom: 0">
-                  <el-input-number
-                    v-model="taskForm.options.max_connections"
-                    :min="1"
-                    :max="10"
-                    placeholder="默认为1"
-                    style="width: 100%"
-                  />
-                </el-form-item>
-              </el-col>
-            </el-row>
-          </el-card>
-        </el-form-item>
-      </el-form>
-
-      <template #footer>
-        <div class="dialog-footer">
-        <el-button @click="taskDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmitTask" :loading="submitting">
-            {{ dialogType === 'create' ? '创建' : '更新' }}
-          </el-button>
-        </div>
-      </template>
+      <TaskWizard 
+        v-model:visible="taskWizardVisible"
+        @created="handleTaskCreated"
+      />
     </el-dialog>
 
     <!-- 任务详情对话框 -->
@@ -598,102 +387,10 @@
         </div>
       </div>
       <div class="task-detail-content">
-        <el-card shadow="never" header="基础信息" class="mb-16">
-          <el-descriptions :column="3" border>
-            <el-descriptions-item label="任务名称">{{ selectedTask.name }}</el-descriptions-item>
-            <el-descriptions-item label="类型">
-              <el-tag :type="getTaskTypeColor(selectedTask.type)">
-                {{ getTaskTypeText(selectedTask.type) }}
-              </el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="状态">
-              <el-tag :type="getStatusType(selectedTask.status)">
-                {{ getStatusText(selectedTask.status) }}
-              </el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="进度">
-              <el-progress :percentage="selectedTask.progress || 0" :status="getProgressStatus(selectedTask.status)" :stroke-width="6" />
-            </el-descriptions-item>
-            <el-descriptions-item label="优先级">
-              <el-tag :type="getPriorityType(selectedTask.priority)">
-                {{ getPriorityText(selectedTask.priority) }}
-              </el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="执行节点">
-              {{ selectedTask.node_id ? getNodeName(selectedTask.node_id) : '未分配' }}
-            </el-descriptions-item>
-            <el-descriptions-item label="创建时间">{{ formatDateTime(selectedTask.created_at) }}</el-descriptions-item>
-            <el-descriptions-item label="开始时间">{{ selectedTask.started_at ? formatDateTime(selectedTask.started_at) : '未开始' }}</el-descriptions-item>
-            <el-descriptions-item label="完成时间">{{ selectedTask.completed_at ? formatDateTime(selectedTask.completed_at) : '未完成' }}</el-descriptions-item>
-          </el-descriptions>
-        </el-card>
-        <el-card shadow="never" header="源端信息" class="mb-16">
-          <template v-if="selectedTask.source_type === 'storage' && selectedTask.source_storage_config">
-            <el-descriptions :column="1" border>
-              <el-descriptions-item label="名称">{{ selectedTask.source_storage_config.name }}</el-descriptions-item>
-              <el-descriptions-item label="类型">{{ getStorageTypeText(selectedTask.source_storage_config.type) }}</el-descriptions-item>
-              <el-descriptions-item label="状态">
-                <el-tag :type="getStatusType(selectedTask.source_storage_config.status)">
-                  {{ getStatusText(selectedTask.source_storage_config.status) }}
-                </el-tag>
-              </el-descriptions-item>
-              <el-descriptions-item label="配置">
-                <pre v-if="selectedTask.source_storage_config.config">{{ JSON.stringify(selectedTask.source_storage_config.config, null, 2) }}</pre>
-                <span v-else>无</span>
-              </el-descriptions-item>
-            </el-descriptions>
-          </template>
-          <template v-else-if="selectedTask.source_type === 'client' && selectedTask.source_client_config">
-            <el-descriptions :column="1" border>
-              <el-descriptions-item label="名称">{{ selectedTask.source_client_config.name }}</el-descriptions-item>
-              <el-descriptions-item label="主机名">{{ selectedTask.source_client_config.hostname }}</el-descriptions-item>
-              <el-descriptions-item label="IP">{{ selectedTask.source_client_config.ip_address }}</el-descriptions-item>
-              <el-descriptions-item label="端口">{{ selectedTask.source_client_config.port }}</el-descriptions-item>
-              <el-descriptions-item label="用户名">{{ selectedTask.source_client_config.username }}</el-descriptions-item>
-              <el-descriptions-item label="认证方式">{{ selectedTask.source_client_config.auth_type }}</el-descriptions-item>
-              <el-descriptions-item label="状态">
-                <el-tag :type="getStatusType(selectedTask.source_client_config.status)">
-                  {{ getStatusText(selectedTask.source_client_config.status) }}
-                </el-tag>
-              </el-descriptions-item>
-            </el-descriptions>
-          </template>
-          <template v-else>
-            <div>无</div>
-          </template>
-        </el-card>
-        <el-card shadow="never" header="目标存储" class="mb-16">
-          <el-descriptions v-if="selectedTask.target_storage_config" :column="1" border>
-            <el-descriptions-item label="名称">{{ selectedTask.target_storage_config.name }}</el-descriptions-item>
-            <el-descriptions-item label="类型">{{ getStorageTypeText(selectedTask.target_storage_config.type) }}</el-descriptions-item>
-            <el-descriptions-item label="状态">
-              <el-tag :type="getStatusType(selectedTask.target_storage_config.status)">
-                {{ getStatusText(selectedTask.target_storage_config.status) }}
-              </el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="配置">
-              <pre v-if="selectedTask.target_storage_config.config">{{ JSON.stringify(selectedTask.target_storage_config.config, null, 2) }}</pre>
-              <span v-else>无</span>
-            </el-descriptions-item>
-          </el-descriptions>
-          <div v-else>无</div>
-        </el-card>
-        <el-card shadow="never" header="同步选项">
-          <el-descriptions v-if="selectedTask.options" :column="3" border>
-            <el-descriptions-item label="删除目标多余文件">
-              <el-tag :type="selectedTask.options.delete ? 'success' : 'info'">{{ selectedTask.options.delete ? '是' : '否' }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="启用压缩传输">
-              <el-tag :type="selectedTask.options.compress ? 'success' : 'info'">{{ selectedTask.options.compress ? '是' : '否' }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="校验文件完整性">
-              <el-tag :type="selectedTask.options.checksum ? 'success' : 'info'">{{ selectedTask.options.checksum ? '是' : '否' }}</el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item label="带宽限制(MB/s)">{{ selectedTask.options.bandwidth_limit || 0 }}</el-descriptions-item>
-            <el-descriptions-item label="并发连接数">{{ selectedTask.options.max_connections || 1 }}</el-descriptions-item>
-          </el-descriptions>
-          <div v-else>无</div>
-        </el-card>
+        <TaskDetail 
+          :task="selectedTask"
+          :nodes="nodes"
+        />
       </div>
     </el-drawer>
     
@@ -766,6 +463,8 @@ import {
   Edit, Document, Connection, CopyDocument, Delete,
   CircleCheck, Clock, Loading, Warning, CircleClose
 } from '@element-plus/icons-vue'
+import TaskWizard from '@/components/task-wizard/TaskWizard.vue'
+import TaskDetail from '@/components/TaskDetail.vue'
 import axios from 'axios'
 
 // 响应式数据
@@ -799,10 +498,9 @@ const refreshCountdown = ref(30)
 const totalTasks = ref(0)
 
 // 对话框状态
-const taskDialogVisible = ref(false)
+const taskWizardVisible = ref(false)
 const detailDialogVisible = ref(false)
 const logsDialogVisible = ref(false)
-const dialogType = ref('create')
 const isFullscreen = ref(false)
 
 // 日志
@@ -811,62 +509,7 @@ const logsLoading = ref(false)
 const logLevel = ref('all')
 const currentTaskId = ref(null)
 
-// 表单引用
-const taskFormRef = ref(null)
 
-// 任务表单
-const taskForm = ref({
-  name: '',
-  description: '',
-  type: 'sync',
-  priority: 2,
-  source_type: 'client', // client 或 storage
-  source_client_id: '', // 源端客户端ID
-  source_storage_id: '', // 源端存储ID
-  source_path: '', // 源端路径
-  target_storage_id: '', // 目标存储ID
-  target_path: '', // 目标路径
-  node_id: '', // 执行节点ID (仅当源端为存储时)
-  options: {
-    delete: false,
-    compress: false,
-    checksum: true,
-    bandwidth_limit: 0,
-    max_connections: 1
-  }
-})
-
-// 表单验证规则
-const taskRules = {
-  name: [
-    { required: true, message: '请输入任务名称', trigger: 'blur' },
-    { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
-  ],
-  type: [
-    { required: true, message: '请选择任务类型', trigger: 'change' }
-  ],
-  priority: [
-    { required: true, message: '请选择优先级', trigger: 'change' }
-  ],
-  source_type: [
-    { required: true, message: '请选择源端类型', trigger: 'change' }
-  ],
-  source_client_id: [
-    { required: true, message: '请选择源端客户端', trigger: 'change' }
-  ],
-  source_storage_id: [
-    { required: true, message: '请选择源端存储', trigger: 'change' }
-  ],
-  source_path: [
-    { required: true, message: '请输入源端路径', trigger: 'blur' }
-  ],
-  target_storage_id: [
-    { required: true, message: '请选择目标存储', trigger: 'change' }
-  ],
-  target_path: [
-    { required: true, message: '请输入目标路径', trigger: 'blur' }
-  ]
-}
 
 // 计算属性
 const filteredTasks = computed(() => {
@@ -1037,9 +680,8 @@ const handleCurrentChange = (page) => {
 }
 
 const showCreateDialog = () => {
-  dialogType.value = 'create'
-  resetTaskForm()
-  taskDialogVisible.value = true
+  console.log('打开任务创建向导')
+  taskWizardVisible.value = true
 }
 
 const handleViewLogs = (task) => {
@@ -1048,92 +690,16 @@ const handleViewLogs = (task) => {
   fetchTaskLogs()
 }
 
-const handleDialogClose = () => {
-  taskDialogVisible.value = false
-  resetTaskForm()
+const handleWizardClose = () => {
+  taskWizardVisible.value = false
 }
 
-const handleSourceTypeChange = (sourceType) => {
-  // 清空相关字段
-  taskForm.value.source_client_id = ''
-  taskForm.value.source_storage_id = ''
-  taskForm.value.node_id = ''
-  
-  // 根据源端类型调整验证规则
-  if (sourceType === 'client') {
-    // 客户端模式不需要选择节点
-    taskForm.value.node_id = ''
-  }
+const handleTaskCreated = (task) => {
+  ElMessage.success('任务创建成功')
+  fetchTasks()
 }
 
-const resetTaskForm = () => {
-  taskForm.value = {
-    name: '',
-    description: '',
-    type: 'sync',
-    priority: 2,
-    source_type: 'client',
-    source_client_id: '',
-    source_storage_id: '',
-    source_path: '',
-    target_storage_id: '',
-    target_path: '',
-    node_id: '',
-    options: {
-      delete: false,
-      compress: false,
-      checksum: true,
-      bandwidth_limit: 0,
-      max_connections: 1
-    }
-  }
-}
 
-const handleSubmitTask = async () => {
-  if (!taskFormRef.value) return
-  
-  try {
-    await taskFormRef.value.validate()
-    submitting.value = true
-    
-    const formData = { ...taskForm.value }
-    
-    // 根据源端类型清理不需要的字段
-    if (formData.source_type === 'client') {
-      delete formData.source_storage_id
-    } else if (formData.source_type === 'storage') {
-      delete formData.source_client_id
-    }
-    
-    // 清理空字符串，避免外键约束错误
-    Object.keys(formData).forEach(key => {
-      if (formData[key] === '') {
-        if (key.endsWith('_id')) {
-          delete formData[key] // 删除空的ID字段
-        }
-      }
-    })
-    
-    if (dialogType.value === 'create') {
-      await axios.post('/api/tasks', formData)
-      ElMessage.success('创建任务成功')
-    } else {
-      await axios.put(`/api/tasks/${formData.id}`, formData)
-      ElMessage.success('更新任务成功')
-    }
-    
-    taskDialogVisible.value = false
-    fetchTasks()
-  } catch (error) {
-    if (error.response?.data?.message) {
-      ElMessage.error(error.response.data.message)
-    } else {
-      ElMessage.error('操作失败')
-    }
-  } finally {
-    submitting.value = false
-  }
-}
 
 // 新增任务管理方法
 const handleStartTask = async (task) => {
@@ -1291,22 +857,8 @@ const handleTestMount = async (task) => {
 }
 
 const handleDuplicateTask = (task) => {
-  // 复制任务逻辑
-  const duplicatedTask = {
-    ...task,
-    id: undefined,
-    name: `${task.name} - 副本`,
-    status: 'pending',
-    created_at: undefined,
-    updated_at: undefined,
-    started_at: undefined,
-    completed_at: undefined
-  }
-  
-  // 设置表单数据并打开创建对话框
-  taskForm.value = duplicatedTask
-  dialogType.value = 'create'
-  taskDialogVisible.value = true
+  // 复制任务逻辑 - 暂时禁用，等待新的向导支持
+  ElMessage.info('复制任务功能将在新版本中支持')
 }
 
 // 辅助方法
@@ -1609,49 +1161,7 @@ const isS3Storage = (storage) => {
   return ['s3', 'obs'].includes(storage.type)
 }
 
-const getSourceStorage = () => {
-  if (taskForm.value.source_type === 'storage' && taskForm.value.source_storage_id) {
-    return storages.value.find(s => s.id === taskForm.value.source_storage_id)
-  }
-  return null
-}
 
-const getTargetStorage = () => {
-  if (taskForm.value.target_storage_id) {
-    return storages.value.find(s => s.id === taskForm.value.target_storage_id)
-  }
-  return null
-}
-
-const getSourcePathLabel = () => {
-  if (taskForm.value.source_type === 'client') {
-    return '源端路径'
-  }
-  const storage = getSourceStorage()
-  if (isS3Storage(storage)) {
-    return '源端对象路径'
-  }
-  return '源端存储路径'
-}
-
-const getSourcePathPlaceholder = () => {
-  if (taskForm.value.source_type === 'client') {
-    return '请输入客户端本地路径，如: /home/user/data'
-  }
-  const storage = getSourceStorage()
-  if (isS3Storage(storage)) {
-    return '请输入对象路径，如: mybucket/data/source'
-  }
-  return '请输入存储路径，如: /data/source'
-}
-
-const getTargetPathPlaceholder = () => {
-  const storage = getTargetStorage()
-  if (isS3Storage(storage)) {
-    return '请输入对象路径，如: backup-bucket/data/target'
-  }
-  return '请输入目标存储路径，如: /backup/data'
-}
 
 const formatDateTime = (datetime) => {
   if (!datetime) return '-'
