@@ -231,14 +231,10 @@ const obsStorages = computed(() => {
 // 方法
 const fetchStorages = async () => {
   try {
-    console.log('开始获取存储列表...')
     const response = await axios.get('/api/storages')
-    console.log('存储列表响应:', response.data)
     if (response.data.status === 'success') {
       storages.value = response.data.storages || []
-      console.log('存储列表已更新:', storages.value)
     } else {
-      console.error('获取存储列表失败:', response.data.message)
       ElMessage.error('获取存储列表失败')
     }
   } catch (error) {
@@ -543,25 +539,17 @@ const refreshTree = async () => {
 }
 
 const expandAll = async () => {
-  console.log('expandAll 方法被调用')
   const treeRef = selectedStorage.value?.type === 'nas' ? nasTreeRef.value : obsTreeRef.value
-  console.log('treeRef:', treeRef)
-  console.log('selectedStorage:', selectedStorage.value)
   
   if (treeRef) {
-    console.log('treeRef.root:', treeRef.root)
-    console.log('treeRef.root.childNodes:', treeRef.root?.childNodes)
     
     // 获取所有节点并展开，同时触发懒加载
     const expandAllNodes = async (nodes) => {
-      console.log('展开节点数量:', nodes.length)
       for (const node of nodes) {
-        console.log('处理节点:', node)
         
         // 如果节点是目录且未加载过子节点，先触发懒加载
         if (node.data && (node.data.type === 'directory' || node.data.type === 'bucket')) {
           if (!node.childNodes || node.childNodes.length === 0) {
-            console.log('触发懒加载获取子节点:', node.data)
             try {
               // 触发懒加载
               await new Promise((resolve) => {
@@ -580,7 +568,6 @@ const expandAll = async () => {
         // 展开当前节点
         if (node.expanded !== undefined) {
           node.expanded = true
-          console.log('设置节点展开状态为 true')
         }
         
         // 递归展开子节点
@@ -594,31 +581,23 @@ const expandAll = async () => {
     if (treeRef.root && treeRef.root.childNodes) {
       await expandAllNodes(treeRef.root.childNodes)
     } else {
-      console.log('没有找到根节点或子节点')
+      ElMessage.error('没有找到根节点')
     }
   } else {
-    console.log('treeRef 不存在')
+    ElMessage.error('树不存在')
   }
 }
 
 const collapseAll = () => {
-  console.log('collapseAll 方法被调用')
   const treeRef = selectedStorage.value?.type === 'nas' ? nasTreeRef.value : obsTreeRef.value
-  console.log('treeRef:', treeRef)
   
   if (treeRef) {
-    console.log('treeRef.root:', treeRef.root)
-    console.log('treeRef.root.childNodes:', treeRef.root?.childNodes)
-    
     // 获取所有节点并收起
     const collapseAllNodes = (nodes) => {
-      console.log('收起节点数量:', nodes.length)
       nodes.forEach(node => {
-        console.log('处理节点:', node)
         // 收起当前节点
         if (node.expanded !== undefined) {
           node.expanded = false
-          console.log('设置节点展开状态为 false')
         }
         // 递归收起子节点
         if (node.childNodes && node.childNodes.length > 0) {
@@ -631,10 +610,10 @@ const collapseAll = () => {
     if (treeRef.root && treeRef.root.childNodes) {
       collapseAllNodes(treeRef.root.childNodes)
     } else {
-      console.log('没有找到根节点或子节点')
+      ElMessage.error('没有找到根节点')
     }
   } else {
-    console.log('treeRef 不存在')
+    ElMessage.error('树不存在')
   }
 }
 

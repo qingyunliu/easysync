@@ -241,7 +241,6 @@ const handleParametersChange = (parameters) => {
 
 const handleConfirm = () => {
   // 确认配置，可以在这里添加额外的验证
-  console.log('配置已确认:', wizardData.value)
 }
 
 const createTask = async () => {

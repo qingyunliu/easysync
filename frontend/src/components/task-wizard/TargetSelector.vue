@@ -442,18 +442,13 @@ const overrideWarningText = computed(() => {
 // 方法
 const fetchStorages = async () => {
   try {
-    console.log('TargetSelector: 开始获取存储列表...')
     const response = await axios.get('/api/storages')
-    console.log('TargetSelector: 存储列表响应:', response.data)
     if (response.data.status === 'success') {
       storages.value = response.data.storages || []
-      console.log('TargetSelector: 存储列表已更新:', storages.value)
     } else {
-      console.error('TargetSelector: 获取存储列表失败:', response.data.message)
       ElMessage.error('获取存储列表失败')
     }
   } catch (error) {
-    console.error('TargetSelector: 获取存储列表错误:', error)
     ElMessage.error('获取存储列表失败')
   }
 }
@@ -555,22 +550,18 @@ const refreshNasTree = async () => {
 
 const expandAllObs = () => {
   // 实现展开全部逻辑
-  console.log('展开全部 OBS 节点')
 }
 
 const collapseAllObs = () => {
   // 实现收起全部逻辑
-  console.log('收起全部 OBS 节点')
 }
 
 const expandAllNas = () => {
   // 实现展开全部逻辑
-  console.log('展开全部 NAS 节点')
 }
 
 const collapseAllNas = () => {
   // 实现收起全部逻辑
-  console.log('收起全部 NAS 节点')
 }
 
 const loadObsRoot = async (storageId, bucketName) => {
