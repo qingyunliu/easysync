@@ -2,6 +2,11 @@
   <div class="target-selector">
     <!-- 存储选择 -->
     <div class="storage-selection">
+      <div class="selection-header">
+        <h3>选择目标端存储</h3>
+        <p class="selection-description">请选择要同步到的目标存储设备</p>
+      </div>
+      
       <el-form :model="form" label-width="120px">
         <el-form-item label="目标端存储" required>
           <el-select 
@@ -68,239 +73,282 @@
     </div>
 
     <!-- 目标路径配置 -->
-    <div v-if="selectedStorage" class="target-path-config">
-      <div class="config-header">
-        <h4>配置目标位置</h4>
-        <p class="config-description">
-          {{ getConfigDescription() }}
-        </p>
-      </div>
-
+    <div v-if="selectedStorage" class="target-path-section">
       <!-- OBS 存储配置 -->
       <template v-if="selectedStorage.type === 's3'">
         <div class="obs-config">
-          <el-form :model="obsForm" label-width="120px">
-            <el-form-item label="操作模式" required>
-              <el-radio-group v-model="obsForm.mode" @change="handleObsModeChange">
-                <el-radio label="browse">浏览现有存储桶</el-radio>
-                <el-radio label="create">创建新存储桶</el-radio>
-              </el-radio-group>
-            </el-form-item>
+          <div class="config-header">
+            <h4>配置目标位置</h4>
+            <p class="config-description">您可以选择浏览现有存储桶或创建新的存储桶来作为同步目标</p>
+          </div>
 
-            <!-- 创建新存储桶模式 -->
-            <template v-if="obsForm.mode === 'create'">
-              <el-form-item label="存储桶名称" required>
-                <el-input 
-                  v-model="obsForm.bucketName" 
-                  placeholder="请输入存储桶名称"
-                  @input="updateTargetPath"
-                />
-              </el-form-item>
-              <el-form-item label="目标路径">
-                <el-input 
-                  v-model="obsForm.targetPath" 
-                  placeholder="可选：指定存储桶内的路径，如 folder1/subfolder"
-                  @input="updateTargetPath"
-                />
-              </el-form-item>
-            </template>
-
-            <!-- 浏览现有存储桶模式 -->
-            <template v-else>
-              <el-form-item label="存储桶" required>
-                <el-select 
-                  v-model="obsForm.selectedBucket" 
-                  placeholder="请选择存储桶"
-                  @change="handleBucketChange"
-                  style="width: 100%"
-                >
-                  <el-option
-                    v-for="bucket in buckets"
-                    :key="bucket.name"
-                    :label="bucket.name"
-                    :value="bucket.name"
-                  >
-                    <div class="bucket-option">
-                      <Icon icon="mdi:bucket" class="bucket-icon" />
-                      <span>{{ bucket.name }}</span>
-                      <el-tag size="small" type="info">
-                        {{ formatDate(bucket.creationDate) }}
-                      </el-tag>
-                    </div>
-                  </el-option>
-                </el-select>
+          <div class="config-content">
+            <el-form :model="obsForm" label-width="120px">
+              <el-form-item label="操作模式" required>
+                <el-radio-group v-model="obsForm.mode" @change="handleObsModeChange">
+                  <el-radio label="browse">浏览现有存储桶</el-radio>
+                  <el-radio label="create">创建新存储桶</el-radio>
+                </el-radio-group>
               </el-form-item>
 
-              <el-form-item label="目标路径">
-                <div class="path-input-group">
-                  <el-input
-                    v-model="obsForm.targetPath"
-                    placeholder="请选择或输入目标路径"
+              <!-- 创建新存储桶模式 -->
+              <template v-if="obsForm.mode === 'create'">
+                <el-form-item label="存储桶名称" required>
+                  <el-input 
+                    v-model="obsForm.bucketName" 
+                    placeholder="请输入存储桶名称"
                     @input="updateTargetPath"
-                  >
-                    <template #append>
-                      <el-button @click="toggleObsPathSelector">
-                        <Icon icon="mdi:folder-open" />
-                        浏览
-                      </el-button>
-                    </template>
-                  </el-input>
-                </div>
+                  />
+                </el-form-item>
+                <el-form-item label="目标路径">
+                  <el-input 
+                    v-model="obsForm.targetPath" 
+                    placeholder="可选：指定存储桶内的路径，如 folder1/subfolder"
+                    @input="updateTargetPath"
+                  />
+                </el-form-item>
+              </template>
 
-                <!-- OBS 路径选择器 -->
-                <div v-if="showObsPathSelector && obsForm.selectedBucket" class="obs-path-selector">
-                  <div class="breadcrumb">
-                    <el-breadcrumb separator="/">
-                      <el-breadcrumb-item @click="navigateToObsPath('')" class="breadcrumb-link">
-                        {{ obsForm.selectedBucket }}
-                      </el-breadcrumb-item>
-                      <el-breadcrumb-item 
-                        v-for="(segment, index) in obsPathSegments" 
-                        :key="index"
-                        @click="navigateToObsPath(obsPathSegments.slice(0, index + 1).join('/'))"
-                        class="breadcrumb-link"
-                      >
-                        {{ segment }}
-                      </el-breadcrumb-item>
-                    </el-breadcrumb>
-                  </div>
-
-                  <el-table
-                    :data="obsCurrentItems"
-                    v-loading="obsLoading"
-                    @row-click="handleObsItemClick"
-                    class="directory-table"
-                    highlight-current-row
+              <!-- 浏览现有存储桶模式 -->
+              <template v-else>
+                <el-form-item label="存储桶" required>
+                  <el-select 
+                    v-model="obsForm.selectedBucket" 
+                    placeholder="请选择存储桶"
+                    @change="handleBucketChange"
+                    style="width: 100%"
                   >
-                    <el-table-column width="50">
-                      <template #default="{ row }">
-                        <Icon 
-                          :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
-                          :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']"
-                        />
-                      </template>
-                    </el-table-column>
-                    <el-table-column prop="name" label="名称">
-                      <template #default="{ row }">
-                        <span :class="{ 'directory-name': row.type === 'directory' }">
-                          {{ row.name }}
-                        </span>
-                      </template>
-                    </el-table-column>
-                    <el-table-column prop="size" label="大小" width="120">
-                      <template #default="{ row }">
-                        {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column prop="lastModified" label="修改时间" width="180">
-                      <template #default="{ row }">
-                        {{ formatDate(row.lastModified) }}
-                      </template>
-                    </el-table-column>
-                    <el-table-column label="操作" width="120">
-                      <template #default="{ row }">
-                        <el-button 
-                          v-if="row.type === 'directory'"
-                          size="small" 
-                          @click.stop="selectObsDirectory(row)"
-                        >
-                          选择
+                    <el-option
+                      v-for="bucket in buckets"
+                      :key="bucket.name"
+                      :label="bucket.name"
+                      :value="bucket.name"
+                    >
+                      <div class="bucket-option">
+                        <Icon icon="mdi:bucket" class="bucket-icon" />
+                        <span>{{ bucket.name }}</span>
+                        <el-tag size="small" type="info">
+                          {{ formatDate(bucket.creationDate) }}
+                        </el-tag>
+                      </div>
+                    </el-option>
+                  </el-select>
+                </el-form-item>
+
+                <el-form-item label="目标路径">
+                  <div class="path-input-group">
+                    <el-input
+                      v-model="obsForm.targetPath"
+                      placeholder="请选择或输入目标路径"
+                      @input="updateTargetPath"
+                    >
+                      <template #append>
+                        <el-button @click="toggleObsPathSelector">
+                          <Icon icon="mdi:folder-open" />
+                          浏览
                         </el-button>
                       </template>
-                    </el-table-column>
-                  </el-table>
+                    </el-input>
+                  </div>
+                </el-form-item>
+              </template>
+            </el-form>
+
+            <!-- OBS 路径选择器 -->
+            <div v-if="showObsPathSelector && obsForm.selectedBucket" class="obs-path-selector">
+              <div class="path-selector-header">
+                <h5>浏览存储桶内容</h5>
+                <div class="path-actions">
+                  <el-button @click="refreshObsTree" :loading="obsLoading" size="small">
+                    <Icon icon="mdi:refresh" />
+                    刷新
+                  </el-button>
+                  <el-button @click="expandAllObs" size="small">
+                    <Icon icon="mdi:arrow-expand-all" />
+                    展开全部
+                  </el-button>
+                  <el-button @click="collapseAllObs" size="small">
+                    <Icon icon="mdi:arrow-collapse-all" />
+                    收起全部
+                  </el-button>
                 </div>
-              </el-form-item>
-            </template>
-          </el-form>
+              </div>
+
+              <div class="breadcrumb">
+                <el-breadcrumb separator="/">
+                  <el-breadcrumb-item @click="navigateToObsPath('')" class="breadcrumb-link">
+                    {{ obsForm.selectedBucket }}
+                  </el-breadcrumb-item>
+                  <el-breadcrumb-item 
+                    v-for="(segment, index) in obsPathSegments" 
+                    :key="index"
+                    @click="navigateToObsPath(obsPathSegments.slice(0, index + 1).join('/'))"
+                    class="breadcrumb-link"
+                  >
+                    {{ segment }}
+                  </el-breadcrumb-item>
+                </el-breadcrumb>
+              </div>
+
+              <el-table
+                :data="obsCurrentItems"
+                v-loading="obsLoading"
+                @row-click="handleObsItemClick"
+                class="directory-table"
+                highlight-current-row
+              >
+                <el-table-column width="50">
+                  <template #default="{ row }">
+                    <Icon 
+                      :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
+                      :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']"
+                    />
+                  </template>
+                </el-table-column>
+                <el-table-column prop="name" label="名称">
+                  <template #default="{ row }">
+                    <span :class="{ 'directory-name': row.type === 'directory' }">
+                      {{ row.name }}
+                    </span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="size" label="大小" width="120">
+                  <template #default="{ row }">
+                    {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="lastModified" label="修改时间" width="180">
+                  <template #default="{ row }">
+                    {{ formatDate(row.lastModified) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="120">
+                  <template #default="{ row }">
+                    <el-button 
+                      v-if="row.type === 'directory'"
+                      size="small" 
+                      @click.stop="selectObsDirectory(row)"
+                    >
+                      选择
+                    </el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
         </div>
       </template>
 
       <!-- NAS/NFS 存储配置 -->
       <template v-else>
         <div class="nas-config">
-          <el-form :model="nasForm" label-width="120px">
-            <el-form-item label="目标路径" required>
-              <div class="path-input-group">
-                <el-input
-                  v-model="nasForm.targetPath"
-                  placeholder="请选择或输入目标路径"
-                  @input="updateTargetPath"
-                >
-                  <template #append>
-                    <el-button @click="toggleNasPathSelector">
-                      <Icon icon="mdi:folder-open" />
-                      浏览
-                    </el-button>
-                  </template>
-                </el-input>
-              </div>
+          <div class="config-header">
+            <h4>配置目标位置</h4>
+            <p class="config-description">请选择目标目录路径，您可以通过浏览功能查看目录结构</p>
+          </div>
 
-              <!-- NAS 路径选择器 -->
-              <div v-if="showNasPathSelector" class="nas-path-selector">
-                <div class="breadcrumb">
-                  <el-breadcrumb separator="/">
-                    <el-breadcrumb-item @click="navigateToNasPath('')" class="breadcrumb-link">
-                      根目录
-                    </el-breadcrumb-item>
-                    <el-breadcrumb-item 
-                      v-for="(segment, index) in nasPathSegments" 
-                      :key="index"
-                      @click="navigateToNasPath(nasPathSegments.slice(0, index + 1).join('/'))"
-                      class="breadcrumb-link"
-                    >
-                      {{ segment }}
-                    </el-breadcrumb-item>
-                  </el-breadcrumb>
-                </div>
-
-                <el-table
-                  :data="nasCurrentItems"
-                  v-loading="nasLoading"
-                  @row-click="handleNasItemClick"
-                  class="directory-table"
-                  highlight-current-row
-                >
-                  <el-table-column width="50">
-                    <template #default="{ row }">
-                      <Icon 
-                        :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
-                        :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']"
-                      />
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="name" label="名称">
-                    <template #default="{ row }">
-                      <span :class="{ 'directory-name': row.type === 'directory' }">
-                        {{ row.name }}
-                      </span>
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="size" label="大小" width="120">
-                    <template #default="{ row }">
-                      {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column prop="modified_time" label="修改时间" width="180">
-                    <template #default="{ row }">
-                      {{ formatDate(row.modified_time) }}
-                    </template>
-                  </el-table-column>
-                  <el-table-column label="操作" width="120">
-                    <template #default="{ row }">
-                      <el-button 
-                        v-if="row.type === 'directory'"
-                        size="small" 
-                        @click.stop="selectNasDirectory(row)"
-                      >
-                        选择
+          <div class="config-content">
+            <el-form :model="nasForm" label-width="120px">
+              <el-form-item label="目标路径" required>
+                <div class="path-input-group">
+                  <el-input
+                    v-model="nasForm.targetPath"
+                    placeholder="请选择或输入目标路径"
+                    @input="updateTargetPath"
+                  >
+                    <template #append>
+                      <el-button @click="toggleNasPathSelector">
+                        <Icon icon="mdi:folder-open" />
+                        浏览
                       </el-button>
                     </template>
-                  </el-table-column>
-                </el-table>
+                  </el-input>
+                </div>
+              </el-form-item>
+            </el-form>
+
+            <!-- NAS 路径选择器 -->
+            <div v-if="showNasPathSelector" class="nas-path-selector">
+              <div class="path-selector-header">
+                <h5>浏览目录结构</h5>
+                <div class="path-actions">
+                  <el-button @click="refreshNasTree" :loading="nasLoading" size="small">
+                    <Icon icon="mdi:refresh" />
+                    刷新
+                  </el-button>
+                  <el-button @click="expandAllNas" size="small">
+                    <Icon icon="mdi:arrow-expand-all" />
+                    展开全部
+                  </el-button>
+                  <el-button @click="collapseAllNas" size="small">
+                    <Icon icon="mdi:arrow-collapse-all" />
+                    收起全部
+                  </el-button>
+                </div>
               </div>
-            </el-form-item>
-          </el-form>
+
+              <div class="breadcrumb">
+                <el-breadcrumb separator="/">
+                  <el-breadcrumb-item @click="navigateToNasPath('')" class="breadcrumb-link">
+                    根目录
+                  </el-breadcrumb-item>
+                  <el-breadcrumb-item 
+                    v-for="(segment, index) in nasPathSegments" 
+                    :key="index"
+                    @click="navigateToNasPath(nasPathSegments.slice(0, index + 1).join('/'))"
+                    class="breadcrumb-link"
+                  >
+                    {{ segment }}
+                  </el-breadcrumb-item>
+                </el-breadcrumb>
+              </div>
+
+              <el-table
+                :data="nasCurrentItems"
+                v-loading="nasLoading"
+                @row-click="handleNasItemClick"
+                class="directory-table"
+                highlight-current-row
+              >
+                <el-table-column width="50">
+                  <template #default="{ row }">
+                    <Icon 
+                      :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
+                      :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']"
+                    />
+                  </template>
+                </el-table-column>
+                <el-table-column prop="name" label="名称">
+                  <template #default="{ row }">
+                    <span :class="{ 'directory-name': row.type === 'directory' }">
+                      {{ row.name }}
+                    </span>
+                  </template>
+                </el-table-column>
+                <el-table-column prop="size" label="大小" width="120">
+                  <template #default="{ row }">
+                    {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
+                  </template>
+                </el-table-column>
+                <el-table-column prop="modified_time" label="修改时间" width="180">
+                  <template #default="{ row }">
+                    {{ formatDate(row.modified_time) }}
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="120">
+                  <template #default="{ row }">
+                    <el-button 
+                      v-if="row.type === 'directory'"
+                      size="small" 
+                      @click.stop="selectNasDirectory(row)"
+                    >
+                      选择
+                    </el-button>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
+          </div>
         </div>
       </template>
     </div>
@@ -495,11 +543,42 @@ const toggleNasPathSelector = () => {
   }
 }
 
+const refreshObsTree = async () => {
+  if (obsForm.value.selectedBucket) {
+    await loadObsRoot(selectedStorage.value.id, obsForm.value.selectedBucket)
+  }
+}
+
+const refreshNasTree = async () => {
+  await loadNasRoot()
+}
+
+const expandAllObs = () => {
+  // 实现展开全部逻辑
+  console.log('展开全部 OBS 节点')
+}
+
+const collapseAllObs = () => {
+  // 实现收起全部逻辑
+  console.log('收起全部 OBS 节点')
+}
+
+const expandAllNas = () => {
+  // 实现展开全部逻辑
+  console.log('展开全部 NAS 节点')
+}
+
+const collapseAllNas = () => {
+  // 实现收起全部逻辑
+  console.log('收起全部 NAS 节点')
+}
+
 const loadObsRoot = async (storageId, bucketName) => {
   try {
     obsLoading.value = true
     const response = await axios.get(`/api/storages/${storageId}/objects`, {
       params: {
+        node_id: selectedStorage.value.node_id,
         bucket: bucketName,
         prefix: '',
         page: 1,
@@ -532,6 +611,7 @@ const navigateToObsPath = async (path) => {
     obsLoading.value = true
     const response = await axios.get(`/api/storages/${selectedStorage.value.id}/objects`, {
       params: {
+        node_id: selectedStorage.value.node_id,
         bucket: obsForm.value.selectedBucket,
         prefix: path + '/',
         page: 1,
@@ -692,14 +772,6 @@ const updateModelValue = (targetPath = '') => {
   emit('change', value)
 }
 
-const getConfigDescription = () => {
-  if (selectedStorage.value?.type === 's3') {
-    return '您可以选择浏览现有存储桶或创建新的存储桶来作为同步目标。'
-  } else {
-    return '请选择目标目录路径，您可以通过浏览功能查看目录结构。'
-  }
-}
-
 // 辅助函数
 const formatSize = (bytes) => {
   if (!bytes || bytes === 0) return '0 B'
@@ -756,6 +828,24 @@ onMounted(() => {
   margin-bottom: 30px;
 }
 
+.selection-header {
+  margin-bottom: 20px;
+}
+
+.selection-header h3 {
+  margin: 0 0 8px 0;
+  color: var(--el-text-color-primary);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.selection-description {
+  margin: 0;
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
 .storage-option {
   display: flex;
   align-items: center;
@@ -788,33 +878,41 @@ onMounted(() => {
   margin-bottom: 20px;
 }
 
-.target-path-config {
+.target-path-section {
   border: 1px solid var(--el-border-color);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
+  background: var(--el-bg-color);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .config-header {
-  padding: 16px 20px;
-  background: var(--el-color-primary-light-9);
+  padding: 20px 24px;
+  background: linear-gradient(135deg, var(--el-color-primary-light-9) 0%, var(--el-color-primary-light-8) 100%);
   border-bottom: 1px solid var(--el-border-color);
 }
 
 .config-header h4 {
   margin: 0 0 8px 0;
   color: var(--el-text-color-primary);
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 600;
 }
 
 .config-description {
   margin: 0;
   color: var(--el-text-color-secondary);
   font-size: 14px;
+  line-height: 1.5;
+}
+
+.config-content {
+  padding: 24px;
 }
 
 .obs-config,
 .nas-config {
-  padding: 20px;
+  background: var(--el-bg-color);
 }
 
 .path-input-group {
@@ -833,14 +931,36 @@ onMounted(() => {
 
 .obs-path-selector,
 .nas-path-selector {
-  margin-top: 16px;
+  margin-top: 20px;
   border: 1px solid var(--el-border-color);
   border-radius: 6px;
   overflow: hidden;
+  background: var(--el-bg-color-page);
+}
+
+.path-selector-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  background: var(--el-color-primary-light-9);
+  border-bottom: 1px solid var(--el-border-color);
+}
+
+.path-selector-header h5 {
+  margin: 0;
+  color: var(--el-text-color-primary);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.path-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .breadcrumb {
-  padding: 12px 16px;
+  padding: 12px 20px;
   background: var(--el-bg-color-page);
   border-bottom: 1px solid var(--el-border-color);
 }
@@ -848,9 +968,11 @@ onMounted(() => {
 .breadcrumb-link {
   cursor: pointer;
   color: var(--el-color-primary);
+  transition: color 0.2s;
 }
 
 .breadcrumb-link:hover {
+  color: var(--el-color-primary-dark-2);
   text-decoration: underline;
 }
 
@@ -875,6 +997,60 @@ onMounted(() => {
 .directory-name {
   font-weight: 500;
   color: var(--el-color-primary);
+}
+
+:deep(.el-form-item__label) {
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
+:deep(.el-input__wrapper) {
+  box-shadow: 0 0 0 1px var(--el-border-color) inset;
+  transition: box-shadow 0.2s;
+}
+
+:deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+}
+
+:deep(.el-button) {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+:deep(.el-button:hover) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.el-radio__label) {
+  font-weight: 500;
+}
+
+:deep(.el-table) {
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+:deep(.el-table th) {
+  background-color: var(--el-color-primary-light-9);
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+:deep(.el-table td) {
+  padding: 12px 0;
+}
+
+:deep(.el-alert) {
+  border-radius: 8px;
+  border: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 :deep(.el-table tbody tr:hover > td) {
