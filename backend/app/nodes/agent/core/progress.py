@@ -65,24 +65,27 @@ class ProgressMonitor:
                 # 总体进度 - 格式: "Transferred: 41.235M / 5.469 GBytes, 1%, 4.364 MBytes/s, ETA 21m13s"
                 # 或者: "Transferred: 9 / 1400, 1%"
                 
-                # 解析文件计数
+                # 优先解析包含百分比的行（总体进度）
+                if '%' in line:
+                    # 解析进度百分比
+                    match = re.search(r'(\d+)%', line)
+                    if match:
+                        new_progress = int(match.group(1))
+                        # 只有当进度增加时才更新，避免来回跳动
+                        if new_progress >= self.current_progress:
+                            self.current_progress = new_progress
+                            self.logger.debug(f"Progress: {self.current_progress}%")
+                
+                # 解析文件计数（只在包含数字/数字格式时）
                 match = re.search(r'Transferred:\s+(\d+)\s*/\s*(\d+)', line)
                 if match:
-                    self.transferred_files = int(match.group(1))
-                    self.total_files = int(match.group(2))
-                    self.logger.debug(f"Files: {self.transferred_files}/{self.total_files}")
-                
-                # 解析进度百分比
-                match = re.search(r'(\d+)%', line)
-                if match:
-                    self.current_progress = int(match.group(1))
-                    self.logger.debug(f"Progress: {self.current_progress}%")
-                
-                # 解析大小信息
-                match = re.search(r'(\d+\.?\d*[KMGT]?)\s*/\s*(\d+\.?\d*\s*[KMGT]?Bytes?)', line)
-                if match:
-                    # 这里可以解析传输的大小信息
-                    pass
+                    new_transferred = int(match.group(1))
+                    new_total = int(match.group(2))
+                    # 只有当文件计数增加时才更新
+                    if new_transferred >= self.transferred_files:
+                        self.transferred_files = new_transferred
+                        self.total_files = new_total
+                        self.logger.debug(f"Files: {self.transferred_files}/{self.total_files}")
                 
                 # 更新状态
                 self._update_status()
@@ -96,7 +99,9 @@ class ProgressMonitor:
                     
                 match = re.search(r'(\d+)%', line)
                 if match:
-                    self.current_progress = int(match.group(1))
+                    new_progress = int(match.group(1))
+                    if new_progress >= self.current_progress:
+                        self.current_progress = new_progress
                     
                 # 更新状态
                 self._update_status()
