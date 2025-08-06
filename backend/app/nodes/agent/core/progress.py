@@ -58,10 +58,38 @@ class ProgressMonitor:
     def update_rclone_progress(self, line: str):
         """更新rclone进度"""
         try:
+            self.logger.debug(f"Parsing rclone line: {line.strip()}")
+            
             # 解析rclone输出
-            if 'Transferred:' in line:
-                # 传输信息
-                match = re.search(r'Transferred:\s+(\d+)/(\d+)', line)
+            if 'Transferred:' in line and ',' in line:
+                # 总体进度 - 格式: "Transferred: 41.235M / 5.469 GBytes, 1%, 4.364 MBytes/s, ETA 21m13s"
+                # 或者: "Transferred: 9 / 1400, 1%"
+                
+                # 解析文件计数
+                match = re.search(r'Transferred:\s+(\d+)\s*/\s*(\d+)', line)
+                if match:
+                    self.transferred_files = int(match.group(1))
+                    self.total_files = int(match.group(2))
+                    self.logger.debug(f"Files: {self.transferred_files}/{self.total_files}")
+                
+                # 解析进度百分比
+                match = re.search(r'(\d+)%', line)
+                if match:
+                    self.current_progress = int(match.group(1))
+                    self.logger.debug(f"Progress: {self.current_progress}%")
+                
+                # 解析大小信息
+                match = re.search(r'(\d+\.?\d*[KMGT]?)\s*/\s*(\d+\.?\d*\s*[KMGT]?Bytes?)', line)
+                if match:
+                    # 这里可以解析传输的大小信息
+                    pass
+                
+                # 更新状态
+                self._update_status()
+                
+            elif 'Checks:' in line:
+                # 检查阶段 - 格式: "Checks: 1/2, 50%"
+                match = re.search(r'Checks:\s+(\d+)/(\d+)', line)
                 if match:
                     self.transferred_files = int(match.group(1))
                     self.total_files = int(match.group(2))
@@ -73,8 +101,14 @@ class ProgressMonitor:
                 # 更新状态
                 self._update_status()
                 
+            elif 'Elapsed time:' in line:
+                # 完成信息
+                self.current_progress = 100
+                self._update_status()
+                
         except Exception as e:
             self.logger.error(f"Error parsing rclone progress: {e}")
+            self.logger.error(f"Line: {line}")
             
     def _update_status(self):
         """更新状态"""
