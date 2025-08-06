@@ -27,8 +27,8 @@ class ProxyAgent:
         self.log_manager = get_log_manager()
         self.logger = self.log_manager.get_logger('ProxyAgent')
         self.server_comm = ServerCommunication(config)
-        self.monitor_service = MonitorService(config, None, None)  # node_id/token后续赋值
-        self.sync_service = SyncService(config)
+        self.monitor_service = MonitorService(config, None, None)
+        self.sync_service = SyncService(config, self.server_comm)
         self.running = False
         self.heartbeat_thread = None
         self.task_poll_thread = None
@@ -186,27 +186,27 @@ class ProxyAgent:
                                 self.logger.info(f"收到任务取消请求: {task['id']}")
                                 success = self.task_manager.cancel_task(task['id'])
                                 if success:
-                                    self.logger.info(f"任务 {task['id']} 取消成功")
+                                    self.logger.info(f"任务 {task['id']} 取消处理完成")
                                 else:
-                                    self.logger.warning(f"任务 {task['id']} 取消失败")
+                                    self.logger.error(f"任务 {task['id']} 取消处理失败")
                             
                             # 处理任务暂停请求
                             elif task.get('status') == 'pause_requested':
                                 self.logger.info(f"收到任务暂停请求: {task['id']}")
                                 success = self.task_manager.pause_task(task['id'])
                                 if success:
-                                    self.logger.info(f"任务 {task['id']} 暂停成功")
+                                    self.logger.info(f"任务 {task['id']} 暂停处理完成")
                                 else:
-                                    self.logger.warning(f"任务 {task['id']} 暂停失败")
+                                    self.logger.error(f"任务 {task['id']} 暂停处理失败")
                             
                             # 处理任务恢复请求
                             elif task.get('status') == 'resume_requested':
                                 self.logger.info(f"收到任务恢复请求: {task['id']}")
                                 success = self.task_manager.resume_task(task['id'])
                                 if success:
-                                    self.logger.info(f"任务 {task['id']} 恢复成功")
+                                    self.logger.info(f"任务 {task['id']} 恢复处理完成")
                                 else:
-                                    self.logger.warning(f"任务 {task['id']} 恢复失败")
+                                    self.logger.error(f"任务 {task['id']} 恢复处理失败")
                         
                         # 等待所有任务完成（可选）
                         # for future in concurrent.futures.as_completed(futures):

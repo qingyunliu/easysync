@@ -50,19 +50,41 @@ class ServerCommunication:
         """
         try:
             url = f"{self.server_url}/register"
+            self.logger.info(f"注册节点到: {url}")
+            self.logger.debug(f"节点信息: {node_info}")
+            
             response = self.session.post(url, json=node_info)
             response.raise_for_status()
-            data = response.json().get('data', {})
+            
+            response_data = response.json()
+            self.logger.debug(f"注册响应: {response_data}")
+            
+            data = response_data.get('data', {})
             self.node_id = data.get('id')
             self.user_id = data.get('user_id')
             self.token = data.get('token')
+            
+            # 更新配置中的令牌
             if 'node' not in self.config:
                 self.config['node'] = {}
+            self.config['node']['id'] = self.node_id
+            self.config['node']['user'] = self.user_id
             self.config['node']['token'] = self.token
+            
+            self.logger.info(f"节点注册成功 - ID: {self.node_id}, User: {self.user_id}, Token: {'***' if self.token else 'None'}")
+            
+            # 验证注册结果
+            if not self.node_id:
+                self.logger.error("注册响应中没有节点ID")
+                return None
+                
+            if not self.token:
+                self.logger.warning("注册响应中没有令牌，这可能导致认证问题")
+            
             return self.node_id
             
         except Exception as e:
-            self.logger.error(f"Error registering node: {e}")
+            self.logger.error(f"节点注册失败: {e}")
             return None
             
     def send_heartbeat(self, heartbeat_info: Dict[str, Any]) -> bool:
@@ -124,7 +146,7 @@ class ServerCommunication:
             bool: 是否成功
         """
         if not self.node_id or not self.token:
-            self.logger.error("Node not registered or token missing")
+            self.logger.error(f"Node not registered or token missing - node_id: {self.node_id}, token: {'***' if self.token else 'None'}")
             return False
             
         try:
@@ -309,3 +331,17 @@ class ServerCommunication:
                     return False
         
         return False 
+
+    def check_registration_status(self) -> Dict[str, Any]:
+        """检查节点注册状态
+        
+        Returns:
+            Dict[str, Any]: 注册状态信息
+        """
+        return {
+            'node_id': self.node_id,
+            'user_id': self.user_id,
+            'token': '***' if self.token else None,
+            'server_url': self.server_url,
+            'is_registered': bool(self.node_id and self.token)
+        } 

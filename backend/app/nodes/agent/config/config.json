@@ -6,7 +6,7 @@
     "node": {
         "id": "NODE_ID",
         "user": "USER_ID",
-        "token": ""
+        "token": "TOKEN"
     },
     "heartbeat_interval": 30,
     "command": {

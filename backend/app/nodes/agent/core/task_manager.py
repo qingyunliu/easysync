@@ -102,8 +102,14 @@ class TaskManager:
                         self.logger.error(f"任务 {task_id} 取消失败")
                         return False
                 else:
-                    self.logger.warning(f"任务 {task_id} 不在运行中，无法取消")
-                    return False
+                    # 任务不在运行中，直接上报取消状态
+                    self.logger.info(f"任务 {task_id} 不在运行中，直接上报取消状态")
+                    self.server_comm.update_task_status(task_id, {
+                        'status': 'cancelled',
+                        'cancelled_at': datetime.now().isoformat(),
+                        'message': '任务已取消（不在运行中）'
+                    })
+                    return True
         except Exception as e:
             self.logger.error(f"取消任务失败: {e}")
             return False
@@ -131,8 +137,14 @@ class TaskManager:
                     })
                     return True
                 else:
-                    self.logger.warning(f"任务 {task_id} 不在运行中，无法暂停")
-                    return False
+                    # 任务不在运行中，直接上报暂停状态
+                    self.logger.info(f"任务 {task_id} 不在运行中，直接上报暂停状态")
+                    self.server_comm.update_task_status(task_id, {
+                        'status': 'paused',
+                        'paused_at': datetime.now().isoformat(),
+                        'message': '任务已暂停（不在运行中）'
+                    })
+                    return True
         except Exception as e:
             self.logger.error(f"暂停任务失败: {e}")
             return False
@@ -160,8 +172,14 @@ class TaskManager:
                     })
                     return True
                 else:
-                    self.logger.warning(f"任务 {task_id} 不在暂停状态，无法恢复")
-                    return False
+                    # 任务不在暂停状态，直接上报运行状态
+                    self.logger.info(f"任务 {task_id} 不在暂停状态，直接上报运行状态")
+                    self.server_comm.update_task_status(task_id, {
+                        'status': 'running',
+                        'resumed_at': datetime.now().isoformat(),
+                        'message': '任务已恢复（不在暂停状态）'
+                    })
+                    return True
         except Exception as e:
             self.logger.error(f"恢复任务失败: {e}")
             return False

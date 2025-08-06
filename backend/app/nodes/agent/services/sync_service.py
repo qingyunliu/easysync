@@ -15,14 +15,14 @@ import uuid
 class SyncService:
     """同步服务类"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], server_comm: ServerCommunication = None):
         self.config = config
         self.log_manager = get_log_manager()
         self.logger = self.log_manager.get_logger('SyncService')
         self.storage_manager = StorageManager(config)
         self.resource_manager = ResourceManager(config)
         self.task_state = TaskState(config.get('state_dir', 'state'))
-        self.server_comm = ServerCommunication(config)
+        self.server_comm = server_comm if server_comm else ServerCommunication(config)
         self.progress_monitor = ProgressMonitor(self._on_progress_update)
         self.running = False
         self.sync_thread = None
@@ -195,15 +195,21 @@ class SyncService:
     def _execute_sync_task(self, task: Dict[str, Any]):
         """执行同步任务"""
         task_id = task.get('id', task.get('task_id'))
-        source_config = task.get('source', {})
-        target_config = task.get('target', {})
+        source_config = task.get('source_storage_config', task.get('source', {}))
+        target_config = task.get('target_storage_config', task.get('target', {}))
         options = task.get('options', {})
+        
+        self.logger.info(f"执行同步任务: {task_id}")
+        self.logger.debug(f"源端配置: {source_config}")
+        self.logger.debug(f"目标配置: {target_config}")
         
         # 初始化任务状态
         self.task_state.save_state(task_id, {
             'status': 'running',
             'source': source_config,
             'target': target_config,
+            'source_path': task.get('source_path', ''),
+            'target_path': task.get('target_path', ''),
             'options': options,
             'start_time': datetime.utcnow().isoformat(),
             'progress': 0,
@@ -226,12 +232,20 @@ class SyncService:
                     status['task_id'] = task_id
                     self._on_progress_update(status)
                 
+                # 获取源端和目标端路径
+                source_path = task.get('source_path', '')
+                target_path = task.get('target_path', '')
+                
+                self.logger.info(f"同步路径: {source_path} -> {target_path}")
+                
                 # 使用StorageManager执行同步
                 success = self.storage_manager.sync_data(
                     source_config,
                     target_config,
                     options,
-                    progress_callback
+                    progress_callback,
+                    source_path=source_path,
+                    target_path=target_path
                 )
                 
                 if success:
@@ -245,12 +259,12 @@ class SyncService:
                     continue
                     
             self._update_task_status(task_id, 'failed', str(e))
-            
+    
     def _execute_copy_task(self, task: Dict[str, Any]):
         """执行复制任务"""
         task_id = task.get('id', task.get('task_id'))
-        source_config = task.get('source', {})
-        target_config = task.get('target', {})
+        source_config = task.get('source_storage_config', task.get('source', {}))
+        target_config = task.get('target_storage_config', task.get('target', {}))
         options = task.get('options', {})
         
         # 初始化任务状态
@@ -301,7 +315,7 @@ class SyncService:
             self._update_task_status(task_id, 'failed', str(e))
             
     def _check_storage(self, source_config: Dict[str, Any], target_config: Dict[str, Any]) -> bool:
-        """检查存储
+        """检查存储配置
         
         Args:
             source_config: 源存储配置
@@ -311,6 +325,10 @@ class SyncService:
             bool: 是否可用
         """
         try:
+            # 添加调试信息
+            self.logger.debug(f"检查源存储配置: {source_config}")
+            self.logger.debug(f"检查目标存储配置: {target_config}")
+            
             # 检查源存储
             if not self.storage_manager.check_storage(source_config):
                 self.logger.error(f"Source storage not available: {source_config}")
