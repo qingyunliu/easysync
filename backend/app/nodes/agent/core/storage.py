@@ -70,7 +70,9 @@ storage_class = STANDARD
         return config_path, remote_name
             
     def mount(self, storage_config: Dict[str, Any]) -> str:
-        """挂载存储（仅用于NFS/NAS）
+        """挂载存储
+        
+        用于NFS/NAS）
         
         Args:
             storage_config: 存储配置信息
@@ -94,14 +96,40 @@ storage_class = STANDARD
         def _mount():
             try:
                 storage_type = storage_config['type']
-                if storage_type != 'nfs':
+                if storage_type not in ['nfs', 'nas']:
                     raise ValueError(f"Only NFS/NAS storage can be mounted: {storage_type}")
-                    
-                source = storage_config['source']
-                mount_point = storage_config['mount_point']
-                options = storage_config.get('options', {})
                 
-                # 确保挂载点存在
+                # 处理存储配置结构
+                if 'source' in storage_config:
+                    # 如果已经有source字段，直接使用
+                    source = storage_config['source']
+                    mount_point = storage_config['mount_point']
+                    options = storage_config.get('options', {})
+                else:
+                    # 从config字段中提取信息
+                    config = storage_config.get('config', {})
+                    server = config.get('server')
+                    path = config.get('path')
+                    
+                    if not server or not path:
+                        raise ValueError(f"Missing server or path in storage config: {storage_config}")
+                    
+                    # 构建source字符串
+                    source = f"{server}:{path}"
+                    
+                    # 生成唯一的挂载点
+                    storage_id = storage_config.get('id', str(hash(source) % 10000))
+                    mount_point = f"/tmp/easysync_mounts/storage_{storage_id}"
+                    
+                    # 获取选项
+                    options = config.get('options', '')
+                
+                # 检查是否已经挂载
+                if mount_point in self.mounts:
+                    self.logger.info(f"Storage already mounted at {mount_point}")
+                    return mount_point
+                
+                # 确保挂载点目录存在
                 os.makedirs(mount_point, exist_ok=True)
                 
                 # 执行NFS挂载
@@ -115,6 +143,7 @@ storage_class = STANDARD
                     'mounted_at': datetime.utcnow().isoformat()
                 }
                 
+                self.logger.info(f"Successfully mounted {source} to {mount_point}")
                 return mount_point
                 
             except Exception as e:
@@ -135,14 +164,39 @@ storage_class = STANDARD
         @self.retry_handler.retry
         def _unmount():
             try:
+                # 检查挂载点是否在记录中
                 if mount_point not in self.mounts:
-                    raise ValueError(f"Mount point not found: {mount_point}")
-                    
-                # 执行卸载命令
-                subprocess.run(['umount', mount_point], check=True)
+                    self.logger.warning(f"Mount point not found in records: {mount_point}")
+                    # 尝试强制卸载，即使不在记录中
+                    try:
+                        subprocess.run(['umount', mount_point], check=True)
+                        self.logger.info(f"Force unmounted: {mount_point}")
+                        return True
+                    except subprocess.CalledProcessError as e:
+                        self.logger.warning(f"Force unmount failed: {e}")
+                        return False
                 
-                # 删除挂载点
-                os.rmdir(mount_point)
+                # 执行卸载命令
+                try:
+                    subprocess.run(['umount', mount_point], check=True)
+                    self.logger.info(f"Successfully unmounted: {mount_point}")
+                except subprocess.CalledProcessError as e:
+                    if "Device or resource busy" in str(e):
+                        # 如果设备忙，尝试延迟卸载
+                        import time
+                        time.sleep(2)
+                        subprocess.run(['umount', mount_point], check=True)
+                        self.logger.info(f"Successfully unmounted after delay: {mount_point}")
+                    else:
+                        raise
+                
+                # 尝试删除挂载点目录
+                try:
+                    if os.path.exists(mount_point):
+                        os.rmdir(mount_point)
+                        self.logger.debug(f"Removed mount point directory: {mount_point}")
+                except OSError as e:
+                    self.logger.warning(f"Could not remove mount point directory {mount_point}: {e}")
                 
                 # 移除挂载记录
                 del self.mounts[mount_point]
@@ -247,6 +301,9 @@ storage_class = STANDARD
                 self.logger.error(f"NFS配置缺少必需字段: server={server}, path={path}")
                 return False
             
+            # 构建source字符串
+            source = f"{server}:{path}"
+            
             # 检查挂载点是否已存在
             mount_point = storage_config.get('mount_point')
             if mount_point and os.path.exists(mount_point):
@@ -258,7 +315,7 @@ storage_class = STANDARD
                     try:
                         # 确保挂载点存在
                         os.makedirs(mount_point, exist_ok=True)
-                        self._mount_nfs(f"{server}:{path}", mount_point, options)
+                        self._mount_nfs(source, mount_point, options)
                         # 立即卸载
                         subprocess.run(['umount', mount_point], check=True)
                         return True
@@ -267,29 +324,32 @@ storage_class = STANDARD
                         return False
             
             # 如果没有指定挂载点或挂载点不存在，创建临时挂载点进行测试
-            temp_mount = f"/tmp/test_mount_{hash(f'{server}:{path}') % 10000}"
+            temp_mount = f"/tmp/test_mount_{hash(source) % 10000}"
             try:
                 # 确保临时挂载点目录存在
                 os.makedirs(temp_mount, exist_ok=True)
                 
                 # 直接调用_mount_nfs进行测试
-                self._mount_nfs(f"{server}:{path}", temp_mount, options)
+                self._mount_nfs(source, temp_mount, options)
                 
                 # 立即卸载
                 subprocess.run(['umount', temp_mount], check=True)
                 
                 # 清理临时目录
-                os.rmdir(temp_mount)
+                try:
+                    os.rmdir(temp_mount)
+                except OSError:
+                    pass  # 忽略清理错误
                 
                 return True
             except Exception as e:
                 self.logger.error(f"NFS挂载测试失败: {e}")
                 # 清理临时目录（如果存在）
-                if os.path.exists(temp_mount):
-                    try:
+                try:
+                    if os.path.exists(temp_mount):
                         os.rmdir(temp_mount)
-                    except:
-                        pass
+                except OSError:
+                    pass
                 return False
             
         except Exception as e:
@@ -500,8 +560,35 @@ storage_class = STANDARD
                 
                 self.logger.info(f"NFS -> NFS 同步路径: {source_full_path} -> {target_full_path}")
                 
-                # 使用rsync同步
-                cmd = ['rsync', '-av', '--progress']
+                # 快速估算数据量（可选，避免大数据量的dry-run）
+                use_quick_estimate = self._should_use_quick_estimate(source_full_path)
+                
+                if use_quick_estimate:
+                    # 使用快速估算
+                    total_files, total_size = self._quick_estimate_sync_size(source_full_path)
+                    self.logger.info(f"快速估算: {total_files} 文件, {total_size} 字节")
+                else:
+                    # 使用dry-run获取准确信息（仅适用于小数据量）
+                    dry_run_cmd = ['rsync', '-a', '--dry-run', '--stats', f"{source_full_path}/", target_full_path]
+                    self.logger.debug(f"执行dry-run命令: {' '.join(dry_run_cmd)}")
+                    
+                    dry_run_result = subprocess.run(dry_run_cmd, capture_output=True, text=True, timeout=60)
+                    if dry_run_result.returncode != 0:
+                        self.logger.warning(f"Dry-run失败，将使用快速估算: {dry_run_result.stderr}")
+                        total_files, total_size = self._quick_estimate_sync_size(source_full_path)
+                    else:
+                        # 解析dry-run输出获取总信息
+                        total_files, total_size = self._parse_rsync_stats(dry_run_result.stdout)
+                        self.logger.info(f"Dry-run结果: {total_files} 文件, {total_size} 字节")
+                
+                # 通知进度监控器总信息
+                if hasattr(monitor, 'total_files'):
+                    monitor.total_files = total_files
+                if hasattr(monitor, 'total_size'):
+                    monitor.total_size = total_size
+                
+                # 实际同步，使用progress2输出
+                cmd = ['rsync', '-a', '--info=progress2']
                 
                 # 添加选项
                 if options:
@@ -515,8 +602,6 @@ storage_class = STANDARD
                         elif key == 'checksum':
                             if value:
                                 cmd.append('--checksum')
-                        elif key == 'max_connections':
-                            cmd.extend(['--max-connections', str(value)])
                         elif key == 'bandwidth_limit':
                             cmd.extend(['--bwlimit', str(value)])
                 
@@ -558,6 +643,88 @@ storage_class = STANDARD
             self.logger.error(f"Error in NFS/NAS to NFS/NAS sync: {e}")
             raise
             
+    def _should_use_quick_estimate(self, source_path: str) -> bool:
+        """判断是否应该使用快速估算而不是dry-run"""
+        try:
+            # 快速检查目录大小和文件数量
+            du_cmd = ['du', '-s', source_path]
+            result = subprocess.run(du_cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0:
+                # 解析du输出，格式: "1234567 /path/to/dir"
+                size_str = result.stdout.split()[0]
+                size_kb = int(size_str)
+                
+                # 如果目录大于100MB，使用快速估算
+                if size_kb > 100 * 1024:  # 100MB
+                    self.logger.info(f"目录大小 {size_kb}KB，使用快速估算")
+                    return True
+                    
+            # 检查文件数量
+            find_cmd = ['find', source_path, '-type', 'f', '-maxdepth', '2']  # 只检查前两层
+            result = subprocess.run(find_cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0:
+                file_count = len(result.stdout.strip().split('\n')) if result.stdout.strip() else 0
+                
+                # 如果文件数超过1000，使用快速估算
+                if file_count > 1000:
+                    self.logger.info(f"文件数量 {file_count}，使用快速估算")
+                    return True
+                    
+        except Exception as e:
+            self.logger.warning(f"检查目录大小失败: {e}")
+            
+        return False
+        
+    def _quick_estimate_sync_size(self, source_path: str) -> tuple:
+        """快速估算同步大小"""
+        try:
+            # 使用du命令快速获取目录大小
+            du_cmd = ['du', '-sb', source_path]
+            result = subprocess.run(du_cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0:
+                size_str = result.stdout.split()[0]
+                total_size = int(size_str)
+                
+                # 快速估算文件数量（只检查前几层目录）
+                find_cmd = ['find', source_path, '-type', 'f', '-maxdepth', '3']
+                result = subprocess.run(find_cmd, capture_output=True, text=True, timeout=15)
+                
+                if result.returncode == 0:
+                    file_count = len(result.stdout.strip().split('\n')) if result.stdout.strip() else 0
+                    
+                    # 基于检查的文件数估算总文件数
+                    # 假设前3层目录的文件数占总数的30%
+                    estimated_total_files = int(file_count / 0.3) if file_count > 0 else 100
+                    
+                    self.logger.debug(f"快速估算: {estimated_total_files} 文件, {total_size} 字节")
+                    return estimated_total_files, total_size
+                    
+        except Exception as e:
+            self.logger.warning(f"快速估算失败: {e}")
+            
+        # 如果估算失败，返回默认值
+        return 100, 1024 * 1024  # 100个文件，1MB
+    
+    def _parse_rsync_stats(self, output: str) -> tuple:
+        """从rsync的--dry-run输出中解析总文件数和总大小"""
+        total_files = 0
+        total_size = 0
+        
+        for line in output.splitlines():
+            if line.startswith('Number of files: '):
+                total_files = int(line.replace('Number of files: ', ''))
+            elif line.startswith('Total transferred: '):
+                # 从 'Total transferred: N (XXX bytes)' 中提取字节数
+                match = re.search(r'Total transferred: (\d+) \((\d+) bytes\)', line)
+                if match:
+                    total_size = int(match.group(2))
+                    break # 找到第一个匹配的行即可
+        
+        return total_files, total_size
+    
     def _sync_obs_to_obs(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
                         options: Dict[str, Any], monitor: ProgressMonitor,
                         source_path: str = None, target_path: str = None) -> bool:
@@ -741,6 +908,28 @@ storage_class = STANDARD
             self.logger.error(f"Error in OBS to NFS/NAS sync: {e}")
             raise
             
+    def cleanup_all_mounts(self):
+        """清理所有挂载点"""
+        try:
+            mount_points = list(self.mounts.keys())
+            for mount_point in mount_points:
+                try:
+                    self.unmount(mount_point)
+                except Exception as e:
+                    self.logger.error(f"Failed to unmount {mount_point}: {e}")
+            
+            # 清理easysync挂载目录
+            import shutil
+            try:
+                if os.path.exists("/tmp/easysync_mounts"):
+                    shutil.rmtree("/tmp/easysync_mounts")
+                    self.logger.info("Cleaned up easysync mount directory")
+            except Exception as e:
+                self.logger.warning(f"Failed to cleanup mount directory: {e}")
+                
+        except Exception as e:
+            self.logger.error(f"Error during mount cleanup: {e}")
+    
     def list_mounts(self) -> Dict[str, Dict[str, Any]]:
         """列出所有挂载点"""
         return self.mounts
@@ -803,8 +992,27 @@ storage_class = STANDARD
         }
         
         try:
-            mount_point = storage_config.get('mount_point')
-            source = storage_config.get('source')
+            # 处理存储配置结构
+            if 'source' in storage_config:
+                # 如果已经有source字段，直接使用
+                source = storage_config.get('source')
+                mount_point = storage_config.get('mount_point')
+            else:
+                # 从config字段中提取信息
+                config = storage_config.get('config', {})
+                server = config.get('server')
+                path = config.get('path')
+                
+                if not server or not path:
+                    result['error'] = f'Missing server or path in storage config: {storage_config}'
+                    return result
+                
+                # 构建source字符串
+                source = f"{server}:{path}"
+                
+                # 生成挂载点
+                storage_id = storage_config.get('id', str(hash(source) % 10000))
+                mount_point = f"/tmp/easysync_mounts/storage_{storage_id}"
             
             if not mount_point:
                 result['error'] = 'Mount point not specified'
@@ -995,6 +1203,20 @@ storage_class = STANDARD
                 return self._copy_obs_to_obs(source_config, target_config, options, monitor)
             elif source_type == 'obs' and target_type == 'nfs':
                 return self._copy_obs_to_nfs(source_config, target_config, options, monitor)
+            elif source_type == 's3' and target_type == 'obs':
+                return self._copy_obs_to_obs(source_config, target_config, options, monitor)
+            elif source_type == 's3' and target_type == 'nfs':
+                return self._copy_obs_to_nfs(source_config, target_config, options, monitor)
+            elif source_type == 's3' and target_type == 'nas':
+                return self._copy_obs_to_nfs(source_config, target_config, options, monitor)
+            elif source_type == 'obs' and target_type == 'nas':
+                return self._copy_obs_to_nfs(source_config, target_config, options, monitor)
+            elif source_type == 'nas' and target_type == 'nfs':
+                return self._copy_nfs_to_nfs(source_config, target_config, options, monitor)
+            elif source_type == 'nfs' and target_type == 'nas':
+                return self._copy_nfs_to_nfs(source_config, target_config, options, monitor)
+            elif source_type == 'nas' and target_type == 'nas':
+                return self._copy_nfs_to_nfs(source_config, target_config, options, monitor)
             else:
                 raise ValueError(f"Unsupported copy combination: {source_type} -> {target_type}")
                 

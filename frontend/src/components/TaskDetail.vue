@@ -99,20 +99,129 @@
           <el-descriptions-item label="删除目标多余文件">
             <el-tag :type="task.options.delete ? 'success' : 'info'">{{ task.options.delete ? '是' : '否' }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="启用压缩传输">
-            <el-tag :type="task.options.compress ? 'success' : 'info'">{{ task.options.compress ? '是' : '否' }}</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="校验文件完整性">
+          <el-descriptions-item label="校验和检查">
             <el-tag :type="task.options.checksum ? 'success' : 'info'">{{ task.options.checksum ? '是' : '否' }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="带宽限制(MB/s)">{{ task.options.bandwidth_limit || 0 }}</el-descriptions-item>
-          <el-descriptions-item label="并发连接数">{{ task.options.max_connections || 1 }}</el-descriptions-item>
-          <el-descriptions-item label="重试次数">{{ task.options.retry_options?.max_retries || 3 }}</el-descriptions-item>
+          <el-descriptions-item label="压缩传输">
+            <el-tag :type="task.options.compress ? 'success' : 'info'">{{ task.options.compress ? '是' : '否' }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="带宽限制">
+            {{ task.options.bandwidth_limit ? `${task.options.bandwidth_limit} KB/s` : '无限制' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="最大连接数">
+            {{ task.options.max_connections || '默认' }}
+          </el-descriptions-item>
+          <el-descriptions-item label="重试次数">
+            {{ task.options.retry_options?.max_retries || '默认' }}
+          </el-descriptions-item>
         </el-descriptions>
       </template>
       <template v-else>
-        <div class="no-data">无同步选项信息</div>
+        <div class="no-data">无同步选项</div>
       </template>
+    </el-card>
+
+    <!-- 传输统计信息 -->
+    <el-card class="detail-card" header="传输统计" v-if="task.details && hasTransferStats(task.details)">
+      <el-row :gutter="20">
+        <el-col :span="6">
+          <div class="stat-item">
+            <div class="stat-icon">
+              <el-icon><Document /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ task.details.transferred_files || 0 }}</div>
+              <div class="stat-label">已传输文件</div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="stat-item">
+            <div class="stat-icon">
+              <el-icon><Document /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ task.details.total_files || 0 }}</div>
+              <div class="stat-label">总文件数</div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="stat-item">
+            <div class="stat-icon">
+              <el-icon><Connection /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ formatFileSize(task.details.transferred_size || 0) }}</div>
+              <div class="stat-label">已传输大小</div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="6">
+          <div class="stat-item">
+            <div class="stat-icon">
+              <el-icon><Connection /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ formatFileSize(task.details.total_size || 0) }}</div>
+              <div class="stat-label">总大小</div>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+      
+      <!-- 传输速度和ETA -->
+      <el-row :gutter="20" style="margin-top: 20px;">
+        <el-col :span="8">
+          <div class="stat-item">
+            <div class="stat-icon speed">
+              <el-icon><Loading /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ task.details.transfer_speed || '0 B/s' }}</div>
+              <div class="stat-label">传输速度</div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="8">
+          <div class="stat-item">
+            <div class="stat-icon eta">
+              <el-icon><Clock /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ task.details.eta || '--:--' }}</div>
+              <div class="stat-label">预计剩余时间</div>
+            </div>
+          </div>
+        </el-col>
+        <el-col :span="8">
+          <div class="stat-item">
+            <div class="stat-icon progress">
+              <el-icon><CircleCheck /></el-icon>
+            </div>
+            <div class="stat-content">
+              <div class="stat-number">{{ task.details.progress || 0 }}%</div>
+              <div class="stat-label">完成进度</div>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+      
+      <!-- 当前传输文件 -->
+      <div v-if="task.details.current_file" style="margin-top: 20px;">
+        <el-divider content-position="left">当前传输文件</el-divider>
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="文件路径">{{ task.details.current_file.path }}</el-descriptions-item>
+          <el-descriptions-item label="文件大小">{{ formatFileSize(task.details.current_file.size) }}</el-descriptions-item>
+          <el-descriptions-item label="已传输">{{ formatFileSize(task.details.current_file.transferred) }}</el-descriptions-item>
+          <el-descriptions-item label="传输速度">{{ task.details.current_file.speed }}</el-descriptions-item>
+        </el-descriptions>
+      </div>
+      
+      <!-- 最后更新时间 -->
+      <div v-if="task.details.last_update" style="margin-top: 15px; text-align: right; color: var(--text-secondary); font-size: 12px;">
+        最后更新: {{ formatDateTime(task.details.last_update) }}
+      </div>
     </el-card>
 
     <!-- 任务统计 -->
@@ -160,7 +269,7 @@
 <script setup>
 import { computed } from 'vue'
 import {
-  CircleCheck, Clock, Loading, Warning, CircleClose
+  CircleCheck, Clock, Loading, Warning, CircleClose, Document, Connection
 } from '@element-plus/icons-vue'
 
 const props = defineProps({
@@ -308,6 +417,31 @@ const formatSize = (bytes) => {
   }
   return `${size.toFixed(1)} ${units[unitIndex]}`
 }
+
+const formatFileSize = (bytes) => {
+  if (!bytes || bytes === 0) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  let size = bytes
+  let unitIndex = 0
+  while (size >= 1024 && unitIndex < units.length - 1) {
+    size /= 1024
+    unitIndex++
+  }
+  return `${size.toFixed(1)} ${units[unitIndex]}`
+}
+
+const hasTransferStats = (details) => {
+  return details && (
+    details.transferred_files > 0 || 
+    details.total_files > 0 || 
+    details.transferred_size > 0 || 
+    details.total_size > 0 || 
+    details.transfer_speed || 
+    details.eta || 
+    details.progress > 0 || 
+    details.current_file
+  )
+}
 </script>
 
 <style scoped>
@@ -330,21 +464,62 @@ const formatSize = (bytes) => {
 }
 
 .stat-item {
-  text-align: center;
-  padding: 20px;
-  background: var(--el-color-primary-light-9);
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  background: var(--el-bg-color);
   border-radius: 8px;
+  border: 1px solid var(--el-border-color-light);
+  transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.stat-icon {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  margin-right: 15px;
+  font-size: 20px;
+  background: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+}
+
+.stat-icon.speed {
+  background: var(--el-color-success-light-9);
+  color: var(--el-color-success);
+}
+
+.stat-icon.eta {
+  background: var(--el-color-warning-light-9);
+  color: var(--el-color-warning);
+}
+
+.stat-icon.progress {
+  background: var(--el-color-info-light-9);
+  color: var(--el-color-info);
+}
+
+.stat-content {
+  flex: 1;
 }
 
 .stat-number {
   font-size: 24px;
   font-weight: bold;
-  color: var(--el-color-primary);
-  margin-bottom: 8px;
+  color: var(--el-text-color-primary);
+  line-height: 1;
+  margin-bottom: 4px;
 }
 
 .stat-label {
-  font-size: 14px;
+  font-size: 12px;
   color: var(--el-text-color-secondary);
 }
 

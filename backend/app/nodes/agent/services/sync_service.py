@@ -225,6 +225,7 @@ class SyncService:
         self.progress_monitor.start()
         
         # 执行同步命令
+        last_error = None
         for retry in range(self.max_retries):
             try:
                 # 创建带task_id的回调函数
@@ -253,12 +254,14 @@ class SyncService:
                     return
                     
             except Exception as e:
+                last_error = str(e)
                 self.logger.error(f"Error executing sync task {task_id}: {e}")
                 if retry < self.max_retries - 1:
                     time.sleep(self.retry_delay)
                     continue
                     
-            self._update_task_status(task_id, 'failed', str(e))
+        # 所有重试都失败了
+        self._update_task_status(task_id, 'failed', last_error or 'Unknown error')
     
     def _execute_copy_task(self, task: Dict[str, Any]):
         """执行复制任务"""
@@ -287,6 +290,7 @@ class SyncService:
         self.progress_monitor.start()
         
         # 执行复制命令
+        last_error = None
         for retry in range(self.max_retries):
             try:
                 # 创建带task_id的回调函数
@@ -307,12 +311,14 @@ class SyncService:
                     return
                     
             except Exception as e:
+                last_error = str(e)
                 self.logger.error(f"Error executing copy task {task_id}: {e}")
                 if retry < self.max_retries - 1:
                     time.sleep(self.retry_delay)
                     continue
                     
-            self._update_task_status(task_id, 'failed', str(e))
+        # 所有重试都失败了
+        self._update_task_status(task_id, 'failed', last_error or 'Unknown error')
             
     def _check_storage(self, source_config: Dict[str, Any], target_config: Dict[str, Any]) -> bool:
         """检查存储配置
@@ -401,20 +407,36 @@ class SyncService:
         if not task_id:
             return
             
+        # 构建详细信息
+        details = {
+            'progress': status.get('progress', 0),
+            'transferred_files': status.get('transferred_files', 0),
+            'total_files': status.get('total_files', 0),
+            'transferred_size': status.get('transferred_size', 0),
+            'total_size': status.get('total_size', 0),
+            'transfer_speed': status.get('transfer_speed', ''),
+            'eta': status.get('eta', ''),
+            'current_file': status.get('current_file', ''),
+            'last_update': datetime.utcnow().isoformat()
+        }
+        
         # 更新本地状态
         self.task_state.save_state(task_id, {
             'progress': status.get('progress', 0),
             'transferred_files': status.get('transferred_files', 0),
             'total_files': status.get('total_files', 0),
             'transferred_size': status.get('transferred_size', 0),
-            'total_size': status.get('total_size', 0)
+            'total_size': status.get('total_size', 0),
+            'details': details
         })
         
-        # 通知服务器
-        self.server_comm.update_task_status(task_id, {
+        # 通知服务器，包含详细信息
+        server_data = {
             'progress': status.get('progress', 0),
-            'status': 'running'
-        })
+            'status': 'running',
+            'details': details
+        }
+        self.server_comm.update_task_status(task_id, server_data)
         
         # 记录日志
         self.log_manager.log_task_event('sync', 'progress', status)
