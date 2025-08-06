@@ -390,6 +390,12 @@ storage_class = STANDARD
                 return self._sync_obs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
             elif source_type == 'obs' and target_type == 'nas':
                 return self._sync_obs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
+            elif source_type == 'nas' and target_type == 'nfs':
+                return self._sync_nfs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
+            elif source_type == 'nfs' and target_type == 'nas':
+                return self._sync_nfs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
+            elif source_type == 'nas' and target_type == 'nas':
+                return self._sync_nfs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
             else:
                 raise ValueError(f"Unsupported sync combination: {source_type} -> {target_type}")
                 
