@@ -23,9 +23,9 @@ class ProxyAgent:
     
     def __init__(self, config: dict):
         self.config = config
-        # 使用配置初始化日志管理器
-        from ..utils.logger import get_log_manager_with_config
-        self.logger = get_log_manager_with_config(config).get_logger('ProxyAgent')
+        # 使用统一的日志管理器
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('ProxyAgent')
         self.server_comm = ServerCommunication(config)
         self.monitor_service = MonitorService(config, None, None)  # node_id/token后续赋值
         self.sync_service = SyncService(config)

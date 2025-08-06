@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 import os
 import subprocess
-import logging
 import time
 import threading
 from typing import Dict, Optional, Set
 from datetime import datetime, timedelta
+from ..utils.logger import get_log_manager
 
-logger = logging.getLogger(__name__)
+logger = get_log_manager().get_logger('MountManager')
 
 class MountManager:
     """统一的挂载点管理器"""
     
     def __init__(self):
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('MountManager')
         self._active_mounts: Dict[str, Dict] = {}  # storage_id -> mount_info
         self._mount_lock = threading.Lock()
         self._base_mount_dir = "/tmp/easysync_mounts"
@@ -23,7 +25,7 @@ class MountManager:
         try:
             os.makedirs(self._base_mount_dir, exist_ok=True)
         except Exception as e:
-            logger.error(f"创建基础挂载目录失败: {e}")
+            self.logger.error(f"创建基础挂载目录失败: {e}")
             
     def get_mount_point(self, storage_id: str) -> str:
         """获取存储的标准挂载点路径"""
@@ -39,7 +41,7 @@ class MountManager:
             if result.returncode == 0:
                 return mount_point in result.stdout
         except Exception as e:
-            logger.error(f"检查挂载状态失败: {e}")
+            self.logger.error(f"检查挂载状态失败: {e}")
             
         # 备用检查：是否是挂载点
         try:
@@ -53,7 +55,7 @@ class MountManager:
             # 检查是否已经挂载
             if self.is_mounted(storage_id):
                 mount_point = self.get_mount_point(storage_id)
-                logger.info(f"存储 {storage_id} 已挂载到 {mount_point}")
+                self.logger.info(f"存储 {storage_id} 已挂载到 {mount_point}")
                 
                 # 更新活跃挂载记录
                 self._active_mounts[storage_id] = {
@@ -76,10 +78,10 @@ class MountManager:
                     'mount_time': datetime.now(),
                     'ref_count': 1
                 }
-                logger.info(f"存储 {storage_id} 成功挂载到 {mount_point}")
+                self.logger.info(f"存储 {storage_id} 成功挂载到 {mount_point}")
                 return mount_point
             else:
-                logger.error(f"存储 {storage_id} 挂载失败")
+                self.logger.error(f"存储 {storage_id} 挂载失败")
                 return None
                 
     def _do_mount(self, storage_id: str, storage_config: dict, mount_point: str) -> bool:
@@ -95,11 +97,11 @@ class MountManager:
             elif storage_type in ['smb', 'cifs']:
                 return self._mount_smb(storage_config, mount_point)
             else:
-                logger.error(f"不支持的存储类型: {storage_type}")
+                self.logger.error(f"不支持的存储类型: {storage_type}")
                 return False
                 
         except Exception as e:
-            logger.error(f"挂载存储 {storage_id} 时发生异常: {e}")
+            self.logger.error(f"挂载存储 {storage_id} 时发生异常: {e}")
             return False
             
     def _mount_nfs(self, storage_config: dict, mount_point: str) -> bool:
@@ -112,7 +114,7 @@ class MountManager:
             path = config.get('path') or config.get('share_path')
             
             if not server or not path:
-                logger.error(f"NFS配置缺少server或path: {config}")
+                self.logger.error(f"NFS配置缺少server或path: {config}")
                 return False
                 
             # 构建NFS挂载命令
@@ -124,17 +126,17 @@ class MountManager:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             
             if result.returncode == 0:
-                logger.info(f"NFS挂载成功: {nfs_source} -> {mount_point}")
+                self.logger.info(f"NFS挂载成功: {nfs_source} -> {mount_point}")
                 return True
             else:
-                logger.error(f"NFS挂载失败: {result.stderr}")
+                self.logger.error(f"NFS挂载失败: {result.stderr}")
                 return False
                 
         except subprocess.TimeoutExpired:
-            logger.error("NFS挂载超时")
+            self.logger.error("NFS挂载超时")
             return False
         except Exception as e:
-            logger.error(f"NFS挂载异常: {e}")
+            self.logger.error(f"NFS挂载异常: {e}")
             return False
             
     def _mount_smb(self, storage_config: dict, mount_point: str) -> bool:
@@ -149,7 +151,7 @@ class MountManager:
             password = config.get('password', '')
             
             if not server or not share:
-                logger.error(f"SMB配置缺少server或share: {config}")
+                self.logger.error(f"SMB配置缺少server或share: {config}")
                 return False
                 
             # 构建SMB挂载命令
@@ -168,24 +170,24 @@ class MountManager:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
             
             if result.returncode == 0:
-                logger.info(f"SMB挂载成功: {smb_source} -> {mount_point}")
+                self.logger.info(f"SMB挂载成功: {smb_source} -> {mount_point}")
                 return True
             else:
-                logger.error(f"SMB挂载失败: {result.stderr}")
+                self.logger.error(f"SMB挂载失败: {result.stderr}")
                 return False
                 
         except subprocess.TimeoutExpired:
-            logger.error("SMB挂载超时")
+            self.logger.error("SMB挂载超时")
             return False
         except Exception as e:
-            logger.error(f"SMB挂载异常: {e}")
+            self.logger.error(f"SMB挂载异常: {e}")
             return False
             
     def unmount_storage(self, storage_id: str) -> bool:
         """卸载存储"""
         with self._mount_lock:
             if storage_id not in self._active_mounts:
-                logger.warning(f"存储 {storage_id} 未在活跃挂载记录中")
+                self.logger.warning(f"存储 {storage_id} 未在活跃挂载记录中")
                 # 尝试强制卸载
                 mount_point = self.get_mount_point(storage_id)
                 return self._do_unmount(mount_point)
@@ -198,7 +200,7 @@ class MountManager:
             
             # 如果还有引用，不卸载
             if mount_info['ref_count'] > 0:
-                logger.info(f"存储 {storage_id} 还有 {mount_info['ref_count']} 个引用，暂不卸载")
+                self.logger.info(f"存储 {storage_id} 还有 {mount_info['ref_count']} 个引用，暂不卸载")
                 return True
                 
             # 执行卸载
@@ -207,11 +209,11 @@ class MountManager:
             if success:
                 # 从活跃挂载记录中移除
                 del self._active_mounts[storage_id]
-                logger.info(f"存储 {storage_id} 成功卸载")
+                self.logger.info(f"存储 {storage_id} 成功卸载")
             else:
                 # 卸载失败，恢复引用计数
                 mount_info['ref_count'] = 1
-                logger.error(f"存储 {storage_id} 卸载失败")
+                self.logger.error(f"存储 {storage_id} 卸载失败")
                 
             return success
             
@@ -220,7 +222,7 @@ class MountManager:
         try:
             # 检查是否真的是挂载点
             if not os.path.ismount(mount_point) and not self._is_in_mount_table(mount_point):
-                logger.info(f"路径 {mount_point} 不是挂载点，无需卸载")
+                self.logger.info(f"路径 {mount_point} 不是挂载点，无需卸载")
                 # 清理空目录
                 try:
                     if os.path.exists(mount_point) and not os.listdir(mount_point):
@@ -233,7 +235,7 @@ class MountManager:
             result = subprocess.run(['umount', mount_point], capture_output=True, text=True, timeout=10)
             
             if result.returncode == 0:
-                logger.info(f"成功卸载: {mount_point}")
+                self.logger.info(f"成功卸载: {mount_point}")
                 # 清理空目录
                 try:
                     if os.path.exists(mount_point) and not os.listdir(mount_point):
@@ -242,22 +244,22 @@ class MountManager:
                     pass
                 return True
             else:
-                logger.warning(f"正常卸载失败，尝试强制卸载: {result.stderr}")
+                self.logger.warning(f"正常卸载失败，尝试强制卸载: {result.stderr}")
                 # 尝试强制卸载
                 result = subprocess.run(['umount', '-f', mount_point], capture_output=True, text=True, timeout=10)
                 
                 if result.returncode == 0:
-                    logger.info(f"强制卸载成功: {mount_point}")
+                    self.logger.info(f"强制卸载成功: {mount_point}")
                     return True
                 else:
-                    logger.error(f"强制卸载也失败: {result.stderr}")
+                    self.logger.error(f"强制卸载也失败: {result.stderr}")
                     return False
                     
         except subprocess.TimeoutExpired:
-            logger.error(f"卸载操作超时: {mount_point}")
+            self.logger.error(f"卸载操作超时: {mount_point}")
             return False
         except Exception as e:
-            logger.error(f"卸载异常: {e}")
+            self.logger.error(f"卸载异常: {e}")
             return False
             
     def _is_in_mount_table(self, mount_point: str) -> bool:
@@ -294,10 +296,10 @@ class MountManager:
                 # 尝试卸载废弃的挂载点
                 if self._do_unmount(mount_path):
                     cleaned_count += 1
-                    logger.info(f"清理废弃挂载点: {mount_path}")
+                    self.logger.info(f"清理废弃挂载点: {mount_path}")
                     
         except Exception as e:
-            logger.error(f"清理废弃挂载点时发生异常: {e}")
+            self.logger.error(f"清理废弃挂载点时发生异常: {e}")
             
         return cleaned_count
         

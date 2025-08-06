@@ -1,4 +1,3 @@
-import logging
 import threading
 import queue
 import time
@@ -7,7 +6,7 @@ from typing import Dict, Any, Optional, List, Callable
 from datetime import datetime
 from ..core.storage import StorageManager
 from ..core.communication import ServerCommunication
-from ..utils.logger import LogManager
+from ..utils.logger import get_log_manager
 from ..utils.resource import ResourceManager
 from ..models.task_state import TaskState
 from ..core.progress import ProgressMonitor
@@ -18,9 +17,9 @@ class SyncService:
     
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.logger = logging.getLogger('SyncService')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('SyncService')
         self.storage_manager = StorageManager(config)
-        self.log_manager = LogManager(config)
         self.resource_manager = ResourceManager(config)
         self.task_state = TaskState(config.get('state_dir', 'state'))
         self.server_comm = ServerCommunication(config)

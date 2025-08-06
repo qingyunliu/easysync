@@ -1,16 +1,17 @@
 import os
 import shutil
-import logging
 from datetime import datetime
 from typing import Dict, Any, List
 from .base import StorageProvider
+from ..utils.logger import get_log_manager
 
 class NASProvider(StorageProvider):
     """NAS 存储提供者实现"""
 
     def __init__(self, config: Dict[str, Any]):
         super().__init__(config)
-        self.logger = logging.getLogger(__name__)
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('NASProvider')
         # 修正配置字段映射，兼容两种字段名
         self.mount_point = config.get('path', '') or config.get('share_path', '')
         self.server = config.get('server', '') or config.get('host', '')

@@ -1,16 +1,17 @@
 import os
 import psutil
-import logging
 import subprocess
 from typing import Dict, Any, Optional
 from datetime import datetime
+from .logger import get_log_manager
 
 class ResourceManager:
     """资源管理类"""
     
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.logger = logging.getLogger('ResourceManager')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('ResourceManager')
         self.current_usage = {
             'cpu': 0,
             'memory': 0,

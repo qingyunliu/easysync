@@ -3,15 +3,15 @@
 增强的任务进度跟踪器 - 提供详细的任务进度监控和上报
 """
 
-import logging
 import threading
 import time
 import re
 import json
 from typing import Dict, Any, Optional, List, Callable
 from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, field
 from enum import Enum
+from ..utils.logger import get_log_manager
 
 class ProgressType(Enum):
     """进度类型枚举"""
@@ -76,7 +76,7 @@ class TaskProgress:
     warning_count: int = 0
     
     # 自定义数据
-    custom_data: Dict[str, Any] = None
+    custom_data: Dict[str, Any] = field(default_factory=dict)
 
 class EnhancedProgressTracker:
     """增强的进度跟踪器"""
@@ -84,7 +84,8 @@ class EnhancedProgressTracker:
     def __init__(self, server_comm, config: Dict[str, Any]):
         self.server_comm = server_comm
         self.config = config
-        self.logger = logging.getLogger('EnhancedProgressTracker')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('EnhancedProgressTracker')
         
         # 进度数据存储
         self.task_progress: Dict[str, TaskProgress] = {}
@@ -380,7 +381,8 @@ class ProgressParser:
     """进度解析器 - 从命令行输出解析进度信息"""
     
     def __init__(self):
-        self.logger = logging.getLogger('ProgressParser')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('ProgressParser')
         
         # rsync 进度正则表达式
         self.rsync_progress_pattern = re.compile(

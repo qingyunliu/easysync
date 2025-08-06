@@ -1,15 +1,16 @@
 import os
 import json
-import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+from ..utils.logger import get_log_manager
 
 class TaskState:
     """任务状态类"""
     
     def __init__(self, state_dir: str):
         self.state_dir = state_dir
-        self.logger = logging.getLogger('TaskState')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('TaskState')
         self._ensure_state_dir()
         
     def _ensure_state_dir(self):

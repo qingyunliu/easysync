@@ -3,7 +3,6 @@
 任务管理器 - 处理任务取消、重试、状态管理等高级功能
 """
 
-import logging
 import subprocess
 import threading
 import time
@@ -13,6 +12,7 @@ from typing import Dict, Any, Optional, List, Callable
 from datetime import datetime, timedelta
 from enum import Enum
 from dataclasses import dataclass
+from ..utils.logger import get_log_manager
 
 class TaskStatus(Enum):
     """任务状态枚举"""
@@ -41,7 +41,8 @@ class TaskManager:
     def __init__(self, server_comm, config: Dict[str, Any]):
         self.server_comm = server_comm
         self.config = config
-        self.logger = logging.getLogger('TaskManager')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('TaskManager')
         self.running_tasks: Dict[str, TaskProcess] = {}
         self.cancelled_tasks: set = set()
         self.paused_tasks: set = set()
@@ -273,7 +274,8 @@ class TaskRetryManager:
     def __init__(self, server_comm, config: Dict[str, Any]):
         self.server_comm = server_comm
         self.config = config
-        self.logger = logging.getLogger('TaskRetryManager')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('TaskRetryManager')
         self.retry_counts: Dict[str, int] = {}
         self.retry_lock = threading.Lock()
         
@@ -329,7 +331,8 @@ class TaskValidator:
     
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.logger = logging.getLogger('TaskValidator')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('TaskValidator')
     
     def validate_task(self, task: Dict[str, Any]) -> tuple[bool, str]:
         """验证任务配置"""
@@ -383,7 +386,7 @@ class TaskValidator:
             
             # 根据存储类型验证配置
             if storage_type in ['nas', 'nfs']:
-                nas_fields = ['host', 'share_path']
+                nas_fields = ['server']
                 for field in nas_fields:
                     if field not in config:
                         return False, f"NAS配置缺少字段: {field}"

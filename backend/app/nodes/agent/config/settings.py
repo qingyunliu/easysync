@@ -1,13 +1,14 @@
 import os
 import json
-import logging
 from typing import Dict, Any
+from ..utils.logger import get_log_manager
 
 class Settings:
     """配置类"""
     
     def __init__(self, config_path: str = None):
-        self.logger = logging.getLogger('Settings')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('Settings')
         self.config_path = config_path or os.getenv('AGENT_CONFIG', 'config.json')
         self.config = self._load_config()
         

@@ -15,6 +15,7 @@ import requests
 import logging
 from datetime import datetime
 from .services.mount_manager import get_mount_manager
+from .utils.logger import get_log_manager
 
 class TaskExecutor:
     """任务执行器"""
@@ -23,7 +24,8 @@ class TaskExecutor:
         self.server_url = server_url
         self.auth_token = auth_token
         self.node_id = node_id
-        self.logger = logging.getLogger(__name__)
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('TaskExecutor')
         self.active_mounts = []  # 跟踪活动挂载点
         self.running_tasks = set()  # 跟踪正在运行的任务ID
         self.last_heartbeat = 0  # 上次心跳时间

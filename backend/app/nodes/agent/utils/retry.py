@@ -1,13 +1,14 @@
 import time
-import logging
 from typing import Callable, Any, Optional, Dict
 from functools import wraps
+from .logger import get_log_manager
 
 class RetryHandler:
     """重试处理类"""
     
     def __init__(self, max_retries: int = 3, delay: float = 1.0, backoff: float = 2.0):
-        self.logger = logging.getLogger('RetryHandler')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('RetryHandler')
         self.max_retries = max_retries
         self.delay = delay
         self.backoff = backoff

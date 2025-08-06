@@ -3,20 +3,19 @@
 存储连接检查器 - 提供全面的存储连接和挂载检查功能
 """
 
-import logging
-import subprocess
-import socket
-import time
 import os
+import time
 import tempfile
 import threading
-from typing import Dict, Any, Optional, List, Tuple
-from datetime import datetime, timedelta
-from dataclasses import dataclass, asdict
-from enum import Enum
+import subprocess
+import socket
 import requests
-import json
+from typing import Dict, Any, List, Optional
+from datetime import datetime, timedelta
+from enum import Enum
+from dataclasses import dataclass
 from .mount_manager import get_mount_manager
+from ..utils.logger import get_log_manager
 
 class CheckStatus(Enum):
     """检查状态枚举"""
@@ -51,7 +50,8 @@ class StorageConnectionChecker:
     
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.logger = logging.getLogger('StorageConnectionChecker')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('StorageConnectionChecker')
         
         # 检查配置
         self.timeout = config.get('connection_check', {}).get('timeout', 30)
@@ -546,7 +546,8 @@ class MountChecker:
     
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.logger = logging.getLogger('MountChecker')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('MountChecker')
         
         # 挂载检查历史
         self.mount_history: Dict[str, List[MountResult]] = {}

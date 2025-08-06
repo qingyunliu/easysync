@@ -1,13 +1,14 @@
 import re
-import logging
 from typing import Dict, Any, Callable, Optional
 from datetime import datetime
+from ..utils.logger import get_log_manager
 
 class ProgressMonitor:
     """进度监控类"""
     
     def __init__(self, callback: Optional[Callable[[Dict[str, Any]], None]] = None):
-        self.logger = logging.getLogger('ProgressMonitor')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('ProgressMonitor')
         self.callback = callback
         self.current_progress = 0
         self.total_files = 0

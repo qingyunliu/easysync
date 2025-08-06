@@ -1,17 +1,18 @@
 import os
 import json
-import logging
 import requests
 from typing import Dict, Any, Optional, List
 from datetime import datetime
 import time
+from ..utils.logger import get_log_manager
 
 class ServerCommunication:
     """服务器通信类（适配新版Agent API）"""
     
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.logger = logging.getLogger('ServerCommunication')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('ServerCommunication')
         self.server_url = self._get_server_url()
         self.session = requests.Session()
         self.user_id = None

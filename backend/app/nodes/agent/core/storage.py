@@ -1,19 +1,20 @@
 import os
 import json
-import logging
 import subprocess
 import tempfile
 from typing import Dict, Any, Optional, Tuple, Callable
 from datetime import datetime
 from .progress import ProgressMonitor
 from ..utils.retry import RetryHandler
+from ..utils.logger import get_log_manager
 
 class StorageManager:
     """存储管理类"""
     
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.logger = logging.getLogger('StorageManager')
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('StorageManager')
         self.mounts = {}  # 存储当前挂载点信息
         self.rclone_configs = {}  # 存储临时的rclone配置
         self.retry_handler = RetryHandler(

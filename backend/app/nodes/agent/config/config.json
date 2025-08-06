@@ -31,5 +31,6 @@
         "max_concurrent": 3
     },
     "state_dir": "state",
-    "log_level": "INFO"
+    "log_level": "DEBUG",
+    "log_dir": "logs"
 } 

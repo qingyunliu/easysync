@@ -6,44 +6,14 @@ import argparse
 from typing import Dict, Any
 from .core.agent import ProxyAgent
 from .config.settings import Settings
+from .utils.logger import init_logging
 
 def parse_args():
     """解析命令行参数"""
     parser = argparse.ArgumentParser(description='EasySync Agent')
     parser.add_argument('--config', type=str, help='配置文件路径')
-    parser.add_argument('--log-level', type=str, default='INFO', help='日志级别')
+    parser.add_argument('--log-level', type=str, help='日志级别 (默认从配置文件获取)')
     return parser.parse_args()
-
-def setup_logging(log_level: str):
-    """设置日志"""
-    # 检查是否已经设置过日志
-    root_logger = logging.getLogger()
-    if root_logger.handlers:
-        return
-    
-    # 创建日志目录
-    log_dir = os.path.join(os.path.dirname(__file__), 'logs')
-    os.makedirs(log_dir, exist_ok=True)
-    
-    # 设置日志格式
-    log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-    formatter = logging.Formatter(log_format)
-    
-    # 设置控制台处理器
-    console_handler = logging.StreamHandler()
-    console_handler.setFormatter(formatter)
-    
-    # 设置文件处理器
-    file_handler = logging.FileHandler(
-        os.path.join(log_dir, 'proxy.log'),
-        encoding='utf-8'
-    )
-    file_handler.setFormatter(formatter)
-    
-    # 配置根日志记录器
-    root_logger.setLevel(getattr(logging, log_level.upper()))
-    root_logger.addHandler(console_handler)
-    root_logger.addHandler(file_handler)
 
 def handle_signal(signum, frame):
     """处理信号"""
@@ -57,12 +27,27 @@ def main():
     # 解析命令行参数
     args = parse_args()
     
-    # 设置日志
-    setup_logging(args.log_level)
-    
     # 加载配置
     settings = Settings(args.config)
     config = settings.get_config()
+    
+    # 日志级别优先级：命令行参数 > 配置文件 > 默认值
+    # 只有当用户明确指定了 --log-level 参数时才使用命令行值
+    if args.log_level is not None:
+        log_level = args.log_level
+        print(f"使用命令行指定的日志级别: {log_level}")
+    else:
+        log_level = config.get('log_level', 'INFO')
+        print(f"使用配置文件中的日志级别: {log_level}")
+    
+    # 设置日志配置
+    log_config = {
+        'log_dir': config.get('log_dir', 'logs'),
+        'log_level': log_level
+    }
+    
+    # 初始化日志系统
+    init_logging(log_config)
     
     # 注册信号处理
     signal.signal(signal.SIGINT, handle_signal)
@@ -70,13 +55,9 @@ def main():
     signal.signal(signal.SIGQUIT, handle_signal)
     
     try:
-        # 初始化日志管理器
-        from .utils.logger import get_log_manager_with_config
-        get_log_manager_with_config(config)
-        
         # 创建代理
         agent = ProxyAgent(config)
-        handle_signal.agent = agent  # 保存agent引用用于信号处理
+        handle_signal.agent = agent
         
         # 启动代理
         agent.start()

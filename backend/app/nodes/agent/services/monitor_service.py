@@ -1,10 +1,10 @@
 import requests
 import time
 import threading
-import logging
 from typing import Dict, Any, Callable, Optional
 from datetime import datetime, timedelta
 from ..core.communication import ServerCommunication
+from ..utils.logger import get_log_manager
 import psutil
 import json
 import os
@@ -24,7 +24,8 @@ class MonitorService:
         self.last_alerts = {}
         self.metrics_history = []
         self.max_history_size = 100
-        self.logger = logging.getLogger(__name__)
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('MonitorService')
         self.monitor_thread = None
         
         # 默认告警阈值
