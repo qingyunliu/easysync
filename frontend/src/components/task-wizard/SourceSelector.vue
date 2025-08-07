@@ -246,15 +246,31 @@ const fetchStorages = async () => {
 const handleStorageChange = async (storageId) => {
   if (!storageId) return
   
-  // 清空之前的选择
-  selectedItems.value = []
+  // 在复制任务时，不清空已选择的项目
+  const isCopyMode = props.modelValue && props.modelValue.selectedPaths && props.modelValue.selectedPaths.length > 0
+  if (!isCopyMode) {
+    selectedItems.value = []
+  }
   treeData.value = []
   
   const storage = storages.value.find(s => s.id === storageId)
   if (!storage) return
 
-  // 更新父组件数据
-  updateModelValue()
+  // 更新父组件数据 - 在复制任务时不触发change事件
+  const value = {
+    storageId: form.value.selectedStorageId,
+    storageName: selectedStorage.value?.name || '',
+    storageType: selectedStorage.value?.type || '',
+    selectedPaths: selectedItems.value.map(item => ({
+      name: item.name,
+      path: item.path || item.key,
+      type: item.type,
+      size: item.size,
+      bucket: item.bucket
+    }))
+  }
+  emit('update:modelValue', value)
+  // 注意：这里不触发change事件，避免覆盖父组件的数据
   
   // 加载根目录
   await loadRootDirectory(storage)
@@ -445,13 +461,17 @@ const loadObsNode = async (node, resolve) => {
 
 const updateTreeCheckedState = () => {
   const treeRef = selectedStorage.value?.type === 'nas' ? nasTreeRef.value : obsTreeRef.value
-  if (!treeRef) return
+  if (!treeRef) {
+    console.warn('树组件未找到，无法更新选中状态')
+    return false
+  }
 
   // 获取所有选中的节点路径
   const checkedKeys = selectedItems.value.map(item => item.key || item.path)
   
   // 更新树的选中状态
   treeRef.setCheckedKeys(checkedKeys)
+  return true
 }
 
 const handleCheckChange = (data, checked) => {
@@ -634,6 +654,221 @@ const updateModelValue = () => {
   emit('change', value)
 }
 
+// 新增：设置初始状态的方法
+const setInitialState = async (initialData) => {
+  if (!initialData) {
+    // 清理状态
+    form.value.selectedStorageId = ''
+    selectedItems.value = []
+    treeData.value = []
+    selectedStorage.value = null
+    return
+  }
+  
+  if (!initialData.storageId) return
+  
+  // 设置存储选择
+  form.value.selectedStorageId = initialData.storageId
+  
+  // 等待存储列表加载完成
+  if (storages.value.length === 0) {
+    await fetchStorages()
+  }
+  
+  // 触发存储变更，加载目录树
+  await handleStorageChange(initialData.storageId)
+  
+  // 设置选中项
+  if (initialData.selectedPaths && initialData.selectedPaths.length > 0) {
+    selectedItems.value = initialData.selectedPaths.map(path => ({
+      name: path.name || path.path.split('/').pop(),
+      path: path.path,
+      type: path.type || 'directory',
+      size: path.size,
+      bucket: path.bucket
+    }))
+    
+    // 等待树组件加载完成后再设置选中状态
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    // 再次检查树组件是否可用
+    const treeRef = selectedStorage.value?.type === 'nas' ? nasTreeRef.value : obsTreeRef.value
+    if (!treeRef) {
+      console.warn('树组件仍未加载完成，等待更长时间')
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+    
+    // 更新树的选中状态
+    updateTreeCheckedState()
+    
+    // 确保树节点展开到选中项
+    await expandToSelectedItems(initialData.selectedPaths)
+    
+    // 更新模型值 - 在初始化时不触发change事件
+    const value = {
+      storageId: form.value.selectedStorageId,
+      storageName: selectedStorage.value?.name || '',
+      storageType: selectedStorage.value?.type || '',
+      selectedPaths: selectedItems.value.map(item => ({
+        name: item.name,
+        path: item.path || item.key,
+        type: item.type,
+        size: item.size,
+        bucket: item.bucket
+      }))
+    }
+    emit('update:modelValue', value)
+  }
+}
+
+// 展开到选中项的方法
+const expandToSelectedItems = async (selectedPaths) => {
+  if (!selectedPaths || selectedPaths.length === 0) return
+  
+  // 等待树组件完全加载
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  
+  const treeRef = selectedStorage.value?.type === 'nas' ? nasTreeRef.value : obsTreeRef.value
+  if (!treeRef) {
+    console.warn('树组件不可用，无法展开节点')
+    return
+  }
+  
+  // 对于每个选中的路径，展开到该路径
+  for (const pathInfo of selectedPaths) {
+    const path = pathInfo.path || pathInfo
+    
+    try {
+      // 展开到该路径的父目录
+      await expandToPath(treeRef, path)
+    } catch (error) {
+      console.error('展开路径失败:', path, error)
+    }
+  }
+}
+
+// 展开到指定路径的方法
+const expandToPath = async (treeRef, targetPath) => {
+  if (!treeRef || !targetPath) return
+  
+  // 获取路径的各个部分
+  const pathParts = targetPath.split('/').filter(part => part)
+  
+  // 根据存储类型确定使用的key
+  const isObs = selectedStorage.value?.type === 's3'
+  const nodeKey = isObs ? 'key' : 'path'
+  
+  // 逐级展开
+  for (let i = 0; i < pathParts.length; i++) {
+    const currentPath = pathParts.slice(0, i + 1).join('/')
+    
+    // 等待一下，确保树组件响应
+    await new Promise(resolve => setTimeout(resolve, 100))
+    
+    // 尝试展开当前路径
+    try {
+      // 使用Element Plus树组件的正确API
+      // 根据存储类型确定使用的key
+      const isObs = selectedStorage.value?.type === 's3'
+      const nodeKey = isObs ? 'key' : 'path'
+      
+      // 查找对应的节点
+      const node = treeRef.getNode(currentPath)
+      if (node) {
+        if (node.expand) {
+          node.expand()
+        }
+      } else {
+        const allNodes = treeRef.store.nodesMap
+        if (allNodes) {
+          const foundNode = Object.values(allNodes).find(n => 
+            n.data && (n.data.path === currentPath || n.data.key === currentPath)
+          )
+          if (foundNode) {
+            if (foundNode.expand) {
+              foundNode.expand()
+            }
+          }
+        }
+        
+        // 对于懒加载的树，可能需要先加载父节点
+        if (i > 0) {
+          const parentPath = pathParts.slice(0, i).join('/')
+          const parentNode = treeRef.getNode(parentPath)
+          if (parentNode && parentNode.expand) {
+            parentNode.expand()
+            // 等待子节点加载
+            await new Promise(resolve => setTimeout(resolve, 300))
+          }
+        }
+      }
+    } catch (error) {
+      console.error('展开路径失败:', currentPath, error)
+    }
+  }
+}
+
+// 获取当前状态
+const getCurrentState = () => {
+  return {
+    selectedItems: selectedItems.value,
+    treeData: treeData.value,
+    selectedStorage: selectedStorage.value,
+    form: form.value
+  }
+}
+
+// 设置状态
+const setState = async (state) => {
+  if (state) {
+    selectedItems.value = state.selectedItems || []
+    selectedStorage.value = state.selectedStorage || null
+    if (state.form) {
+      form.value.selectedStorageId = state.form.selectedStorageId || ''
+    }
+    
+    // 恢复树数据，避免重新加载
+    if (state.treeData && state.treeData.length > 0) {
+      treeData.value = state.treeData
+    } else if (state.selectedStorage) {
+      // 只有在没有缓存数据时才重新加载
+      treeData.value = []
+      await handleStorageChange(state.selectedStorage.id)
+    } else {
+      treeData.value = []
+    }
+    
+    // 延迟更新树状态
+    setTimeout(async () => {
+      let retryCount = 0
+      const maxRetries = 10
+      
+      const tryUpdateTree = () => {
+        if (updateTreeCheckedState()) {
+          // 延迟展开到选中项
+          setTimeout(async () => {
+            if (selectedItems.value.length > 0) {
+              await expandToSelectedItems(selectedItems.value.map(item => ({ path: item.path })))
+            }
+          }, 1000)
+        } else if (retryCount < maxRetries) {
+          retryCount++
+          setTimeout(tryUpdateTree, 300)
+        }
+      }
+      
+      tryUpdateTree()
+    }, 1000)
+  }
+}
+
+// 暴露方法给父组件
+defineExpose({
+  setInitialState,
+  getCurrentState,
+  setState
+})
+
 // 辅助函数
 const formatSize = (bytes) => {
   if (!bytes || bytes === 0) return '0 B'
@@ -677,13 +912,66 @@ const getProviderText = (provider) => {
   return texts[provider] || '未知'
 }
 
-// 监听props变化
-watch(() => props.modelValue, (newValue) => {
-  if (newValue.storageId !== form.value.selectedStorageId) {
+// 监听props变化 - 在复制任务时避免重置状态
+watch(() => props.modelValue, (newValue, oldValue) => {
+  // 如果是复制任务模式，避免重置已设置的状态
+  if (newValue.storageId && newValue.storageId !== form.value.selectedStorageId) {
     form.value.selectedStorageId = newValue.storageId
     if (newValue.storageId) {
       handleStorageChange(newValue.storageId)
     }
+  }
+  
+    // 在复制任务模式下，如果selectedPaths有内容，保持选中状态
+  if (newValue.selectedPaths && newValue.selectedPaths.length > 0) {
+    
+    // 检查是否需要更新选中项
+    const needsUpdate = selectedItems.value.length === 0 || 
+                       selectedItems.value.length !== newValue.selectedPaths.length ||
+                       !selectedItems.value.every((item, index) => 
+                         (item.path || item.key) === newValue.selectedPaths[index].path
+                       )
+    
+    if (needsUpdate) {
+      selectedItems.value = newValue.selectedPaths.map(path => ({
+        name: path.name || path.path.split('/').pop(),
+        path: path.path,
+        type: path.type || 'directory',
+        size: path.size,
+        bucket: path.bucket
+      }))
+      
+      // 检查树数据是否为空，如果为空则重新加载
+      if (treeData.value.length === 0 && newValue.storageId) {
+        // 重新加载树数据
+        handleStorageChange(newValue.storageId).then(() => {
+        }).catch(error => {
+          console.error('重新加载树数据失败:', error)
+        })
+      }
+      
+      // 延迟更新树状态，确保树组件已加载
+      setTimeout(async () => {
+        let retryCount = 0
+        const maxRetries = 10 // 增加重试次数
+        
+        const tryUpdateTree = () => {
+          if (updateTreeCheckedState()) {
+            // 再次延迟展开到选中项
+            setTimeout(async () => {
+              await expandToSelectedItems(newValue.selectedPaths)
+            }, 1000) // 增加延迟时间
+          } else if (retryCount < maxRetries) {
+            retryCount++
+            setTimeout(tryUpdateTree, 300) // 增加重试间隔
+          } else {
+            console.warn('树组件加载超时，无法更新选中状态')
+          }
+        }
+        
+        tryUpdateTree()
+      }, 1000) // 增加初始延迟时间
+    } 
   }
 }, { immediate: true })
 

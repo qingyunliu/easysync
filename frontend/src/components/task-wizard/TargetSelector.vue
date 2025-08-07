@@ -749,16 +749,30 @@ const updateTargetPath = () => {
 }
 
 const updateModelValue = (targetPath = '') => {
+  // 确定目标路径
+  let finalTargetPath = targetPath
+  if (!finalTargetPath) {
+    if (selectedStorage.value?.type === 's3') {
+      if (obsForm.value.mode === 'create') {
+        finalTargetPath = obsForm.value.bucketName + (obsForm.value.targetPath ? '/' + obsForm.value.targetPath : '')
+      } else {
+        finalTargetPath = obsForm.value.selectedBucket + (obsForm.value.targetPath ? '/' + obsForm.value.targetPath : '')
+      }
+    } else {
+      finalTargetPath = nasForm.value.targetPath
+    }
+  }
+  
+  // 清理最终路径，移除多余的斜杠
+  finalTargetPath = finalTargetPath.replace(/\/+/g, '/').replace(/^\/+|\/+$/g, '')
+  
   const value = {
     storageId: form.value.selectedStorageId,
     storageName: selectedStorage.value?.name || '',
     storageType: selectedStorage.value?.type || '',
-    targetPath: targetPath || (selectedStorage.value?.type === 's3' 
-      ? (obsForm.value.mode === 'create' 
-        ? (obsForm.value.bucketName + (obsForm.value.targetPath ? '/' + obsForm.value.targetPath : ''))
-        : (obsForm.value.selectedBucket + (obsForm.value.targetPath ? '/' + obsForm.value.targetPath : '')))
-      : nasForm.value.targetPath)
+    targetPath: finalTargetPath
   }
+  
   emit('update:modelValue', value)
   emit('change', value)
 }
@@ -794,12 +808,137 @@ const getProviderText = (provider) => {
   return texts[provider] || '未知'
 }
 
-// 监听props变化
-watch(() => props.modelValue, (newValue) => {
-  if (newValue && newValue.storageId !== form.value.selectedStorageId) {
+// 新增：设置初始状态的方法
+const setInitialState = async (initialData) => {
+  if (!initialData) {
+        form.value.selectedStorageId = ''
+    nasForm.value.targetPath = ''
+    obsForm.value.targetPath = ''
+    obsForm.value.selectedBucket = ''
+    selectedStorage.value = null
+    return
+  }
+  
+  if (!initialData.storageId) return
+  // 设置存储选择
+  form.value.selectedStorageId = initialData.storageId
+  
+  // 等待存储列表加载完成
+  if (storages.value.length === 0) {
+    await fetchStorages()
+  }
+  
+  // 触发存储变更，确保selectedStorage正确设置
+  await handleStorageChange(initialData.storageId)
+  
+  // 等待存储类型确定后再设置目标路径
+  await new Promise(resolve => setTimeout(resolve, 200))
+  
+  // 设置目标路径
+  if (initialData.targetPath) {
+    if (selectedStorage.value?.type === 's3') {
+      const cleanPath = initialData.targetPath.replace(/\/+/g, '/').replace(/^\/+|\/+$/g, '')
+      const pathParts = cleanPath.split('/')
+      if (pathParts.length > 0 && pathParts[0]) {
+        obsForm.value.selectedBucket = pathParts[0]
+        if (pathParts.length > 1) {
+          obsForm.value.targetPath = pathParts.slice(1).join('/')
+        } else {
+          obsForm.value.targetPath = ''
+        }
+      }
+    } else {
+      nasForm.value.targetPath = initialData.targetPath
+    }
+    
+    const value = {
+      storageId: form.value.selectedStorageId,
+      storageName: selectedStorage.value?.name || '',
+      storageType: selectedStorage.value?.type || '',
+      targetPath: initialData.targetPath || ''
+    }
+    emit('update:modelValue', value)
+  }
+}
+
+// 获取当前状态
+const getCurrentState = () => {
+  return {
+    form: form.value,
+    nasForm: nasForm.value,
+    obsForm: obsForm.value,
+    selectedStorage: selectedStorage.value
+  }
+}
+
+// 设置状态
+const setState = (state) => {
+  if (state) {
+    if (state.form) {
+      form.value.selectedStorageId = state.form.selectedStorageId || ''
+    }
+    if (state.nasForm) {
+      nasForm.value.targetPath = state.nasForm.targetPath || ''
+    }
+    if (state.obsForm) {
+      obsForm.value.targetPath = state.obsForm.targetPath || ''
+    }
+    selectedStorage.value = state.selectedStorage || null
+    updateModelValue()
+  }
+}
+
+// 暴露方法给父组件
+defineExpose({
+  setInitialState,
+  getCurrentState,
+  setState
+})
+
+watch(() => props.modelValue, (newValue, oldValue) => {
+  if (newValue && newValue.storageId && newValue.storageId !== form.value.selectedStorageId) {
     form.value.selectedStorageId = newValue.storageId || ''
     if (newValue.storageId) {
       handleStorageChange(newValue.storageId)
+    }
+    
+    setTimeout(() => {
+      updateModelValue()
+    }, 100)
+  }
+  
+  if (newValue && newValue.targetPath) {
+    const cleanPath = newValue.targetPath.replace(/\/+/g, '/').replace(/^\/+|\/+$/g, '')
+    
+    let shouldUpdate = false
+    
+    if (selectedStorage.value?.type === 's3') {
+      const pathParts = cleanPath.split('/')
+      const expectedBucket = pathParts.length > 0 ? pathParts[0] : ''
+      const expectedPath = pathParts.length > 1 ? pathParts.slice(1).join('/') : ''
+      
+      shouldUpdate = obsForm.value.selectedBucket !== expectedBucket || obsForm.value.targetPath !== expectedPath
+    } else {
+      shouldUpdate = nasForm.value.targetPath !== cleanPath
+    }
+    
+    if (shouldUpdate) {
+      if (selectedStorage.value?.type === 's3') {
+        const pathParts = cleanPath.split('/')
+        if (pathParts.length > 0 && pathParts[0]) {
+          obsForm.value.selectedBucket = pathParts[0]
+          if (pathParts.length > 1) {
+            obsForm.value.targetPath = pathParts.slice(1).join('/')
+          } else {
+            obsForm.value.targetPath = ''
+          }
+        }
+      } else {
+        nasForm.value.targetPath = cleanPath
+      }
+      setTimeout(() => {
+        updateModelValue()
+      }, 100)
     }
   }
 }, { immediate: true })

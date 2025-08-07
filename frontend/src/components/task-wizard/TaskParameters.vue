@@ -302,6 +302,10 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { Icon } from '@iconify/vue'
+import NasToNasOptions from './scenarios/NasToNasOptions.vue'
+import NasToObsOptions from './scenarios/NasToObsOptions.vue'
+import ObsToNasOptions from './scenarios/ObsToNasOptions.vue'
+import ObsToObsOptions from './scenarios/ObsToObsOptions.vue'
 
 const props = defineProps({
   modelValue: {
@@ -370,7 +374,8 @@ const form = ref({
 
 // 计算属性
 const showScenarioOptions = computed(() => {
-  return props.sourceStorage.storageType && props.targetStorage.storageType
+  const result = props.sourceStorage.storageType && props.targetStorage.storageType
+  return result
 })
 
 const scenarioTitle = computed(() => {
@@ -388,15 +393,14 @@ const scenarioComponent = computed(() => {
   const targetType = props.targetStorage.storageType === 's3' ? 'obs' : 'nas'
   
   if (sourceType === 'nas' && targetType === 'nas') {
-    return 'NasToNasOptions'
+    return NasToNasOptions
   } else if (sourceType === 'nas' && targetType === 'obs') {
-    return 'NasToObsOptions'
+    return NasToObsOptions
   } else if (sourceType === 'obs' && targetType === 'nas') {
-    return 'ObsToNasOptions'
+    return ObsToNasOptions
   } else if (sourceType === 'obs' && targetType === 'obs') {
-    return 'ObsToObsOptions'
+    return ObsToObsOptions
   }
-  
   return null
 })
 
