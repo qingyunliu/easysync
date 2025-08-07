@@ -682,7 +682,6 @@ const handleCurrentChange = (page) => {
 }
 
 const showCreateDialog = () => {
-  console.log('打开任务创建向导')
   copyFromTask.value = null // 清空复制任务
   taskWizardVisible.value = true
 }
@@ -863,25 +862,10 @@ const handleTestMount = async (task) => {
 
 const handleDuplicateTask = async (task) => {
   try {
-    console.log('开始复制任务:', task)
-    
     // 获取任务的完整详情
     const response = await axios.get(`/api/tasks/${task.id}`)
     if (response.data.status === 'success') {
       const taskDetail = response.data.data
-      console.log('获取到任务详情:', taskDetail)
-      console.log('源端信息:', {
-        source_type: taskDetail.source_type,
-        source_storage_id: taskDetail.source_storage_id,
-        source_path: taskDetail.source_path,
-        source_storage_config: taskDetail.source_storage_config
-      })
-      console.log('目标端信息:', {
-        target_storage_id: taskDetail.target_storage_id,
-        target_path: taskDetail.target_path,
-        target_storage_config: taskDetail.target_storage_config
-      })
-      
       // 验证任务数据是否完整
       if (!taskDetail.source_storage_id || !taskDetail.target_storage_id) {
         ElMessage.warning('该任务配置不完整，无法复制')
@@ -890,12 +874,10 @@ const handleDuplicateTask = async (task) => {
       
       copyFromTask.value = taskDetail
       taskWizardVisible.value = true
-      console.log('已设置复制任务:', copyFromTask.value)
     } else {
       ElMessage.error(response.data.message || '获取任务详情失败')
     }
   } catch (error) {
-    console.error('复制任务失败:', error)
     ElMessage.error(error.response?.data?.message || '获取任务详情失败')
   }
 }

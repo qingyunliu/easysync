@@ -465,7 +465,6 @@ const createTask = async () => {
 
 const buildTaskData = () => {
   const { source, target, parameters } = wizardData.value
-  
   // 构建任务数据
   const taskData = {
     name: parameters.taskName,
@@ -479,7 +478,9 @@ const buildTaskData = () => {
     target_path: target.targetPath,
     options: {
       ...parameters.syncOptions,
-      retry_options: parameters.retryOptions
+      retry_options: parameters.retryOptions,
+      advanced_options: parameters.advancedOptions,
+      scenario_options: parameters.scenarioOptions
     }
   }
 
