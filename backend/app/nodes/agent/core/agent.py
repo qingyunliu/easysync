@@ -28,7 +28,6 @@ class ProxyAgent:
         self.logger = self.log_manager.get_logger('ProxyAgent')
         self.server_comm = ServerCommunication(config)
         self.monitor_service = MonitorService(config, None, None)
-        self.sync_service = SyncService(config, self.server_comm, self.task_manager)
         self.running = False
         self.heartbeat_thread = None
         self.task_poll_thread = None
@@ -50,6 +49,9 @@ class ProxyAgent:
         self.progress_tracker = EnhancedProgressTracker(self.server_comm, config)
         self.connection_checker = StorageConnectionChecker(config)
         self.mount_checker = MountChecker(config)
+        
+        # 在task_manager初始化后再创建sync_service
+        self.sync_service = SyncService(config, self.server_comm, self.task_manager)
         
         self._setup_services()
 
