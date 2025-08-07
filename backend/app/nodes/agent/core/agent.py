@@ -28,7 +28,7 @@ class ProxyAgent:
         self.logger = self.log_manager.get_logger('ProxyAgent')
         self.server_comm = ServerCommunication(config)
         self.monitor_service = MonitorService(config, None, None)
-        self.sync_service = SyncService(config, self.server_comm)
+        self.sync_service = SyncService(config, self.server_comm, self.task_manager)
         self.running = False
         self.heartbeat_thread = None
         self.task_poll_thread = None
@@ -899,7 +899,15 @@ class ProxyAgent:
     
     def cancel_task(self, task_id: str) -> bool:
         """取消任务的外部接口"""
-        return self.task_manager.cancel_task(task_id)
+        # 先尝试通过任务管理器取消
+        task_result = self.task_manager.cancel_task(task_id)
+        
+        # 如果任务管理器没有找到任务，尝试通过同步服务取消
+        if not task_result:
+            sync_result = self.sync_service.cancel_task(task_id)
+            return sync_result
+            
+        return task_result
     
     def pause_task(self, task_id: str) -> bool:
         """暂停任务的外部接口"""

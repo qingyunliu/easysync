@@ -11,11 +11,12 @@ from ..utils.resource import ResourceManager
 from ..models.task_state import TaskState
 from ..core.progress import ProgressMonitor
 import uuid
+import subprocess
 
 class SyncService:
     """同步服务类"""
     
-    def __init__(self, config: Dict[str, Any], server_comm: ServerCommunication = None):
+    def __init__(self, config: Dict[str, Any], server_comm: ServerCommunication = None, task_manager = None):
         self.config = config
         self.log_manager = get_log_manager()
         self.logger = self.log_manager.get_logger('SyncService')
@@ -23,6 +24,7 @@ class SyncService:
         self.resource_manager = ResourceManager(config)
         self.task_state = TaskState(config.get('state_dir', 'state'))
         self.server_comm = server_comm if server_comm else ServerCommunication(config)
+        self.task_manager = task_manager
         self.progress_monitor = ProgressMonitor(self._on_progress_update)
         self.running = False
         self.sync_thread = None
@@ -33,6 +35,8 @@ class SyncService:
         self.active_tasks = 0
         self.task_lock = threading.Lock()
         self.callbacks = []
+        self.running_processes = {}
+        self.process_lock = threading.Lock()
         
     def start(self):
         """启动同步服务"""
@@ -74,6 +78,84 @@ class SyncService:
         """
         if callback in self.callbacks:
             self.callbacks.remove(callback)
+            
+    def cancel_task(self, task_id: str) -> bool:
+        """取消任务
+        
+        Args:
+            task_id: 任务ID
+            
+        Returns:
+            bool: 是否成功取消
+        """
+        try:
+            with self.process_lock:
+                if task_id in self.running_processes:
+                    process = self.running_processes[task_id]
+                    self.logger.info(f"取消任务 {task_id}，终止进程 {process.pid}")
+                    
+                    # 终止进程
+                    try:
+                        process.terminate()
+                        # 等待进程结束
+                        process.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        # 如果超时，强制杀死进程
+                        process.kill()
+                        process.wait()
+                    
+                    # 从运行列表中移除
+                    del self.running_processes[task_id]
+                    
+                    # 更新任务状态
+                    self._update_task_status(task_id, 'cancelled', '任务已取消')
+                    return True
+                else:
+                    # 尝试通过进程名称终止rclone进程
+                    self.logger.info(f"任务 {task_id} 不在运行中，尝试终止相关rclone进程")
+                    return self._terminate_rclone_processes()
+                    
+        except Exception as e:
+            self.logger.error(f"取消任务 {task_id} 失败: {e}")
+            return False
+            
+    def _terminate_rclone_processes(self) -> bool:
+        """终止所有rclone进程"""
+        try:
+            import psutil
+            
+            # 查找所有rclone进程
+            rclone_processes = []
+            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                try:
+                    if proc.info['name'] == 'rclone' or (proc.info['cmdline'] and 'rclone' in proc.info['cmdline'][0]):
+                        rclone_processes.append(proc)
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+            
+            if not rclone_processes:
+                self.logger.info("没有找到rclone进程")
+                return False
+                
+            self.logger.info(f"找到 {len(rclone_processes)} 个rclone进程，正在终止...")
+            
+            for proc in rclone_processes:
+                try:
+                    self.logger.info(f"终止rclone进程 {proc.pid}")
+                    proc.terminate()
+                    proc.wait(timeout=5)
+                except psutil.TimeoutExpired:
+                    self.logger.warning(f"强制杀死rclone进程 {proc.pid}")
+                    proc.kill()
+                    proc.wait()
+                except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                    self.logger.warning(f"无法终止进程 {proc.pid}: {e}")
+                    
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"终止rclone进程失败: {e}")
+            return False
             
     def add_task(self, task: Dict[str, Any]):
         """添加任务
@@ -417,6 +499,7 @@ class SyncService:
             'transfer_speed': status.get('transfer_speed', ''),
             'eta': status.get('eta', ''),
             'current_file': status.get('current_file', ''),
+            'current_phase': status.get('current_phase', ''),
             'last_update': datetime.utcnow().isoformat()
         }
         
@@ -427,15 +510,15 @@ class SyncService:
             'total_files': status.get('total_files', 0),
             'transferred_size': status.get('transferred_size', 0),
             'total_size': status.get('total_size', 0),
+            'current_phase': status.get('current_phase', ''),
             'details': details
         })
-        
-        # 通知服务器，包含详细信息
+            
         server_data = {
             'progress': status.get('progress', 0),
-            'status': 'running',
             'details': details
         }
+
         self.server_comm.update_task_status(task_id, server_data)
         
         # 记录日志

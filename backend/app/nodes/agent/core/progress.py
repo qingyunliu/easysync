@@ -17,6 +17,7 @@ class ProgressMonitor:
         self.transferred_size = 0
         self.start_time = None
         self.last_update = None
+        self.current_phase = 'initializing'  # 当前阶段：initializing, checking, transferring, completed
         
     def start(self):
         """开始监控"""
@@ -27,6 +28,7 @@ class ProgressMonitor:
         self.transferred_files = 0
         self.total_size = 0
         self.transferred_size = 0
+        self.current_phase = 'initializing'
         
     def _estimate_progress_by_time(self):
         """基于时间估算进度"""
@@ -164,6 +166,8 @@ class ProgressMonitor:
             
             # 解析rclone输出
             if 'Transferred:' in line and ',' in line:
+                # 传输阶段
+                self.current_phase = 'transferring'
                 # 总体进度 - 格式: "Transferred: 41.235M / 5.469 GBytes, 1%, 4.364 MBytes/s, ETA 21m13s"
                 # 或者: "Transferred: 9 / 1400, 1%"
                 
@@ -178,6 +182,13 @@ class ProgressMonitor:
                             self.current_progress = new_progress
                             self.logger.debug(f"Progress: {self.current_progress}%")
                 
+                # 如果没有百分比，但有文件计数，则基于文件数量计算进度
+                elif self.total_files > 0:
+                    progress = int((self.transferred_files / self.total_files) * 100)
+                    if progress > self.current_progress:
+                        self.current_progress = progress
+                        self.logger.debug(f"Progress based on files: {self.current_progress}%")
+                
                 # 解析文件计数（只在包含数字/数字格式时）
                 match = re.search(r'Transferred:\s+(\d+)\s*/\s*(\d+)', line)
                 if match:
@@ -188,12 +199,20 @@ class ProgressMonitor:
                         self.transferred_files = new_transferred
                         self.total_files = new_total
                         self.logger.debug(f"Files: {self.transferred_files}/{self.total_files}")
+                        
+                        # 如果没有百分比信息，基于文件数量重新计算进度
+                        if '%' not in line and self.total_files > 0:
+                            progress = int((self.transferred_files / self.total_files) * 100)
+                            if progress > self.current_progress:
+                                self.current_progress = progress
+                                self.logger.debug(f"Progress based on files: {self.current_progress}%")
                 
                 # 更新状态
                 self._update_status()
                 
             elif 'Checks:' in line:
                 # 检查阶段 - 格式: "Checks: 1/2, 50%"
+                self.current_phase = 'checking'
                 match = re.search(r'Checks:\s+(\d+)/(\d+)', line)
                 if match:
                     self.transferred_files = int(match.group(1))
@@ -209,8 +228,11 @@ class ProgressMonitor:
                 self._update_status()
                 
             elif 'Elapsed time:' in line:
-                # 完成信息
-                self.current_progress = 100
+                # 阶段完成信息，但不一定是整个任务完成
+                # 只有在当前阶段是completed时才设置为100%
+                if self.current_phase == 'completed':
+                    self.current_progress = 100
+                # 更新状态，但不强制设置进度为100%
                 self._update_status()
                 
         except Exception as e:
@@ -230,7 +252,8 @@ class ProgressMonitor:
             'transferred_size': self.transferred_size,
             'total_size': self.total_size,
             'start_time': self.start_time.isoformat() if self.start_time else None,
-            'last_update': datetime.utcnow().isoformat()
+            'last_update': datetime.utcnow().isoformat(),
+            'current_phase': self.current_phase
         }
         
         # 计算传输速度
@@ -271,4 +294,4 @@ class ProgressMonitor:
             'total_size': self.total_size,
             'transferred_size': self.transferred_size,
             'elapsed_time': (datetime.utcnow() - self.start_time).total_seconds() if self.start_time else 0
-        } 
+        }

@@ -207,6 +207,17 @@
         </el-col>
       </el-row>
       
+      <!-- 当前阶段 -->
+      <div v-if="task.details.current_phase" style="margin-top: 20px;">
+        <el-divider content-position="left">当前阶段</el-divider>
+        <el-descriptions :column="2" border>
+          <el-descriptions-item label="阶段">{{ getPhaseText(task.details.current_phase) }}</el-descriptions-item>
+          <el-descriptions-item label="进度">{{ task.details.progress || 0 }}%</el-descriptions-item>
+          <el-descriptions-item v-if="task.details.transferred_files !== undefined" label="已处理文件">{{ task.details.transferred_files }}/{{ task.details.total_files }}</el-descriptions-item>
+          <el-descriptions-item v-if="task.details.transfer_speed" label="传输速度">{{ task.details.transfer_speed }}</el-descriptions-item>
+        </el-descriptions>
+      </div>
+      
       <!-- 当前传输文件 -->
       <div v-if="task.details.current_file" style="margin-top: 20px;">
         <el-divider content-position="left">当前传输文件</el-divider>
@@ -368,6 +379,16 @@ const getProgressStatus = (status) => {
   if (status === 'failed') return 'exception'
   if (status === 'completed') return 'success'
   return ''
+}
+
+const getPhaseText = (phase) => {
+  const phases = {
+    'initializing': '初始化中',
+    'checking': '检查文件',
+    'transferring': '传输文件',
+    'completed': '已完成'
+  }
+  return phases[phase] || phase
 }
 
 const getNodeName = (nodeId) => {

@@ -408,7 +408,7 @@ storage_class = STANDARD
     
     def sync_data(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
                  options: Dict[str, Any] = None, progress_callback: Optional[Callable] = None,
-                 source_path: str = None, target_path: str = None) -> bool:
+                 source_path: str = None, target_path: str = None, process_callback: Optional[Callable] = None) -> bool:
         """同步数据
         
         Args:
