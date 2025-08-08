@@ -345,3 +345,31 @@ class ServerCommunication:
             'server_url': self.server_url,
             'is_registered': bool(self.node_id and self.token)
         } 
+
+    def report_task_log(self, task_id: str, log_entry: Dict[str, Any]) -> bool:
+        """上报任务日志到服务器
+        
+        Args:
+            log_entry: 日志条目数据
+            
+        Returns:
+            bool: 是否成功
+        """
+        try:
+            endpoint = f"{self.server_url}/{self.node_id}/tasks/{task_id}/logs"
+            response = self.session.post(
+                endpoint,
+                json=log_entry,
+                headers=self._auth_headers()
+            )
+            
+            if response.status_code == 200:
+                self.logger.debug(f"任务日志上报成功: {log_entry.get('task_id')}")
+                return True
+            else:
+                self.logger.error(f"任务日志上报失败: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"任务日志上报异常: {e}")
+            return False 

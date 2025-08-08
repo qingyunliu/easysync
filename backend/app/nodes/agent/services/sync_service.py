@@ -9,7 +9,7 @@ from ..core.communication import ServerCommunication
 from ..core.task_manager import TaskManager
 from ..utils.logger import get_log_manager
 from ..utils.resource import ResourceManager
-from ..models.task_state import TaskState
+from ..models.task_state import TaskState, TaskLogger, TaskPhase, LogLevel
 from ..core.progress import ProgressMonitor
 import uuid
 
@@ -27,6 +27,7 @@ class SyncService:
         self.storage_manager = StorageManager(config, task_manager)  # 传递 task_manager
         self.resource_manager = ResourceManager(config)
         self.task_state = TaskState(config.get('state_dir', 'state'))
+        self.task_logger = TaskLogger(self.server_comm)  # 任务日志管理器
         self.progress_monitor = ProgressMonitor(self._on_progress_update)
         
         # 同步服务状态
@@ -168,6 +169,29 @@ class SyncService:
         
         self.logger.info(f"执行同步任务: {task_id}")
         
+        # 1. 记录任务创建
+        self.task_logger.log_task_event(
+            task_id=task_id,
+            phase=TaskPhase.CREATED,
+            level=LogLevel.INFO,
+            message=f"Task '{task_id}' created with type 'sync'",
+            details={'task_type': 'sync', 'source': source_config, 'target': target_config}
+        )
+        
+        # 2. 记录任务分配
+        node_info = {
+            'node_id': self.config.get('node_id', 'unknown'),
+            'node_name': self.config.get('node_name', 'unknown'),
+            'node_ip': self.config.get('node_ip', 'unknown')
+        }
+        self.task_logger.log_task_event(
+            task_id=task_id,
+            phase=TaskPhase.ASSIGNED,
+            level=LogLevel.INFO,
+            message=f"任务已分配到proxy节点（{node_info['node_name']} - {node_info['node_ip']}）",
+            details=node_info
+        )
+        
         # 初始化任务状态
         self.task_state.save_state(task_id, {
             'status': 'running',
@@ -181,11 +205,92 @@ class SyncService:
             'error': None
         })
         
+        # 3. 检查配置参数
+        self.task_logger.log_task_event(
+            task_id=task_id,
+            phase=TaskPhase.CONFIG_CHECK,
+            level=LogLevel.INFO,
+            message="任务开始检查配置参数",
+            details={'source_config': source_config, 'target_config': target_config}
+        )
+        
         # 检查存储
         if not self._check_storage(source_config, target_config):
-            self._update_task_status(task_id, 'failed', 'Storage check failed')
+            error_msg = "存储配置检查失败"
+            self.task_logger.log_task_event(
+                task_id=task_id,
+                phase=TaskPhase.TASK_FAILED,
+                level=LogLevel.ERROR,
+                message=error_msg,
+                details={'error': error_msg}
+            )
+            self._update_task_status(task_id, 'failed', error_msg)
             return
             
+        # 4. 测试连通性
+        self.task_logger.log_task_event(
+            task_id=task_id,
+            phase=TaskPhase.CONNECTIVITY_TEST,
+            level=LogLevel.INFO,
+            message="开始测试源端目标端连通性"
+        )
+        
+        # 检查存储连接
+        if not self._test_connectivity(source_config, target_config):
+            error_msg = "源端或目标端连通性测试失败"
+            self.task_logger.log_task_event(
+                task_id=task_id,
+                phase=TaskPhase.TASK_FAILED,
+                level=LogLevel.ERROR,
+                message=error_msg,
+                details={'error': error_msg}
+            )
+            self._update_task_status(task_id, 'failed', error_msg)
+            return
+            
+        # 5. 挂载源端（如果是NAS/NFS）
+        source_type = source_config.get('type', '')
+        if source_type in ['nfs', 'nas']:
+            self.task_logger.log_task_event(
+                task_id=task_id,
+                phase=TaskPhase.MOUNT_SOURCE,
+                level=LogLevel.INFO,
+                message="开始挂载源端同步目录",
+                details={'source_type': source_type, 'source_config': source_config}
+            )
+            
+            # 执行挂载
+            mount_result = self._mount_source_storage(source_config)
+            if not mount_result['success']:
+                error_msg = f"源端挂载失败: {mount_result['error']}"
+                self.task_logger.log_task_event(
+                    task_id=task_id,
+                    phase=TaskPhase.TASK_FAILED,
+                    level=LogLevel.ERROR,
+                    message=error_msg,
+                    details={'error': mount_result['error']}
+                )
+                self._update_task_status(task_id, 'failed', error_msg)
+                return
+                
+            # 6. 挂载完成
+            self.task_logger.log_task_event(
+                task_id=task_id,
+                phase=TaskPhase.MOUNT_COMPLETED,
+                level=LogLevel.INFO,
+                message="完成源端同步目录挂载",
+                details={'mount_point': mount_result['mount_point']}
+            )
+        
+        # 7. 开始执行同步
+        self.task_logger.log_task_event(
+            task_id=task_id,
+            phase=TaskPhase.SYNC_STARTED,
+            level=LogLevel.INFO,
+            message="开始执行同步",
+            details={'source_path': task.get('source_path', ''), 'target_path': task.get('target_path', '')}
+        )
+        
         # 开始同步
         self.progress_monitor.start()
         
@@ -216,6 +321,22 @@ class SyncService:
                 )
                 
                 if success:
+                    # 8. 同步完成
+                    self.task_logger.log_task_event(
+                        task_id=task_id,
+                        phase=TaskPhase.SYNC_COMPLETED,
+                        level=LogLevel.INFO,
+                        message="同步执行完成"
+                    )
+                    
+                    # 9. 任务完成
+                    self.task_logger.log_task_event(
+                        task_id=task_id,
+                        phase=TaskPhase.TASK_COMPLETED,
+                        level=LogLevel.INFO,
+                        message="任务完成"
+                    )
+                    
                     self._update_task_status(task_id, 'completed')
                     return
                     
@@ -227,7 +348,15 @@ class SyncService:
                     continue
                     
         # 所有重试都失败了
-        self._update_task_status(task_id, 'failed', last_error or 'Unknown error')
+        error_msg = last_error or 'Unknown error'
+        self.task_logger.log_task_event(
+            task_id=task_id,
+            phase=TaskPhase.TASK_FAILED,
+            level=LogLevel.ERROR,
+            message=f"任务失败: {error_msg}",
+            details={'error': error_msg, 'retries': self.max_retries}
+        )
+        self._update_task_status(task_id, 'failed', error_msg)
     
     def _execute_copy_task(self, task: Dict[str, Any]):
         """执行复制任务"""
@@ -370,9 +499,13 @@ class SyncService:
                 except Exception as e:
                     self.logger.error(f"Progress callback error: {e}")
                     
-            # 上报进度到服务器
+            # 使用任务日志系统记录进度
             task_id = status.get('task_id')
             if task_id:
+                # 记录进度日志
+                self.task_logger.log_task_progress(task_id, status)
+                
+                # 上报进度到服务器
                 self.server_comm.update_task_status(task_id, {
                     'status': 'running',
                     'progress': status.get('progress', 0),
@@ -389,3 +522,45 @@ class SyncService:
             self.logger.info(f"Cleaned up tasks older than {max_age_days} days")
         except Exception as e:
             self.logger.error(f"Error cleaning up old tasks: {e}") 
+
+    def _test_connectivity(self, source_config: Dict[str, Any], target_config: Dict[str, Any]) -> bool:
+        """测试源端和目标端的连通性"""
+        try:
+            # 测试源端连通性
+            if not self.storage_manager.check_storage(source_config):
+                self.logger.error("源端连通性测试失败")
+                return False
+                
+            # 测试目标端连通性
+            if not self.storage_manager.check_storage(target_config):
+                self.logger.error("目标端连通性测试失败")
+                return False
+                
+            return True
+            
+        except Exception as e:
+            self.logger.error(f"连通性测试失败: {e}")
+            return False
+            
+    def _mount_source_storage(self, source_config: Dict[str, Any]) -> Dict[str, Any]:
+        """挂载源端存储"""
+        try:
+            # 使用 storage_manager 进行挂载
+            mount_point = self.storage_manager.mount(source_config)
+            
+            if mount_point:
+                return {
+                    'success': True,
+                    'mount_point': mount_point
+                }
+            else:
+                return {
+                    'success': False,
+                    'error': '挂载失败'
+                }
+                
+        except Exception as e:
+            return {
+                'success': False,
+                'error': str(e)
+            } 
