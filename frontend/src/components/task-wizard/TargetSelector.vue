@@ -128,7 +128,7 @@
                         <Icon icon="mdi:bucket" class="bucket-icon" />
                         <span>{{ bucket.name }}</span>
                         <el-tag size="small" type="info">
-                          {{ formatDate(bucket.creationDate) }}
+                          {{ formatDate(bucket.created_at) }}
                         </el-tag>
                       </div>
                     </el-option>

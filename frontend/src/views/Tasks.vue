@@ -366,7 +366,7 @@
     <el-dialog
       :title="copyFromTask ? '复制任务' : '创建任务'"
       v-model="taskWizardVisible"
-      width="90vw"
+      width="60vw"
       :before-close="handleWizardClose"
       :close-on-click-modal="false"
       :close-on-press-escape="false"
