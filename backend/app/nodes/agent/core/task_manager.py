@@ -52,7 +52,7 @@ class TaskProcess:
 class TaskManager:
     """任务管理器 - 统一管理所有任务进程"""
     
-    def __init__(self, config: Dict[str, Any], server_comm: ServerCommunication = None):
+    def __init__(self, server_comm: ServerCommunication, config: Dict[str, Any]):
         self.config = config
         self.log_manager = get_log_manager()
         self.logger = self.log_manager.get_logger('TaskManager')

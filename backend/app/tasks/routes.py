@@ -267,7 +267,7 @@ def retry_task(task_id):
             user_id=user_id,
             task_name=task.name,
             retry_count=task.retry_count or 1,
-            max_retries=task.max_retries or 3
+            max_retries=3
         )
         return jsonify({
             'status': 'success',

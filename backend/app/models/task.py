@@ -48,6 +48,7 @@ class Task(BaseModel):
     progress = db.Column(db.Integer, default=0)
     details = db.Column(db.JSON, nullable=True)
     node_id = db.Column(db.String(36), db.ForeignKey('nodes.id'), nullable=True)
+    retry_count = db.Column(db.Integer, default=0, comment='重试次数')
 
     # 关联
     logs = db.relationship('TaskLog', backref=db.backref('task', lazy=True))
@@ -82,6 +83,7 @@ class Task(BaseModel):
             'source_path': self.source_path,
             'target_storage_id': self.target_storage_id,
             'target_path': self.target_path,
+            'retry_count': self.retry_count,
         })
         return data
 

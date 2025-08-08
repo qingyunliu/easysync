@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 from .communication import ServerCommunication
 from .task_manager import TaskManager, TaskRetryManager, TaskValidator
-from .enhanced_progress import EnhancedProgressTracker
+from .progress import ProgressMonitor
 from ..services.monitor_service import MonitorService
 from ..services.sync_service import SyncService
 from ..services.connection_checker import StorageConnectionChecker, MountChecker
@@ -46,7 +46,7 @@ class ProxyAgent:
         self.task_manager = TaskManager(self.server_comm, config)
         self.task_retry_manager = TaskRetryManager(self.server_comm, config)
         self.task_validator = TaskValidator(config)
-        self.progress_tracker = EnhancedProgressTracker(self.server_comm, config)
+        self.progress_tracker = ProgressMonitor()
         self.connection_checker = StorageConnectionChecker(config)
         self.mount_checker = MountChecker(config)
         

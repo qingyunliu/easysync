@@ -124,31 +124,23 @@ class ProgressMonitor:
                 return
             
             stats = log_entry["stats"]
+            msg = log_entry.get("msg", "")
             
-            # 解析基本统计信息
+            # 从 msg 字段解析进度信息
+            progress_info = self._parse_rclone_msg(msg)
+            
+            # 从 stats 字段获取结构化数据
             transferred_bytes = stats.get("bytes", 0)
-            total_bytes = stats.get("size", 0)
-            percent = (transferred_bytes / total_bytes * 100) if total_bytes else 0
-            
-            # 解析文件信息
-            transfer_stats = stats.get("transfer", {})
-            transferred_files = transfer_stats.get("transferred", 0)
-            total_files = transfer_stats.get("total", 0)
-            
-            # 解析检查信息
-            checks = stats.get("checks", {})
-            if isinstance(checks, dict):
-                checked = checks.get("checked", 0)
-                total_checks = checks.get("total", 0)
-            elif isinstance(checks, int):
-                checked = checks
-                total_checks = 0
-            else:
-                checked = total_checks = 0
-            
-            # 解析速度和ETA
             speed = stats.get("speed", 0.0)  # bytes per second
-            eta = stats.get("eta", 0)  # seconds
+            transferred_files = stats.get("transfers", 0)
+            
+            # 使用从 msg 解析的信息
+            percent = progress_info.get('percent', 0)
+            total_bytes = progress_info.get('total_bytes', 0)
+            total_files = progress_info.get('total_files', 0)
+            checked = progress_info.get('checked', 0)
+            total_checks = progress_info.get('total_checks', 0)
+            eta = progress_info.get('eta', 0)  # 从 msg 解析的 ETA
             
             # 格式化输出
             self._format_and_log_progress(
@@ -157,11 +149,184 @@ class ProgressMonitor:
                 checked, total_checks
             )
             
+            # 记录详细的传输信息
+            def format_bytes(num):
+                for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+                    if abs(num) < 1024.0:
+                        return f"{num:.2f}{unit}"
+                    num /= 1024.0
+                return f"{num:.2f}PB"
+            
+            # 格式化 ETA 时间
+            def format_eta(seconds):
+                if seconds <= 0:
+                    return "未知"
+                hours = seconds // 3600
+                minutes = (seconds % 3600) // 60
+                secs = seconds % 60
+                if hours > 0:
+                    return f"{hours}h{minutes}m{secs}s"
+                elif minutes > 0:
+                    return f"{minutes}m{secs}s"
+                else:
+                    return f"{secs}s"
+            
+            self.logger.info(f"Rclone 传输进度: {transferred_files}/{total_files} 文件, {format_bytes(transferred_bytes)}/{format_bytes(total_bytes)}, 速度: {format_bytes(speed)}/s, 进度: {percent:.1f}%, ETA: {format_eta(eta)}")
+            
         except json.JSONDecodeError:
             # 如果不是 JSON 格式，尝试解析传统文本格式
             self._parse_legacy_rclone_output(line)
         except Exception as e:
             self.logger.debug(f"解析 rclone 进度失败: {e}")
+    
+    def _parse_rclone_msg(self, msg: str) -> Dict[str, Any]:
+        """解析 rclone msg 字段中的进度信息"""
+        try:
+            result = {
+                'percent': 0,
+                'total_bytes': 0,
+                'total_files': 0,
+                'checked': 0,
+                'total_checks': 0
+            }
+            
+            # 解析 "Transferred: 12.000M / 4.586 GBytes, 0%, 1.467 MBytes/s, ETA 53m12s" 格式
+            # 这个模式匹配传输大小和总大小
+            size_pattern = r'Transferred:\s*([^/]+)\s*/\s*([^,]+),\s*([^%]+)%'
+            size_match = re.search(size_pattern, msg)
+            if size_match:
+                transferred_str = size_match.group(1).strip()
+                total_str = size_match.group(2).strip()
+                percent_str = size_match.group(3).strip()
+                
+                # 解析百分比
+                try:
+                    result['percent'] = float(percent_str)
+                except ValueError:
+                    pass
+                
+                # 解析总大小
+                result['total_bytes'] = self._parse_size(total_str)
+            
+            # 解析 "Transferred: 3 / 1174, 0%" 格式
+            # 这个模式匹配传输文件数和总文件数
+            files_pattern = r'Transferred:\s*(\d+)\s*/\s*(\d+),\s*([^%]+)%'
+            files_match = re.search(files_pattern, msg)
+            if files_match:
+                transferred_files = int(files_match.group(1))
+                total_files = int(files_match.group(2))
+                files_percent = float(files_match.group(3))
+                
+                result['total_files'] = total_files
+                # 如果文件百分比更准确，使用文件百分比
+                if files_percent > 0:
+                    result['percent'] = files_percent
+            
+            # 解析 "Checks: 0 / 0, 0%" 格式
+            checks_pattern = r'Checks:\s*(\d+)\s*/\s*(\d+),\s*([^%]+)%'
+            checks_match = re.search(checks_pattern, msg)
+            if checks_match:
+                checked = int(checks_match.group(1))
+                total_checks = int(checks_match.group(2))
+                
+                result['checked'] = checked
+                result['total_checks'] = total_checks
+            
+            # 解析 ETA 信息，如 "ETA 30m49s" 或 "ETA 5m24s"
+            eta_pattern = r'ETA\s+([^,\s]+)'
+            eta_match = re.search(eta_pattern, msg)
+            if eta_match:
+                eta_str = eta_match.group(1)
+                result['eta'] = self._parse_eta_time(eta_str)
+            
+            return result
+            
+        except Exception as e:
+            self.logger.debug(f"解析 rclone msg 失败: {e}")
+            return {
+                'percent': 0,
+                'total_bytes': 0,
+                'total_files': 0,
+                'checked': 0,
+                'total_checks': 0
+            }
+    
+    def _parse_size(self, size_str: str) -> int:
+        """解析大小字符串，如 '4.586 GBytes' 或 '10.420 G' 转换为字节数"""
+        try:
+            size_str = size_str.strip()
+            
+            # 移除 'Bytes' 后缀
+            if size_str.endswith('Bytes'):
+                size_str = size_str[:-5]
+            
+            # 解析数字和单位
+            if 'GB' in size_str or size_str.endswith(' G'):
+                # 处理 'GB' 或 ' G' 格式
+                if 'GB' in size_str:
+                    number = float(size_str.replace('GB', ''))
+                else:
+                    number = float(size_str.replace(' G', ''))
+                return int(number * 1024 * 1024 * 1024)
+            elif 'MB' in size_str or size_str.endswith(' M'):
+                # 处理 'MB' 或 ' M' 格式
+                if 'MB' in size_str:
+                    number = float(size_str.replace('MB', ''))
+                else:
+                    number = float(size_str.replace(' M', ''))
+                return int(number * 1024 * 1024)
+            elif 'KB' in size_str or size_str.endswith(' K'):
+                # 处理 'KB' 或 ' K' 格式
+                if 'KB' in size_str:
+                    number = float(size_str.replace('KB', ''))
+                else:
+                    number = float(size_str.replace(' K', ''))
+                return int(number * 1024)
+            elif 'B' in size_str:
+                number = float(size_str.replace('B', ''))
+                return int(number)
+            else:
+                # 尝试直接解析数字
+                return int(float(size_str))
+                
+        except Exception as e:
+            self.logger.debug(f"解析大小字符串失败 '{size_str}': {e}")
+            return 0
+    
+    def _parse_eta_time(self, eta_str: str) -> int:
+        """解析 ETA 时间字符串，如 '30m49s' 转换为秒数"""
+        try:
+            eta_str = eta_str.strip()
+            total_seconds = 0
+            
+            # 解析小时 (h)
+            if 'h' in eta_str:
+                hours_match = re.search(r'(\d+)h', eta_str)
+                if hours_match:
+                    hours = int(hours_match.group(1))
+                    total_seconds += hours * 3600
+                    eta_str = eta_str.replace(f'{hours}h', '')
+            
+            # 解析分钟 (m)
+            if 'm' in eta_str:
+                minutes_match = re.search(r'(\d+)m', eta_str)
+                if minutes_match:
+                    minutes = int(minutes_match.group(1))
+                    total_seconds += minutes * 60
+                    eta_str = eta_str.replace(f'{minutes}m', '')
+            
+            # 解析秒 (s)
+            if 's' in eta_str:
+                seconds_match = re.search(r'(\d+)s', eta_str)
+                if seconds_match:
+                    seconds = int(seconds_match.group(1))
+                    total_seconds += seconds
+            
+            return total_seconds
+            
+        except Exception as e:
+            self.logger.debug(f"解析 ETA 时间失败 '{eta_str}': {e}")
+            return 0
     
     def _parse_legacy_rclone_output(self, line: str):
         """解析传统的 rclone 文本输出"""

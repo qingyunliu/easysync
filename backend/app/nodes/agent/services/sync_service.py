@@ -2,6 +2,7 @@ import threading
 import queue
 import time
 import os
+import socket
 from typing import Dict, Any, Optional, List, Callable
 from datetime import datetime
 from ..core.storage import StorageManager
@@ -94,8 +95,13 @@ class SyncService:
             # 检查任务状态
             existing_state = self.task_state.load_state(task_id)
             if existing_state and existing_state['status'] in ['completed', 'failed']:
-                self.logger.warning(f"Task {task_id} already completed or failed")
-                return
+                # 如果任务之前失败，清理状态并重新执行
+                if existing_state['status'] == 'failed':
+                    self.logger.info(f"Task {task_id} previously failed, cleaning state and retrying")
+                    self.cleanup_task_state(task_id)
+                else:
+                    self.logger.warning(f"Task {task_id} already completed")
+                    return
                 
             # 添加到任务队列
             self.task_queue.put(task)
@@ -167,6 +173,12 @@ class SyncService:
         target_config = task.get('target_storage_config', task.get('target', {}))
         options = task.get('options', {})
         
+        # 检查任务是否已被取消
+        if self.task_manager and task_id in self.task_manager.cancelled_tasks:
+            self.logger.info(f"任务 {task_id} 已被取消，跳过执行")
+            self._update_task_status(task_id, 'cancelled', '任务已被取消')
+            return
+            
         self.logger.info(f"执行同步任务: {task_id}")
         
         # 1. 记录任务创建
@@ -181,14 +193,14 @@ class SyncService:
         # 2. 记录任务分配
         node_info = {
             'node_id': self.config.get('node_id', 'unknown'),
-            'node_name': self.config.get('node_name', 'unknown'),
-            'node_ip': self.config.get('node_ip', 'unknown')
+            'node_name': socket.gethostname(),
+            'node_ip': socket.gethostbyname(socket.gethostname())
         }
         self.task_logger.log_task_event(
             task_id=task_id,
             phase=TaskPhase.ASSIGNED,
             level=LogLevel.INFO,
-            message=f"任务已分配到proxy节点（{node_info['node_name']} - {node_info['node_ip']}）",
+            message=f"任务已分配到proxy节点（{node_info['node_id']} - {node_info['node_ip']}）",
             details=node_info
         )
         
@@ -297,6 +309,12 @@ class SyncService:
         # 执行同步命令
         last_error = None
         for retry in range(self.max_retries):
+            # 检查任务是否已被取消
+            if self.task_manager and task_id in self.task_manager.cancelled_tasks:
+                self.logger.info(f"任务 {task_id} 已被取消，停止执行")
+                self._update_task_status(task_id, 'cancelled', '任务已被取消')
+                return
+                
             try:
                 # 创建带task_id的回调函数
                 def progress_callback(status):
@@ -365,6 +383,12 @@ class SyncService:
         target_config = task.get('target_storage_config', task.get('target', {}))
         options = task.get('options', {})
         
+        # 检查任务是否已被取消
+        if self.task_manager and task_id in self.task_manager.cancelled_tasks:
+            self.logger.info(f"任务 {task_id} 已被取消，跳过执行")
+            self._update_task_status(task_id, 'cancelled', '任务已被取消')
+            return
+        
         # 初始化任务状态
         self.task_state.save_state(task_id, {
             'status': 'running',
@@ -387,6 +411,12 @@ class SyncService:
         # 执行复制命令
         last_error = None
         for retry in range(self.max_retries):
+            # 检查任务是否已被取消
+            if self.task_manager and task_id in self.task_manager.cancelled_tasks:
+                self.logger.info(f"任务 {task_id} 已被取消，停止执行")
+                self._update_task_status(task_id, 'cancelled', '任务已被取消')
+                return
+                
             try:
                 # 创建带task_id的回调函数
                 def progress_callback(status):
@@ -502,15 +532,28 @@ class SyncService:
             # 使用任务日志系统记录进度
             task_id = status.get('task_id')
             if task_id:
+                # 检查任务是否已被取消
+                if self.task_manager and task_id in self.task_manager.cancelled_tasks:
+                    self.logger.debug(f"任务 {task_id} 已被取消，跳过进度更新")
+                    return
+                    
                 # 记录进度日志
                 self.task_logger.log_task_progress(task_id, status)
                 
-                # 上报进度到服务器
-                self.server_comm.update_task_status(task_id, {
-                    'status': 'running',
-                    'progress': status.get('progress', 0),
-                    'details': status
-                })
+                # 获取当前任务状态，避免覆盖已取消的状态
+                current_state = self.task_state.load_state(task_id)
+                current_status = current_state.get('status', 'running') if current_state else 'running'
+                
+                # 只有当前状态为 running 时才更新为 running
+                if current_status == 'running':
+                    # 上报进度到服务器
+                    self.server_comm.update_task_status(task_id, {
+                        'status': 'running',
+                        'progress': status.get('progress', 0),
+                        'details': status
+                    })
+                else:
+                    self.logger.debug(f"任务 {task_id} 当前状态为 {current_status}，跳过进度状态更新")
                 
         except Exception as e:
             self.logger.error(f"Error in progress update: {e}")
@@ -521,7 +564,20 @@ class SyncService:
             self.task_state.cleanup_old_states(max_age_days)
             self.logger.info(f"Cleaned up tasks older than {max_age_days} days")
         except Exception as e:
-            self.logger.error(f"Error cleaning up old tasks: {e}") 
+            self.logger.error(f"Error cleaning up old tasks: {e}")
+    
+    def cleanup_task_state(self, task_id: str):
+        """清理特定任务的状态"""
+        try:
+            # 删除任务状态文件
+            state_file = os.path.join(self.task_state.state_dir, f"{task_id}.json")
+            if os.path.exists(state_file):
+                os.remove(state_file)
+                self.logger.info(f"已清理任务 {task_id} 的状态文件")
+            else:
+                self.logger.info(f"任务 {task_id} 的状态文件不存在")
+        except Exception as e:
+            self.logger.error(f"清理任务状态失败: {e}") 
 
     def _test_connectivity(self, source_config: Dict[str, Any], target_config: Dict[str, Any]) -> bool:
         """测试源端和目标端的连通性"""

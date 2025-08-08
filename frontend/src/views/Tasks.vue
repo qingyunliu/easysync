@@ -212,13 +212,21 @@
 
         <el-table-column prop="progress" label="进度" width="120">
         <template #default="{ row }">
-            <el-progress
-              :percentage="row.progress || 0"
-              :status="getProgressStatus(row.status)"
-              :stroke-width="6"
-              :show-text="false"
-            />
-            <span class="progress-text">{{ row.progress || 0 }}%</span>
+            <el-tooltip
+              :content="getProgressTooltip(row)"
+              placement="top"
+              :disabled="!getProgressTooltip(row)"
+            >
+              <div class="progress-container">
+                <el-progress
+                  :percentage="row.progress || 0"
+                  :status="getProgressStatus(row.status)"
+                  :stroke-width="6"
+                  :show-text="false"
+                />
+                <span class="progress-text">{{ row.progress || 0 }}%</span>
+              </div>
+            </el-tooltip>
           </template>
         </el-table-column>
 
@@ -897,6 +905,49 @@ const canTestMount = (task) => {
   return false
 }
 
+const getProgressTooltip = (task) => {
+  // 只有运行中的任务才显示详细信息
+  if (task.status !== 'running' && task.status !== 'assigned') {
+    return null
+  }
+  
+  const details = []
+  
+  // 添加进度信息
+  if (task.progress !== undefined && task.progress !== null) {
+    details.push(`同步进度: ${task.progress.toFixed(1)}%`)
+  }
+  
+  // 添加传输大小信息
+  if (task.details && task.details.transferred_size && task.details.total_size) {
+    const transferred = formatBytes(task.details.transferred_size)
+    const total = formatBytes(task.details.total_size)
+    details.push(`(${transferred}/${total})`)
+  }
+  
+  // 添加速度信息
+  if (task.details && task.details.speed) {
+    const speed = formatBytes(task.details.speed) + '/s'
+    details.push(`速度: ${speed}`)
+  }
+  
+  // 添加剩余时间信息
+  if (task.details && task.details.eta) {
+    const eta = task.details.eta
+    details.push(`剩余时间: ${eta}`)
+  }
+  
+  return details.length > 0 ? details.join(' ') : null
+}
+
+const formatBytes = (bytes) => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
+
 const getStorageConfigFromTask = (task) => {
   // 根据任务类型获取存储配置
   if (task.source_type === 'storage') {
@@ -1533,6 +1584,18 @@ onUnmounted(() => {
 }
 .stat-icon.online {
   color: var(--text-secondary);
-  background: #f4f4f5;
+  background: #f0f9eb;
+}
+
+.progress-container {
+  cursor: pointer;
+  padding: 2px 0;
+}
+
+.progress-container:hover {
+  background-color: var(--el-fill-color-light);
+  border-radius: 4px;
+  padding: 2px 4px;
+  margin: 0 -4px;
 }
 </style> 

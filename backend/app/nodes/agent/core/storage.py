@@ -25,6 +25,47 @@ class StorageManager:
             backoff=config.get('retry', {}).get('backoff', 2.0)
         )
         
+        # 初始化存储类型到同步方法的映射
+        self.sync_methods = {
+            # NFS/NAS 相关
+            ('nfs', 'obs'): self._sync_nfs_to_obs,
+            ('nfs', 'nfs'): self._sync_nfs_to_nfs,
+            ('nfs', 'nas'): self._sync_nfs_to_nfs,
+            ('nas', 'nfs'): self._sync_nfs_to_nfs,
+            ('nas', 'obs'): self._sync_nfs_to_obs,
+            ('nas', 's3'): self._sync_nfs_to_obs,
+            ('nas', 'nas'): self._sync_nfs_to_nfs,
+            
+            # OBS/S3 相关
+            ('obs', 'obs'): self._sync_obs_to_obs,
+            ('obs', 'nfs'): self._sync_obs_to_nfs,
+            ('obs', 'nas'): self._sync_obs_to_nfs,
+            ('obs', 's3'): self._sync_obs_to_obs,
+            ('s3', 'obs'): self._sync_obs_to_obs,
+            ('s3', 'nfs'): self._sync_obs_to_nfs,
+            ('s3', 'nas'): self._sync_obs_to_nfs,
+            ('s3', 's3'): self._sync_obs_to_obs,
+        }
+        
+        # 初始化存储类型到复制方法的映射
+        self.copy_methods = {
+            # NFS/NAS 相关
+            ('nfs', 'obs'): self._copy_nfs_to_obs,
+            ('nfs', 'nfs'): self._copy_nfs_to_nfs,
+            ('nfs', 'nas'): self._copy_nfs_to_nfs,
+            ('nas', 'nfs'): self._copy_nfs_to_nfs,
+            ('nas', 'obs'): self._copy_nfs_to_obs,
+            ('nas', 'nas'): self._copy_nfs_to_nfs,
+            
+            # OBS/S3 相关
+            ('obs', 'obs'): self._copy_obs_to_obs,
+            ('obs', 'nfs'): self._copy_obs_to_nfs,
+            ('obs', 'nas'): self._copy_obs_to_nfs,
+            ('s3', 'obs'): self._copy_obs_to_obs,
+            ('s3', 'nfs'): self._copy_obs_to_nfs,
+            ('s3', 'nas'): self._copy_obs_to_nfs,
+        }
+        
     def _create_rclone_config(self, storage_config: Dict[str, Any]) -> str:
         """创建临时的rclone配置文件"""
         import tempfile
@@ -70,6 +111,72 @@ storage_class = STANDARD
         self.logger.debug(f"创建rclone配置文件: {config_path}, 远程存储: {remote_name}")
         self.logger.debug(f"OBS配置 - access_key: {'***' if access_key else 'None'}, secret_key: {'***' if secret_key else 'None'}")
         return config_path, remote_name
+    
+    def _create_dual_rclone_config(self, source_config: Dict[str, Any], target_config: Dict[str, Any]) -> tuple:
+        """创建包含源和目标两个远程存储的rclone配置文件"""
+        import tempfile
+        import threading
+        
+        # 为每个线程生成唯一的远程存储名称
+        thread_id = threading.get_ident()
+        source_remote_name = f"source_{thread_id}"
+        target_remote_name = f"target_{thread_id}"
+        
+        # 处理源配置
+        if 'config' in source_config:
+            source_config_inner = source_config.get('config', {})
+        else:
+            source_config_inner = source_config
+        
+        # 处理目标配置
+        if 'config' in target_config:
+            target_config_inner = target_config.get('config', {})
+        else:
+            target_config_inner = target_config
+        
+        # 获取源OBS配置
+        source_access_key = source_config_inner.get('access_key')
+        source_secret_key = source_config_inner.get('secret_key')
+        source_region = source_config_inner.get('region', 'cn-north-4')
+        source_endpoint = source_config_inner.get('endpoint', 'obs.cn-north-4.myhuaweicloud.com')
+        
+        # 获取目标OBS配置
+        target_access_key = target_config_inner.get('access_key')
+        target_secret_key = target_config_inner.get('secret_key')
+        target_region = target_config_inner.get('region', 'cn-north-4')
+        target_endpoint = target_config_inner.get('endpoint', 'obs.cn-north-4.myhuaweicloud.com')
+        
+        # 创建临时配置文件
+        config_path = tempfile.mktemp(suffix='.conf')
+        
+        # 生成INI格式的配置内容，包含两个远程存储
+        config_content = f"""[{source_remote_name}]
+type = s3
+provider = Other
+access_key_id = {source_access_key}
+secret_access_key = {source_secret_key}
+region = {source_region}
+endpoint = {source_endpoint}
+acl = private
+storage_class = STANDARD
+
+[{target_remote_name}]
+type = s3
+provider = Other
+access_key_id = {target_access_key}
+secret_access_key = {target_secret_key}
+region = {target_region}
+endpoint = {target_endpoint}
+acl = private
+storage_class = STANDARD
+"""
+        
+        with open(config_path, 'w') as f:
+            f.write(config_content)
+            
+        self.logger.debug(f"创建双远程存储rclone配置文件: {config_path}")
+        self.logger.debug(f"源远程存储: {source_remote_name}, 目标远程存储: {target_remote_name}")
+        return config_path, source_remote_name, target_remote_name
             
     def mount(self, storage_config: Dict[str, Any]) -> str:
         """挂载存储
@@ -383,29 +490,11 @@ storage_class = STANDARD
             monitor = ProgressMonitor(progress_callback)
             monitor.start()
             
-            # 根据不同的存储类型组合选择同步方式
-            if source_type == 'nfs' and target_type == 'obs':
-                return self._sync_nfs_to_obs(source_config, target_config, options, monitor, source_path, target_path, task_id)
-            elif source_type == 'nfs' and target_type == 'nfs':
-                return self._sync_nfs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
-            elif source_type == 'obs' and target_type == 'obs':
-                return self._sync_obs_to_obs(source_config, target_config, options, monitor, source_path, target_path)
-            elif source_type == 'obs' and target_type == 'nfs':
-                return self._sync_obs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
-            elif source_type == 's3' and target_type == 'obs':
-                return self._sync_obs_to_obs(source_config, target_config, options, monitor, source_path, target_path)
-            elif source_type == 's3' and target_type == 'nfs':
-                return self._sync_obs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
-            elif source_type == 's3' and target_type == 'nas':
-                return self._sync_obs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
-            elif source_type == 'obs' and target_type == 'nas':
-                return self._sync_obs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
-            elif source_type == 'nas' and target_type == 'nfs':
-                return self._sync_nfs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
-            elif source_type == 'nfs' and target_type == 'nas':
-                return self._sync_nfs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
-            elif source_type == 'nas' and target_type == 'nas':
-                return self._sync_nfs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
+            # 查找对应的同步方法
+            sync_key = (source_type, target_type)
+            if sync_key in self.sync_methods:
+                sync_method = self.sync_methods[sync_key]
+                return sync_method(source_config, target_config, options, monitor, source_path, target_path, task_id)
             else:
                 raise ValueError(f"Unsupported sync combination: {source_type} -> {target_type}")
                 
@@ -440,10 +529,35 @@ storage_class = STANDARD
                 # 使用rclone同步到OBS，启用JSON日志格式
                 cmd = ['rclone', '--config', rclone_config, 'sync', '--use-json-log', '--log-level', 'NOTICE', '--stats-log-level', 'NOTICE', '--stats', '1s']
                 
-                # 添加选项
+                # 添加选项 - 只添加有效的rclone选项
                 if options:
-                    for key, value in options.items():
-                        cmd.extend([f'--{key}', str(value)])
+                    # 处理带宽限制
+                    if options.get('bandwidth_limit', 0) > 0:
+                        cmd.extend(['--bwlimit', str(options['bandwidth_limit'])])
+                    
+                    # 处理校验和
+                    if options.get('checksum', False):
+                        cmd.extend(['--checksum'])
+                    
+                    # 处理压缩
+                    if options.get('compress', False):
+                        cmd.extend(['--compress'])
+                    
+                    # 处理删除
+                    if options.get('delete', False):
+                        cmd.extend(['--delete'])
+                    
+                    # 处理最大连接数
+                    if options.get('max_connections', 0) > 0:
+                        cmd.extend(['--transfers', str(options['max_connections'])])
+                    
+                    # 处理重试选项
+                    retry_options = options.get('retry_options', {})
+                    if retry_options:
+                        max_retries = retry_options.get('max_retries', 3)
+                        retry_interval = retry_options.get('retry_interval', 30)
+                        cmd.extend(['--retries', str(max_retries)])
+                        cmd.extend(['--retries-sleep', f"{retry_interval}s"])
                         
                 # 添加源和目标
                 cmd.extend([source_full_path, target_full_path])
@@ -461,7 +575,7 @@ storage_class = STANDARD
                 # 注册进程到任务管理器（如果可用）
                 if task_id and hasattr(self, 'task_manager') and self.task_manager:
                     try:
-                        self.task_manager.register_task(task_id, process, cmd)
+                        self.task_manager.register_task(task_id, process)
                         self.logger.info(f"注册任务 {task_id} 到任务管理器")
                     except Exception as e:
                         self.logger.warning(f"注册任务到任务管理器失败: {e}")
@@ -493,7 +607,7 @@ storage_class = STANDARD
             
     def _sync_nfs_to_nfs(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
                          options: Dict[str, Any], monitor: ProgressMonitor,
-                         source_path: str = None, target_path: str = None) -> bool:
+                         source_path: str = None, target_path: str = None, task_id: str = None) -> bool:
         """NFS/NAS -> NFS/NAS 同步"""
         try:
             # 挂载源NFS
@@ -575,6 +689,14 @@ storage_class = STANDARD
                     stderr=subprocess.PIPE,
                     universal_newlines=True
                 )
+
+                # 注册进程到任务管理器（如果可用）
+                if task_id and hasattr(self, 'task_manager') and self.task_manager:
+                    try:
+                        self.task_manager.register_task(task_id, process)
+                        self.logger.info(f"注册任务 {task_id} 到任务管理器")
+                    except Exception as e:
+                        self.logger.warning(f"注册任务到任务管理器失败: {e}")
                 
                 # 监控进度
                 while True:
@@ -685,20 +807,19 @@ storage_class = STANDARD
     
     def _sync_obs_to_obs(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
                         options: Dict[str, Any], monitor: ProgressMonitor,
-                        source_path: str = None, target_path: str = None) -> bool:
+                        source_path: str = None, target_path: str = None, task_id: str = None) -> bool:
         """OBS -> OBS 同步"""
         try:
-            # 创建源端和目标端的rclone配置
-            source_rclone_config, source_remote_name = self._create_rclone_config(source_config)
-            target_rclone_config, target_remote_name = self._create_rclone_config(target_config)
+            # 创建包含源和目标两个远程存储的rclone配置
+            rclone_config, source_remote_name, target_remote_name = self._create_dual_rclone_config(source_config, target_config)
             
             try:
-                # 构建源端路径 - 使用线程唯一的远程存储名称
+                # 构建源端路径
                 source_full_path = f"{source_remote_name}:"
                 if source_path:
                     source_full_path = f"{source_remote_name}:{source_path}"
                 
-                # 构建目标端路径 - 使用线程唯一的远程存储名称
+                # 构建目标端路径
                 target_full_path = f"{target_remote_name}:"
                 if target_path:
                     target_full_path = f"{target_remote_name}:{target_path}"
@@ -706,12 +827,37 @@ storage_class = STANDARD
                 self.logger.info(f"OBS -> OBS 同步路径: {source_full_path} -> {target_full_path}")
                 
                 # 使用rclone同步
-                cmd = ['rclone', '--config', source_rclone_config, 'sync', '--use-json-log', '--log-level', 'NOTICE', '--stats-log-level', 'NOTICE', '--stats', '1s']
+                cmd = ['rclone', '--config', rclone_config, 'sync', '--use-json-log', '--log-level', 'NOTICE', '--stats-log-level', 'NOTICE', '--stats', '1s']
                 
-                # 添加选项
+                # 添加选项 - 只添加有效的rclone选项
                 if options:
-                    for key, value in options.items():
-                        cmd.extend([f'--{key}', str(value)])
+                    # 处理带宽限制
+                    if options.get('bandwidth_limit', 0) > 0:
+                        cmd.extend(['--bwlimit', str(options['bandwidth_limit'])])
+                    
+                    # 处理校验和
+                    if options.get('checksum', False):
+                        cmd.extend(['--checksum'])
+                    
+                    # 处理压缩
+                    if options.get('compress', False):
+                        cmd.extend(['--compress'])
+                    
+                    # 处理删除
+                    if options.get('delete', False):
+                        cmd.extend(['--delete'])
+                    
+                    # 处理最大连接数
+                    if options.get('max_connections', 0) > 0:
+                        cmd.extend(['--transfers', str(options['max_connections'])])
+                    
+                    # 处理重试选项
+                    retry_options = options.get('retry_options', {})
+                    if retry_options:
+                        max_retries = retry_options.get('max_retries', 3)
+                        retry_interval = retry_options.get('retry_interval', 30)
+                        cmd.extend(['--retries', str(max_retries)])
+                        cmd.extend(['--retries-sleep', f"{retry_interval}s"])
                         
                 # 添加源和目标
                 cmd.extend([source_full_path, target_full_path])
@@ -725,7 +871,15 @@ storage_class = STANDARD
                     stderr=subprocess.PIPE,
                     universal_newlines=True
                 )
-                
+
+                # 注册进程到任务管理器（如果可用）
+                if task_id and hasattr(self, 'task_manager') and self.task_manager:
+                    try:
+                        self.task_manager.register_task(task_id, process)
+                        self.logger.info(f"注册任务 {task_id} 到任务管理器")
+                    except Exception as e:
+                        self.logger.warning(f"注册任务到任务管理器失败: {e}")
+
                 # 监控进度 - 从stderr读取JSON日志
                 while True:
                     line = process.stderr.readline()
@@ -744,8 +898,7 @@ storage_class = STANDARD
                 
             finally:
                 # 清理资源
-                os.unlink(source_rclone_config)
-                os.unlink(target_rclone_config)
+                os.unlink(rclone_config)
                 
         except Exception as e:
             self.logger.error(f"Error in OBS to OBS sync: {e}")
@@ -753,7 +906,7 @@ storage_class = STANDARD
             
     def _sync_obs_to_nfs(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
                          options: Dict[str, Any], monitor: ProgressMonitor,
-                         source_path: str = None, target_path: str = None) -> bool:
+                         source_path: str = None, target_path: str = None, task_id: str = None) -> bool:
         """OBS -> NFS/NAS 同步"""
         try:
             # 将target_config转换为mount方法期望的格式
@@ -840,6 +993,14 @@ storage_class = STANDARD
                     stderr=subprocess.PIPE,
                     universal_newlines=True
                 )
+
+                # 注册进程到任务管理器（如果可用）
+                if task_id and hasattr(self, 'task_manager') and self.task_manager:
+                    try:
+                        self.task_manager.register_task(task_id, process)
+                        self.logger.info(f"注册任务 {task_id} 到任务管理器")
+                    except Exception as e:
+                        self.logger.warning(f"注册任务到任务管理器失败: {e}")
                 
                 # 监控进度 - 从stderr读取JSON日志
                 while True:
@@ -979,29 +1140,11 @@ storage_class = STANDARD
             monitor = ProgressMonitor(progress_callback)
             monitor.start()
             
-            # 根据不同的存储类型组合选择复制方式
-            if source_type == 'nfs' and target_type == 'obs':
-                return self._copy_nfs_to_obs(source_config, target_config, options, monitor)
-            elif source_type == 'nfs' and target_type == 'nfs':
-                return self._copy_nfs_to_nfs(source_config, target_config, options, monitor)
-            elif source_type == 'obs' and target_type == 'obs':
-                return self._copy_obs_to_obs(source_config, target_config, options, monitor)
-            elif source_type == 'obs' and target_type == 'nfs':
-                return self._copy_obs_to_nfs(source_config, target_config, options, monitor)
-            elif source_type == 's3' and target_type == 'obs':
-                return self._copy_obs_to_obs(source_config, target_config, options, monitor)
-            elif source_type == 's3' and target_type == 'nfs':
-                return self._copy_obs_to_nfs(source_config, target_config, options, monitor)
-            elif source_type == 's3' and target_type == 'nas':
-                return self._copy_obs_to_nfs(source_config, target_config, options, monitor)
-            elif source_type == 'obs' and target_type == 'nas':
-                return self._copy_obs_to_nfs(source_config, target_config, options, monitor)
-            elif source_type == 'nas' and target_type == 'nfs':
-                return self._copy_nfs_to_nfs(source_config, target_config, options, monitor)
-            elif source_type == 'nfs' and target_type == 'nas':
-                return self._copy_nfs_to_nfs(source_config, target_config, options, monitor)
-            elif source_type == 'nas' and target_type == 'nas':
-                return self._copy_nfs_to_nfs(source_config, target_config, options, monitor)
+            # 查找对应的复制方法
+            copy_key = (source_type, target_type)
+            if copy_key in self.copy_methods:
+                copy_method = self.copy_methods[copy_key]
+                return copy_method(source_config, target_config, options, monitor)
             else:
                 raise ValueError(f"Unsupported copy combination: {source_type} -> {target_type}")
                 
