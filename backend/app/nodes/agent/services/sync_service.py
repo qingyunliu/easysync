@@ -6,37 +6,43 @@ from typing import Dict, Any, Optional, List, Callable
 from datetime import datetime
 from ..core.storage import StorageManager
 from ..core.communication import ServerCommunication
+from ..core.task_manager import TaskManager
 from ..utils.logger import get_log_manager
 from ..utils.resource import ResourceManager
 from ..models.task_state import TaskState
 from ..core.progress import ProgressMonitor
 import uuid
-import subprocess
 
 class SyncService:
-    """同步服务类"""
+    """同步服务类 - 专注于同步逻辑，任务管理交给 TaskManager"""
     
-    def __init__(self, config: Dict[str, Any], server_comm: ServerCommunication = None, task_manager = None):
+    def __init__(self, config: Dict[str, Any], server_comm: ServerCommunication = None, task_manager: TaskManager = None):
         self.config = config
         self.log_manager = get_log_manager()
         self.logger = self.log_manager.get_logger('SyncService')
-        self.storage_manager = StorageManager(config)
+        
+        # 依赖注入
+        self.server_comm = server_comm if server_comm else ServerCommunication(config)
+        self.task_manager = task_manager  # 任务管理完全交给 TaskManager
+        self.storage_manager = StorageManager(config, task_manager)  # 传递 task_manager
         self.resource_manager = ResourceManager(config)
         self.task_state = TaskState(config.get('state_dir', 'state'))
-        self.server_comm = server_comm if server_comm else ServerCommunication(config)
-        self.task_manager = task_manager
         self.progress_monitor = ProgressMonitor(self._on_progress_update)
+        
+        # 同步服务状态
         self.running = False
         self.sync_thread = None
         self.task_queue = queue.Queue()
+        
+        # 同步配置
         self.max_retries = config.get('sync', {}).get('max_retries', 3)
         self.retry_delay = config.get('sync', {}).get('retry_delay', 5)
         self.max_concurrent = config.get('sync', {}).get('max_concurrent', 1)
         self.active_tasks = 0
         self.task_lock = threading.Lock()
+        
+        # 回调函数
         self.callbacks = []
-        self.running_processes = {}
-        self.process_lock = threading.Lock()
         
     def start(self):
         """启动同步服务"""
@@ -55,117 +61,31 @@ class SyncService:
             self.sync_thread.join(timeout=5)
             
     def is_running(self) -> bool:
-        """检查服务是否运行
-        
-        Returns:
-            bool: 是否运行
-        """
+        """检查服务是否运行"""
         return self.running and self.sync_thread and self.sync_thread.is_alive()
         
     def add_callback(self, callback: Callable[[Dict[str, Any]], None]):
-        """添加回调函数
-        
-        Args:
-            callback: 回调函数
-        """
+        """添加回调函数"""
         self.callbacks.append(callback)
         
     def remove_callback(self, callback: Callable[[Dict[str, Any]], None]):
-        """移除回调函数
-        
-        Args:
-            callback: 回调函数
-        """
+        """移除回调函数"""
         if callback in self.callbacks:
             self.callbacks.remove(callback)
             
     def cancel_task(self, task_id: str) -> bool:
-        """取消任务
-        
-        Args:
-            task_id: 任务ID
-            
-        Returns:
-            bool: 是否成功取消
-        """
-        try:
-            with self.process_lock:
-                if task_id in self.running_processes:
-                    process = self.running_processes[task_id]
-                    self.logger.info(f"取消任务 {task_id}，终止进程 {process.pid}")
-                    
-                    # 终止进程
-                    try:
-                        process.terminate()
-                        # 等待进程结束
-                        process.wait(timeout=10)
-                    except subprocess.TimeoutExpired:
-                        # 如果超时，强制杀死进程
-                        process.kill()
-                        process.wait()
-                    
-                    # 从运行列表中移除
-                    del self.running_processes[task_id]
-                    
-                    # 更新任务状态
-                    self._update_task_status(task_id, 'cancelled', '任务已取消')
-                    return True
-                else:
-                    # 尝试通过进程名称终止rclone进程
-                    self.logger.info(f"任务 {task_id} 不在运行中，尝试终止相关rclone进程")
-                    return self._terminate_rclone_processes()
-                    
-        except Exception as e:
-            self.logger.error(f"取消任务 {task_id} 失败: {e}")
-            return False
-            
-    def _terminate_rclone_processes(self) -> bool:
-        """终止所有rclone进程"""
-        try:
-            import psutil
-            
-            # 查找所有rclone进程
-            rclone_processes = []
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
-                try:
-                    if proc.info['name'] == 'rclone' or (proc.info['cmdline'] and 'rclone' in proc.info['cmdline'][0]):
-                        rclone_processes.append(proc)
-                except (psutil.NoSuchProcess, psutil.AccessDenied):
-                    continue
-            
-            if not rclone_processes:
-                self.logger.info("没有找到rclone进程")
-                return False
-                
-            self.logger.info(f"找到 {len(rclone_processes)} 个rclone进程，正在终止...")
-            
-            for proc in rclone_processes:
-                try:
-                    self.logger.info(f"终止rclone进程 {proc.pid}")
-                    proc.terminate()
-                    proc.wait(timeout=5)
-                except psutil.TimeoutExpired:
-                    self.logger.warning(f"强制杀死rclone进程 {proc.pid}")
-                    proc.kill()
-                    proc.wait()
-                except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
-                    self.logger.warning(f"无法终止进程 {proc.pid}: {e}")
-                    
-            return True
-            
-        except Exception as e:
-            self.logger.error(f"终止rclone进程失败: {e}")
+        """取消任务 - 直接委托给 TaskManager"""
+        if self.task_manager:
+            return self.task_manager.cancel_task(task_id)
+        else:
+            self.logger.warning("TaskManager 不可用，无法取消任务")
             return False
             
     def add_task(self, task: Dict[str, Any]):
-        """添加任务
-        
-        Args:
-            task: 任务信息
-        """
+        """添加任务到队列"""
         try:
             # 检查任务是否已存在
-            task_id = task.get('task_id')
+            task_id = task.get('id', task.get('task_id'))
             if not task_id:
                 task_id = str(uuid.uuid4())
                 task['task_id'] = task_id
@@ -184,7 +104,7 @@ class SyncService:
             self.logger.error(f"Error adding task: {e}")
             
     def _sync_loop(self):
-        """同步循环"""
+        """同步循环 - 专注于任务执行逻辑"""
         while self.running:
             try:
                 # 检查是否有可用资源
@@ -198,92 +118,55 @@ class SyncService:
                         time.sleep(1)
                         continue
                         
-                # 获取任务
-                try:
-                    task = self.task_queue.get_nowait()
-                except queue.Empty:
-                    time.sleep(1)
-                    continue
-                    
-                # 执行任务
-                with self.task_lock:
-                    self.active_tasks += 1
-                    
-                try:
-                    self._execute_task(task)
-                finally:
-                    with self.task_lock:
-                        self.active_tasks -= 1
-                        
+                    # 获取任务
+                    try:
+                        task = self.task_queue.get_nowait()
+                        self.active_tasks += 1
+                    except queue.Empty:
+                        time.sleep(1)
+                        continue
+                
+                # 在新线程中执行任务
+                task_thread = threading.Thread(
+                    target=self._execute_task_with_cleanup,
+                    args=(task,),
+                    daemon=True
+                )
+                task_thread.start()
+                
             except Exception as e:
                 self.logger.error(f"Error in sync loop: {e}")
                 time.sleep(5)
                 
+    def _execute_task_with_cleanup(self, task: Dict[str, Any]):
+        """执行任务并清理资源"""
+        try:
+            self._execute_task(task)
+        finally:
+            with self.task_lock:
+                self.active_tasks -= 1
+                
     def _execute_task(self, task: Dict[str, Any]):
-        """执行同步任务
-        
-        Args:
-            task: 任务信息
-        """
-        task_id = task.get('id', task.get('task_id'))
+        """执行任务"""
         task_type = task.get('type', 'sync')
         
-        # 先更新任务状态为running
-        self.server_comm.update_task_status(task_id, {
-            'status': 'running',
-            'progress': 0,
-            'error': None
-        })
-        
-        # 根据任务类型处理
-        if task_type == 'mount-check':
-            self._execute_mount_check_task(task)
-        elif task_type == 'sync':
+        if task_type == 'sync':
             self._execute_sync_task(task)
         elif task_type == 'copy':
             self._execute_copy_task(task)
+        elif task_type == 'mount_check':
+            self._execute_mount_check_task(task)
         else:
-            self.logger.warning(f"Unknown task type: {task_type}")
-            self.server_comm.update_task_status(task_id, {
-                'status': 'failed',
-                'error': f'Unknown task type: {task_type}'
-            })
-            
-    def _execute_mount_check_task(self, task: Dict[str, Any]):
-        """执行挂载检查任务"""
-        task_id = task.get('id', task.get('task_id'))
-        source_config = task.get('source', {})
-        
-        try:
-            # 检查存储是否可用
-            mount_result = self.storage_manager.check_mount(source_config)
-            
-            # 更新任务状态和详情
-            self.server_comm.update_task_status(task_id, {
-                'status': 'completed',
-                'progress': 100,
-                'details': mount_result
-            })
-            
-            self.logger.info(f"Mount check task {task_id} completed")
-            
-        except Exception as e:
-            self.logger.error(f"Error executing mount check task {task_id}: {e}")
-            self.server_comm.update_task_status(task_id, {
-                'status': 'failed',
-                'error': str(e)
-            })
+            self.logger.error(f"Unknown task type: {task_type}")
             
     def _execute_sync_task(self, task: Dict[str, Any]):
-        """执行同步任务"""
+        """执行同步任务 - 专注于同步逻辑"""
         task_id = task.get('id', task.get('task_id'))
         source_config = task.get('source_storage_config', task.get('source', {}))
         target_config = task.get('target_storage_config', task.get('target', {}))
         options = task.get('options', {})
         
         self.logger.info(f"执行同步任务: {task_id}")
-        self.logger.debug(f"源端配置: {source_config}")
-        self.logger.debug(f"目标配置: {target_config}")
         
         # 初始化任务状态
         self.task_state.save_state(task_id, {
@@ -328,7 +211,8 @@ class SyncService:
                     options,
                     progress_callback,
                     source_path=source_path,
-                    target_path=target_path
+                    target_path=target_path,
+                    task_id=task_id
                 )
                 
                 if success:
@@ -401,140 +285,107 @@ class SyncService:
                     
         # 所有重试都失败了
         self._update_task_status(task_id, 'failed', last_error or 'Unknown error')
+    
+    def _execute_mount_check_task(self, task: Dict[str, Any]):
+        """执行挂载检查任务"""
+        task_id = task.get('id', task.get('task_id'))
+        storage_config = task.get('storage_config', {})
+        
+        self.logger.info(f"执行挂载检查任务: {task_id}")
+        
+        try:
+            # 执行挂载检查
+            mount_result = self.storage_manager.check_mount(storage_config)
+            
+            # 更新任务状态
+            self.server_comm.update_task_status(task_id, {
+                'status': 'completed',
+                'progress': 100,
+                'details': mount_result
+            })
+            
+            self.logger.info(f"Mount check task {task_id} completed")
+            
+        except Exception as e:
+            self.logger.error(f"Error executing mount check task {task_id}: {e}")
+            self.server_comm.update_task_status(task_id, {
+                'status': 'failed',
+                'error': str(e)
+            })
             
     def _check_storage(self, source_config: Dict[str, Any], target_config: Dict[str, Any]) -> bool:
-        """检查存储配置
-        
-        Args:
-            source_config: 源存储配置
-            target_config: 目标存储配置
-            
-        Returns:
-            bool: 是否可用
-        """
+        """检查存储连接"""
         try:
-            # 添加调试信息
-            self.logger.debug(f"检查源存储配置: {source_config}")
-            self.logger.debug(f"检查目标存储配置: {target_config}")
-            
             # 检查源存储
             if not self.storage_manager.check_storage(source_config):
-                self.logger.error(f"Source storage not available: {source_config}")
+                self.logger.error("Source storage check failed")
                 return False
                 
             # 检查目标存储
             if not self.storage_manager.check_storage(target_config):
-                self.logger.error(f"Destination storage not available: {target_config}")
+                self.logger.error("Target storage check failed")
                 return False
                 
             return True
             
         except Exception as e:
-            self.logger.error(f"Error checking storage: {e}")
+            self.logger.error(f"Storage check failed: {e}")
             return False
             
     def _update_task_status(self, task_id: str, status: str, error: str = None):
-        """更新任务状态
-        
-        Args:
-            task_id: 任务ID
-            status: 状态
-            error: 错误信息
-        """
-        # 更新本地状态
-        state_data = {
-            'status': status,
-            'end_time': datetime.utcnow().isoformat(),
-            'error': error
-        }
-        self.task_state.save_state(task_id, state_data)
-        
-        # 通知服务器
-        server_data = {
-            'status': status,
-            'error': error,
-            'progress': 100 if status == 'completed' else 0
-        }
-        self.server_comm.update_task_status(task_id, server_data)
-        
-    def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
-        """获取任务状态
-        
-        Args:
-            task_id: 任务ID
-            
-        Returns:
-            Optional[Dict[str, Any]]: 任务状态
-        """
+        """更新任务状态"""
         try:
-            # 优先从本地状态获取
-            local_state = self.task_state.load_state(task_id)
-            if local_state:
-                return local_state
-                
-            # 如果本地没有，从服务器获取
-            return self.server_comm.get_task_status(task_id)
+            # 更新本地状态
+            self.task_state.save_state(task_id, {
+                'status': status,
+                'error': error,
+                'completed_at': datetime.utcnow().isoformat()
+            })
             
+            # 上报到服务器
+            self.server_comm.update_task_status(task_id, {
+                'status': status,
+                'error': error,
+                'completed_at': datetime.utcnow().isoformat()
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Error updating task status: {e}")
+            
+    def get_task_status(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """获取任务状态"""
+        try:
+            return self.task_state.load_state(task_id)
         except Exception as e:
             self.logger.error(f"Error getting task status: {e}")
             return None
-        
+            
     def _on_progress_update(self, status: Dict[str, Any]):
-        """处理进度更新
-        
-        Args:
-            status: 进度状态
-        """
-        task_id = status.get('task_id')
-        if not task_id:
-            return
-            
-        # 构建详细信息
-        details = {
-            'progress': status.get('progress', 0),
-            'transferred_files': status.get('transferred_files', 0),
-            'total_files': status.get('total_files', 0),
-            'transferred_size': status.get('transferred_size', 0),
-            'total_size': status.get('total_size', 0),
-            'transfer_speed': status.get('transfer_speed', ''),
-            'eta': status.get('eta', ''),
-            'current_file': status.get('current_file', ''),
-            'current_phase': status.get('current_phase', ''),
-            'last_update': datetime.utcnow().isoformat()
-        }
-        
-        # 更新本地状态
-        self.task_state.save_state(task_id, {
-            'progress': status.get('progress', 0),
-            'transferred_files': status.get('transferred_files', 0),
-            'total_files': status.get('total_files', 0),
-            'transferred_size': status.get('transferred_size', 0),
-            'total_size': status.get('total_size', 0),
-            'current_phase': status.get('current_phase', ''),
-            'details': details
-        })
-            
-        server_data = {
-            'progress': status.get('progress', 0),
-            'details': details
-        }
-
-        self.server_comm.update_task_status(task_id, server_data)
-        
-        # 记录日志
-        self.log_manager.log_task_event('sync', 'progress', status)
-        
-        # 调用回调函数
-        for callback in self.callbacks:
-            try:
-                callback(status)
-            except Exception as e:
-                self.logger.error(f"Error in progress callback: {e}")
+        """处理进度更新"""
+        try:
+            # 调用回调函数
+            for callback in self.callbacks:
+                try:
+                    callback(status)
+                except Exception as e:
+                    self.logger.error(f"Progress callback error: {e}")
+                    
+            # 上报进度到服务器
+            task_id = status.get('task_id')
+            if task_id:
+                self.server_comm.update_task_status(task_id, {
+                    'status': 'running',
+                    'progress': status.get('progress', 0),
+                    'details': status
+                })
                 
+        except Exception as e:
+            self.logger.error(f"Error in progress update: {e}")
+            
     def cleanup_old_tasks(self, max_age_days: int = 7):
-        """清理旧任务
-        
-        Args:
-            max_age_days: 最大保留天数
-        """
-        self.task_state.cleanup_old_states(max_age_days) 
+        """清理旧任务"""
+        try:
+            self.task_state.cleanup_old_states(max_age_days)
+            self.logger.info(f"Cleaned up tasks older than {max_age_days} days")
+        except Exception as e:
+            self.logger.error(f"Error cleaning up old tasks: {e}") 

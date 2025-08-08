@@ -7,15 +7,17 @@ from datetime import datetime
 from .progress import ProgressMonitor
 from ..utils.retry import RetryHandler
 from ..utils.logger import get_log_manager
+from ..services.mount_manager import get_mount_manager
 
 class StorageManager:
     """存储管理类"""
     
-    def __init__(self, config: Dict[str, Any]):
+    def __init__(self, config: Dict[str, Any], task_manager = None):
         self.config = config
         self.log_manager = get_log_manager()
         self.logger = self.log_manager.get_logger('StorageManager')
-        self.mounts = {}  # 存储当前挂载点信息
+        self.mount_manager = get_mount_manager()  # 使用统一的挂载管理器
+        self.task_manager = task_manager  # 添加任务管理器引用
         self.rclone_configs = {}  # 存储临时的rclone配置
         self.retry_handler = RetryHandler(
             max_retries=config.get('retry', {}).get('max_retries', 3),
@@ -72,7 +74,7 @@ storage_class = STANDARD
     def mount(self, storage_config: Dict[str, Any]) -> str:
         """挂载存储
         
-        用于NFS/NAS）
+        使用统一的挂载管理器
         
         Args:
             storage_config: 存储配置信息
@@ -92,68 +94,74 @@ storage_class = STANDARD
         Returns:
             str: 挂载点路径
         """
-        @self.retry_handler.retry
-        def _mount():
-            try:
-                storage_type = storage_config['type']
-                if storage_type not in ['nfs', 'nas']:
-                    raise ValueError(f"Only NFS/NAS storage can be mounted: {storage_type}")
-                
-                # 处理存储配置结构
-                if 'source' in storage_config:
-                    # 如果已经有source字段，直接使用
-                    source = storage_config['source']
-                    mount_point = storage_config['mount_point']
-                    options = storage_config.get('options', {})
-                else:
-                    # 从config字段中提取信息
-                    config = storage_config.get('config', {})
-                    server = config.get('server')
-                    path = config.get('path')
-                    
-                    if not server or not path:
-                        raise ValueError(f"Missing server or path in storage config: {storage_config}")
-                    
-                    # 构建source字符串
-                    source = f"{server}:{path}"
-                    
-                    # 生成唯一的挂载点
-                    storage_id = storage_config.get('id', str(hash(source) % 10000))
-                    mount_point = f"/tmp/easysync_mounts/storage_{storage_id}"
-                    
-                    # 获取选项
-                    options = config.get('options', '')
-                
-                # 检查是否已经挂载
-                if mount_point in self.mounts:
-                    self.logger.info(f"Storage already mounted at {mount_point}")
-                    return mount_point
-                
-                # 确保挂载点目录存在
-                os.makedirs(mount_point, exist_ok=True)
-                
-                # 执行NFS挂载
-                self._mount_nfs(source, mount_point, options)
-                
-                # 记录挂载信息
-                self.mounts[mount_point] = {
-                    'type': storage_type,
-                    'source': source,
-                    'options': options,
-                    'mounted_at': datetime.utcnow().isoformat()
-                }
-                
-                self.logger.info(f"Successfully mounted {source} to {mount_point}")
+        try:
+            # 生成存储ID
+            storage_id = self._generate_storage_id(storage_config)
+            
+            # 使用挂载管理器挂载
+            mount_point = self.mount_manager.mount_storage(storage_id, storage_config)
+            
+            if mount_point:
+                self.logger.info(f"成功挂载存储 {storage_id} 到 {mount_point}")
                 return mount_point
+            else:
+                raise Exception(f"挂载存储 {storage_id} 失败")
                 
-            except Exception as e:
-                self.logger.error(f"Error mounting storage: {e}")
-                raise
-
-        return _mount()
+        except Exception as e:
+            self.logger.error(f"挂载失败: {e}")
+            raise
+    
+    def _generate_storage_id(self, storage_config: Dict[str, Any]) -> str:
+        """生成存储ID"""
+        try:
+            # 处理存储配置结构
+            if 'source' in storage_config:
+                # 如果已经有source字段，直接使用
+                source = storage_config['source']
+            else:
+                # 从config字段中提取信息
+                config = storage_config.get('config', {})
+                server = config.get('server')
+                path = config.get('path')
+                
+                if not server or not path:
+                    raise ValueError(f"Missing server or path in storage config: {storage_config}")
+                
+                # 构建source字符串
+                source = f"{server}:{path}"
+            
+            # 生成唯一的存储ID
+            storage_id = storage_config.get('id', str(hash(source) % 10000))
+            return storage_id
+            
+        except Exception as e:
+            self.logger.error(f"生成存储ID失败: {e}")
+            return str(hash(str(storage_config)) % 10000)
+    
+    def _get_storage_id_from_mount_point(self, mount_point: str) -> Optional[str]:
+        """从挂载点路径反推存储ID"""
+        try:
+            # 从挂载点路径中提取存储ID
+            # 挂载点格式: /tmp/easysync_mounts/storage_{storage_id}
+            if '/tmp/easysync_mounts/storage_' in mount_point:
+                storage_id = mount_point.split('storage_')[-1]
+                return storage_id
+            else:
+                # 如果格式不匹配，尝试从挂载管理器中查找
+                active_mounts = self.mount_manager.get_active_mounts()
+                for storage_id, mount_info in active_mounts.items():
+                    if mount_info.get('mount_point') == mount_point:
+                        return storage_id
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"从挂载点反推存储ID失败: {e}")
+            return None
             
     def unmount(self, mount_point: str) -> bool:
         """卸载存储
+        
+        使用统一的挂载管理器
         
         Args:
             mount_point: 挂载点路径
@@ -161,97 +169,38 @@ storage_class = STANDARD
         Returns:
             bool: 是否成功卸载
         """
-        @self.retry_handler.retry
-        def _unmount():
-            try:
-                # 检查挂载点是否在记录中
-                if mount_point not in self.mounts:
-                    self.logger.warning(f"Mount point not found in records: {mount_point}")
-                    # 尝试强制卸载，即使不在记录中
-                    try:
-                        subprocess.run(['umount', mount_point], check=True)
-                        self.logger.info(f"Force unmounted: {mount_point}")
-                        return True
-                    except subprocess.CalledProcessError as e:
-                        self.logger.warning(f"Force unmount failed: {e}")
-                        return False
-                
-                # 执行卸载命令
+        try:
+            # 从挂载点路径反推存储ID
+            storage_id = self._get_storage_id_from_mount_point(mount_point)
+            
+            if storage_id:
+                # 使用挂载管理器卸载
+                success = self.mount_manager.unmount_storage(storage_id)
+                if success:
+                    self.logger.info(f"成功卸载存储 {storage_id}")
+                    return True
+                else:
+                    self.logger.error(f"卸载存储 {storage_id} 失败")
+                    return False
+            else:
+                # 如果无法确定存储ID，尝试直接卸载
+                self.logger.warning(f"无法确定存储ID，尝试直接卸载: {mount_point}")
                 try:
                     subprocess.run(['umount', mount_point], check=True)
-                    self.logger.info(f"Successfully unmounted: {mount_point}")
+                    self.logger.info(f"直接卸载成功: {mount_point}")
+                    return True
                 except subprocess.CalledProcessError as e:
-                    if "Device or resource busy" in str(e):
-                        # 如果设备忙，尝试延迟卸载
-                        import time
-                        time.sleep(2)
-                        subprocess.run(['umount', mount_point], check=True)
-                        self.logger.info(f"Successfully unmounted after delay: {mount_point}")
-                    else:
-                        raise
-                
-                # 尝试删除挂载点目录
-                try:
-                    if os.path.exists(mount_point):
-                        os.rmdir(mount_point)
-                        self.logger.debug(f"Removed mount point directory: {mount_point}")
-                except OSError as e:
-                    self.logger.warning(f"Could not remove mount point directory {mount_point}: {e}")
-                
-                # 移除挂载记录
-                del self.mounts[mount_point]
-                
-                return True
-                
-            except Exception as e:
-                self.logger.error(f"Error unmounting storage: {e}")
-                raise
-            
-        return _unmount()
+                    self.logger.error(f"直接卸载失败: {e}")
+                    return False
+                    
+        except Exception as e:
+            self.logger.error(f"卸载失败: {e}")
+            return False
 
     def _mount_nfs(self, source: str, mount_point: str, options):
-        """挂载NFS/NAS"""
-        try:
-            # 构建挂载命令
-            cmd = ['mount', '-t', 'nfs']
-            
-            # 添加选项
-            if options:
-                if isinstance(options, str):
-                    # 如果是字符串格式的选项，直接使用
-                    if options.strip():
-                        cmd.extend(['-o', options])
-                elif isinstance(options, dict):
-                    # 如果是字典格式，构建选项字符串
-                    opts = []
-                    # 基本选项
-                    if 'username' in options:
-                        opts.append(f"username={options['username']}")
-                    if 'password' in options:
-                        opts.append(f"password={options['password']}")
-                        
-                    # NFS特定选项
-                    if 'vers' in options:
-                        opts.append(f"vers={options['vers']}")
-                    if 'timeo' in options:
-                        opts.append(f"timeo={options['timeo']}")
-                    if 'retrans' in options:
-                        opts.append(f"retrans={options['retrans']}")
-                        
-                    if opts:
-                        cmd.extend(['-o', ','.join(opts)])
-                    
-            # 添加源和目标
-            cmd.extend([source, mount_point])
-            
-            self.logger.debug(f"执行NFS挂载命令: {' '.join(cmd)}")
-            
-            # 执行挂载
-            subprocess.run(cmd, check=True)
-            
-        except Exception as e:
-            self.logger.error(f"Error mounting NFS/NAS: {e}")
-            raise
+        """挂载NFS/NAS - 已废弃，使用 mount_manager.py"""
+        self.logger.warning("_mount_nfs 方法已废弃，请使用 mount_manager.py")
+        raise NotImplementedError("请使用 mount_manager.py 进行挂载管理")
     
     def check_storage(self, storage_config: Dict[str, Any]) -> bool:
         """检查存储配置是否可用
@@ -408,7 +357,8 @@ storage_class = STANDARD
     
     def sync_data(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
                  options: Dict[str, Any] = None, progress_callback: Optional[Callable] = None,
-                 source_path: str = None, target_path: str = None, process_callback: Optional[Callable] = None) -> bool:
+                 source_path: str = None, target_path: str = None, process_callback: Optional[Callable] = None,
+                 task_id: str = None) -> bool:
         """同步数据
         
         Args:
@@ -435,7 +385,7 @@ storage_class = STANDARD
             
             # 根据不同的存储类型组合选择同步方式
             if source_type == 'nfs' and target_type == 'obs':
-                return self._sync_nfs_to_obs(source_config, target_config, options, monitor, source_path, target_path)
+                return self._sync_nfs_to_obs(source_config, target_config, options, monitor, source_path, target_path, task_id)
             elif source_type == 'nfs' and target_type == 'nfs':
                 return self._sync_nfs_to_nfs(source_config, target_config, options, monitor, source_path, target_path)
             elif source_type == 'obs' and target_type == 'obs':
@@ -465,7 +415,7 @@ storage_class = STANDARD
             
     def _sync_nfs_to_obs(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
                         options: Dict[str, Any], monitor: ProgressMonitor,
-                        source_path: str = None, target_path: str = None) -> bool:
+                        source_path: str = None, target_path: str = None, task_id: str = None) -> bool:
         """NFS/NAS -> OBS 同步"""
         try:
             # 挂载NFS
@@ -487,8 +437,8 @@ storage_class = STANDARD
                 
                 self.logger.info(f"NFS -> OBS 同步路径: {source_full_path} -> {target_full_path}")
                 
-                # 使用rclone同步到OBS
-                cmd = ['rclone', '--config', rclone_config, 'sync', '-P']
+                # 使用rclone同步到OBS，启用JSON日志格式
+                cmd = ['rclone', '--config', rclone_config, 'sync', '--use-json-log', '--log-level', 'NOTICE', '--stats-log-level', 'NOTICE', '--stats', '1s']
                 
                 # 添加选项
                 if options:
@@ -508,9 +458,17 @@ storage_class = STANDARD
                     universal_newlines=True
                 )
                 
-                # 监控进度
+                # 注册进程到任务管理器（如果可用）
+                if task_id and hasattr(self, 'task_manager') and self.task_manager:
+                    try:
+                        self.task_manager.register_task(task_id, process, cmd)
+                        self.logger.info(f"注册任务 {task_id} 到任务管理器")
+                    except Exception as e:
+                        self.logger.warning(f"注册任务到任务管理器失败: {e}")
+                
+                # 监控进度 - 从stderr读取JSON日志
                 while True:
-                    line = process.stdout.readline()
+                    line = process.stderr.readline()
                     if not line and process.poll() is not None:
                         break
                     if line:
@@ -748,7 +706,7 @@ storage_class = STANDARD
                 self.logger.info(f"OBS -> OBS 同步路径: {source_full_path} -> {target_full_path}")
                 
                 # 使用rclone同步
-                cmd = ['rclone', '--config', source_rclone_config, 'sync', '-P']
+                cmd = ['rclone', '--config', source_rclone_config, 'sync', '--use-json-log', '--log-level', 'NOTICE', '--stats-log-level', 'NOTICE', '--stats', '1s']
                 
                 # 添加选项
                 if options:
@@ -768,9 +726,9 @@ storage_class = STANDARD
                     universal_newlines=True
                 )
                 
-                # 监控进度
+                # 监控进度 - 从stderr读取JSON日志
                 while True:
-                    line = process.stdout.readline()
+                    line = process.stderr.readline()
                     if not line and process.poll() is not None:
                         break
                     if line:
@@ -838,7 +796,7 @@ storage_class = STANDARD
                 self.logger.info(f"OBS -> NFS 同步路径: {source_full_path} -> {target_full_path}")
                 
                 # 使用rclone同步
-                cmd = ['rclone', '--config', rclone_config, 'sync', '-P']
+                cmd = ['rclone', '--config', rclone_config, 'sync', '--use-json-log', '--log-level', 'NOTICE', '--stats-log-level', 'NOTICE', '--stats', '1s']
                 
                 # 添加选项 - 只添加有效的rclone选项
                 if options:
@@ -883,9 +841,9 @@ storage_class = STANDARD
                     universal_newlines=True
                 )
                 
-                # 监控进度
+                # 监控进度 - 从stderr读取JSON日志
                 while True:
-                    line = process.stdout.readline()
+                    line = process.stderr.readline()
                     if not line and process.poll() is not None:
                         break
                     if line:
@@ -911,35 +869,38 @@ storage_class = STANDARD
     def cleanup_all_mounts(self):
         """清理所有挂载点"""
         try:
-            mount_points = list(self.mounts.keys())
-            for mount_point in mount_points:
-                try:
-                    self.unmount(mount_point)
-                except Exception as e:
-                    self.logger.error(f"Failed to unmount {mount_point}: {e}")
+            # 使用挂载管理器清理所有挂载点
+            cleaned_count = self.mount_manager.cleanup_abandoned_mounts()
+            self.logger.info(f"清理了 {cleaned_count} 个废弃的挂载点")
             
             # 清理easysync挂载目录
             import shutil
             try:
                 if os.path.exists("/tmp/easysync_mounts"):
                     shutil.rmtree("/tmp/easysync_mounts")
-                    self.logger.info("Cleaned up easysync mount directory")
+                    self.logger.info("清理了 easysync 挂载目录")
             except Exception as e:
-                self.logger.warning(f"Failed to cleanup mount directory: {e}")
+                self.logger.warning(f"清理挂载目录失败: {e}")
                 
         except Exception as e:
-            self.logger.error(f"Error during mount cleanup: {e}")
+            self.logger.error(f"清理挂载点时出错: {e}")
     
     def list_mounts(self) -> Dict[str, Dict[str, Any]]:
         """列出所有挂载点"""
-        return self.mounts
+        return self.mount_manager.get_active_mounts()
         
     def get_mount_info(self, mount_point: str) -> Optional[Dict[str, Any]]:
         """获取挂载点信息"""
-        return self.mounts.get(mount_point)
+        active_mounts = self.mount_manager.get_active_mounts()
+        for storage_id, mount_info in active_mounts.items():
+            if mount_info.get('mount_point') == mount_point:
+                return mount_info
+        return None
         
     def check_mount(self, storage_config: Dict[str, Any]) -> Dict[str, Any]:
         """检查存储挂载状态
+        
+        使用 mount_manager 进行检查
         
         Args:
             storage_config: 存储配置
@@ -958,230 +919,54 @@ storage_class = STANDARD
                 'timestamp': datetime.utcnow().isoformat()
             }
             
-            if storage_type == 'nfs':
-                result.update(self._check_nfs_mount(storage_config))
-            elif storage_type == 'nas':
-                result.update(self._check_nas_mount(storage_config))
-            elif storage_type == 'obs':
-                result.update(self._check_obs_mount(storage_config))
-            elif storage_type == 'local':
-                result.update(self._check_local_mount(storage_config))
+            # 生成存储ID
+            storage_id = self._generate_storage_id(storage_config)
+            
+            # 使用 mount_manager 检查挂载状态
+            if self.mount_manager.is_mounted(storage_id):
+                result.update({
+                    'available': True,
+                    'mounted': True,
+                    'mount_point': self.mount_manager.get_mount_point(storage_id)
+                })
             else:
-                result['error'] = f'Unsupported storage type: {storage_type}'
+                result.update({
+                    'available': False,
+                    'mounted': False,
+                    'error': 'Storage not mounted'
+                })
                 
             return result
             
         except Exception as e:
-            self.logger.error(f"Error checking mount: {e}")
+            self.logger.error(f"检查挂载状态失败: {e}")
             return {
                 'type': storage_config.get('type'),
                 'available': False,
                 'mounted': False,
                 'error': str(e),
-                'details': {},
                 'timestamp': datetime.utcnow().isoformat()
             }
     
     def _check_nfs_mount(self, storage_config: Dict[str, Any]) -> Dict[str, Any]:
-        """检查NFS挂载状态"""
-        result = {
-            'available': False,
-            'mounted': False,
-            'error': None,
-            'details': {}
-        }
+        """检查NFS挂载状态 - 已废弃，使用 mount_manager"""
+        self.logger.warning("_check_nfs_mount 方法已废弃，请使用 mount_manager")
+        return {'available': False, 'mounted': False, 'error': 'Method deprecated'}
         
-        try:
-            # 处理存储配置结构
-            if 'source' in storage_config:
-                # 如果已经有source字段，直接使用
-                source = storage_config.get('source')
-                mount_point = storage_config.get('mount_point')
-            else:
-                # 从config字段中提取信息
-                config = storage_config.get('config', {})
-                server = config.get('server')
-                path = config.get('path')
-                
-                if not server or not path:
-                    result['error'] = f'Missing server or path in storage config: {storage_config}'
-                    return result
-                
-                # 构建source字符串
-                source = f"{server}:{path}"
-                
-                # 生成挂载点
-                storage_id = storage_config.get('id', str(hash(source) % 10000))
-                mount_point = f"/tmp/easysync_mounts/storage_{storage_id}"
-            
-            if not mount_point:
-                result['error'] = 'Mount point not specified'
-                return result
-            
-            result['mount_point'] = mount_point
-            result['source'] = source
-            
-            # 检查挂载点目录是否存在
-            if not os.path.exists(mount_point):
-                result['error'] = f'Mount point directory does not exist: {mount_point}'
-                return result
-                
-            result['available'] = True
-            
-            # 检查是否已挂载
-            if mount_point in self.mounts:
-                result['mounted'] = True
-                result['details'] = self.mounts[mount_point]
-            else:
-                # 使用mount命令检查系统挂载状态
-                try:
-                    mount_output = subprocess.run(['mount'], capture_output=True, text=True, timeout=10)
-                    if mount_output.returncode == 0:
-                        for line in mount_output.stdout.split('\n'):
-                            if mount_point in line and 'nfs' in line:
-                                result['mounted'] = True
-                                result['details'] = {'system_mounted': True, 'mount_info': line.strip()}
-                                break
-                except subprocess.TimeoutExpired:
-                    result['error'] = 'Mount command timed out'
-                except Exception as e:
-                    result['error'] = f'Failed to check mount status: {str(e)}'
-                    
-            # 如果挂载了，检查是否可访问
-            if result['mounted']:
-                try:
-                    # 尝试访问挂载点
-                    test_result = subprocess.run(['ls', '-la', mount_point], capture_output=True, text=True, timeout=5)
-                    if test_result.returncode == 0:
-                        result['details']['accessible'] = True
-                        result['details']['files_count'] = len(test_result.stdout.split('\n')) - 1
-                    else:
-                        result['details']['accessible'] = False
-                        result['details']['access_error'] = test_result.stderr
-                except Exception as e:
-                    result['details']['accessible'] = False
-                    result['details']['access_error'] = str(e)
-                    
-        except Exception as e:
-            result['error'] = f'NFS check failed: {str(e)}'
-            
-        return result
-    
     def _check_nas_mount(self, storage_config: Dict[str, Any]) -> Dict[str, Any]:
-        """检查NAS挂载状态（类似NFS）"""
-        return self._check_nfs_mount(storage_config)
-    
+        """检查NAS挂载状态 - 已废弃，使用 mount_manager"""
+        self.logger.warning("_check_nas_mount 方法已废弃，请使用 mount_manager")
+        return {'available': False, 'mounted': False, 'error': 'Method deprecated'}
+        
     def _check_obs_mount(self, storage_config: Dict[str, Any]) -> Dict[str, Any]:
-        """检查OBS配置状态"""
-        result = {
-            'available': False,
-            'mounted': False,
-            'error': None,
-            'details': {}
-        }
+        """检查OBS挂载状态 - 已废弃，使用 mount_manager"""
+        self.logger.warning("_check_obs_mount 方法已废弃，请使用 mount_manager")
+        return {'available': False, 'mounted': False, 'error': 'Method deprecated'}
         
-        try:
-            bucket = storage_config.get('bucket')
-            path = storage_config.get('path', '')
-            provider = storage_config.get('provider')
-            endpoint = storage_config.get('endpoint')
-            
-            if not bucket:
-                result['error'] = 'Bucket name not specified'
-                return result
-            
-            result['details'] = {
-                'bucket': bucket,
-                'path': path,
-                'provider': provider,
-                'endpoint': endpoint
-            }
-            
-            # 检查OBS配置
-            if self._check_obs(storage_config):
-                result['available'] = True
-                result['mounted'] = True  # OBS不需要挂载
-                
-                # 尝试列出对象来测试连接
-                try:
-                    rclone_config = self._create_rclone_config(storage_config)
-                    list_cmd = ['rclone', '--config', rclone_config, 'lsd', f"temp:{bucket}/{path}"]
-                    list_result = subprocess.run(list_cmd, capture_output=True, text=True, timeout=30)
-                    
-                    if list_result.returncode == 0:
-                        result['details']['connection_test'] = 'success'
-                        result['details']['directories_count'] = len(list_result.stdout.split('\n')) - 1
-                    else:
-                        result['details']['connection_test'] = 'failed'
-                        result['details']['connection_error'] = list_result.stderr
-                        
-                    # 清理临时配置
-                    os.unlink(rclone_config)
-                    
-                except Exception as e:
-                    result['details']['connection_test'] = 'failed'
-                    result['details']['connection_error'] = str(e)
-            else:
-                result['error'] = 'OBS configuration validation failed'
-                
-        except Exception as e:
-            result['error'] = f'OBS check failed: {str(e)}'
-            
-        return result
-    
     def _check_local_mount(self, storage_config: Dict[str, Any]) -> Dict[str, Any]:
-        """检查本地存储状态"""
-        result = {
-            'available': False,
-            'mounted': False,
-            'error': None,
-            'details': {}
-        }
-        
-        try:
-            path = storage_config.get('path')
-            
-            if not path:
-                result['error'] = 'Path not specified'
-                return result
-            
-            result['path'] = path
-            
-            # 检查路径是否存在
-            if os.path.exists(path):
-                result['available'] = True
-                result['mounted'] = True  # 本地路径不需要挂载
-                
-                # 获取路径信息
-                try:
-                    stat_info = os.stat(path)
-                    result['details'] = {
-                        'size': stat_info.st_size,
-                        'modified': datetime.fromtimestamp(stat_info.st_mtime).isoformat(),
-                        'accessible': os.access(path, os.R_OK),
-                        'writable': os.access(path, os.W_OK)
-                    }
-                    
-                    # 如果是目录，获取文件数量
-                    if os.path.isdir(path):
-                        try:
-                            files = os.listdir(path)
-                            result['details']['files_count'] = len(files)
-                            result['details']['is_directory'] = True
-                        except Exception as e:
-                            result['details']['list_error'] = str(e)
-                    else:
-                        result['details']['is_directory'] = False
-                        
-                except Exception as e:
-                    result['details']['stat_error'] = str(e)
-            else:
-                result['error'] = f'Path does not exist: {path}'
-                
-        except Exception as e:
-            result['error'] = f'Local storage check failed: {str(e)}'
-            
-        return result
+        """检查本地挂载状态 - 已废弃，使用 mount_manager"""
+        self.logger.warning("_check_local_mount 方法已废弃，请使用 mount_manager")
+        return {'available': False, 'mounted': False, 'error': 'Method deprecated'}
     
     def copy_data(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
                  options: Dict[str, Any] = None, progress_callback: Optional[Callable] = None) -> bool:

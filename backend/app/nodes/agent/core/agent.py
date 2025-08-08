@@ -900,16 +900,17 @@ class ProxyAgent:
             }
     
     def cancel_task(self, task_id: str) -> bool:
-        """取消任务的外部接口"""
-        # 先尝试通过任务管理器取消
-        task_result = self.task_manager.cancel_task(task_id)
-        
-        # 如果任务管理器没有找到任务，尝试通过同步服务取消
-        if not task_result:
-            sync_result = self.sync_service.cancel_task(task_id)
-            return sync_result
-            
-        return task_result
+        """取消任务 - 统一使用 TaskManager"""
+        try:
+            # 直接使用 TaskManager 取消任务
+            if self.task_manager:
+                return self.task_manager.cancel_task(task_id)
+            else:
+                self.logger.error("TaskManager 不可用")
+                return False
+        except Exception as e:
+            self.logger.error(f"取消任务失败: {e}")
+            return False
     
     def pause_task(self, task_id: str) -> bool:
         """暂停任务的外部接口"""

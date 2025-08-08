@@ -1,297 +1,602 @@
+#!/usr/bin/env python3
+"""
+任务进度监控器 - 使用 rclone JSON 日志解析
+"""
+
+import threading
+import time
+import json
 import re
-from typing import Dict, Any, Callable, Optional
-from datetime import datetime
+from typing import Dict, Any, Optional, List, Callable
+from datetime import datetime, timedelta
+from dataclasses import dataclass, field
+from enum import Enum
 from ..utils.logger import get_log_manager
 
+class ProgressType(Enum):
+    """进度类型枚举"""
+    OVERALL = "overall"       # 整体进度
+    FILE = "file"            # 单个文件进度
+    NETWORK = "network"      # 网络传输进度
+    MOUNT = "mount"          # 挂载进度
+    VERIFICATION = "verification"  # 验证进度
+
+@dataclass
+class FileProgress:
+    """文件进度信息"""
+    file_path: str
+    size: int
+    transferred: int
+    speed: float
+    eta: Optional[float] = None
+    status: str = "transferring"
+
+@dataclass
+class NetworkProgress:
+    """网络传输进度"""
+    bytes_sent: int
+    bytes_received: int
+    send_rate: float
+    receive_rate: float
+    connection_count: int
+    latency: float
+
+@dataclass
+class TaskProgress:
+    """任务进度信息"""
+    task_id: str
+    progress_type: ProgressType
+    percentage: float
+    current_step: str
+    total_steps: int
+    current_step_index: int
+    
+    # 文件相关
+    files_total: int = 0
+    files_completed: int = 0
+    files_failed: int = 0
+    files_skipped: int = 0
+    
+    # 大小相关
+    total_size: int = 0
+    transferred_size: int = 0
+    
+    # 速度相关
+    transfer_speed: float = 0.0
+    average_speed: float = 0.0
+    
+    # 时间相关
+    start_time: Optional[datetime] = None
+    eta: Optional[float] = None
+    
+    # 详细信息
+    current_file: Optional[FileProgress] = None
+    network_info: Optional[NetworkProgress] = None
+    error_count: int = 0
+    warning_count: int = 0
+    
+    # 自定义数据
+    custom_data: Dict[str, Any] = field(default_factory=dict)
+
 class ProgressMonitor:
-    """进度监控类"""
+    """进度监控器 - 使用 rclone JSON 日志解析"""
     
     def __init__(self, callback: Optional[Callable[[Dict[str, Any]], None]] = None):
+        self.callback = callback
         self.log_manager = get_log_manager()
         self.logger = self.log_manager.get_logger('ProgressMonitor')
-        self.callback = callback
-        self.current_progress = 0
-        self.total_files = 0
-        self.transferred_files = 0
-        self.total_size = 0
-        self.transferred_size = 0
-        self.start_time = None
-        self.last_update = None
-        self.current_phase = 'initializing'  # 当前阶段：initializing, checking, transferring, completed
         
-    def start(self):
-        """开始监控"""
-        self.start_time = datetime.utcnow()
-        self.last_update = self.start_time
-        self.current_progress = 0
-        self.total_files = 0
-        self.transferred_files = 0
-        self.total_size = 0
-        self.transferred_size = 0
-        self.current_phase = 'initializing'
+        # 进度数据存储
+        self.task_progress: Dict[str, TaskProgress] = {}
+        self.progress_lock = threading.Lock()
         
-    def _estimate_progress_by_time(self):
-        """基于时间估算进度"""
-        if not self.start_time:
-            return 0
-            
-        elapsed = (datetime.utcnow() - self.start_time).total_seconds()
+        # 配置参数
+        self.report_interval = 5  # 5秒上报一次
+        self.detailed_logging = True
+        self.max_history_size = 100
         
-        # 基于经验值估算：
-        # - 前10秒：0-20%
-        # - 10-60秒：20-60%  
-        # - 60秒后：60-90%
-        # - 最后阶段：90-100%
+        # 进度历史记录
+        self.progress_history: Dict[str, List[TaskProgress]] = {}
         
-        if elapsed < 10:
-            return min(int((elapsed / 10) * 20), 20)
-        elif elapsed < 60:
-            return min(20 + int(((elapsed - 10) / 50) * 40), 60)
-        elif elapsed < 300:  # 5分钟
-            return min(60 + int(((elapsed - 60) / 240) * 30), 90)
-        else:
-            return min(90 + int(((elapsed - 300) / 300) * 10), 99)
+        # 回调函数
+        self.progress_callbacks: List[Callable[[TaskProgress], None]] = []
+        
+        # 启动上报线程
+        self.report_thread = threading.Thread(target=self._report_progress_loop, daemon=True)
+        self.report_thread.start()
     
-    def update_rsync_progress(self, line: str):
-        """更新rsync进度"""
-        try:
-            line = line.strip()
-            self.logger.debug(f"Parsing rsync line: {line}")
-            
-            # 解析rsync输出
-            if 'total size is' in line:
-                # 总大小信息 - 格式: "total size is 1,234,567  speedup is 1.23"
-                match = re.search(r'total size is (\d+(?:,\d+)*)', line)
-                if match:
-                    size_str = match.group(1).replace(',', '')
-                    self.total_size = int(size_str)
-                    self.logger.debug(f"Total size: {self.total_size}")
-                    
-            elif 'sending incremental file list' in line:
-                # 开始传输文件列表
-                self.transferred_files = 0
-                self.logger.debug("Starting file list transfer")
-                
-            elif line and not line.startswith(' ') and not line.endswith('%'):
-                # 文件名行 - 这表示一个文件开始传输
-                self.transferred_files += 1
-                self.logger.debug(f"File transferred: {line} (total: {self.transferred_files})")
-                
-                # 基于文件数量估算进度
-                if self.total_files > 0:
-                    self.current_progress = min(int((self.transferred_files / self.total_files) * 100), 99)
-                else:
-                    # 如果没有总文件数，使用时间估算
-                    self.current_progress = self._estimate_progress_by_time()
-                
-                # 更新状态
-                self._update_status()
-                
-            elif '%' in line and 'speedup' not in line:
-                # 单个文件的进度信息 - 格式: "1,234 100%    1.23MB/s    0:00:01"
-                match = re.search(r'(\d+(?:,\d+)*)\s+(\d+)%\s+(\d+(?:\.\d+)?[kMGT]?B/s)', line)
-                if match:
-                    transferred = int(match.group(1).replace(',', ''))
-                    percentage = int(match.group(2))
-                    speed = match.group(3)
-                    
-                    # 更新传输大小
-                    self.transferred_size += transferred
-                    
-                    # 如果是100%，说明这个文件传输完成
-                    if percentage == 100:
-                        self.transferred_files += 1
-                        
-                        # 基于文件数量估算总体进度
-                        if self.total_files > 0:
-                            self.current_progress = min(int((self.transferred_files / self.total_files) * 100), 99)
-                        elif self.total_size > 0:
-                            # 基于传输大小估算
-                            self.current_progress = min(int((self.transferred_size / self.total_size) * 100), 99)
-                        else:
-                            # 使用时间估算
-                            self.current_progress = self._estimate_progress_by_time()
-                        
-                        self.logger.debug(f"File completed: {self.transferred_files} files, {self.transferred_size} bytes")
-                        
-                        # 更新状态
-                        self._update_status()
-                        
-            # 解析 --info=progress2 输出（大数据量推荐）
-            elif re.match(r'^\d+(?:,\d+)*\s+\d+%\s+\d+(?:\.\d+)?[kMGT]?B/s\s+\d+:\d+:\d+', line):
-                # 格式: "1,234,567,890  45%   10.45MB/s    0:03:24 (xfr#34, to-chk=900/1000)"
-                match = re.search(r'(\d+(?:,\d+)*)\s+(\d+)%\s+(\d+(?:\.\d+)?[kMGT]?B/s)\s+(\d+:\d+:\d+)(?:\s+\(xfr#(\d+),\s+to-chk=(\d+)/(\d+)\))?', line)
-                if match:
-                    transferred_bytes = int(match.group(1).replace(',', ''))
-                    percentage = int(match.group(2))
-                    speed = match.group(3)
-                    eta = match.group(4)
-                    
-                    # 更新传输大小和进度
-                    self.transferred_size = transferred_bytes
-                    self.current_progress = percentage
-                    
-                    # 如果有文件传输信息
-                    if match.group(5) and match.group(6) and match.group(7):
-                        transferred_files = int(match.group(5))
-                        remaining_files = int(match.group(6))
-                        total_files = int(match.group(7))
-                        self.transferred_files = transferred_files
-                        self.total_files = total_files
-                    
-                    # 对于大数据量，减少日志输出频率
-                    if self.current_progress % 5 == 0 or self.current_progress == 100:  # 每5%输出一次
-                        self.logger.info(f"Progress2: {percentage}%, {transferred_bytes} bytes, {speed}, ETA: {eta}")
-                    else:
-                        self.logger.debug(f"Progress2: {percentage}%, {transferred_bytes} bytes, {speed}, ETA: {eta}")
-                    
-                    # 更新状态
-                    self._update_status()
-                    
-            # 如果没有其他匹配，使用时间估算作为备选
-            elif line.strip() and not line.startswith('sending') and not line.startswith('total'):
-                # 任何其他输出行，使用时间估算
-                estimated_progress = self._estimate_progress_by_time()
-                if estimated_progress > self.current_progress:
-                    self.current_progress = estimated_progress
-                    self._update_status()
-            
-        except Exception as e:
-            self.logger.error(f"Error parsing rsync progress: {e}")
-            
+    def start(self):
+        """启动进度监控"""
+        self.logger.info("进度监控器已启动")
+    
+    def stop(self):
+        """停止进度监控"""
+        self.logger.info("进度监控器已停止")
+    
     def update_rclone_progress(self, line: str):
-        """更新rclone进度"""
+        """更新 rclone 进度 - 使用 JSON 日志解析"""
         try:
-            self.logger.debug(f"Parsing rclone line: {line.strip()}")
+            # 尝试解析 JSON 日志
+            log_entry = json.loads(line.strip())
             
-            # 解析rclone输出
-            if 'Transferred:' in line and ',' in line:
-                # 传输阶段
-                self.current_phase = 'transferring'
-                # 总体进度 - 格式: "Transferred: 41.235M / 5.469 GBytes, 1%, 4.364 MBytes/s, ETA 21m13s"
-                # 或者: "Transferred: 9 / 1400, 1%"
-                
-                # 优先解析包含百分比的行（总体进度）
-                if '%' in line:
-                    # 解析进度百分比
-                    match = re.search(r'(\d+)%', line)
-                    if match:
-                        new_progress = int(match.group(1))
-                        # 只有当进度增加时才更新，避免来回跳动
-                        if new_progress >= self.current_progress:
-                            self.current_progress = new_progress
-                            self.logger.debug(f"Progress: {self.current_progress}%")
-                
-                # 如果没有百分比，但有文件计数，则基于文件数量计算进度
-                elif self.total_files > 0:
-                    progress = int((self.transferred_files / self.total_files) * 100)
-                    if progress > self.current_progress:
-                        self.current_progress = progress
-                        self.logger.debug(f"Progress based on files: {self.current_progress}%")
-                
-                # 解析文件计数（只在包含数字/数字格式时）
-                match = re.search(r'Transferred:\s+(\d+)\s*/\s*(\d+)', line)
-                if match:
-                    new_transferred = int(match.group(1))
-                    new_total = int(match.group(2))
-                    # 只有当文件计数增加时才更新
-                    if new_transferred >= self.transferred_files:
-                        self.transferred_files = new_transferred
-                        self.total_files = new_total
-                        self.logger.debug(f"Files: {self.transferred_files}/{self.total_files}")
-                        
-                        # 如果没有百分比信息，基于文件数量重新计算进度
-                        if '%' not in line and self.total_files > 0:
-                            progress = int((self.transferred_files / self.total_files) * 100)
-                            if progress > self.current_progress:
-                                self.current_progress = progress
-                                self.logger.debug(f"Progress based on files: {self.current_progress}%")
-                
-                # 更新状态
-                self._update_status()
-                
-            elif 'Checks:' in line:
-                # 检查阶段 - 格式: "Checks: 1/2, 50%"
-                self.current_phase = 'checking'
-                match = re.search(r'Checks:\s+(\d+)/(\d+)', line)
-                if match:
-                    self.transferred_files = int(match.group(1))
-                    self.total_files = int(match.group(2))
+            # 检查是否是统计信息
+            if "stats" not in log_entry:
+                return
+            
+            stats = log_entry["stats"]
+            
+            # 解析基本统计信息
+            transferred_bytes = stats.get("bytes", 0)
+            total_bytes = stats.get("size", 0)
+            percent = (transferred_bytes / total_bytes * 100) if total_bytes else 0
+            
+            # 解析文件信息
+            transfer_stats = stats.get("transfer", {})
+            transferred_files = transfer_stats.get("transferred", 0)
+            total_files = transfer_stats.get("total", 0)
+            
+            # 解析检查信息
+            checks = stats.get("checks", {})
+            if isinstance(checks, dict):
+                checked = checks.get("checked", 0)
+                total_checks = checks.get("total", 0)
+            elif isinstance(checks, int):
+                checked = checks
+                total_checks = 0
+            else:
+                checked = total_checks = 0
+            
+            # 解析速度和ETA
+            speed = stats.get("speed", 0.0)  # bytes per second
+            eta = stats.get("eta", 0)  # seconds
+            
+            # 格式化输出
+            self._format_and_log_progress(
+                percent, transferred_bytes, total_bytes, 
+                speed, eta, transferred_files, total_files,
+                checked, total_checks
+            )
+            
+        except json.JSONDecodeError:
+            # 如果不是 JSON 格式，尝试解析传统文本格式
+            self._parse_legacy_rclone_output(line)
+        except Exception as e:
+            self.logger.debug(f"解析 rclone 进度失败: {e}")
+    
+    def _parse_legacy_rclone_output(self, line: str):
+        """解析传统的 rclone 文本输出"""
+        try:
+            # 解析 "Transferred: 71 / 3350, 2%" 格式
+            if "Transferred:" in line and "Files:" in line:
+                # 提取文件数量信息
+                files_match = re.search(r'(\d+)\s*/\s*(\d+)', line)
+                if files_match:
+                    transferred_files = int(files_match.group(1))
+                    total_files = int(files_match.group(2))
                     
-                match = re.search(r'(\d+)%', line)
-                if match:
-                    new_progress = int(match.group(1))
-                    if new_progress >= self.current_progress:
-                        self.current_progress = new_progress
+                    # 计算百分比
+                    percent = (transferred_files / total_files * 100) if total_files else 0
                     
-                # 更新状态
-                self._update_status()
-                
-            elif 'Elapsed time:' in line:
-                # 阶段完成信息，但不一定是整个任务完成
-                # 只有在当前阶段是completed时才设置为100%
-                if self.current_phase == 'completed':
-                    self.current_progress = 100
-                # 更新状态，但不强制设置进度为100%
-                self._update_status()
+                    self.logger.debug(f"Files: {transferred_files}/{total_files}")
+                    
+                    # 触发回调
+                    if self.callback:
+                        self.callback({
+                            'progress': percent,
+                            'transferred_files': transferred_files,
+                            'total_files': total_files,
+                            'transferred_size': 0,
+                            'total_size': 0,
+                            'transfer_speed': '',
+                            'eta': '',
+                            'current_file': '',
+                            'current_phase': 'transferring',
+                            'last_update': datetime.now().isoformat()
+                        })
+            
+            # 解析 "Transferred: 287.800M / 13.045 GBytes, 2%, 4.012 MBytes/s, ETA 54m17s" 格式
+            elif "Transferred:" in line and "ETA" in line:
+                # 这里可以添加更详细的解析逻辑
+                self.logger.debug(f"Parsing rclone line: {line.strip()}")
                 
         except Exception as e:
-            self.logger.error(f"Error parsing rclone progress: {e}")
-            self.logger.error(f"Line: {line}")
+            self.logger.debug(f"解析传统 rclone 输出失败: {e}")
+    
+    def _format_and_log_progress(self, percent: float, transferred_bytes: int, total_bytes: int,
+                                speed: float, eta: int, transferred_files: int, total_files: int,
+                                checked: int, total_checks: int):
+        """格式化并记录进度信息"""
+        
+        def format_bytes(num):
+            for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+                if abs(num) < 1024.0:
+                    return f"{num:.2f}{unit}"
+                num /= 1024.0
+            return f"{num:.2f}PB"
+        
+        # 格式化输出
+        speed_fmt = format_bytes(speed) + "/s" if speed > 0 else "0B/s"
+        eta_fmt = time.strftime("%H:%M:%S", time.gmtime(eta)) if eta > 0 else "N/A"
+        
+        progress_info = (
+            f"[Progress] {percent:.2f}% ({format_bytes(transferred_bytes)} / {format_bytes(total_bytes)}) | "
+            f"[Speed] {speed_fmt} | [ETA] {eta_fmt} | [Files] {transferred_files}/{total_files} | "
+            f"[Checks] {checked}/{total_checks if total_checks else '?'}"
+        )
+        
+        self.logger.info(progress_info)
+        
+        # 触发回调
+        if self.callback:
+            self.callback({
+                'progress': percent,
+                'transferred_files': transferred_files,
+                'total_files': total_files,
+                'transferred_size': transferred_bytes,
+                'total_size': total_bytes,
+                'transfer_speed': speed_fmt,
+                'eta': eta_fmt,
+                'current_file': '',
+                'current_phase': 'transferring',
+                'last_update': datetime.now().isoformat()
+            })
+    
+    def start_task_progress(self, task_id: str, total_steps: int, step_names: List[str]) -> TaskProgress:
+        """开始任务进度跟踪"""
+        with self.progress_lock:
+            progress = TaskProgress(
+                task_id=task_id,
+                progress_type=ProgressType.OVERALL,
+                percentage=0.0,
+                current_step="开始任务",
+                total_steps=total_steps,
+                current_step_index=0,
+                start_time=datetime.now(),
+                custom_data={'step_names': step_names}
+            )
             
-    def _update_status(self):
-        """更新状态"""
-        if not self.callback:
-            return
+            self.task_progress[task_id] = progress
+            self.progress_history[task_id] = []
             
-        # 构建详细的状态信息
-        status_info = {
-            'progress': self.current_progress,
-            'transferred_files': self.transferred_files,
-            'total_files': self.total_files,
-            'transferred_size': self.transferred_size,
-            'total_size': self.total_size,
-            'start_time': self.start_time.isoformat() if self.start_time else None,
-            'last_update': datetime.utcnow().isoformat(),
-            'current_phase': self.current_phase
-        }
+            self.logger.info(f"开始跟踪任务 {task_id} 的进度，共 {total_steps} 个步骤")
+            
+            return progress
+    
+    def update_step_progress(self, task_id: str, step_index: int, step_name: str, 
+                           step_percentage: float, details: Dict[str, Any] = None):
+        """更新步骤进度"""
+        with self.progress_lock:
+            if task_id not in self.task_progress:
+                self.logger.warning(f"任务 {task_id} 未找到进度信息")
+                return
+            
+            progress = self.task_progress[task_id]
+            progress.current_step_index = step_index
+            progress.current_step = step_name
+            
+            # 计算整体进度
+            base_progress = (step_index / progress.total_steps) * 100
+            step_progress = (step_percentage / 100) * (100 / progress.total_steps)
+            progress.percentage = min(base_progress + step_progress, 100.0)
+            
+            # 更新详细信息
+            if details:
+                if 'files_total' in details:
+                    progress.files_total = details['files_total']
+                if 'files_completed' in details:
+                    progress.files_completed = details['files_completed']
+                if 'total_size' in details:
+                    progress.total_size = details['total_size']
+                if 'transferred_size' in details:
+                    progress.transferred_size = details['transferred_size']
+                if 'transfer_speed' in details:
+                    progress.transfer_speed = details['transfer_speed']
+                if 'error_count' in details:
+                    progress.error_count = details['error_count']
+            
+            # 计算ETA
+            if progress.start_time and progress.percentage > 0:
+                elapsed = (datetime.now() - progress.start_time).total_seconds()
+                if progress.percentage < 100:
+                    progress.eta = (elapsed / progress.percentage) * (100 - progress.percentage)
+            
+            # 保存历史记录
+            self._save_progress_history(task_id, progress)
+            
+            # 调用回调函数
+            self._trigger_callbacks(progress)
+    
+    def update_file_progress(self, task_id: str, file_path: str, file_size: int, 
+                           transferred: int, speed: float):
+        """更新文件传输进度"""
+        with self.progress_lock:
+            if task_id not in self.task_progress:
+                return
+            
+            progress = self.task_progress[task_id]
+            
+            # 更新当前文件信息
+            file_progress = FileProgress(
+                file_path=file_path,
+                size=file_size,
+                transferred=transferred,
+                speed=speed,
+                eta=(file_size - transferred) / speed if speed > 0 else None
+            )
+            
+            progress.current_file = file_progress
+            
+            # 更新整体传输大小
+            if progress.transferred_size > 0:
+                progress.transferred_size += transferred
+            else:
+                progress.transferred_size = transferred
+            
+            progress.transfer_speed = speed
+            
+            # 调用回调函数
+            self._trigger_callbacks(progress)
+    
+    def update_network_progress(self, task_id: str, bytes_sent: int, bytes_received: int,
+                              send_rate: float, receive_rate: float, connection_count: int = 1,
+                              latency: float = 0.0):
+        """更新网络传输进度"""
+        with self.progress_lock:
+            if task_id not in self.task_progress:
+                return
+            
+            progress = self.task_progress[task_id]
+            
+            network_progress = NetworkProgress(
+                bytes_sent=bytes_sent,
+                bytes_received=bytes_received,
+                send_rate=send_rate,
+                receive_rate=receive_rate,
+                connection_count=connection_count,
+                latency=latency
+            )
+            
+            progress.network_info = network_progress
+            
+            # 调用回调函数
+            self._trigger_callbacks(progress)
+    
+    def complete_task_progress(self, task_id: str, success: bool = True, error: str = None):
+        """完成任务进度"""
+        with self.progress_lock:
+            if task_id not in self.task_progress:
+                return
+            
+            progress = self.task_progress[task_id]
+            progress.percentage = 100.0
+            progress.current_step = "完成" if success else "失败"
+            
+            if not success and error:
+                progress.error_count += 1
+                if progress.custom_data is None:
+                    progress.custom_data = {}
+                progress.custom_data['final_error'] = error
+            
+            self.logger.info(f"任务 {task_id} 进度跟踪完成，成功: {success}")
+    
+    def get_task_progress(self, task_id: str) -> Optional[TaskProgress]:
+        """获取任务进度"""
+        with self.progress_lock:
+            return self.task_progress.get(task_id)
+    
+    def get_progress_history(self, task_id: str) -> List[TaskProgress]:
+        """获取进度历史"""
+        with self.progress_lock:
+            return self.progress_history.get(task_id, [])
+    
+    def add_progress_callback(self, callback: Callable[[TaskProgress], None]):
+        """添加进度回调函数"""
+        self.progress_callbacks.append(callback)
+    
+    def remove_progress_callback(self, callback: Callable[[TaskProgress], None]):
+        """移除进度回调函数"""
+        if callback in self.progress_callbacks:
+            self.progress_callbacks.remove(callback)
+    
+    def _save_progress_history(self, task_id: str, progress: TaskProgress):
+        """保存进度历史"""
+        if task_id not in self.progress_history:
+            self.progress_history[task_id] = []
         
-        # 计算传输速度
-        if self.start_time:
-            elapsed = (datetime.utcnow() - self.start_time).total_seconds()
-            if elapsed > 0 and self.transferred_size > 0:
-                speed_bps = self.transferred_size / elapsed
-                if speed_bps > 1024 * 1024:
-                    status_info['transfer_speed'] = f"{speed_bps / (1024 * 1024):.2f} MB/s"
-                elif speed_bps > 1024:
-                    status_info['transfer_speed'] = f"{speed_bps / 1024:.2f} KB/s"
-                else:
-                    status_info['transfer_speed'] = f"{speed_bps:.0f} B/s"
+        # 创建进度快照
+        progress_snapshot = TaskProgress(
+            task_id=progress.task_id,
+            progress_type=progress.progress_type,
+            percentage=progress.percentage,
+            current_step=progress.current_step,
+            total_steps=progress.total_steps,
+            current_step_index=progress.current_step_index,
+            files_total=progress.files_total,
+            files_completed=progress.files_completed,
+            total_size=progress.total_size,
+            transferred_size=progress.transferred_size,
+            transfer_speed=progress.transfer_speed,
+            start_time=progress.start_time,
+            eta=progress.eta,
+            error_count=progress.error_count,
+            warning_count=progress.warning_count
+        )
         
-        # 计算剩余时间
-        if self.current_progress > 0 and self.current_progress < 100:
-            elapsed = (datetime.utcnow() - self.start_time).total_seconds() if self.start_time else 0
-            if elapsed > 0:
-                total_time = (elapsed / self.current_progress) * 100
-                remaining_time = total_time - elapsed
-                if remaining_time > 0:
-                    minutes = int(remaining_time // 60)
-                    seconds = int(remaining_time % 60)
-                    status_info['eta'] = f"{minutes:02d}:{seconds:02d}"
+        self.progress_history[task_id].append(progress_snapshot)
         
-        # 调用回调函数
+        # 限制历史记录数量
+        if len(self.progress_history[task_id]) > self.max_history_size:
+            self.progress_history[task_id].pop(0)
+    
+    def _trigger_callbacks(self, progress: TaskProgress):
+        """触发回调函数"""
+        for callback in self.progress_callbacks:
+            try:
+                callback(progress)
+            except Exception as e:
+                self.logger.error(f"进度回调函数执行失败: {e}")
+    
+    def _report_progress_loop(self):
+        """进度上报循环"""
+        while True:
+            try:
+                with self.progress_lock:
+                    for task_id, progress in self.task_progress.items():
+                        if progress.percentage < 100:  # 只上报未完成的任务
+                            self._report_progress_to_server(progress)
+                
+                time.sleep(self.report_interval)
+                
+            except Exception as e:
+                self.logger.error(f"进度上报循环异常: {e}")
+                time.sleep(self.report_interval)
+    
+    def _report_progress_to_server(self, progress: TaskProgress):
+        """向服务器上报进度"""
         try:
-            self.callback(status_info)
-        except Exception as e:
-            self.logger.error(f"Error in progress callback: {e}")
+            # 构建上报数据
+            report_data = {
+                'task_id': progress.task_id,
+                'progress': progress.percentage,
+                'current_step': progress.current_step,
+                'step_index': progress.current_step_index,
+                'total_steps': progress.total_steps,
+                'files_total': progress.files_total,
+                'files_completed': progress.files_completed,
+                'total_size': progress.total_size,
+                'transferred_size': progress.transferred_size,
+                'transfer_speed': progress.transfer_speed,
+                'eta': progress.eta,
+                'error_count': progress.error_count,
+                'warning_count': progress.warning_count,
+                'timestamp': datetime.now().isoformat()
+            }
             
-    def get_status(self) -> Dict[str, Any]:
-        """获取当前状态"""
-        return {
-            'progress': self.current_progress,
-            'total_files': self.total_files,
-            'transferred_files': self.transferred_files,
-            'total_size': self.total_size,
-            'transferred_size': self.transferred_size,
-            'elapsed_time': (datetime.utcnow() - self.start_time).total_seconds() if self.start_time else 0
-        }
+            # 添加当前文件信息
+            if progress.current_file:
+                report_data['current_file'] = {
+                    'path': progress.current_file.file_path,
+                    'size': progress.current_file.size,
+                    'transferred': progress.current_file.transferred,
+                    'speed': progress.current_file.speed,
+                    'eta': progress.current_file.eta
+                }
+            
+            # 添加网络信息
+            if progress.network_info:
+                report_data['network'] = {
+                    'bytes_sent': progress.network_info.bytes_sent,
+                    'bytes_received': progress.network_info.bytes_received,
+                    'send_rate': progress.network_info.send_rate,
+                    'receive_rate': progress.network_info.receive_rate,
+                    'connection_count': progress.network_info.connection_count,
+                    'latency': progress.network_info.latency
+                }
+            
+            if self.detailed_logging:
+                self.logger.debug(f"上报任务 {progress.task_id} 进度: {progress.percentage:.1f}%")
+                
+        except Exception as e:
+            self.logger.error(f"上报进度失败: {e}")
+
+class ProgressParser:
+    """进度解析器 - 从命令行输出解析进度信息"""
+    
+    def __init__(self):
+        self.log_manager = get_log_manager()
+        self.logger = self.log_manager.get_logger('ProgressParser')
+        
+        # rsync 进度正则表达式
+        self.rsync_progress_pattern = re.compile(
+            r'(\d+(?:,\d+)*)\s+(\d+)%\s+(\d+(?:\.\d+)?[kMGT]?B/s)\s+(\d+:\d+:\d+)'
+        )
+        
+        # rclone 进度正则表达式
+        self.rclone_progress_pattern = re.compile(
+            r'Transferred:\s+(\d+(?:\.\d+)?[kMGT]?B)\s+/\s+(\d+(?:\.\d+)?[kMGT]?B),\s+(\d+)%,\s+(\d+(?:\.\d+)?[kMGT]?B/s),\s+ETA\s+(\d+[dhms]+|\d+:\d+:\d+)'
+        )
+    
+    def parse_rsync_output(self, output: str) -> Dict[str, Any]:
+        """解析rsync输出"""
+        match = self.rsync_progress_pattern.search(output)
+        if match:
+            transferred = self._parse_size(match.group(1))
+            percentage = int(match.group(2))
+            speed = self._parse_speed(match.group(3))
+            eta = self._parse_time(match.group(4))
+            
+            return {
+                'transferred_size': transferred,
+                'percentage': percentage,
+                'transfer_speed': speed,
+                'eta': eta
+            }
+        
+        return {}
+    
+    def parse_rclone_output(self, output: str) -> Dict[str, Any]:
+        """解析rclone输出"""
+        match = self.rclone_progress_pattern.search(output)
+        if match:
+            transferred = self._parse_size(match.group(1))
+            total_size = self._parse_size(match.group(2))
+            percentage = int(match.group(3))
+            speed = self._parse_speed(match.group(4))
+            eta = self._parse_eta(match.group(5))
+            
+            return {
+                'transferred_size': transferred,
+                'total_size': total_size,
+                'percentage': percentage,
+                'transfer_speed': speed,
+                'eta': eta
+            }
+        
+        return {}
+    
+    def _parse_size(self, size_str: str) -> int:
+        """解析大小字符串为字节数"""
+        size_str = size_str.replace(',', '')
+        
+        units = {'B': 1, 'kB': 1024, 'MB': 1024**2, 'GB': 1024**3, 'TB': 1024**4}
+        
+        for unit, multiplier in units.items():
+            if size_str.endswith(unit):
+                return int(float(size_str[:-len(unit)]) * multiplier)
+        
+        return int(size_str)
+    
+    def _parse_speed(self, speed_str: str) -> float:
+        """解析速度字符串为每秒字节数"""
+        if speed_str.endswith('B/s'):
+            return self._parse_size(speed_str[:-2])
+        return 0.0
+    
+    def _parse_time(self, time_str: str) -> int:
+        """解析时间字符串为秒数"""
+        parts = time_str.split(':')
+        if len(parts) == 3:
+            hours, minutes, seconds = map(int, parts)
+            return hours * 3600 + minutes * 60 + seconds
+        return 0
+    
+    def _parse_eta(self, eta_str: str) -> int:
+        """解析ETA字符串为秒数"""
+        if ':' in eta_str:
+            return self._parse_time(eta_str)
+        
+        # 处理如 "1h2m3s" 格式
+        total_seconds = 0
+        if 'h' in eta_str:
+            hours = int(eta_str.split('h')[0])
+            total_seconds += hours * 3600
+            eta_str = eta_str.split('h')[1]
+        if 'm' in eta_str:
+            minutes = int(eta_str.split('m')[0])
+            total_seconds += minutes * 60
+            eta_str = eta_str.split('m')[1]
+        if 's' in eta_str:
+            seconds = int(eta_str.split('s')[0])
+            total_seconds += seconds
+        
+        return total_seconds
