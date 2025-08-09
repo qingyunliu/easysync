@@ -105,6 +105,7 @@ class SyncService:
                     self.cleanup_task_state(task_id)
                 else:
                     self.logger.warning(f"Task {task_id} already completed")
+                    self._update_task_status(task_id, 'completed')
                     return
                 
             # 添加到任务队列
