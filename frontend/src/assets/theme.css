@@ -48,6 +48,18 @@
   --info-bg: #f0f9ff;
   --info-color: #409eff;
   
+  /* 科技感组件颜色 */
+  --cyber-primary: #409eff;
+  --cyber-success: #67c23a;
+  --cyber-warning: #e6a23c;
+  --cyber-danger: #f56c6c;
+  --cyber-glow-primary: rgba(64, 158, 255, 0.3);
+  --cyber-glow-success: rgba(103, 194, 58, 0.3);
+  --cyber-panel-bg: rgba(255, 255, 255, 0.08);
+  --cyber-panel-border: rgba(255, 255, 255, 0.12);
+  --cyber-glass-bg: rgba(255, 255, 255, 0.05);
+  --cyber-glass-border: rgba(255, 255, 255, 0.1);
+  
   /* 侧边栏 */
   --sidebar-bg: linear-gradient(135deg, #fafdff 0%, #fff 100%);
   --sidebar-text: #1c1f23;
@@ -99,6 +111,18 @@
   --danger-color: #f56c6c;
   --info-bg: #1a2a3a;
   --info-color: #409eff;
+  
+  /* 科技感组件颜色 */
+  --cyber-primary: #409eff;
+  --cyber-success: #67c23a;
+  --cyber-warning: #e6a23c;
+  --cyber-danger: #f56c6c;
+  --cyber-glow-primary: rgba(64, 158, 255, 0.4);
+  --cyber-glow-success: rgba(103, 194, 58, 0.4);
+  --cyber-panel-bg: rgba(255, 255, 255, 0.03);
+  --cyber-panel-border: rgba(255, 255, 255, 0.08);
+  --cyber-glass-bg: rgba(255, 255, 255, 0.02);
+  --cyber-glass-border: rgba(255, 255, 255, 0.05);
   
   /* 侧边栏 */
   --sidebar-bg: linear-gradient(135deg, #16161a 0%, #16161a 100%);

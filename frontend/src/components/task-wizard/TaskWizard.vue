@@ -1,138 +1,258 @@
 <template>
   <div class="task-wizard">
-    <!-- 复制任务提示 -->
-    <div v-if="copyFromTask" class="copy-notice">
-      <el-alert
-        title="正在复制任务配置"
-        :description="`正在复制任务 '${copyFromTask.name}' 的配置信息。源端和目标端已自动设置，您可以查看和修改配置后创建新任务。`"
-        type="info"
-        :closable="false"
-        show-icon
-      />
+    <!-- 科技感背景装饰 -->
+    <div class="wizard-bg-decoration">
+      <div class="grid-pattern"></div>
+      <div class="floating-particles">
+        <div class="particle" v-for="i in 20" :key="i"></div>
+      </div>
     </div>
 
-    <!-- 步骤指示器 -->
-    <el-steps :active="currentStep" finish-status="success" class="wizard-steps">
-      <el-step title="选择源端" description="选择源端存储和文件">
-        <template #icon>
-          <el-icon><FolderOpened /></el-icon>
-        </template>
-      </el-step>
-      <el-step title="选择目标端" description="选择目标端存储和路径">
-        <template #icon>
-          <el-icon><FolderAdd /></el-icon>
-        </template>
-      </el-step>
-      <el-step title="任务参数" description="配置同步参数">
-        <template #icon>
-          <el-icon><Setting /></el-icon>
-        </template>
-      </el-step>
-      <el-step title="确认配置" description="确认并创建任务">
-        <template #icon>
-          <el-icon><Check /></el-icon>
-        </template>
-      </el-step>
-    </el-steps>
+    <!-- 复制任务提示 -->
+    <div v-if="copyFromTask" class="copy-notice">
+      <div class="cyber-alert">
+        <div class="alert-icon">
+          <el-icon><CopyDocument /></el-icon>
+        </div>
+        <div class="alert-content">
+          <h4>复制任务配置</h4>
+          <p>正在复制任务 "{{ copyFromTask.name }}" 的配置信息</p>
+        </div>
+        <div class="alert-decoration"></div>
+      </div>
+    </div>
+
+    <!-- 科技感步骤指示器 -->
+    <div class="cyber-steps">
+      <div class="steps-container">
+        <div 
+          v-for="(step, index) in steps" 
+          :key="index"
+          class="step-item"
+          :class="{ 
+            'active': currentStep === index, 
+            'completed': currentStep > index,
+            'upcoming': currentStep < index 
+          }"
+          @click="canGoToStep(index) && goToStep(index)"
+        >
+          <div class="step-circle">
+            <div class="step-inner">
+              <el-icon v-if="currentStep > index" class="step-check"><Check /></el-icon>
+              <el-icon v-else :class="step.iconClass">
+                <component :is="step.icon" />
+              </el-icon>
+            </div>
+            <div class="step-glow"></div>
+          </div>
+          <div class="step-info">
+            <span class="step-title">{{ step.title }}</span>
+            <span class="step-desc">{{ step.description }}</span>
+          </div>
+          <div v-if="index < steps.length - 1" class="step-connector">
+            <div class="connector-line" :class="{ 'active': currentStep > index }"></div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- 步骤内容 -->
     <div class="wizard-content">
       <!-- 步骤1: 选择源端 -->
-      <div v-show="currentStep === 0" class="step-content">
-        <div class="step-header">
-          <h3>选择源端存储和文件</h3>
-          <p class="step-description">请选择要同步的源端存储，并勾选需要同步的目录或文件</p>
+      <Transition name="step-slide" mode="out-in">
+        <div v-show="currentStep === 0" class="step-content cyber-panel">
+          <div class="panel-header">
+            <div class="header-decoration">
+              <div class="header-line"></div>
+              <div class="header-dot"></div>
+            </div>
+            <div class="step-header">
+              <h3>
+                <el-icon class="header-icon"><FolderOpened /></el-icon>
+                选择源端存储和文件
+              </h3>
+              <p class="step-description">请选择要同步的源端存储，并勾选需要同步的目录或文件</p>
+            </div>
+            <div class="header-decoration reverse">
+              <div class="header-dot"></div>
+              <div class="header-line"></div>
+            </div>
+          </div>
+          
+          <div class="panel-content">
+            <SourceSelector 
+              ref="sourceSelectorRef"
+              v-model="wizardData.source"
+              @change="handleSourceChange"
+            />
+          </div>
         </div>
-        
-        <SourceSelector 
-          ref="sourceSelectorRef"
-          v-model="wizardData.source"
-          @change="handleSourceChange"
-        />
-      </div>
+      </Transition>
 
       <!-- 步骤2: 选择目标端 -->
-      <div v-show="currentStep === 1" class="step-content">
-        <div class="step-header">
-          <h3>选择目标端存储和路径</h3>
-          <p class="step-description">请选择目标端存储，并指定同步的目标路径</p>
+      <Transition name="step-slide" mode="out-in">
+        <div v-show="currentStep === 1" class="step-content cyber-panel">
+          <div class="panel-header">
+            <div class="header-decoration">
+              <div class="header-line"></div>
+              <div class="header-dot"></div>
+            </div>
+            <div class="step-header">
+              <h3>
+                <el-icon class="header-icon"><FolderAdd /></el-icon>
+                选择目标端存储和路径
+              </h3>
+              <p class="step-description">请选择目标端存储，并指定同步的目标路径</p>
+            </div>
+            <div class="header-decoration reverse">
+              <div class="header-dot"></div>
+              <div class="header-line"></div>
+            </div>
+          </div>
+          
+          <div class="panel-content">
+            <TargetSelector 
+              ref="targetSelectorRef"
+              v-model="wizardData.target"
+              :source-storage="wizardData.source"
+              @change="handleTargetChange"
+            />
+          </div>
         </div>
-        
-        <TargetSelector 
-          ref="targetSelectorRef"
-          v-model="wizardData.target"
-          :source-storage="wizardData.source"
-          @change="handleTargetChange"
-        />
-      </div>
+      </Transition>
 
       <!-- 步骤3: 任务参数 -->
-      <div v-show="currentStep === 2" class="step-content">
-        <div class="step-header">
-          <h3>配置任务参数</h3>
-          <p class="step-description">根据源端和目标端类型配置相应的同步参数</p>
+      <Transition name="step-slide" mode="out-in">
+        <div v-show="currentStep === 2" class="step-content cyber-panel">
+          <div class="panel-header">
+            <div class="header-decoration">
+              <div class="header-line"></div>
+              <div class="header-dot"></div>
+            </div>
+            <div class="step-header">
+              <h3>
+                <el-icon class="header-icon"><Setting /></el-icon>
+                配置任务参数
+              </h3>
+              <p class="step-description">根据源端和目标端类型配置相应的同步参数</p>
+            </div>
+            <div class="header-decoration reverse">
+              <div class="header-dot"></div>
+              <div class="header-line"></div>
+            </div>
+          </div>
+          
+          <div class="panel-content">
+            <TaskParameters 
+              v-model="wizardData.parameters"
+              :source-storage="wizardData.source"
+              :target-storage="wizardData.target"
+              @change="handleParametersChange"
+            />
+          </div>
         </div>
-        
-        <TaskParameters 
-          v-model="wizardData.parameters"
-          :source-storage="wizardData.source"
-          :target-storage="wizardData.target"
-          @change="handleParametersChange"
-        />
-      </div>
+      </Transition>
 
       <!-- 步骤4: 确认配置 -->
-      <div v-show="currentStep === 3" class="step-content">
-        <div class="step-header">
-          <h3>确认任务配置</h3>
-          <p class="step-description">请确认以下配置信息，确认无误后点击创建任务</p>
+      <Transition name="step-slide" mode="out-in">
+        <div v-show="currentStep === 3" class="step-content cyber-panel">
+          <div class="panel-header">
+            <div class="header-decoration">
+              <div class="header-line"></div>
+              <div class="header-dot"></div>
+            </div>
+            <div class="step-header">
+              <h3>
+                <el-icon class="header-icon"><Check /></el-icon>
+                确认任务配置
+              </h3>
+              <p class="step-description">请确认以下配置信息，确认无误后点击创建任务</p>
+            </div>
+            <div class="header-decoration reverse">
+              <div class="header-dot"></div>
+              <div class="header-line"></div>
+            </div>
+          </div>
+          
+          <div class="panel-content">
+            <TaskConfirmation 
+              :wizard-data="wizardData"
+              @confirm="handleConfirm"
+            />
+          </div>
         </div>
-        
-        <TaskConfirmation 
-          :wizard-data="wizardData"
-          @confirm="handleConfirm"
-        />
-      </div>
+      </Transition>
     </div>
 
-    <!-- 步骤导航 -->
-    <div class="wizard-footer">
-      <div class="footer-actions">
-        <el-button 
-          v-if="currentStep > 0" 
-          @click="prevStep"
-          :disabled="loading"
-        >
-          <el-icon><ArrowLeft /></el-icon>
-          上一步
-        </el-button>
-        
-        <el-button 
-          v-if="currentStep < 3" 
-          type="primary" 
-          @click="nextStep"
-          :disabled="!canProceed || loading"
-        >
-          下一步
-          <el-icon><ArrowRight /></el-icon>
-        </el-button>
-        
-        <el-button 
-          v-if="currentStep === 3" 
-          type="success" 
-          @click="createTask"
-          :loading="loading"
-          :disabled="!canCreate"
-        >
-          <el-icon><Check /></el-icon>
-          创建任务
-        </el-button>
-      </div>
+    <!-- 科技感导航栏 -->
+    <div class="cyber-footer">
+      <div class="footer-bg"></div>
       
-      <div class="footer-info">
-        <el-button @click="resetWizard" :disabled="loading">
-          重置向导
-        </el-button>
+      <div class="footer-content">
+        <!-- 左侧按钮组 -->
+        <div class="footer-actions">
+          <button 
+            v-if="currentStep > 0" 
+            class="cyber-btn secondary" 
+            @click="prevStep" 
+            :disabled="loading"
+          >
+            <el-icon><ArrowLeft /></el-icon>
+            <span>上一步</span>
+          </button>
+          
+          <button 
+            class="cyber-btn reset" 
+            @click="resetWizard"
+            :disabled="loading"
+          >
+            <el-icon><RefreshLeft /></el-icon>
+            <span>重置</span>
+          </button>
+        </div>
+
+        <!-- 中间进度指示 -->
+        <div class="progress-indicator">
+          <div class="progress-text">步骤 {{ currentStep + 1 }} / {{ steps.length }}</div>
+          <div class="progress-bar">
+            <div 
+              class="progress-fill" 
+              :style="{ width: `${((currentStep + 1) / steps.length) * 100}%` }"
+            ></div>
+          </div>
+          <div class="progress-dots">
+            <div 
+              v-for="i in steps.length" 
+              :key="i"
+              class="progress-dot"
+              :class="{ active: i <= currentStep + 1 }"
+            ></div>
+          </div>
+        </div>
+
+        <!-- 右侧主要按钮 -->
+        <div class="footer-primary">
+          <button 
+            v-if="currentStep < 3" 
+            class="cyber-btn primary" 
+            @click="nextStep" 
+            :disabled="!canProceed || loading"
+          >
+            <span>下一步</span>
+            <el-icon><ArrowRight /></el-icon>
+          </button>
+          
+          <button 
+            v-if="currentStep === 3" 
+            class="cyber-btn success" 
+            @click="createTask" 
+            :disabled="!canCreate || loading"
+          >
+            <el-icon v-if="loading"><Loading /></el-icon>
+            <el-icon v-else><Check /></el-icon>
+            <span>{{ copyFromTask ? '创建副本' : '创建任务' }}</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -143,7 +263,8 @@ import { ref, computed, watch, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   FolderOpened, FolderAdd, Setting, Check,
-  ArrowLeft, ArrowRight
+  ArrowLeft, ArrowRight, RefreshLeft, Loading,
+  CopyDocument, Close
 } from '@element-plus/icons-vue'
 import SourceSelector from './SourceSelector.vue'
 import TargetSelector from './TargetSelector.vue'
@@ -172,6 +293,34 @@ const sourceSelectorRef = ref(null)
 const targetSelectorRef = ref(null)
 const extractedSourceConfig = ref(null)
 const extractedTargetConfig = ref(null)
+
+// 步骤配置
+const steps = ref([
+  {
+    title: '选择源端',
+    description: '选择源端存储和文件',
+    icon: FolderOpened,
+    iconClass: 'step-icon-source'
+  },
+  {
+    title: '选择目标端', 
+    description: '选择目标端存储和路径',
+    icon: FolderAdd,
+    iconClass: 'step-icon-target'
+  },
+  {
+    title: '任务参数',
+    description: '配置同步参数',
+    icon: Setting,
+    iconClass: 'step-icon-settings'
+  },
+  {
+    title: '确认配置',
+    description: '确认并创建任务',
+    icon: Check,
+    iconClass: 'step-icon-confirm'
+  }
+])
 
 // 步骤状态缓存
 const stepCache = ref({
@@ -373,6 +522,18 @@ const extractConfigFromTask = (task) => {
   } catch (error) {
     console.error('提取任务配置时出错:', error)
     ElMessage.error('提取任务配置时出错，请手动配置任务')
+  }
+}
+
+// 新增方法：步骤导航控制
+const canGoToStep = (stepIndex) => {
+  // 可以回到之前的步骤，或者当前步骤可以前进时可以到下一步
+  return stepIndex <= currentStep.value || (stepIndex === currentStep.value + 1 && canProceed.value)
+}
+
+const goToStep = (stepIndex) => {
+  if (canGoToStep(stepIndex)) {
+    currentStep.value = stepIndex
   }
 }
 
@@ -613,109 +774,735 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 </script>
 
 <style scoped>
+/* 科技感主容器 */
 .task-wizard {
-  padding: 20px;
-  max-width: 1200px;
+  position: relative;
+  padding: 30px;
+  max-width: 1400px;
   margin: 0 auto;
+  background: var(--bg-color);
+  overflow: hidden;
 }
 
+/* 背景装饰 */
+.wizard-bg-decoration {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.grid-pattern {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(rgba(64, 158, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(64, 158, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  animation: gridMove 20s linear infinite;
+}
+
+.floating-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+.particle {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: rgba(64, 158, 255, 0.4);
+  border-radius: 50%;
+  animation: float 8s infinite linear;
+}
+
+.particle:nth-child(odd) {
+  animation-delay: -2s;
+  background: rgba(103, 194, 58, 0.3);
+}
+
+.particle:nth-child(3n) {
+  animation-delay: -4s;
+  background: rgba(245, 108, 108, 0.3);
+}
+
+@keyframes gridMove {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, 50px); }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(100vh) rotate(0deg);
+    opacity: 0;
+  }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% {
+    transform: translateY(-100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+/* 生成随机粒子位置 */
+.particle:nth-child(1) { left: 5%; animation-duration: 6s; }
+.particle:nth-child(2) { left: 15%; animation-duration: 8s; }
+.particle:nth-child(3) { left: 25%; animation-duration: 7s; }
+.particle:nth-child(4) { left: 35%; animation-duration: 9s; }
+.particle:nth-child(5) { left: 45%; animation-duration: 6s; }
+.particle:nth-child(6) { left: 55%; animation-duration: 8s; }
+.particle:nth-child(7) { left: 65%; animation-duration: 7s; }
+.particle:nth-child(8) { left: 75%; animation-duration: 9s; }
+.particle:nth-child(9) { left: 85%; animation-duration: 6s; }
+.particle:nth-child(10) { left: 95%; animation-duration: 8s; }
+
+/* 复制任务提示 */
 .copy-notice {
-  margin-bottom: 20px;
-}
-
-.wizard-steps {
-  margin-bottom: 40px;
-  padding: 20px;
-  background: var(--el-bg-color);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.wizard-content {
-  min-height: 500px;
+  position: relative;
   margin-bottom: 30px;
+  z-index: 1;
 }
 
-.step-content {
+.cyber-alert {
+  position: relative;
+  display: flex;
+  align-items: center;
   padding: 20px;
-  background: var(--el-bg-color);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.1) 0%, rgba(64, 158, 255, 0.05) 100%);
+  border: 1px solid rgba(64, 158, 255, 0.3);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+}
+
+.cyber-alert::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(64, 158, 255, 0.1), transparent);
+  animation: scanLine 3s infinite;
+}
+
+@keyframes scanLine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.alert-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(64, 158, 255, 0.2);
+  border-radius: 50%;
+  margin-right: 16px;
+  font-size: 18px;
+  color: #409eff;
+}
+
+.alert-content h4 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.alert-content p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.alert-decoration {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(64, 158, 255, 0.3);
+  border-radius: 4px;
+  animation: pulse 2s infinite;
+}
+
+/* 科技感步骤指示器 */
+.cyber-steps {
+  position: relative;
+  margin-bottom: 40px;
+  z-index: 1;
+}
+
+.steps-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 30px;
+  background: var(--cyber-glass-bg);
+  border: 1px solid var(--cyber-glass-border);
+  border-radius: 16px;
+  backdrop-filter: blur(10px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 var(--cyber-glass-border);
+}
+
+.step-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  flex: 1;
+}
+
+.step-item.active .step-circle .step-inner {
+  background: linear-gradient(135deg, var(--cyber-primary) 0%, var(--cyber-success) 100%);
+  border-color: var(--cyber-primary);
+  box-shadow: 0 0 20px var(--cyber-glow-primary);
+  transform: scale(1.1);
+}
+
+.step-item.completed .step-circle .step-inner {
+  background: linear-gradient(135deg, var(--cyber-success) 0%, var(--cyber-primary) 100%);
+  border-color: var(--cyber-success);
+  box-shadow: 0 0 15px var(--cyber-glow-success);
+}
+
+.step-item.upcoming .step-circle .step-inner {
+  background: var(--bg-secondary);
+  border-color: var(--border-color);
+}
+
+.step-circle {
+  position: relative;
+  margin-bottom: 12px;
+}
+
+.step-inner {
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--border-color);
+  border-radius: 50%;
+  background: var(--bg-color);
+  font-size: 24px;
+  color: var(--text-color);
+  transition: all 0.3s ease;
+  z-index: 2;
+  position: relative;
+}
+
+.step-glow {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.3), rgba(103, 194, 58, 0.3));
+  opacity: 0;
+  filter: blur(8px);
+  transition: opacity 0.3s ease;
+  z-index: 1;
+}
+
+.step-item.active .step-glow {
+  opacity: 1;
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow {
+  from { transform: scale(1); }
+  to { transform: scale(1.1); }
+}
+
+.step-info {
+  text-align: center;
+  max-width: 120px;
+}
+
+.step-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 4px;
+  transition: color 0.3s ease;
+}
+
+.step-desc {
+  display: block;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.3;
+}
+
+.step-item.active .step-title {
+  color: #409eff;
+}
+
+.step-item.completed .step-title {
+  color: #67c23a;
+}
+
+.step-connector {
+  position: absolute;
+  top: 30px;
+  left: calc(50% + 40px);
+  right: calc(-50% + 40px);
+  height: 2px;
+  display: flex;
+  align-items: center;
+  z-index: 1;
+}
+
+.connector-line {
+  width: 100%;
+  height: 2px;
+  background: var(--border-color);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.connector-line.active {
+  background: linear-gradient(90deg, #409eff 0%, #67c23a 100%);
+  box-shadow: 0 0 8px rgba(64, 158, 255, 0.3);
+}
+
+.connector-line.active::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+  animation: flow 2s infinite;
+}
+
+@keyframes flow {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+/* 步骤内容面板 */
+.wizard-content {
+  position: relative;
+  min-height: 600px;
+  margin-bottom: 30px;
+  z-index: 1;
+}
+
+.cyber-panel {
+  background: var(--cyber-panel-bg);
+  border: 1px solid var(--cyber-panel-border);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 var(--cyber-panel-border);
+  overflow: hidden;
+  position: relative;
+}
+
+.cyber-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(64, 158, 255, 0.5), transparent);
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  padding: 24px 30px;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(135deg, rgba(64, 158, 255, 0.05) 0%, rgba(103, 194, 58, 0.05) 100%);
+}
+
+.header-decoration {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+}
+
+.header-decoration.reverse {
+  margin-right: 0;
+  margin-left: 20px;
+  flex-direction: row-reverse;
+}
+
+.header-line {
+  width: 30px;
+  height: 2px;
+  background: linear-gradient(90deg, #409eff, #67c23a);
+  border-radius: 1px;
+}
+
+.header-dot {
+  width: 8px;
+  height: 8px;
+  background: #409eff;
+  border-radius: 50%;
+  margin: 0 8px;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
 }
 
 .step-header {
-  margin-bottom: 30px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--el-border-color-light);
+  flex: 1;
+  text-align: center;
 }
 
 .step-header h3 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   margin: 0 0 8px 0;
-  color: var(--el-text-color-primary);
-  font-size: 20px;
+  font-size: 24px;
   font-weight: 600;
+  background: linear-gradient(135deg, var(--text-color) 0%, #409eff 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-icon {
+  font-size: 28px;
+  color: #409eff;
 }
 
 .step-description {
   margin: 0;
-  color: var(--el-text-color-secondary);
-  font-size: 14px;
+  color: var(--text-secondary);
+  font-size: 16px;
   line-height: 1.5;
 }
 
-.wizard-footer {
+.panel-content {
+  padding: 30px;
+}
+
+/* 科技感底部导航 */
+.cyber-footer {
+  position: relative;
+  z-index: 1;
+}
+
+.footer-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.footer-content {
+  position: relative;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 20px;
-  background: var(--el-bg-color);
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  justify-content: space-between;
+  padding: 24px 30px;
+  z-index: 2;
 }
 
 .footer-actions {
   display: flex;
-  gap: 12px;
+  gap: 16px;
 }
 
-.footer-info {
+.footer-primary {
   display: flex;
-  gap: 12px;
+  gap: 16px;
 }
 
-:deep(.el-step__title) {
-  font-size: 16px;
+/* 科技感按钮 */
+.cyber-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
   font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid var(--border-color);
+  color: var(--text-color);
+  backdrop-filter: blur(10px);
 }
 
-:deep(.el-step__description) {
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
+.cyber-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s;
 }
 
-:deep(.el-step__icon) {
-  font-size: 18px;
+.cyber-btn:hover::before {
+  left: 100%;
+}
+
+.cyber-btn.primary {
+  background: linear-gradient(135deg, #409eff 0%, #67c23a 100%);
+  border-color: #409eff;
+  color: white;
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.3);
+}
+
+.cyber-btn.primary:hover {
+  box-shadow: 0 6px 20px rgba(64, 158, 255, 0.4);
+  transform: translateY(-2px);
+}
+
+.cyber-btn.success {
+  background: linear-gradient(135deg, #67c23a 0%, #409eff 100%);
+  border-color: #67c23a;
+  color: white;
+  box-shadow: 0 4px 16px rgba(103, 194, 58, 0.3);
+}
+
+.cyber-btn.success:hover {
+  box-shadow: 0 6px 20px rgba(103, 194, 58, 0.4);
+  transform: translateY(-2px);
+}
+
+.cyber-btn.secondary {
+  background: linear-gradient(135deg, rgba(96, 98, 102, 0.1) 0%, rgba(96, 98, 102, 0.05) 100%);
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+.cyber-btn.secondary:hover {
+  border-color: #409eff;
+  color: #409eff;
+  box-shadow: 0 4px 16px rgba(64, 158, 255, 0.2);
+}
+
+.cyber-btn.reset {
+  background: linear-gradient(135deg, rgba(245, 108, 108, 0.1) 0%, rgba(245, 108, 108, 0.05) 100%);
+  border-color: rgba(245, 108, 108, 0.3);
+  color: #f56c6c;
+}
+
+.cyber-btn.reset:hover {
+  border-color: #f56c6c;
+  box-shadow: 0 4px 16px rgba(245, 108, 108, 0.2);
+}
+
+.cyber-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 进度指示器 */
+.progress-indicator {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.progress-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.progress-bar {
+  width: 200px;
+  height: 4px;
+  background: var(--border-color);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #409eff 0%, #67c23a 100%);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: progress-flow 2s infinite;
+}
+
+@keyframes progress-flow {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+.progress-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.progress-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.progress-dot.active {
+  background: #409eff;
+  box-shadow: 0 0 8px rgba(64, 158, 255, 0.5);
+}
+
+/* 步骤切换动画 */
+.step-slide-enter-active,
+.step-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.step-slide-enter-from {
+  opacity: 0;
+  transform: translateX(30px);
+}
+
+.step-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-30px);
 }
 
 /* 响应式设计 */
+@media (max-width: 1200px) {
+  .task-wizard {
+    padding: 20px;
+  }
+  
+  .steps-container {
+    padding: 20px;
+  }
+  
+  .step-inner {
+    width: 50px;
+    height: 50px;
+    font-size: 20px;
+  }
+  
+  .step-info {
+    max-width: 100px;
+  }
+}
+
 @media (max-width: 768px) {
   .task-wizard {
-    padding: 10px;
+    padding: 15px;
   }
   
-  .wizard-footer {
+  .steps-container {
     flex-direction: column;
-    gap: 16px;
+    gap: 20px;
+    padding: 24px 20px;
   }
   
-  .footer-actions {
+  .step-item {
+    flex-direction: row;
+    justify-content: flex-start;
+    width: 100%;
+  }
+  
+  .step-circle {
+    margin-bottom: 0;
+    margin-right: 16px;
+  }
+  
+  .step-connector {
+    display: none;
+  }
+  
+  .footer-content {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .footer-actions,
+  .footer-primary {
     width: 100%;
     justify-content: center;
   }
   
-  .footer-info {
-    width: 100%;
+  .cyber-btn {
+    flex: 1;
     justify-content: center;
   }
+  
+  .progress-indicator {
+    order: -1;
+  }
+}
+
+/* 深色主题优化 */
+[data-theme="dark"] .cyber-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .cyber-footer .footer-bg {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="dark"] .grid-pattern {
+  background: 
+    linear-gradient(rgba(64, 158, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(64, 158, 255, 0.02) 1px, transparent 1px);
 }
 </style> 
