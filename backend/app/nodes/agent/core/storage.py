@@ -303,11 +303,6 @@ storage_class = STANDARD
         except Exception as e:
             self.logger.error(f"卸载失败: {e}")
             return False
-
-    def _mount_nfs(self, source: str, mount_point: str, options):
-        """挂载NFS/NAS - 已废弃，使用 mount_manager.py"""
-        self.logger.warning("_mount_nfs 方法已废弃，请使用 mount_manager.py")
-        raise NotImplementedError("请使用 mount_manager.py 进行挂载管理")
     
     def check_storage(self, storage_config: Dict[str, Any]) -> bool:
         """检查存储配置是否可用
@@ -351,65 +346,46 @@ storage_class = STANDARD
             config = storage_config.get('config', {})
             server = config.get('server')
             path = config.get('path')
-            options = config.get('options', '')
             
             if not server or not path:
                 self.logger.error(f"NFS配置缺少必需字段: server={server}, path={path}")
                 return False
             
-            # 构建source字符串
-            source = f"{server}:{path}"
-            
-            # 检查挂载点是否已存在
-            mount_point = storage_config.get('mount_point')
-            if mount_point and os.path.exists(mount_point):
-                # 如果挂载点已存在，检查是否已挂载
-                if mount_point in self.mounts:
-                    return True
-                else:
-                    # 尝试挂载到现有挂载点
-                    try:
-                        # 确保挂载点存在
-                        os.makedirs(mount_point, exist_ok=True)
-                        self._mount_nfs(source, mount_point, options)
-                        # 立即卸载
-                        subprocess.run(['umount', mount_point], check=True)
-                        return True
-                    except Exception as e:
-                        self.logger.error(f"NFS挂载测试失败: {e}")
-                        return False
-            
-            # 如果没有指定挂载点或挂载点不存在，创建临时挂载点进行测试
-            temp_mount = f"/tmp/test_mount_{hash(source) % 10000}"
-            try:
-                # 确保临时挂载点目录存在
-                os.makedirs(temp_mount, exist_ok=True)
-                
-                # 直接调用_mount_nfs进行测试
-                self._mount_nfs(source, temp_mount, options)
-                
-                # 立即卸载
-                subprocess.run(['umount', temp_mount], check=True)
-                
-                # 清理临时目录
-                try:
-                    os.rmdir(temp_mount)
-                except OSError:
-                    pass  # 忽略清理错误
-                
-                return True
-            except Exception as e:
-                self.logger.error(f"NFS挂载测试失败: {e}")
-                # 清理临时目录（如果存在）
-                try:
-                    if os.path.exists(temp_mount):
-                        os.rmdir(temp_mount)
-                except OSError:
-                    pass
+            # 使用存储ID进行测试挂载
+            storage_id = storage_config.get('id')
+            if not storage_id:
+                self.logger.error("存储配置缺少ID")
                 return False
             
+            self.logger.debug(f"测试NFS存储连接: {server}:{path}")
+            
+            # 使用mount_manager进行测试挂载
+            mount_point = self.mount_manager.mount_storage(storage_id, storage_config)
+            
+            if mount_point:
+                self.logger.info(f"NFS存储连接测试成功: {mount_point}")
+                
+                # 测试基本的文件系统操作
+                try:
+                    # 测试读取目录
+                    if os.path.exists(mount_point) and os.path.isdir(mount_point):
+                        os.listdir(mount_point)  # 简单的目录列表测试
+                        self.logger.debug("NFS目录读取测试成功")
+                        return True
+                    else:
+                        self.logger.warning(f"挂载点不是有效目录: {mount_point}")
+                        return False
+                        
+                except Exception as e:
+                    self.logger.warning(f"NFS目录访问测试失败: {e}")
+                    # 即使目录访问失败，如果挂载成功，也认为连接正常
+                    return True
+            else:
+                self.logger.error("NFS存储挂载失败")
+                return False
+                
         except Exception as e:
-            self.logger.error(f"Error checking NFS/NAS: {e}")
+            self.logger.error(f"NFS检查时出错: {e}")
             return False
     
     def _check_obs(self, storage_config: Dict[str, Any]) -> bool:
@@ -909,25 +885,8 @@ storage_class = STANDARD
                          source_path: str = None, target_path: str = None, task_id: str = None) -> bool:
         """OBS -> NFS/NAS 同步"""
         try:
-            # 将target_config转换为mount方法期望的格式
-            config = target_config.get('config', {})
-            server = config.get('server')
-            path = config.get('path')
-            mount_options = config.get('options', '')
-            
-            # 创建临时挂载点
-            temp_mount = f"/tmp/sync_mount_{hash(f'{server}:{path}') % 10000}"
-            
-            # 构建mount方法期望的配置格式
-            mount_config = {
-                'type': 'nfs',
-                'source': f"{server}:{path}",
-                'mount_point': temp_mount,
-                'options': mount_options
-            }
-            
-            # 挂载目标NFS
-            target_mount = self.mount(mount_config)
+            # 挂载目标NFS (使用统一的mount方法)
+            target_mount = self.mount(target_config)
             
             # 创建临时的rclone配置
             rclone_config, remote_name = self._create_rclone_config(source_config)
@@ -1108,26 +1067,6 @@ storage_class = STANDARD
                 'error': str(e),
                 'timestamp': datetime.utcnow().isoformat()
             }
-    
-    def _check_nfs_mount(self, storage_config: Dict[str, Any]) -> Dict[str, Any]:
-        """检查NFS挂载状态 - 已废弃，使用 mount_manager"""
-        self.logger.warning("_check_nfs_mount 方法已废弃，请使用 mount_manager")
-        return {'available': False, 'mounted': False, 'error': 'Method deprecated'}
-        
-    def _check_nas_mount(self, storage_config: Dict[str, Any]) -> Dict[str, Any]:
-        """检查NAS挂载状态 - 已废弃，使用 mount_manager"""
-        self.logger.warning("_check_nas_mount 方法已废弃，请使用 mount_manager")
-        return {'available': False, 'mounted': False, 'error': 'Method deprecated'}
-        
-    def _check_obs_mount(self, storage_config: Dict[str, Any]) -> Dict[str, Any]:
-        """检查OBS挂载状态 - 已废弃，使用 mount_manager"""
-        self.logger.warning("_check_obs_mount 方法已废弃，请使用 mount_manager")
-        return {'available': False, 'mounted': False, 'error': 'Method deprecated'}
-        
-    def _check_local_mount(self, storage_config: Dict[str, Any]) -> Dict[str, Any]:
-        """检查本地挂载状态 - 已废弃，使用 mount_manager"""
-        self.logger.warning("_check_local_mount 方法已废弃，请使用 mount_manager")
-        return {'available': False, 'mounted': False, 'error': 'Method deprecated'}
     
     def copy_data(self, source_config: Dict[str, Any], target_config: Dict[str, Any], 
                  options: Dict[str, Any] = None, progress_callback: Optional[Callable] = None) -> bool:

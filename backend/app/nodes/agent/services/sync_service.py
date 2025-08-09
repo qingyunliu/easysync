@@ -264,41 +264,7 @@ class SyncService:
             self._update_task_status(task_id, 'failed', error_msg)
             return
             
-        # 5. 挂载源端（如果是NAS/NFS）
-        source_type = source_config.get('type', '')
-        if source_type in ['nfs', 'nas']:
-            self.task_logger.log_task_event(
-                task_id=task_id,
-                phase=TaskPhase.MOUNT_SOURCE,
-                level=LogLevel.INFO,
-                message="开始挂载源端同步目录",
-                details={'source_type': source_type, 'source_config': source_config}
-            )
-            
-            # 执行挂载
-            mount_result = self._mount_source_storage(source_config)
-            if not mount_result['success']:
-                error_msg = f"源端挂载失败: {mount_result['error']}"
-                self.task_logger.log_task_event(
-                    task_id=task_id,
-                    phase=TaskPhase.TASK_FAILED,
-                    level=LogLevel.ERROR,
-                    message=error_msg,
-                    details={'error': mount_result['error']}
-                )
-                self._update_task_status(task_id, 'failed', error_msg)
-                return
-                
-            # 6. 挂载完成
-            self.task_logger.log_task_event(
-                task_id=task_id,
-                phase=TaskPhase.MOUNT_COMPLETED,
-                level=LogLevel.INFO,
-                message="完成源端同步目录挂载",
-                details={'mount_point': mount_result['mount_point']}
-            )
-        
-        # 7. 开始执行同步
+        # 5. 开始执行同步 (挂载逻辑由storage.py统一处理)
         self.task_logger.log_task_event(
             task_id=task_id,
             phase=TaskPhase.SYNC_STARTED,
@@ -576,6 +542,10 @@ class SyncService:
                         server_task_status = self.server_comm.get_task_status(task_id)
                         if server_task_status and server_task_status.get('status') in ['cancel_requested', 'cancelled']:
                             self.logger.info(f"任务 {task_id} 在服务器端已被取消，状态: {server_task_status.get('status')}")
+                            
+                            # 立即更新本地状态为 cancelled，避免后续进度更新覆盖
+                            self._update_task_status(task_id, 'cancelled', '任务已被取消')
+                            
                             # 通知任务管理器任务已被取消
                             if self.task_manager:
                                 self.task_manager.cancel_task(task_id)
@@ -645,26 +615,3 @@ class SyncService:
         except Exception as e:
             self.logger.error(f"连通性测试失败: {e}")
             return False
-            
-    def _mount_source_storage(self, source_config: Dict[str, Any]) -> Dict[str, Any]:
-        """挂载源端存储"""
-        try:
-            # 使用 storage_manager 进行挂载
-            mount_point = self.storage_manager.mount(source_config)
-            
-            if mount_point:
-                return {
-                    'success': True,
-                    'mount_point': mount_point
-                }
-            else:
-                return {
-                    'success': False,
-                    'error': '挂载失败'
-                }
-                
-        except Exception as e:
-            return {
-                'success': False,
-                'error': str(e)
-            } 

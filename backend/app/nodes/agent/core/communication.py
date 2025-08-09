@@ -171,14 +171,14 @@ class ServerCommunication:
         Returns:
             Optional[Dict[str, Any]]: 任务状态
         """
-        if not self.node_id:
-            self.logger.error("Node not registered")
+        if not self.node_id or not self.token:
+            self.logger.error(f"Node not registered or token missing - node_id: {self.node_id}, token: {'***' if self.token else 'None'}")
             return None
             
         try:
             url = f"{self.server_url}/{self.node_id}/tasks/{task_id}"
             self.logger.debug(f"Getting task status from {url}")
-            response = self.session.get(url)
+            response = self.session.get(url, headers=self._auth_headers())
             self.logger.debug(f"Task status response: {response.json()}")
             response.raise_for_status()
             return response.json()
@@ -196,8 +196,8 @@ class ServerCommunication:
         Returns:
             bool: 是否成功
         """
-        if not self.node_id:
-            self.logger.error("Node not registered")
+        if not self.node_id or not self.token:
+            self.logger.error("Node not registered or token missing")
             return False
             
         try:
@@ -207,7 +207,7 @@ class ServerCommunication:
                 'storage_config': storage_config
             }
             self.logger.debug(f"Mounting storage to {url}, data: {data}")
-            response = self.session.post(url, json=data)
+            response = self.session.post(url, json=data, headers=self._auth_headers())
             self.logger.debug(f"Mount storage response: {response.json()}")
             response.raise_for_status()
             
@@ -226,8 +226,8 @@ class ServerCommunication:
         Returns:
             bool: 是否成功
         """
-        if not self.node_id:
-            self.logger.error("Node not registered")
+        if not self.node_id or not self.token:
+            self.logger.error("Node not registered or token missing")
             return False
             
         try:
@@ -237,7 +237,7 @@ class ServerCommunication:
                 'mount_point': mount_point
             }
             self.logger.debug(f"Unmounting storage to {url}, data: {data}")
-            response = self.session.post(url, json=data)
+            response = self.session.post(url, json=data, headers=self._auth_headers())
             self.logger.debug(f"Unmount storage response: {response.json()}")
             response.raise_for_status()
             

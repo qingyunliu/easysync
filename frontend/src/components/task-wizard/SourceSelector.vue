@@ -145,31 +145,106 @@
       </template>
     </div>
 
-    <!-- 选中项统计 -->
+    <!-- 智能选择结果展示 -->
     <div v-if="selectedItems.length > 0" class="selection-summary">
       <el-card>
         <template #header>
           <div class="summary-header">
-            <span>已选择 {{ selectedItems.length }} 项</span>
-            <el-button @click="clearSelection" size="small" type="danger" plain>
-              清空选择
-            </el-button>
+            <div class="summary-info">
+              <span class="count">
+                已选择 {{ showOptimizedView ? selectedItems.length : originalSelectedItems.length }} 项
+                <span v-if="showOptimizedView && originalSelectedItems.length > selectedItems.length" class="compression-info">
+                  (原始: {{ originalSelectedItems.length }})
+                </span>
+              </span>
+              <span v-if="hasRecursiveSelection" class="recursive-hint">
+                <el-icon><InfoFilled /></el-icon>
+                包含子目录
+              </span>
+            </div>
+            <div class="summary-actions">
+              <el-button @click="toggleSelectionMode" size="small" type="primary" plain>
+                {{ showOptimizedView ? '显示详细' : '智能压缩' }}
+              </el-button>
+              <el-button @click="clearSelection" size="small" type="danger" plain>
+                清空选择
+              </el-button>
+            </div>
           </div>
         </template>
-        <div class="selected-items">
+        
+        <!-- 智能压缩视图 -->
+        <div v-if="showOptimizedView" class="optimized-items">
+          <div v-for="group in groupedSelection" :key="group.type" class="selection-group">
+            <div class="group-header">
+              <el-icon>
+                <component :is="group.icon" />
+              </el-icon>
+              <span>{{ group.title }}</span>
+              <el-badge :value="group.items.length" class="group-badge" />
+            </div>
+            <div class="group-items">
+              <el-tag
+                v-for="item in group.items"
+                :key="item.key || item.path"
+                :type="getTagType(item)"
+                closable
+                @close="removeSelectedItem(item)"
+                class="selected-item"
+              >
+                <Icon 
+                  :icon="getItemIcon(item)" 
+                  class="tag-icon"
+                />
+                <span class="item-name">{{ getDisplayName(item) }}</span>
+                <span v-if="item.recursive" class="recursive-indicator">
+                  <el-icon><FolderOpened /></el-icon>
+                </span>
+              </el-tag>
+            </div>
+          </div>
+        </div>
+
+        <!-- 详细视图 -->
+        <div v-else class="detailed-items">
           <el-tag
-            v-for="item in selectedItems"
+            v-for="item in originalSelectedItems"
             :key="item.key || item.path"
+            :type="getDetailTagType(item)"
             closable
-            @close="removeSelectedItem(item)"
+            @close="removeDetailedItem(item)"
             class="selected-item"
           >
             <Icon 
-              :icon="item.type === 'directory' || item.type === 'bucket' ? 'mdi:folder' : 'mdi:file'" 
+              :icon="getItemIcon(item)" 
               class="tag-icon"
             />
-            {{ item.name }}
+            <span class="item-name">{{ getDetailDisplayName(item) }}</span>
           </el-tag>
+        </div>
+
+        <!-- 选择统计信息 -->
+        <div class="selection-stats">
+          <el-row :gutter="16">
+            <el-col :span="8">
+              <div class="stat-item">
+                <span class="stat-label">目录：</span>
+                <span class="stat-value">{{ directoryCount }}</span>
+              </div>
+            </el-col>
+            <el-col :span="8">
+              <div class="stat-item">
+                <span class="stat-label">文件：</span>
+                <span class="stat-value">{{ fileCount }}</span>
+              </div>
+            </el-col>
+            <el-col :span="8">
+              <div class="stat-item">
+                <span class="stat-label">递归：</span>
+                <span class="stat-value">{{ recursiveCount }}</span>
+              </div>
+            </el-col>
+          </el-row>
         </div>
       </el-card>
     </div>
@@ -180,6 +255,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Icon } from '@iconify/vue'
+import { InfoFilled, FolderOpened, Folder, Document } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const props = defineProps({
@@ -200,9 +276,11 @@ const emit = defineEmits(['update:modelValue', 'change'])
 const storages = ref([])
 const loading = ref(false)
 const treeData = ref([])
-const selectedItems = ref([])
+const selectedItems = ref([]) // 智能压缩后的选择项
+const originalSelectedItems = ref([]) // 原始完整的选择项（用于详细视图）
 const nasTreeRef = ref(null)
 const obsTreeRef = ref(null)
+const showOptimizedView = ref(true) // 默认显示智能压缩视图
 
 const form = ref({
   selectedStorageId: props.modelValue.storageId || ''
@@ -226,6 +304,72 @@ const nasStorages = computed(() => {
 
 const obsStorages = computed(() => {
   return storages.value.filter(s => s.type === 's3')
+})
+
+// 新增：智能选择相关计算属性
+const hasRecursiveSelection = computed(() => {
+  return selectedItems.value.some(item => item.recursive)
+})
+
+const directoryCount = computed(() => {
+  const items = showOptimizedView.value ? selectedItems.value : originalSelectedItems.value
+  return items.filter(item => 
+    item.type === 'directory' || item.type === 'bucket'
+  ).length
+})
+
+const fileCount = computed(() => {
+  const items = showOptimizedView.value ? selectedItems.value : originalSelectedItems.value
+  return items.filter(item => 
+    item.type !== 'directory' && item.type !== 'bucket'
+  ).length
+})
+
+const recursiveCount = computed(() => {
+  return selectedItems.value.filter(item => item.recursive).length
+})
+
+const groupedSelection = computed(() => {
+  const groups = []
+  
+  // 递归目录组
+  const recursiveDirs = selectedItems.value.filter(item => item.recursive)
+  if (recursiveDirs.length > 0) {
+    groups.push({
+      type: 'recursive',
+      title: '递归目录',
+      icon: FolderOpened,
+      items: recursiveDirs
+    })
+  }
+  
+  // 普通目录组
+  const normalDirs = selectedItems.value.filter(item => 
+    (item.type === 'directory' || item.type === 'bucket') && !item.recursive
+  )
+  if (normalDirs.length > 0) {
+    groups.push({
+      type: 'directory',
+      title: '目录',
+      icon: Folder,
+      items: normalDirs
+    })
+  }
+  
+  // 文件组
+  const files = selectedItems.value.filter(item => 
+    item.type !== 'directory' && item.type !== 'bucket'
+  )
+  if (files.length > 0) {
+    groups.push({
+      type: 'file',
+      title: '文件',
+      icon: Document,
+      items: files
+    })
+  }
+  
+  return groups
 })
 
 // 方法
@@ -474,66 +618,127 @@ const updateTreeCheckedState = () => {
   return true
 }
 
-const handleCheckChange = (data, checked) => {
-  const treeRef = selectedStorage.value?.type === 'nas' ? nasTreeRef.value : obsTreeRef.value
-  if (!treeRef) return
-
-  if (checked) {
-    // 如果是目录，添加目录本身和所有子项
-    if (data.type === 'directory' || data.type === 'bucket') {
-      // 获取所有子节点
-      const getAllChildren = (node) => {
-        const children = []
-        if (node.childNodes) {
-          node.childNodes.forEach(child => {
-            children.push(child.data)
-            children.push(...getAllChildren(child))
-          })
-        }
-        return children
-      }
-
-      const node = treeRef.getNode(data.key || data.path)
-      if (node) {
-        const allChildren = getAllChildren(node)
-        
-        // 添加目录本身
-        if (!selectedItems.value.find(item => (item.key || item.path) === (data.key || data.path))) {
-          selectedItems.value.push(data)
-        }
-        
-        // 添加所有子项
-        allChildren.forEach(child => {
-          if (!selectedItems.value.find(item => (item.key || item.path) === (child.key || child.path))) {
-            selectedItems.value.push(child)
-          }
-        })
-      }
-    } else {
-      // 如果是文件，只添加文件本身
-      if (!selectedItems.value.find(item => (item.key || item.path) === (data.key || data.path))) {
-        selectedItems.value.push(data)
+// 智能路径压缩：将选择的路径进行压缩存储
+const compressSelectedPaths = (items) => {
+  const paths = items.map(item => item.key || item.path).sort()
+  const compressed = []
+  const excluded = []
+  
+  // 按路径排序，便于处理父子关系
+  for (let i = 0; i < paths.length; i++) {
+    const currentPath = paths[i]
+    let isSubPath = false
+    
+    // 检查是否已被父路径包含
+    for (const parentPath of compressed) {
+      if (currentPath.startsWith(parentPath + '/') || currentPath.startsWith(parentPath + '\\')) {
+        isSubPath = true
+        break
       }
     }
-  } else {
-    // 取消选择时，只移除当前节点，不影响其他已选择的项目
-    selectedItems.value = selectedItems.value.filter(
-      item => (item.key || item.path) !== (data.key || data.path)
-    )
+    
+    if (!isSubPath) {
+      // 检查当前路径是否包含已有路径（当前路径是父路径）
+      const childPaths = compressed.filter(path => 
+        path.startsWith(currentPath + '/') || path.startsWith(currentPath + '\\')
+      )
+      
+      // 移除被包含的子路径
+      childPaths.forEach(childPath => {
+        const index = compressed.indexOf(childPath)
+        if (index > -1) {
+          compressed.splice(index, 1)
+        }
+      })
+      
+      compressed.push(currentPath)
+    }
   }
   
-  updateModelValue()
+  return { included: compressed, excluded }
 }
 
-// 监听树的选中状态变化，同步到 selectedItems
+const handleCheckChange = (data, checked) => {
+  // 这个方法现在只是一个兼容性包装器
+  // 实际的智能压缩逻辑在 handleCheck 中处理
+  // 这里我们让 Element Tree 组件自己处理状态，然后在 handleCheck 中统一应用智能压缩
+}
+
+// 监听树的选中状态变化，同步到 selectedItems（智能压缩版本）
 const handleCheck = (data, checkedInfo) => {
   // 获取所有选中的节点
   const checkedNodes = checkedInfo.checkedNodes || []
   
-  // 更新 selectedItems，只包含完全选中的节点
-  selectedItems.value = checkedNodes
+  // 保存原始完整的选择数据（用于详细视图）
+  originalSelectedItems.value = [...checkedNodes]
+  
+  // 应用智能压缩算法
+  const smartCompressedItems = applySmartCompression(checkedNodes)
+  selectedItems.value = smartCompressedItems
   
   updateModelValue()
+}
+
+// 智能压缩算法：只保留必要的父级路径
+const applySmartCompression = (allNodes) => {
+  if (!allNodes || allNodes.length === 0) return []
+  
+  // console.log('🔄 开始智能压缩，原始节点数量:', allNodes.length)
+  
+  // 按路径长度排序，短路径在前（父路径优先）
+  const sortedNodes = [...allNodes].sort((a, b) => {
+    const pathA = a.key || a.path || ''
+    const pathB = b.key || b.path || ''
+    // 首先按路径长度排序，短的在前
+    if (pathA.length !== pathB.length) {
+      return pathA.length - pathB.length
+    }
+    // 长度相同时按字母顺序
+    return pathA.localeCompare(pathB)
+  })
+  
+  const compressedItems = []
+  
+  for (const node of sortedNodes) {
+    const currentPath = node.key || node.path
+    if (!currentPath) continue
+    
+    // 检查是否已有父路径包含此节点
+    const hasParent = compressedItems.some(item => {
+      const itemPath = item.key || item.path
+      const isChild = currentPath.startsWith(itemPath + '/') || currentPath.startsWith(itemPath + '\\') || 
+                     (itemPath.endsWith('/') && currentPath.startsWith(itemPath)) ||
+                     (itemPath.endsWith('\\') && currentPath.startsWith(itemPath))
+      return isChild
+    })
+    
+    if (!hasParent) {
+      // 移除所有被当前路径包含的子路径
+      const filteredItems = compressedItems.filter(item => {
+        const itemPath = item.key || item.path
+        const isChild = itemPath.startsWith(currentPath + '/') || itemPath.startsWith(currentPath + '\\') ||
+                       (currentPath.endsWith('/') && itemPath.startsWith(currentPath)) ||
+                       (currentPath.endsWith('\\') && itemPath.startsWith(currentPath))
+        return !isChild
+      })
+      
+      // 为目录添加递归标记
+      const compressedNode = {
+        ...node,
+        recursive: node.type === 'directory' || node.type === 'bucket',
+        displayName: (node.type === 'directory' || node.type === 'bucket') 
+          ? `${node.name || node.path} (包含子目录)` 
+          : node.name || node.path
+      }
+      
+      compressedItems.length = 0
+      compressedItems.push(...filteredItems, compressedNode)
+    }
+  }
+  
+  // 智能压缩完成，返回优化后的节点列表
+  
+  return compressedItems
 }
 
 const removeSelectedItem = (item) => {
@@ -548,6 +753,61 @@ const removeSelectedItem = (item) => {
 
 const clearSelection = () => {
   selectedItems.value = []
+  originalSelectedItems.value = []
+  updateTreeCheckedState()
+  updateModelValue()
+}
+
+// 新增：UI交互方法
+const toggleSelectionMode = () => {
+  showOptimizedView.value = !showOptimizedView.value
+}
+
+const getTagType = (item) => {
+  if (item.recursive) return 'warning'
+  if (item.type === 'directory' || item.type === 'bucket') return 'info'
+  return 'default'
+}
+
+const getItemIcon = (item) => {
+  if (item.recursive) return 'mdi:folder-open'
+  if (item.type === 'directory' || item.type === 'bucket') return 'mdi:folder'
+  return 'mdi:file'
+}
+
+const getDisplayName = (item) => {
+  if (item.recursive && item.displayName) {
+    return item.displayName
+  }
+  return item.name || item.path
+}
+
+// 新增：详细视图相关方法
+const getDetailTagType = (item) => {
+  // 详细视图中不区分递归，按类型区分
+  if (item.type === 'directory' || item.type === 'bucket') return 'info'
+  return 'default'
+}
+
+const getDetailDisplayName = (item) => {
+  // 详细视图显示原始名称，不添加"(包含子目录)"标识
+  return item.name || item.path
+}
+
+const removeDetailedItem = (item) => {
+  // 从原始选择中移除项目
+  const itemPath = item.key || item.path
+  
+  // 移除原始项目
+  originalSelectedItems.value = originalSelectedItems.value.filter(
+    selected => (selected.key || selected.path) !== itemPath
+  )
+  
+  // 重新应用智能压缩
+  const smartCompressedItems = applySmartCompression(originalSelectedItems.value)
+  selectedItems.value = smartCompressedItems
+  
+  // 同步更新树的选中状态
   updateTreeCheckedState()
   updateModelValue()
 }
@@ -638,17 +898,38 @@ const collapseAll = () => {
 }
 
 const updateModelValue = () => {
+  // 使用压缩算法优化选择路径
+  const compressed = compressSelectedPaths(selectedItems.value)
+  
   const value = {
     storageId: form.value.selectedStorageId,
     storageName: selectedStorage.value?.name || '',
     storageType: selectedStorage.value?.type || '',
+    // 为了UI显示，使用压缩后的数据
     selectedPaths: selectedItems.value.map(item => ({
       name: item.name,
       path: item.path || item.key,
       type: item.type,
       size: item.size,
+      bucket: item.bucket,
+      recursive: item.recursive || false,
+      displayName: item.displayName
+    })),
+    // 新增：原始完整的选择路径（用于详细显示和后端处理）
+    originalSelectedPaths: originalSelectedItems.value.map(item => ({
+      name: item.name,
+      path: item.path || item.key,
+      type: item.type,
+      size: item.size,
       bucket: item.bucket
-    }))
+    })),
+    // 新增：压缩后的路径信息，供后端使用
+    compressedPaths: {
+      included: compressed.included,
+      excluded: compressed.excluded,
+      totalOriginalCount: originalSelectedItems.value.length,
+      compressedCount: compressed.included.length
+    }
   }
   emit('update:modelValue', value)
   emit('change', value)
@@ -1113,6 +1394,116 @@ onMounted(() => {
 
 .tag-icon {
   font-size: 14px;
+}
+
+/* 新增：智能选择UI样式 */
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.summary-info .count {
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.compression-info {
+  font-size: 12px;
+  color: var(--el-color-success);
+  font-weight: normal;
+  margin-left: 8px;
+}
+
+.recursive-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--el-color-warning);
+  background: rgba(230, 162, 60, 0.1);
+  padding: 2px 8px;
+  border-radius: 12px;
+}
+
+.summary-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.selection-group {
+  margin-bottom: 16px;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  background: var(--el-fill-color-light);
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.group-badge {
+  margin-left: auto;
+}
+
+.group-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-left: 20px;
+}
+
+.item-name {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recursive-indicator {
+  margin-left: 4px;
+  color: var(--el-color-warning);
+}
+
+.selection-stats {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--el-border-color-light);
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 8px;
+  background: var(--el-fill-color-extra-light);
+  border-radius: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.stat-value {
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+}
+
+.optimized-items,
+.detailed-items {
+  min-height: 60px;
 }
 
 :deep(.el-tree-node__content) {

@@ -30,7 +30,46 @@ class MountManager:
     def get_mount_point(self, storage_id: str) -> str:
         """获取存储的标准挂载点路径"""
         return os.path.join(self._base_mount_dir, f"storage_{storage_id}")
+
+    def ensure_mount_point_exists(self, mount_point: str) -> bool:
+        """检查挂载点是否存在，如果不存在这个目录，则创建这个目录
         
+        Args:
+            mount_point: 挂载点路径
+            
+        Returns:
+            bool: 是否成功确保目录存在
+        """
+        try:
+            if not os.path.exists(mount_point):
+                self.logger.debug(f"创建挂载点目录: {mount_point}")
+                os.makedirs(mount_point, exist_ok=True)
+                self.logger.info(f"挂载点目录创建成功: {mount_point}")
+            else:
+                self.logger.debug(f"挂载点目录已存在: {mount_point}")
+                
+            # 验证目录确实存在且可写
+            if os.path.exists(mount_point) and os.path.isdir(mount_point):
+                # 测试目录是否可写
+                try:
+                    test_file = os.path.join(mount_point, '.easysync_test')
+                    with open(test_file, 'w') as f:
+                        f.write('test')
+                    os.remove(test_file)
+                    self.logger.debug(f"挂载点目录权限检查通过: {mount_point}")
+                except Exception as e:
+                    self.logger.warning(f"挂载点目录权限检查失败: {mount_point}, 错误: {e}")
+                    # 权限问题不阻止挂载，只是警告
+                    
+                return True
+            else:
+                self.logger.error(f"挂载点路径不是有效目录: {mount_point}")
+                return False
+                
+        except Exception as e:
+            self.logger.error(f"创建挂载点目录失败: {mount_point}, 错误: {e}")
+            return False
+
     def is_mounted(self, storage_id: str) -> bool:
         """检查存储是否已挂载"""
         mount_point = self.get_mount_point(storage_id)
@@ -52,9 +91,14 @@ class MountManager:
     def mount_storage(self, storage_id: str, storage_config: dict) -> Optional[str]:
         """挂载存储，返回挂载点路径"""
         with self._mount_lock:
+            # 获取挂载点并确保目录存在
+            mount_point = self.get_mount_point(storage_id)
+            if not self.ensure_mount_point_exists(mount_point):
+                self.logger.error(f"无法创建挂载点目录: {mount_point}")
+                return None
+            
             # 检查是否已经挂载
             if self.is_mounted(storage_id):
-                mount_point = self.get_mount_point(storage_id)
                 self.logger.info(f"存储 {storage_id} 已挂载到 {mount_point}")
                 
                 # 更新活跃挂载记录
@@ -67,7 +111,6 @@ class MountManager:
                 return mount_point
             
             # 执行挂载
-            mount_point = self.get_mount_point(storage_id)
             success = self._do_mount(storage_id, storage_config, mount_point)
             
             if success:
@@ -88,7 +131,9 @@ class MountManager:
         """执行实际的挂载操作"""
         try:
             # 确保挂载点目录存在
-            os.makedirs(mount_point, exist_ok=True)
+            if not self.ensure_mount_point_exists(mount_point):
+                self.logger.error(f"无法创建或验证挂载点目录: {mount_point}")
+                return False
             
             storage_type = storage_config.get('type', '').lower()
             
@@ -119,7 +164,7 @@ class MountManager:
                 
             # 构建NFS挂载命令
             nfs_source = f"{server}:{path}"
-            mount_options = config.get('mount_options', 'rw,soft,timeo=30,retry=3')
+            mount_options = config.get('options', 'rw,soft,timeo=30,retry=3')
             
             cmd = ['mount', '-t', 'nfs', '-o', mount_options, nfs_source, mount_point]
             
