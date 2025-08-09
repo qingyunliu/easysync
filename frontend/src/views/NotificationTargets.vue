@@ -417,10 +417,6 @@ const showTargetDetail = (target) => {
   showTargetDetailDrawer.value = true
 }
 
-const handleSelectionChange = (selection) => {
-  console.log('选中的对象:', selection)
-}
-
 const fetchAlertPolicies = async () => {
   try {
     const response = await axios.get('/api/alerts/policies')

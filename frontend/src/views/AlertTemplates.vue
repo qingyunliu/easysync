@@ -481,10 +481,6 @@ const showTemplateDetail = (template) => {
   showTemplateDetailDrawer.value = true
 }
 
-const handleSelectionChange = (selection) => {
-  console.log('选中的模板:', selection)
-}
-
 const editTemplate = (template) => {
   editingTemplate.value = template
   Object.assign(templateForm, template)

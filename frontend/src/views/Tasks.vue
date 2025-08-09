@@ -803,7 +803,6 @@ const handleTestConnection = async (task) => {
   try {
     // 从任务中提取存储配置
     const storageConfig = getStorageConfigFromTask(task)
-    console.log(task)
     if (!storageConfig) {
       ElMessage.error('无法获取存储配置信息')
       return
@@ -931,7 +930,6 @@ const getProgressTooltip = (task) => {
   }
   
   // 添加传输速率
-  console.log(task)
   if (task.details && task.details.transfer_speed) {
     const transfer_speed = task.details.transfer_speed
     details.push(`速率: ${transfer_speed}`)

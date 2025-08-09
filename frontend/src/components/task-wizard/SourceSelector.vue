@@ -683,8 +683,6 @@ const handleCheck = (data, checkedInfo) => {
 const applySmartCompression = (allNodes) => {
   if (!allNodes || allNodes.length === 0) return []
   
-  // console.log('🔄 开始智能压缩，原始节点数量:', allNodes.length)
-  
   // 按路径长度排序，短路径在前（父路径优先）
   const sortedNodes = [...allNodes].sort((a, b) => {
     const pathA = a.key || a.path || ''

@@ -1094,8 +1094,6 @@ const fetchNASDetails = async () => {
     
     if (response.data.status === 'task_created') {
       ElMessage.info(`统计信息获取任务已创建，任务ID: ${response.data.task_id}`)
-      // 可以在这里添加任务状态轮询逻辑
-      console.log('任务信息:', response.data)
     } else if (response.data.status === 'success') {
       nasStats.value = response.data.data
     } else {
@@ -1459,8 +1457,6 @@ const handleAddStorage = (type) => {
       password: ''
     }
   }
-  // 打印初始化的表单数据，用于调试
-  console.log('初始化的表单数据:', form.value)
   dialogVisible.value = true
 }
 
@@ -1636,8 +1632,6 @@ const fetchAvailableNodes = async () => {
     
     availableNodes.value = filteredNodes
     
-    console.log(`获取到 ${allNodes.length} 个节点，其中 ${filteredNodes.length} 个可用`)
-    
     // 如果没有可用节点，给出提示
     if (filteredNodes.length === 0 && allNodes.length > 0) {
       console.warn('没有找到可用的测试节点，请检查节点状态和Agent状态')
@@ -1727,10 +1721,6 @@ const handleTestConnect = async () => {
     if (response.data.status == "success") { 
       const taskData = response.data.data
       ElMessage.success(`连接测试任务已创建，任务ID: ${taskData.task_id}`)
-      
-      // 可以在这里添加任务状态轮询逻辑
-      // 或者跳转到任务页面查看详情
-      console.log('任务信息:', taskData)
       
       // 可选：自动跳转到任务页面
       // router.push(`/tasks?task_id=${taskData.task_id}`)

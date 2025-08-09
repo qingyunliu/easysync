@@ -974,11 +974,6 @@ const showPolicyDetail = (policy) => {
   showPolicyDetailDrawer.value = true
 }
 
-const handleSelectionChange = (selection) => {
-  // 处理表格选择变化
-  console.log('选中的策略:', selection)
-}
-
 const removeTriggerRule = (item) => {
   delete policyForm.trigger_rules[item]
   policyForm.alert_items = policyForm.alert_items.filter(i => i !== item)

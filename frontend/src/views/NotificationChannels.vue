@@ -407,10 +407,6 @@ const showChannelDetail = (channel) => {
   showChannelDetailDrawer.value = true
 }
 
-const handleSelectionChange = (selection) => {
-  console.log('选中的渠道:', selection)
-}
-
 const openCreateDialog = () => {
   dialogMode.value = 'create'
   editingChannel.value = null
