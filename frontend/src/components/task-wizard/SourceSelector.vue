@@ -661,7 +661,6 @@ const setInitialState = async (initialData) => {
     form.value.selectedStorageId = ''
     selectedItems.value = []
     treeData.value = []
-    selectedStorage.value = null
     return
   }
   
@@ -822,7 +821,6 @@ const getCurrentState = () => {
 const setState = async (state) => {
   if (state) {
     selectedItems.value = state.selectedItems || []
-    selectedStorage.value = state.selectedStorage || null
     if (state.form) {
       form.value.selectedStorageId = state.form.selectedStorageId || ''
     }

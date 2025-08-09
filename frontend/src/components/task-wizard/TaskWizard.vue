@@ -220,6 +220,43 @@ const wizardData = ref({
   }
 })
 
+// 初始化子组件的方法
+const initializeChildComponents = async () => {
+  // 延迟执行，确保子组件已经挂载
+  await nextTick()
+  
+  // 多次尝试初始化，直到子组件可用
+  let retryCount = 0
+  const maxRetries = 10
+  
+  while (retryCount < maxRetries) {
+    // 等待子组件加载完成
+    await new Promise(resolve => setTimeout(resolve, 200))
+    
+    // 如果有源端配置，初始化源端选择器
+    if (extractedSourceConfig.value?.storageId && sourceSelectorRef.value) {
+      try {
+        await sourceSelectorRef.value.setInitialState(extractedSourceConfig.value)
+        break
+      } catch (error) {
+        console.error(`初始化源端选择器失败 (尝试 ${retryCount + 1}/${maxRetries}):`, error)
+      }
+    } else {
+      console.log(`等待子组件挂载... (尝试 ${retryCount + 1}/${maxRetries})`, {
+        storageId: extractedSourceConfig.value?.storageId,
+        sourceSelectorRef: !!sourceSelectorRef.value
+      })
+    }
+    
+    retryCount++
+  }
+  
+  if (retryCount >= maxRetries) {
+    console.warn('源端选择器初始化超时，可能需要手动配置')
+    ElMessage.warning('复制任务配置可能不完整，请检查源端配置')
+  }
+}
+
 // 新增：从任务中提取配置的方法
 const extractConfigFromTask = (task) => {
   if (!task) return
@@ -329,32 +366,10 @@ const extractConfigFromTask = (task) => {
       scenarioOptions: task.options?.scenario_options || task.options?.scenarioOptions || task.scenario_options || task.scenarioOptions || {}
     }
 
-    // 延迟执行，确保子组件已经挂载
-    nextTick(async () => {
-      // 等待子组件加载完成
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      // 如果有源端配置，初始化源端选择器
-      if (extractedSourceConfig.value?.storageId && sourceSelectorRef.value) {
-        try {
-          await sourceSelectorRef.value.setInitialState(extractedSourceConfig.value)
-        } catch (error) {
-          console.error('初始化源端选择器失败:', error)
-        }
-      } else {
-        console.warn('源端选择器未找到或配置不完整', {
-          storageId: extractedSourceConfig.value?.storageId,
-          sourceSelectorRef: sourceSelectorRef.value
-        })
-      }
-      
-      // 等待源端初始化完成
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // 如果有目标端配置，预先初始化目标端选择器（但不显示）
-      if (extractedTargetConfig.value?.storageId) {
-      }
-    })
+    // 如果对话框已经可见，立即尝试初始化子组件
+    if (props.visible) {
+      initializeChildComponents()
+    }
   } catch (error) {
     console.error('提取任务配置时出错:', error)
     ElMessage.error('提取任务配置时出错，请手动配置任务')
@@ -556,7 +571,8 @@ watch(() => props.visible, (visible) => {
         }
       })
     } else {
-      // 复制任务时只重置步骤，不重置数据
+      // 复制任务时重置步骤和数据，确保状态清洁
+      resetWizard()
       currentStep.value = 0
     }
     
@@ -565,6 +581,8 @@ watch(() => props.visible, (visible) => {
       // 延迟执行，确保组件完全挂载
       nextTick(() => {
         extractConfigFromTask(props.copyFromTask)
+        // 初始化子组件
+        initializeChildComponents()
       })
     }
   } else {
@@ -572,6 +590,25 @@ watch(() => props.visible, (visible) => {
     extractedSourceConfig.value = null
     extractedTargetConfig.value = null
   }
+})
+
+// 新增：监听copyFromTask的变化
+watch(() => props.copyFromTask, (newTask, oldTask) => {
+  if (newTask && newTask !== oldTask) {
+    // 当copyFromTask发生变化时，无论对话框是否可见都处理配置
+    nextTick(async () => {
+      // 先提取配置
+      extractConfigFromTask(newTask)
+      // 如果对话框可见，再初始化子组件
+      if (props.visible) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+        initializeChildComponents()
+      }
+    })
+  }
+}, { 
+  immediate: false, // 不立即执行，避免重复调用
+  deep: true 
 })
 </script>
 

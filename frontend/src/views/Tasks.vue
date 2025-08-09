@@ -464,7 +464,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Plus, Search, Refresh, VideoPlay, VideoPause,
@@ -880,8 +880,13 @@ const handleDuplicateTask = async (task) => {
         return
       }
       
-      copyFromTask.value = taskDetail
+      // 先显示对话框
       taskWizardVisible.value = true
+      // 等待对话框挂载完成
+      await nextTick()
+      await new Promise(resolve => setTimeout(resolve, 300))
+      // 再设置复制任务数据
+      copyFromTask.value = taskDetail
     } else {
       ElMessage.error(response.data.message || '获取任务详情失败')
     }

@@ -46,6 +46,10 @@ class SyncService:
         # 回调函数
         self.callbacks = []
         
+        # 任务状态检查
+        self.last_status_check = {}  # 记录每个任务上次检查状态的时间
+        self.status_check_interval = 10  # 每10秒检查一次服务器状态
+        
     def start(self):
         """启动同步服务"""
         if self.running:
@@ -309,11 +313,24 @@ class SyncService:
         # 执行同步命令
         last_error = None
         for retry in range(self.max_retries):
-            # 检查任务是否已被取消
+            # 检查任务是否已被取消（本地检查）
             if self.task_manager and task_id in self.task_manager.cancelled_tasks:
                 self.logger.info(f"任务 {task_id} 已被取消，停止执行")
                 self._update_task_status(task_id, 'cancelled', '任务已被取消')
                 return
+            
+            # 检查服务器任务状态
+            try:
+                server_task_status = self.server_comm.get_task_status(task_id)
+                if server_task_status and server_task_status.get('status') in ['cancel_requested', 'cancelled']:
+                    self.logger.info(f"任务 {task_id} 在服务器端已被取消，状态: {server_task_status.get('status')}")
+                    # 通知任务管理器任务已被取消
+                    if self.task_manager:
+                        self.task_manager.cancel_task(task_id)
+                    self._update_task_status(task_id, 'cancelled', '任务已被取消')
+                    return
+            except Exception as e:
+                self.logger.debug(f"检查服务器任务状态失败: {e}")
                 
             try:
                 # 创建带task_id的回调函数
@@ -411,11 +428,24 @@ class SyncService:
         # 执行复制命令
         last_error = None
         for retry in range(self.max_retries):
-            # 检查任务是否已被取消
+            # 检查任务是否已被取消（本地检查）
             if self.task_manager and task_id in self.task_manager.cancelled_tasks:
                 self.logger.info(f"任务 {task_id} 已被取消，停止执行")
                 self._update_task_status(task_id, 'cancelled', '任务已被取消')
                 return
+            
+            # 检查服务器任务状态
+            try:
+                server_task_status = self.server_comm.get_task_status(task_id)
+                if server_task_status and server_task_status.get('status') in ['cancel_requested', 'cancelled']:
+                    self.logger.info(f"任务 {task_id} 在服务器端已被取消，状态: {server_task_status.get('status')}")
+                    # 通知任务管理器任务已被取消
+                    if self.task_manager:
+                        self.task_manager.cancel_task(task_id)
+                    self._update_task_status(task_id, 'cancelled', '任务已被取消')
+                    return
+            except Exception as e:
+                self.logger.debug(f"检查服务器任务状态失败: {e}")
                 
             try:
                 # 创建带task_id的回调函数
@@ -536,6 +566,24 @@ class SyncService:
                 if self.task_manager and task_id in self.task_manager.cancelled_tasks:
                     self.logger.debug(f"任务 {task_id} 已被取消，跳过进度更新")
                     return
+                
+                # 定时检查服务器任务状态（避免每次进度更新都检查）
+                current_time = time.time()
+                last_check = self.last_status_check.get(task_id, 0)
+                
+                if current_time - last_check > self.status_check_interval:
+                    try:
+                        server_task_status = self.server_comm.get_task_status(task_id)
+                        if server_task_status and server_task_status.get('status') in ['cancel_requested', 'cancelled']:
+                            self.logger.info(f"任务 {task_id} 在服务器端已被取消，状态: {server_task_status.get('status')}")
+                            # 通知任务管理器任务已被取消
+                            if self.task_manager:
+                                self.task_manager.cancel_task(task_id)
+                            return
+                        self.last_status_check[task_id] = current_time
+                    except Exception as e:
+                        self.logger.debug(f"获取服务器任务状态失败: {e}")
+                        self.last_status_check[task_id] = current_time  # 即使失败也更新时间，避免频繁重试
                     
                 # 记录进度日志
                 self.task_logger.log_task_progress(task_id, status)

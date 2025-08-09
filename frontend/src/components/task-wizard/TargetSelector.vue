@@ -815,7 +815,6 @@ const setInitialState = async (initialData) => {
     nasForm.value.targetPath = ''
     obsForm.value.targetPath = ''
     obsForm.value.selectedBucket = ''
-    selectedStorage.value = null
     return
   }
   
@@ -883,7 +882,6 @@ const setState = (state) => {
     if (state.obsForm) {
       obsForm.value.targetPath = state.obsForm.targetPath || ''
     }
-    selectedStorage.value = state.selectedStorage || null
     updateModelValue()
   }
 }
