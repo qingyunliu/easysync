@@ -317,7 +317,7 @@ def agent_report_error(node_id):
     return jsonify({'status': 'success', 'message': '错误已上报'})
 
 # 7. 上报告警
-@agent_bp.route('/<string:node_id>/alerts', methods=['POST'])
+@agent_bp.route('/<string:node_id>/alert', methods=['POST'])
 @agent_token_required
 def agent_send_alert(node_id):
     data = request.get_json()

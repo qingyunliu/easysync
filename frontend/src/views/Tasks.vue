@@ -930,10 +930,11 @@ const getProgressTooltip = (task) => {
     details.push(`(${transferred}/${total})`)
   }
   
-  // 添加速度信息
-  if (task.details && task.details.speed) {
-    const speed = formatBytes(task.details.speed) + '/s'
-    details.push(`速度: ${speed}`)
+  // 添加传输速率
+  console.log(task)
+  if (task.details && task.details.transfer_speed) {
+    const transfer_speed = task.details.transfer_speed
+    details.push(`速率: ${transfer_speed}`)
   }
   
   // 添加剩余时间信息

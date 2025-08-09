@@ -276,6 +276,20 @@ class ServerCommunication:
         except Exception as e:
             self.logger.error(f"Error reporting error: {e}")
             return False
+    
+    def send_alert(self, alert: Dict[str, Any]) -> bool:
+        if not self.node_id or not self.token:
+            self.logger.error("Node not registered or token missing")
+            return False
+        try:
+            url = f"{self.server_url}/{self.node_id}/alert"
+            response = self.session.post(url, json=alert, headers=self._auth_headers())
+            self.logger.debug(f"Alert report response: {response.json()}")
+            response.raise_for_status()
+            return True
+        except Exception as e:
+            self.logger.error(f"Error reporting alert: {e}")
+            return False
 
     def get_realtime_commands(self) -> List[Dict[str, Any]]:
         """获取待执行的实时命令

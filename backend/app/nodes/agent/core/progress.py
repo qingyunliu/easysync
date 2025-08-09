@@ -179,6 +179,122 @@ class ProgressMonitor:
         except Exception as e:
             self.logger.debug(f"解析 rclone 进度失败: {e}")
     
+    def update_rsync_progress(self, line: str):
+        """更新 rsync 进度 - 解析 rsync 文本输出"""
+        try:
+            line = line.strip()
+            if not line:
+                return
+            
+            self.logger.debug(f"解析 rsync 输出: {line}")
+            
+            # rsync 进度格式: 3,925,913,472  55%   20.30MB/s    0:03:04 (xfr#936, ir-chk=2478/20438)
+            # 正则匹配数字、百分比、速度和时间
+            rsync_pattern = r'(\d+(?:,\d+)*)\s+(\d+)%\s+([0-9.]+[kMGT]?B/s)\s+(\d+:\d+:\d+)'
+            match = re.search(rsync_pattern, line)
+            
+            if match:
+                transferred_bytes_str = match.group(1).replace(',', '')
+                percent = float(match.group(2))
+                speed_str = match.group(3)
+                eta_str = match.group(4)
+                
+                # 解析传输字节数
+                transferred_bytes = int(transferred_bytes_str)
+                
+                # 解析速度 (如 "20.30MB/s")
+                speed = self._parse_speed_str(speed_str)
+                
+                # 解析 ETA (如 "0:03:04")
+                eta = self._parse_eta_str(eta_str)
+                
+                # 从 rsync 输出中提取文件信息 (xfr#936, ir-chk=2478/20438)
+                transferred_files = 0
+                total_files = 0
+                
+                # 解析传输文件数
+                xfr_match = re.search(r'xfr#(\d+)', line)
+                if xfr_match:
+                    transferred_files = int(xfr_match.group(1))
+                
+                # 解析总文件数 (ir-chk=2478/20438 中的20438)
+                ir_match = re.search(r'ir-chk=\d+/(\d+)', line)
+                if ir_match:
+                    total_files = int(ir_match.group(1))
+                
+                # 估算总大小 (基于百分比)
+                total_bytes = int(transferred_bytes / (percent / 100)) if percent > 0 else transferred_bytes
+                
+                # 记录详细进度
+                self.logger.info(f"Rsync 传输进度: {transferred_files}/{total_files} 文件, {self._format_bytes(transferred_bytes)}/{self._format_bytes(total_bytes)}, 速度: {self._format_bytes(speed)}/s, 进度: {percent:.1f}%, ETA: {self._format_eta(eta)}")
+                
+                # 格式化进度信息并调用回调
+                self._format_and_log_progress(
+                    percent=percent,
+                    transferred_bytes=transferred_bytes,
+                    total_bytes=total_bytes,
+                    speed=speed,
+                    eta=eta,
+                    transferred_files=transferred_files,
+                    total_files=total_files,
+                    checked=0,
+                    total_checks=0
+                )
+            else:
+                self.logger.debug(f"未能匹配 rsync 进度格式: {line}")
+                
+        except Exception as e:
+            self.logger.debug(f"解析 rsync 进度失败: {e}")
+    
+    def _parse_speed_str(self, speed_str: str) -> float:
+        """解析速度字符串 (如 '20.30MB/s' 或 '0.00kB/s') 为每秒字节数"""
+        try:
+            # 移除 /s 后缀
+            speed_part = speed_str.replace('/s', '')
+            
+            # 解析数值和单位（支持大小写）
+            if speed_part.endswith('KB') or speed_part.endswith('kB'):
+                return float(speed_part[:-2]) * 1024
+            elif speed_part.endswith('MB') or speed_part.endswith('mB'):
+                return float(speed_part[:-2]) * 1024 * 1024
+            elif speed_part.endswith('GB') or speed_part.endswith('gB'):
+                return float(speed_part[:-2]) * 1024 * 1024 * 1024
+            elif speed_part.endswith('TB') or speed_part.endswith('tB'):
+                return float(speed_part[:-2]) * 1024 * 1024 * 1024 * 1024
+            elif speed_part.endswith('B'):
+                return float(speed_part[:-1])
+            else:
+                return float(speed_part)
+        except Exception as e:
+            self.logger.debug(f"解析速度失败: {e}")
+            return 0.0
+    
+    def _parse_eta_str(self, eta_str: str) -> int:
+        """解析 ETA 字符串 (如 '0:03:04') 为秒数"""
+        try:
+            parts = eta_str.split(':')
+            if len(parts) == 3:
+                hours, minutes, seconds = map(int, parts)
+                return hours * 3600 + minutes * 60 + seconds
+            return 0
+        except Exception as e:
+            self.logger.debug(f"解析 ETA 失败: {e}")
+            return 0
+    
+    def _format_bytes(self, num: int) -> str:
+        """格式化字节数为可读字符串"""
+        for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+            if abs(num) < 1024.0:
+                return f"{num:.2f}{unit}"
+            num /= 1024.0
+        return f"{num:.2f}PB"
+    
+    def _format_eta(self, seconds: int) -> str:
+        """格式化秒数为时间字符串"""
+        if seconds <= 0:
+            return "N/A"
+        return time.strftime("%H:%M:%S", time.gmtime(seconds))
+    
     def _parse_rclone_msg(self, msg: str) -> Dict[str, Any]:
         """解析 rclone msg 字段中的进度信息"""
         try:

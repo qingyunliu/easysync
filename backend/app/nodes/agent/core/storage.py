@@ -1,5 +1,6 @@
 import os
 import json
+import re
 import subprocess
 import tempfile
 from typing import Dict, Any, Optional, Tuple, Callable
@@ -702,34 +703,42 @@ storage_class = STANDARD
     def _should_use_quick_estimate(self, source_path: str) -> bool:
         """判断是否应该使用快速估算而不是dry-run"""
         try:
-            # 快速检查目录大小和文件数量
-            du_cmd = ['du', '-s', source_path]
-            result = subprocess.run(du_cmd, capture_output=True, text=True, timeout=10)
+            # 轻量级检查：只检查顶层文件和目录数量
+            # 避免使用du命令，因为它对大目录很慢
+            
+            # 快速检查顶层目录和文件数量
+            ls_cmd = ['ls', '-la', source_path]
+            result = subprocess.run(ls_cmd, capture_output=True, text=True, timeout=5)
             
             if result.returncode == 0:
-                # 解析du输出，格式: "1234567 /path/to/dir"
-                size_str = result.stdout.split()[0]
-                size_kb = int(size_str)
+                lines = result.stdout.strip().split('\n')
+                # 去除总计行和当前/父目录项
+                items = [line for line in lines if not line.startswith('total') and 
+                        not line.endswith(' .') and not line.endswith(' ..')]
+                item_count = len(items)
                 
-                # 如果目录大于100MB，使用快速估算
-                if size_kb > 100 * 1024:  # 100MB
-                    self.logger.info(f"目录大小 {size_kb}KB，使用快速估算")
+                # 如果顶层就有很多项目（超过100个），很可能是大目录
+                if item_count > 100:
+                    self.logger.info(f"顶层有 {item_count} 个项目，使用快速估算")
                     return True
-                    
-            # 检查文件数量
-            find_cmd = ['find', source_path, '-type', 'f', '-maxdepth', '2']  # 只检查前两层
-            result = subprocess.run(find_cmd, capture_output=True, text=True, timeout=10)
+            
+            # 检查一级子目录的数量（限制深度为1，超时短）
+            find_cmd = ['find', source_path, '-maxdepth', '1', '-type', 'd']
+            result = subprocess.run(find_cmd, capture_output=True, text=True, timeout=3)
             
             if result.returncode == 0:
-                file_count = len(result.stdout.strip().split('\n')) if result.stdout.strip() else 0
+                dir_count = len(result.stdout.strip().split('\n')) - 1  # 减去根目录本身
                 
-                # 如果文件数超过1000，使用快速估算
-                if file_count > 1000:
-                    self.logger.info(f"文件数量 {file_count}，使用快速估算")
+                # 如果一级子目录超过50个，很可能是大目录结构
+                if dir_count > 50:
+                    self.logger.info(f"一级子目录数量 {dir_count}，使用快速估算")
                     return True
                     
         except Exception as e:
-            self.logger.warning(f"检查目录大小失败: {e}")
+            self.logger.warning(f"轻量级目录检查失败: {e}")
+            # 如果检查失败，默认使用快速估算（更安全）
+            self.logger.info("检查失败，默认使用快速估算")
+            return True
             
         return False
         
@@ -771,7 +780,16 @@ storage_class = STANDARD
         
         for line in output.splitlines():
             if line.startswith('Number of files: '):
-                total_files = int(line.replace('Number of files: ', ''))
+                # 解析格式: "Number of files: 28,136 (reg: 4,886, dir: 23,250)"
+                # 只提取第一个数字部分
+                files_str = line.replace('Number of files: ', '').strip()
+                # 提取第一个数字（可能包含逗号）
+                files_match = re.search(r'(\d+(?:,\d+)*)', files_str)
+                if files_match:
+                    # 移除逗号并转换为整数
+                    total_files = int(files_match.group(1).replace(',', ''))
+                else:
+                    self.logger.warning(f"无法解析文件数: {files_str}")
             elif line.startswith('Total transferred: '):
                 # 从 'Total transferred: N (XXX bytes)' 中提取字节数
                 match = re.search(r'Total transferred: (\d+) \((\d+) bytes\)', line)
@@ -1160,7 +1178,15 @@ storage_class = STANDARD
                     stderr=subprocess.PIPE,
                     universal_newlines=True
                 )
-                
+
+                # 注册进程到任务管理器（如果可用）
+                if task_id and hasattr(self, 'task_manager') and self.task_manager:
+                    try:
+                        self.task_manager.register_task(task_id, process)
+                        self.logger.info(f"注册任务 {task_id} 到任务管理器")
+                    except Exception as e:
+                        self.logger.warning(f"注册任务到任务管理器失败: {e}")
+                            
                 while True:
                     line = process.stdout.readline()
                     if not line and process.poll() is not None:
