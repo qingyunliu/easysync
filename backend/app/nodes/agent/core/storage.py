@@ -515,11 +515,7 @@ storage_class = STANDARD
                     # 处理校验和
                     if options.get('checksum', False):
                         cmd.extend(['--checksum'])
-                    
-                    # 处理压缩
-                    if options.get('compress', False):
-                        cmd.extend(['--compress'])
-                    
+                
                     # 处理删除
                     if options.get('delete', False):
                         cmd.extend(['--delete'])
@@ -833,14 +829,6 @@ storage_class = STANDARD
                     if options.get('checksum', False):
                         cmd.extend(['--checksum'])
                     
-                    # 处理压缩
-                    if options.get('compress', False):
-                        cmd.extend(['--compress'])
-                    
-                    # 处理删除
-                    if options.get('delete', False):
-                        cmd.extend(['--delete'])
-                    
                     # 处理最大连接数
                     if options.get('max_connections', 0) > 0:
                         cmd.extend(['--transfers', str(options['max_connections'])])
@@ -937,14 +925,6 @@ storage_class = STANDARD
                     # 处理校验和
                     if options.get('checksum', False):
                         cmd.append('--checksum')
-                    
-                    # 处理压缩
-                    if options.get('compress', False):
-                        cmd.append('--compress')
-                    
-                    # 处理删除
-                    if options.get('delete', False):
-                        cmd.append('--delete')
                     
                     # 处理连接数
                     if options.get('max_connections', 1) > 1:

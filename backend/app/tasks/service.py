@@ -192,8 +192,8 @@ class TaskService:
         """
         task = self.get_task(task_id)
         
-        if task.status != 'failed':
-            raise TaskOperationError(f"Task is not failed: {task_id}")
+        if task.status != 'failed' and task.status != 'cancelled':
+            raise TaskOperationError(f"Task is not failed or cancelled: {task_id}")
             
         if task.retry_count >= self.max_retries:
             raise TaskOperationError(f"Max retries exceeded: {task_id}")

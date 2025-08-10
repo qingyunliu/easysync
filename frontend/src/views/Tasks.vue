@@ -326,12 +326,6 @@
                   <el-dropdown-item command="detail">
                     <el-icon><InfoFilled /></el-icon>详情
                   </el-dropdown-item>
-                  <el-dropdown-item command="test-connection" v-if="canTestConnection(row)">
-                    <el-icon><Connection /></el-icon>测试连接
-                  </el-dropdown-item>
-                  <el-dropdown-item command="test-mount" v-if="canTestMount(row)">
-                    <el-icon><Connection /></el-icon>测试挂载
-                  </el-dropdown-item>
                   <el-dropdown-item command="duplicate">
                     <el-icon><CopyDocument /></el-icon>复制任务
                   </el-dropdown-item>
@@ -1048,74 +1042,6 @@ const handleDeleteTask = async (task) => {
   }
 }
 
-const handleTestConnection = async (task) => {
-  try {
-    // 从任务中提取存储配置
-    const storageConfig = getStorageConfigFromTask(task)
-    if (!storageConfig) {
-      ElMessage.error('无法获取存储配置信息')
-      return
-    }
-    
-    // 检查是否有可用的测试节点
-    const nodesResponse = await axios.get('/api/nodes')
-    const availableNodes = (nodesResponse.data.data || []).filter(
-      node => node.status === 'online' && node.agent_status === 'running'
-    )
-    
-    if (availableNodes.length === 0) {
-      ElMessage.error('没有可用的测试节点，请确保有节点在线且Agent已启动')
-      return
-    }
-    
-    // 使用第一个可用节点进行测试
-    const testNode = availableNodes[0]
-    
-    // 如果有存储ID，使用存储测试接口
-    if (storageConfig.id) {
-      const response = await axios.post(`/api/storages/${storageConfig.id}/test-connection`, {
-        node_id: testNode.id
-      })
-      ElMessage.success('连接测试任务已创建并启动')
-    } else {
-      // 否则使用临时测试接口
-      const response = await axios.post('/api/storages/test-connection', {
-        type: storageConfig.type,
-        config: storageConfig.config,
-        node_id: testNode.id
-      })
-      ElMessage.success('连接测试任务已创建并启动')
-    }
-    
-    fetchTasks()
-  } catch (error) {
-    ElMessage.error(error.response?.data?.message || '创建连接测试失败')
-  }
-}
-
-const handleTestMount = async (task) => {
-  try {
-    // 从任务中提取存储配置和挂载点
-    const storageConfig = getStorageConfigFromTask(task)
-    const mountPoint = task.target_path || '/tmp/test_mount'
-    
-    if (!storageConfig) {
-      ElMessage.error('无法获取存储配置信息')
-      return
-    }
-    
-    const response = await axios.post('/api/tasks/test-mount', {
-      mount_point: mountPoint,
-      storage_config: storageConfig
-    })
-    
-    ElMessage.success('挂载测试任务已创建并启动')
-    fetchTasks()
-  } catch (error) {
-    ElMessage.error(error.response?.data?.message || '创建挂载测试失败')
-  }
-}
-
 const handleDuplicateTask = async (task) => {
   try {
     // 获取任务的完整详情
@@ -1141,21 +1067,6 @@ const handleDuplicateTask = async (task) => {
   } catch (error) {
     ElMessage.error(error.response?.data?.message || '获取任务详情失败')
   }
-}
-
-// 辅助方法
-const canTestConnection = (task) => {
-  if (task.status != 'cancelled' && task.status != 'cancel_requested' && task.status != 'failed') {
-    return task.source_type === 'storage' && task.source_storage_id
-  }
-  return false
-}
-
-const canTestMount = (task) => {
-  if (task.status != 'cancelled' && task.status != 'cancel_requested' && task.status != 'failed') {
-    return task.source_type === 'storage' && task.source_storage_id && !isS3Storage(task.source_storage)
-  }
-  return false
 }
 
 const getProgressTooltip = (task) => {
@@ -1230,12 +1141,6 @@ const handleDropdownCommand = (command, task) => {
       break
     case 'detail':
       handleViewDetail(task)
-      break
-    case 'test-connection':
-      handleTestConnection(task)
-      break
-    case 'test-mount':
-      handleTestMount(task)
       break
     case 'duplicate':
       handleDuplicateTask(task)
