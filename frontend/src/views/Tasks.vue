@@ -959,8 +959,19 @@ const handleCancelTask = async (task) => {
     })
     
     loadingTasks.value.add(task.id)
-    await axios.post(`/api/tasks/${task.id}/cancel`)
-    ElMessage.success('任务取消请求已发送')
+    const response = await axios.post(`/api/tasks/${task.id}/cancel`)
+    
+    if (response.data.status === 'success') {
+      // 根据任务状态显示不同的消息
+      if (task.status === 'running' || task.status === 'assigned') {
+        ElMessage.success('任务取消请求已发送，正在等待Agent处理...')
+        // 对于运行中的任务，启动轮询检查取消状态
+        startCancelStatusPolling(task.id)
+      } else {
+        ElMessage.success('任务已取消')
+      }
+    }
+    
     fetchTasks()
   } catch (error) {
     if (error !== 'cancel') {
@@ -969,6 +980,53 @@ const handleCancelTask = async (task) => {
   } finally {
     loadingTasks.value.delete(task.id)
   }
+}
+
+// 取消状态轮询
+const cancelPollingTimers = ref(new Map())
+
+const startCancelStatusPolling = (taskId) => {
+  // 清除之前的轮询
+  if (cancelPollingTimers.value.has(taskId)) {
+    clearInterval(cancelPollingTimers.value.get(taskId))
+  }
+  
+  // 启动新的轮询
+  const timer = setInterval(async () => {
+    try {
+      const response = await axios.get(`/api/tasks/${taskId}`)
+      if (response.data.status === 'success') {
+        const task = response.data.data
+        if (task.status === 'cancelled') {
+          ElMessage.success('任务已成功取消')
+          clearInterval(timer)
+          cancelPollingTimers.value.delete(taskId)
+          fetchTasks()
+        } else if (task.status === 'cancel_requested') {
+          // 继续轮询
+        } else if (task.status === 'running') {
+          // 如果状态又变回running，说明取消失败
+          ElMessage.warning('任务取消失败，状态已恢复为运行中')
+          clearInterval(timer)
+          cancelPollingTimers.value.delete(taskId)
+          fetchTasks()
+        }
+      }
+    } catch (error) {
+      console.error('轮询任务状态失败:', error)
+    }
+  }, 2000) // 每2秒检查一次
+  
+  cancelPollingTimers.value.set(taskId, timer)
+  
+  // 30秒后自动停止轮询
+  setTimeout(() => {
+    if (cancelPollingTimers.value.has(taskId)) {
+      clearInterval(cancelPollingTimers.value.get(taskId))
+      cancelPollingTimers.value.delete(taskId)
+      ElMessage.warning('任务取消状态检查超时，请手动刷新查看最新状态')
+    }
+  }, 30000)
 }
 
 const handleDeleteTask = async (task) => {
@@ -1455,6 +1513,12 @@ onMounted(() => {
 onUnmounted(() => {
   stopAutoRefresh()
   stopLogsAutoRefresh()
+  
+  // 清理取消状态轮询定时器
+  cancelPollingTimers.value.forEach((timer) => {
+    clearInterval(timer)
+  })
+  cancelPollingTimers.value.clear()
 })
 </script>
 

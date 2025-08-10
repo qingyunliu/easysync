@@ -153,9 +153,15 @@ class ServerCommunication:
             url = f"{self.server_url}/{self.node_id}/tasks/{task_id}/status"
             self.logger.debug(f"Updating task status to {url}, data: {status}")
             response = self.session.put(url, json=status, headers=self._auth_headers())
-            self.logger.debug(f"Task status update response: {response.json()}")
-            response.raise_for_status()
+            response_data = response.json()
+            self.logger.debug(f"Task status update response: {response_data}")
             
+            # 检查是否是状态保护响应
+            if response_data.get('status') == 'success' and '任务已被取消' in response_data.get('message', ''):
+                self.logger.info(f"Task status update ignored due to cancellation protection: {response_data.get('message')}")
+                return True  # 虽然被忽略，但这是预期的行为
+            
+            response.raise_for_status()
             return True
             
         except Exception as e:
