@@ -180,7 +180,7 @@
       >
         <el-table-column type="selection" width="55" />
         
-        <el-table-column prop="name" label="任务名称" min-width="150" show-overflow-tooltip>
+        <el-table-column prop="name" label="任务名称" min-width="320" show-overflow-tooltip>
         <template #default="{ row }">
             <div class="task-name">
               <el-link type="primary" @click="handleViewDetail(row)">
@@ -190,7 +190,7 @@
             </div>
           </template>
         </el-table-column>
-
+        
         <el-table-column prop="type" label="类型" width="100">
           <template #default="{ row }">
             <el-tag :type="getTaskTypeColor(row.type)" size="small">
@@ -210,7 +210,7 @@
         </template>
       </el-table-column>
 
-        <el-table-column prop="progress" label="进度" width="120">
+        <el-table-column prop="progress" label="进度" width="180">
         <template #default="{ row }">
             <el-tooltip
               :content="getProgressTooltip(row)"
@@ -1392,6 +1392,7 @@ onUnmounted(() => {
 .task-name {
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
 }
 
 .task-description {
