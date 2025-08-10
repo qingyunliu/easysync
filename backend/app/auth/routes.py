@@ -1,8 +1,9 @@
-from flask import Blueprint, request, jsonify, session, send_file
+from flask import Blueprint, request, jsonify, session, send_file, current_app
 from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 from . import auth_bp
 from .services import AuthService, AuditService
 from backend.app.models import User, AuditLog
+from backend import db
 from captcha.image import ImageCaptcha
 import io
 import random
@@ -436,28 +437,75 @@ def get_audit_logs():
     per_page = int(request.args.get('per_page', 20))
     action = request.args.get('action', 'all')  # 支持筛选操作类型
     
-    query = AuditLog.query
-    
-    # 只查询登录和登出操作
-    query = query.filter(AuditLog.action.in_(['login', 'logout']))
-    
-    # 如果指定了具体操作类型，进一步过滤
-    if action != 'all':
-        query = query.filter_by(action=action)
-    
-    if not user.is_admin:
-        query = query.filter_by(user_id=current_user_id)
-    
-    query = query.order_by(AuditLog.created_at.desc())
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    logs = [log.to_dict() for log in pagination.items]
-    
-    return jsonify({
-        'logs': logs,
-        'total': pagination.total,
-        'page': page,
-        'per_page': per_page
-    })
+    try:
+        # 使用子查询优化分页性能
+        subquery = db.session.query(AuditLog.id).filter(
+            AuditLog.action.in_(['login', 'logout'])
+        )
+        
+        # 如果指定了具体操作类型，进一步过滤
+        if action != 'all':
+            subquery = subquery.filter(AuditLog.action == action)
+        
+        if not user.is_admin:
+            subquery = subquery.filter(AuditLog.user_id == current_user_id)
+        
+        # 先获取ID，再排序和分页
+        subquery = subquery.order_by(AuditLog.created_at.desc())
+        
+        # 计算总数
+        total = subquery.count()
+        
+        # 分页获取ID
+        offset = (page - 1) * per_page
+        log_ids = subquery.offset(offset).limit(per_page).all()
+        log_ids = [log_id[0] for log_id in log_ids]  # 提取ID
+        
+        # 根据ID获取完整数据
+        if log_ids:
+            logs = AuditLog.query.filter(AuditLog.id.in_(log_ids)).all()
+            # 保持原有顺序
+            id_to_log = {log.id: log for log in logs}
+            logs = [id_to_log[log_id].to_dict() for log_id in log_ids if log_id in id_to_log]
+        else:
+            logs = []
+        
+        return jsonify({
+            'logs': logs,
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'pages': (total + per_page - 1) // per_page
+        })
+        
+    except Exception as e:
+        # 如果优化查询失败，回退到原始查询但限制数据量
+        current_app.logger.error(f"Optimized query failed, falling back to simple query: {e}")
+        
+        query = AuditLog.query.filter(AuditLog.action.in_(['login', 'logout']))
+        
+        if action != 'all':
+            query = query.filter(AuditLog.action == action)
+        
+        if not user.is_admin:
+            query = query.filter(AuditLog.user_id == current_user_id)
+        
+        # 限制查询范围，只查询最近的数据
+        from datetime import datetime, timedelta
+        cutoff_date = datetime.utcnow() - timedelta(days=30)  # 只查询最近30天
+        query = query.filter(AuditLog.created_at >= cutoff_date)
+        
+        query = query.order_by(AuditLog.created_at.desc())
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        logs = [log.to_dict() for log in pagination.items]
+        
+        return jsonify({
+            'logs': logs,
+            'total': pagination.total,
+            'page': page,
+            'per_page': per_page,
+            'pages': pagination.pages
+        })
 
 @auth_bp.route('/operation-logs', methods=['GET'])
 @jwt_required()
@@ -470,30 +518,80 @@ def get_operation_logs():
     action = request.args.get('action', 'all')
     resource_type = request.args.get('resource_type', 'all')
     
-    query = AuditLog.query
-    
-    # 过滤非登录/登出操作
-    query = query.filter(~AuditLog.action.in_(['login', 'logout']))
-    
-    # 按操作类型过滤
-    if action != 'all':
-        query = query.filter_by(action=action)
-    
-    # 按资源类型过滤
-    if resource_type != 'all':
-        query = query.filter_by(resource_type=resource_type)
-    
-    # 权限控制：非管理员只能看到自己的操作
-    if not user.is_admin:
-        query = query.filter_by(user_id=current_user_id)
-    
-    query = query.order_by(AuditLog.created_at.desc())
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    logs = [log.to_dict() for log in pagination.items]
-    
-    return jsonify({
-        'logs': logs,
-        'total': pagination.total,
-        'page': page,
-        'per_page': per_page
-    })
+    try:
+        # 使用子查询优化分页性能
+        subquery = db.session.query(AuditLog.id).filter(
+            ~AuditLog.action.in_(['login', 'logout'])
+        )
+        
+        # 按操作类型过滤
+        if action != 'all':
+            subquery = subquery.filter(AuditLog.action == action)
+        
+        # 按资源类型过滤
+        if resource_type != 'all':
+            subquery = subquery.filter(AuditLog.resource_type == resource_type)
+        
+        # 权限控制：非管理员只能看到自己的操作
+        if not user.is_admin:
+            subquery = subquery.filter(AuditLog.user_id == current_user_id)
+        
+        # 先获取ID，再排序和分页
+        subquery = subquery.order_by(AuditLog.created_at.desc())
+        
+        # 计算总数（使用count优化）
+        total = subquery.count()
+        
+        # 分页获取ID
+        offset = (page - 1) * per_page
+        log_ids = subquery.offset(offset).limit(per_page).all()
+        log_ids = [log_id[0] for log_id in log_ids]  # 提取ID
+        
+        # 根据ID获取完整数据
+        if log_ids:
+            logs = AuditLog.query.filter(AuditLog.id.in_(log_ids)).all()
+            # 保持原有顺序
+            id_to_log = {log.id: log for log in logs}
+            logs = [id_to_log[log_id].to_dict() for log_id in log_ids if log_id in id_to_log]
+        else:
+            logs = []
+        
+        return jsonify({
+            'logs': logs,
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'pages': (total + per_page - 1) // per_page
+        })
+        
+    except Exception as e:
+        # 如果优化查询失败，回退到原始查询但限制数据量
+        current_app.logger.error(f"Optimized query failed, falling back to simple query: {e}")
+        
+        query = AuditLog.query.filter(~AuditLog.action.in_(['login', 'logout']))
+        
+        if action != 'all':
+            query = query.filter(AuditLog.action == action)
+        
+        if resource_type != 'all':
+            query = query.filter(AuditLog.resource_type == resource_type)
+        
+        if not user.is_admin:
+            query = query.filter(AuditLog.user_id == current_user_id)
+        
+        # 限制查询范围，只查询最近的数据
+        from datetime import datetime, timedelta
+        cutoff_date = datetime.utcnow() - timedelta(days=30)  # 只查询最近30天
+        query = query.filter(AuditLog.created_at >= cutoff_date)
+        
+        query = query.order_by(AuditLog.created_at.desc())
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        logs = [log.to_dict() for log in pagination.items]
+        
+        return jsonify({
+            'logs': logs,
+            'total': pagination.total,
+            'page': page,
+            'per_page': per_page,
+            'pages': pagination.pages
+        })
