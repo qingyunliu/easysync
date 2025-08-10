@@ -360,11 +360,60 @@ def get_task_logs(task_id):
                 'message': '任务不存在'
             }), 404
         
-        logs = task_service.get_task_logs(task_id)
+        # 获取查询参数
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
+        status_filter = request.args.get('status', '')
+        latest_progress_only = request.args.get('latest_progress_only', 'true').lower() == 'true'
+        
+        # 构建查询
+        query = TaskLog.query.filter(TaskLog.task_id == task_id)
+        
+        # 状态过滤
+        if status_filter:
+            query = query.filter(TaskLog.status == status_filter)
+        
+        # 如果只显示最新进度日志
+        if latest_progress_only:
+            # 获取最新的进度日志
+            latest_progress = TaskLog.query.filter(
+                TaskLog.task_id == task_id,
+                TaskLog.message.like('%同步进度%')
+            ).order_by(TaskLog.created_at.desc()).first()
+            
+            # 获取其他类型的日志
+            other_logs = TaskLog.query.filter(
+                TaskLog.task_id == task_id,
+                ~TaskLog.message.like('%同步进度%')
+            ).order_by(TaskLog.created_at.desc())
+            
+            # 合并结果
+            all_logs = []
+            if latest_progress:
+                all_logs.append(latest_progress)
+            all_logs.extend(other_logs.all())
+            
+            # 手动分页
+            start = (page - 1) * per_page
+            end = start + per_page
+            paginated_logs = all_logs[start:end]
+            total = len(all_logs)
+        else:
+            # 正常分页查询
+            pagination = query.order_by(TaskLog.created_at.desc()).paginate(
+                page=page, per_page=per_page, error_out=False
+            )
+            paginated_logs = pagination.items
+            total = pagination.total
+        
         return jsonify({
             'status': 'success',
             'message': '任务日志获取成功',
-            'data': [log.to_dict() for log in logs]
+            'data': [log.to_dict() for log in paginated_logs],
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'pages': (total + per_page - 1) // per_page
         })
     except Exception as e:
         return jsonify({
@@ -1035,4 +1084,80 @@ def batch_retry_tasks():
         return jsonify({
             'status': 'error',
             'message': f'批量重试任务失败: {str(e)}'
+        }), 500
+
+@tasks_bp.route('/<string:task_id>/logs/cleanup', methods=['POST'])
+@jwt_required()
+def cleanup_task_logs(task_id):
+    """清理任务日志"""
+    user_id = get_jwt_identity()
+    data = request.get_json() or {}
+
+    try:
+        # 验证任务是否存在且属于当前用户
+        task = Task.query.filter_by(id=task_id, user_id=user_id).first()
+        if not task:
+            return jsonify({
+                'status': 'error',
+                'message': '任务不存在'
+            }), 404
+
+        cleanup_type = data.get('type', 'old')  # 'old' 或 'duplicate'
+        days = data.get('days', 7)
+        
+        if cleanup_type == 'old':
+            deleted_count = task_service.cleanup_old_progress_logs(task_id, days)
+            message = f"清理了 {deleted_count} 条过期的进度日志"
+        elif cleanup_type == 'duplicate':
+            deleted_count = task_service.cleanup_duplicate_progress_logs(task_id)
+            message = f"清理了 {deleted_count} 条重复的进度日志"
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '无效的清理类型'
+            }), 400
+        
+        return jsonify({
+            'status': 'success',
+            'message': message,
+            'data': {'deleted_count': deleted_count}
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'清理日志失败: {str(e)}'
+        }), 500
+
+@tasks_bp.route('/logs/cleanup', methods=['POST'])
+@jwt_required()
+def cleanup_all_task_logs():
+    """全局清理任务日志"""
+    user_id = get_jwt_identity()
+    data = request.get_json() or {}
+    
+    try:
+        cleanup_type = data.get('type', 'old')  # 'old' 或 'duplicate'
+        days = data.get('days', 7)
+        
+        if cleanup_type == 'old':
+            deleted_count = task_service.cleanup_old_progress_logs(days=days)
+            message = f"清理了 {deleted_count} 条过期的进度日志"
+        elif cleanup_type == 'duplicate':
+            deleted_count = task_service.cleanup_all_duplicate_progress_logs()
+            message = f"清理了 {deleted_count} 条重复的进度日志"
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '无效的清理类型'
+            }), 400
+        
+        return jsonify({
+            'status': 'success',
+            'message': message,
+            'data': {'deleted_count': deleted_count}
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': f'清理日志失败: {str(e)}'
         }), 500

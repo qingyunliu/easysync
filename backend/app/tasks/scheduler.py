@@ -4,8 +4,10 @@ import time
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 from backend import db
-from backend.app.models import Task, Node, TaskStatus
+from backend.app.models import Task, Node, TaskStatus, TaskLog
 from .service import TaskService
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.cron import CronTrigger
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +15,7 @@ class TaskScheduler:
     """任务调度器"""
     
     def __init__(self):
+        self.scheduler = BackgroundScheduler()
         self.task_service = TaskService()
         self.running = False
         self.thread = None
@@ -32,12 +35,42 @@ class TaskScheduler:
         self.thread.start()
         logger.info("Task scheduler started")
         
+        try:
+            # 添加定时清理任务
+            self.scheduler.add_job(
+                func=self.cleanup_old_logs,
+                trigger=CronTrigger(hour=2, minute=0),  # 每天凌晨2点执行
+                id='cleanup_old_logs',
+                name='清理过期日志',
+                replace_existing=True
+            )
+            
+            # 添加清理重复进度日志任务
+            self.scheduler.add_job(
+                func=self.cleanup_duplicate_progress_logs,
+                trigger=CronTrigger(hour=3, minute=0),  # 每天凌晨3点执行
+                id='cleanup_duplicate_progress_logs',
+                name='清理重复进度日志',
+                replace_existing=True
+            )
+            
+            self.scheduler.start()
+            logger.info("任务调度器已启动")
+            
+        except Exception as e:
+            logger.error(f"启动任务调度器失败: {e}")
+    
     def stop(self):
         """停止调度器"""
         self.running = False
         if self.thread:
             self.thread.join()
         logger.info("Task scheduler stopped")
+        try:
+            self.scheduler.shutdown()
+            logger.info("任务调度器已停止")
+        except Exception as e:
+            logger.error(f"停止任务调度器失败: {e}")
         
     def _run_scheduler(self):
         """运行调度器"""
@@ -257,6 +290,24 @@ class TaskScheduler:
             logger.error(f"Failed to manually dispatch task {task_id}: {e}")
             
         return False
+
+    def cleanup_old_logs(self):
+        """清理过期的日志"""
+        try:
+            logger.info("开始清理过期日志...")
+            deleted_count = self.task_service.cleanup_old_progress_logs(days=7)
+            logger.info(f"清理完成，删除了 {deleted_count} 条过期日志")
+        except Exception as e:
+            logger.error(f"清理过期日志失败: {e}")
+    
+    def cleanup_duplicate_progress_logs(self):
+        """清理重复的进度日志"""
+        try:
+            logger.info("开始清理重复进度日志...")
+            deleted_count = self.task_service.cleanup_all_duplicate_progress_logs()
+            logger.info(f"清理完成，删除了 {deleted_count} 条重复进度日志")
+        except Exception as e:
+            logger.error(f"清理重复进度日志失败: {e}")
 
 # 全局调度器实例
 scheduler = TaskScheduler() 

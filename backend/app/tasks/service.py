@@ -731,6 +731,24 @@ class TaskService:
             TaskLog: 日志对象
         """
         task = self.get_task(task_id)
+        
+        # 对于进度日志，使用 upsert 模式，只保留最新的一条
+        if '同步进度' in message:
+            # 查找是否已存在进度日志（获取最新的）
+            existing_log = TaskLog.query.filter(
+                TaskLog.task_id == task_id,
+                TaskLog.message.like('%同步进度%')
+            ).order_by(TaskLog.created_at.desc()).first()
+            
+            if existing_log:
+                # 更新现有记录
+                existing_log.message = message
+                existing_log.details = details or {}
+                existing_log.updated_at = datetime.utcnow()
+                db.session.commit()
+                return existing_log
+        
+        # 对于其他类型的日志，正常插入
         log = TaskLog(
             task_id=task_id,
             user_id=task.user_id,
@@ -828,7 +846,7 @@ class TaskService:
             
             if status == 'error':
                 error_logs.append(log)
-            elif status == 'progress':
+            elif '同步进度' in log.message:
                 progress_logs.append(log)
             elif status.startswith('step_'):
                 step_logs.append(log)
@@ -859,3 +877,91 @@ class TaskService:
             },
             'latest_logs': [log.to_dict() for log in logs[-5:]]  # 最近5条日志
         } 
+
+    def cleanup_old_progress_logs(self, task_id: str = None, days: int = 7):
+        """清理过期的进度日志
+        
+        Args:
+            task_id: 任务ID，如果为None则清理所有任务
+            days: 保留天数，默认7天
+        """
+        try:
+            cutoff_date = datetime.utcnow() - timedelta(days=days)
+            
+            # 构建查询条件
+            query = TaskLog.query.filter(
+                TaskLog.message.like('%同步进度%'),
+                TaskLog.created_at < cutoff_date
+            )
+            
+            # 如果指定了任务ID，则只清理该任务的日志
+            if task_id:
+                query = query.filter(TaskLog.task_id == task_id)
+            
+            # 删除过期的进度日志
+            deleted_count = query.delete()
+            
+            db.session.commit()
+            logger.info(f"清理了 {deleted_count} 条过期的进度日志")
+            return deleted_count
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"清理进度日志失败: {e}")
+            return 0
+    
+    def cleanup_duplicate_progress_logs(self, task_id: str):
+        """清理重复的进度日志，只保留指定任务的最新一条"""
+        try:
+            # 获取该任务的所有进度日志，按时间倒序
+            progress_logs = TaskLog.query.filter(
+                TaskLog.task_id == task_id,
+                TaskLog.message.like('%同步进度%')
+            ).order_by(TaskLog.created_at.desc()).all()
+            
+            deleted_count = 0
+            # 保留最新的一条，删除其他的
+            if len(progress_logs) > 1:
+                for log in progress_logs[1:]:
+                    db.session.delete(log)
+                    deleted_count += 1
+            
+            db.session.commit()
+            logger.info(f"任务 {task_id} 清理了 {deleted_count} 条重复的进度日志")
+            return deleted_count
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"清理重复进度日志失败: {e}")
+            return 0
+    
+    def cleanup_all_duplicate_progress_logs(self):
+        """清理所有任务的重复进度日志，只保留每个任务的最新一条"""
+        try:
+            # 获取所有有进度日志的任务
+            tasks_with_progress = db.session.query(TaskLog.task_id).filter(
+                TaskLog.message.like('%同步进度%')
+            ).distinct().all()
+            
+            total_deleted = 0
+            for (task_id,) in tasks_with_progress:
+                # 获取该任务的所有进度日志，按时间倒序
+                progress_logs = TaskLog.query.filter(
+                    TaskLog.task_id == task_id,
+                    TaskLog.message.like('%同步进度%')
+                ).order_by(TaskLog.created_at.desc()).all()
+                
+                # 保留最新的一条，删除其他的
+                if len(progress_logs) > 1:
+                    for log in progress_logs[1:]:
+                        db.session.delete(log)
+                        total_deleted += 1
+            
+            db.session.commit()
+            logger.info(f"全局清理了 {total_deleted} 条重复的进度日志")
+            return total_deleted
+            
+        except Exception as e:
+            db.session.rollback()
+            logger.error(f"全局清理重复进度日志失败: {e}")
+            return 0 

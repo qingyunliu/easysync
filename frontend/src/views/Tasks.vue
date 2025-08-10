@@ -190,7 +190,9 @@
             </div>
           </template>
         </el-table-column>
-        
+
+        <el-table-column prop="description" label="任务描述" min-width="380"/>
+
         <el-table-column prop="type" label="类型" width="100">
           <template #default="{ row }">
             <el-tag :type="getTaskTypeColor(row.type)" size="small">
@@ -405,33 +407,74 @@
     
     <!-- 任务日志对话框 -->
     <el-dialog
-      title="任务日志"
+      :title="`任务日志${logsAutoRefresh ? ` (自动刷新: ${logsRefreshCountdown}s)` : ''}`"
       v-model="logsDialogVisible"
       width="1000px"
+      :before-close="handleLogsDialogClose"
     >
       <div class="logs-container">
         <div class="logs-toolbar">
-          <el-button-group>
-            <el-button
-              :type="logLevel === 'all' ? 'primary' : 'default'"
-              @click="logLevel = 'all'"
-            >
-              全部
+          <div class="logs-toolbar-left">
+            <el-button-group>
+              <el-button
+                :type="logLevel === 'all' ? 'primary' : 'default'"
+                @click="logLevel = 'all'"
+              >
+                全部
+              </el-button>
+              <el-button
+                :type="logLevel === 'error' ? 'danger' : 'default'"
+                @click="logLevel = 'error'"
+              >
+                错误
+              </el-button>
+              <el-button
+                :type="logLevel === 'progress' ? 'success' : 'default'"
+                @click="logLevel = 'progress'"
+              >
+                进度
+              </el-button>
+            </el-button-group>
+            
+            <!-- 刷新配置 -->
+            <div class="refresh-config">
+              <el-select 
+                v-model="logsRefreshInterval" 
+                placeholder="刷新间隔" 
+                size="small"
+                style="width: 120px; margin-left: 10px;"
+                @change="handleLogsRefreshIntervalChange"
+              >
+                <el-option label="关闭刷新" :value="0" />
+                <el-option label="3秒" :value="3000" />
+                <el-option label="5秒" :value="5000" />
+                <el-option label="30秒" :value="30000" />
+                <el-option label="1分钟" :value="60000" />
+                <el-option label="5分钟" :value="300000" />
+              </el-select>
+              
+              <el-button 
+                :type="logsAutoRefresh ? 'success' : 'default'"
+                :icon="logsAutoRefresh ? Loading : Refresh"
+                size="small"
+                style="margin-left: 5px;"
+                @click="toggleLogsAutoRefresh"
+                :loading="logsAutoRefresh"
+              >
+                {{ logsAutoRefresh ? `${logsRefreshCountdown}s` : '手动刷新' }}
+              </el-button>
+            </div>
+          </div>
+          
+          <div class="logs-toolbar-right">
+            <el-button @click="fetchTaskLogs" :icon="Refresh">刷新</el-button>
+            <el-button @click="cleanupLogs('duplicate')" :icon="Delete" style="margin-left: 10px;">
+              清理重复日志
             </el-button>
-            <el-button
-              :type="logLevel === 'error' ? 'danger' : 'default'"
-              @click="logLevel = 'error'"
-            >
-              错误
+            <el-button @click="cleanupLogs('old')" :icon="Warning" style="margin-left: 10px;">
+              清理过期日志
             </el-button>
-            <el-button
-              :type="logLevel === 'progress' ? 'success' : 'default'"
-              @click="logLevel = 'progress'"
-            >
-              进度
-            </el-button>
-          </el-button-group>
-          <el-button @click="fetchTaskLogs" :icon="Refresh">刷新</el-button>
+          </div>
         </div>
         
         <el-table
@@ -439,25 +482,40 @@
           v-loading="logsLoading"
           height="400"
           style="width: 100%"
+          :default-sort="{ prop: 'created_at', order: 'descending' }"
+          :row-key="(row) => row.id"
         >
-          <el-table-column prop="created_at" label="时间" width="180">
-          <template #default="{ row }">
+          <el-table-column prop="created_at" label="时间" width="180" sortable>
+            <template #default="{ row }">
               {{ formatDateTime(row.created_at) }}
-          </template>
-        </el-table-column>
+            </template>
+          </el-table-column>
           <el-table-column prop="status" label="状态" width="100">
-          <template #default="{ row }">
-              <el-tag :type="getLogStatusType(row.status)" size="small">
-                {{ row.status }}
-            </el-tag>
-          </template>
-        </el-table-column>
+            <template #default="{ row }">
+              <el-tag :type="getLogStatusType(row.status, row.message)" size="small">
+                {{ row.message && row.message.includes('同步进度') ? '进度' : row.status }}
+              </el-tag>
+            </template>
+          </el-table-column>
           <el-table-column prop="message" label="消息" show-overflow-tooltip>
-          <template #default="{ row }">
-              <span :class="getLogMessageClass(row.status)">{{ row.message }}</span>
-          </template>
-        </el-table-column>
-      </el-table>
+            <template #default="{ row }">
+              <span :class="getLogMessageClass(row.status, row.message)">{{ row.message }}</span>
+            </template>
+          </el-table-column>
+        </el-table>
+        
+        <!-- 分页 -->
+        <div class="logs-pagination" v-if="logsPagination.total > logsPagination.per_page">
+          <el-pagination
+            v-model:current-page="logsPagination.page"
+            v-model:page-size="logsPagination.per_page"
+            :page-sizes="[20, 50, 100, 200]"
+            :total="logsPagination.total"
+            layout="total, sizes, prev, pager, next, jumper"
+            @size-change="handleLogsSizeChange"
+            @current-change="handleLogsCurrentChange"
+          />
+        </div>
       </div>
     </el-dialog>
   </div>
@@ -518,6 +576,17 @@ const taskLogs = ref([])
 const logsLoading = ref(false)
 const logLevel = ref('all')
 const currentTaskId = ref(null)
+const logsPagination = ref({
+  page: 1,
+  per_page: 20,
+  total: 0
+})
+
+// 日志自动刷新配置
+const logsRefreshInterval = ref(parseInt(localStorage.getItem('logsRefreshInterval') || '0')) // 从本地存储读取
+const logsAutoRefresh = ref(false)
+const logsRefreshCountdown = ref(0)
+const logsRefreshTimer = ref(null)
 
 
 
@@ -548,6 +617,10 @@ const filteredTasks = computed(() => {
 const filteredLogs = computed(() => {
   if (logLevel.value === 'all') {
     return taskLogs.value
+  } else if (logLevel.value === 'progress') {
+    return taskLogs.value.filter(log => log.message && log.message.includes('同步进度'))
+  } else if (logLevel.value === 'error') {
+    return taskLogs.value.filter(log => log.status === 'error')
   }
   return taskLogs.value.filter(log => log.status === logLevel.value)
 })
@@ -651,18 +724,125 @@ const fetchStorages = async () => {
 }
 
 const fetchTaskLogs = async () => {
-  if (!currentTaskId.value) return
+  if (!currentTaskId.value || logsLoading.value) return
   
   logsLoading.value = true
   try {
-    const response = await axios.get(`/api/tasks/${currentTaskId.value}/logs`)
+    const response = await axios.get(`/api/tasks/${currentTaskId.value}/logs`, {
+      params: {
+        page: logsPagination.value.page,
+        per_page: logsPagination.value.per_page
+      }
+    })
     if (response.data.status === 'success') {
-      taskLogs.value = response.data.data || []
+      const allLogs = response.data.data || []
+      
+      // 优化日志显示：对于进度日志，只保留最新的一条
+      const progressLogs = allLogs.filter(log => log.message && log.message.includes('同步进度'))
+      const otherLogs = allLogs.filter(log => !log.message || !log.message.includes('同步进度'))
+      
+      // 如果有进度日志，只取最新的一条
+      const latestProgressLog = progressLogs.length > 0 
+        ? progressLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
+        : null
+      
+      // 合并日志，进度日志放在最前面
+      taskLogs.value = latestProgressLog 
+        ? [latestProgressLog, ...otherLogs]
+        : otherLogs
+      
+      logsPagination.value.total = response.data.total || 0
+      logsPagination.value.page = response.data.page || 1
+      logsPagination.value.per_page = response.data.per_page || 20
     }
   } catch (error) {
     ElMessage.error('获取任务日志失败')
   } finally {
     logsLoading.value = false
+  }
+}
+
+// 清理日志功能
+const cleanupLogs = async (type = 'duplicate') => {
+  try {
+    const response = await axios.post(`/api/tasks/${currentTaskId.value}/logs/cleanup`, {
+      type: type,
+      days: 7
+    })
+    
+    if (response.data.status === 'success') {
+      ElMessage.success(response.data.message)
+      // 重新获取日志
+      if (currentTaskId.value) {
+        fetchTaskLogs()
+      }
+    }
+  } catch (error) {
+    ElMessage.error(error.response?.data?.message || '清理日志失败')
+  }
+}
+
+// 日志分页处理
+const handleLogsSizeChange = (size) => {
+  logsPagination.value.per_page = size
+  logsPagination.value.page = 1
+  fetchTaskLogs()
+}
+
+const handleLogsCurrentChange = (page) => {
+  logsPagination.value.page = page
+  fetchTaskLogs()
+}
+
+// 日志自动刷新相关方法
+const handleLogsRefreshIntervalChange = (interval) => {
+  // 保存到本地存储
+  localStorage.setItem('logsRefreshInterval', interval.toString())
+  
+  stopLogsAutoRefresh()
+  if (interval > 0) {
+    startLogsAutoRefresh(interval)
+  }
+}
+
+const startLogsAutoRefresh = (interval = null) => {
+  const refreshInterval = interval || logsRefreshInterval.value
+  if (refreshInterval <= 0) return
+  
+  stopLogsAutoRefresh()
+  
+  logsAutoRefresh.value = true
+  logsRefreshInterval.value = refreshInterval
+  logsRefreshCountdown.value = Math.floor(refreshInterval / 1000)
+  
+  logsRefreshTimer.value = setInterval(() => {
+    logsRefreshCountdown.value--
+    
+    if (logsRefreshCountdown.value <= 0) {
+      // 执行刷新
+      fetchTaskLogs()
+      logsRefreshCountdown.value = Math.floor(refreshInterval / 1000)
+    }
+  }, 1000)
+}
+
+const stopLogsAutoRefresh = () => {
+  if (logsRefreshTimer.value) {
+    clearInterval(logsRefreshTimer.value)
+    logsRefreshTimer.value = null
+  }
+  logsAutoRefresh.value = false
+  logsRefreshCountdown.value = 0
+}
+
+const toggleLogsAutoRefresh = () => {
+  if (logsAutoRefresh.value) {
+    stopLogsAutoRefresh()
+  } else if (logsRefreshInterval.value > 0) {
+    startLogsAutoRefresh()
+  } else {
+    // 如果没有设置间隔，默认使用5秒
+    startLogsAutoRefresh(5000)
   }
 }
 
@@ -698,11 +878,22 @@ const handleViewLogs = (task) => {
   currentTaskId.value = task.id
   logsDialogVisible.value = true
   fetchTaskLogs()
+  
+  // 如果之前设置了自动刷新，则启动
+  if (logsRefreshInterval.value > 0) {
+    startLogsAutoRefresh()
+  }
 }
 
 const handleWizardClose = () => {
   taskWizardVisible.value = false
   copyFromTask.value = null
+}
+
+const handleLogsDialogClose = () => {
+  logsDialogVisible.value = false
+  stopLogsAutoRefresh()
+  currentTaskId.value = null
 }
 
 const handleTaskCreated = (task) => {
@@ -1185,7 +1376,12 @@ const getNodeName = (nodeId) => {
   return node ? node.name : `节点${nodeId}`
 }
 
-const getLogStatusType = (status) => {
+const getLogStatusType = (status, message) => {
+  // 如果是同步进度消息，显示为进度类型
+  if (message && message.includes('同步进度')) {
+    return 'success'
+  }
+  
   const types = {
     error: 'danger',
     progress: 'success',
@@ -1197,10 +1393,10 @@ const getLogStatusType = (status) => {
   return types[status] || 'info'
 }
 
-const getLogMessageClass = (status) => {
+const getLogMessageClass = (status, message) => {
   return {
     'log-error': status === 'error',
-    'log-success': status === 'progress' || status === 'completed',
+    'log-success': (status === 'progress' || status === 'completed') || (message && message.includes('同步进度')),
     'log-warning': status === 'running'
   }
 }
@@ -1258,6 +1454,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopAutoRefresh()
+  stopLogsAutoRefresh()
 })
 </script>
 
@@ -1455,6 +1652,29 @@ onUnmounted(() => {
   margin-bottom: 15px;
   padding: 10px 0;
   border-bottom: 1px solid var(--border-color);
+}
+
+.logs-toolbar-left {
+  display: flex;
+  align-items: center;
+}
+
+.logs-toolbar-right {
+  display: flex;
+  align-items: center;
+}
+
+.refresh-config {
+  display: flex;
+  align-items: center;
+  margin-left: 15px;
+}
+
+.logs-pagination {
+  margin-top: 15px;
+  text-align: right;
+  padding: 10px 0;
+  border-top: 1px solid var(--border-color);
 }
 
 .log-error {
