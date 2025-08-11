@@ -470,12 +470,22 @@ const initCpuMemoryChart = () => {
         name: 'CPU',
         type: 'line',
         smooth: true,
+        stack: 'Total',
+        areaStyle: {},
+        emphasis: {
+          focus: 'series'
+        },
         data: []
       },
       {
         name: '内存',
         type: 'line',
         smooth: true,
+        stack: 'Total',
+        areaStyle: {},
+        emphasis: {
+          focus: 'series'
+        },
         data: []
       }
     ]
@@ -527,12 +537,22 @@ const initNetworkChart = () => {
         name: '入流量',
         type: 'line',
         smooth: true,
+        stack: 'Total',
+        emphasis: {
+          focus: 'series'
+        },
+        areaStyle: {},
         data: []
       },
       {
         name: '出流量',
         type: 'line',
+        stack: 'Total',
         smooth: true,
+        emphasis: {
+          focus: 'series'
+        },
+        areaStyle: {},
         data: []
       }
     ]
