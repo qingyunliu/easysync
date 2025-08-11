@@ -4,6 +4,9 @@ from backend.app.notifications.services import NotificationService
 from backend.app.utils.decorators import handle_errors, require_user
 from . import notifications_bp
 from backend.app.models import User
+from backend.app.utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 notification_service = NotificationService()
 
@@ -61,19 +64,158 @@ def get_notifications():
     notifications = notification_service.get_user_notifications(get_jwt_identity(), limit, offset)
     return jsonify([n.to_dict() for n in notifications])
 
+@notifications_bp.route('/statistics', methods=['GET'])
+@jwt_required()
+def get_notification_statistics():
+    """获取通知统计信息"""
+    try:
+        user_id = get_jwt_identity()
+        statistics = notification_service.get_notification_statistics(user_id)
+        
+        return jsonify({
+            'status': 'success',
+            'message': '通知统计获取成功',
+            'data': statistics
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting notification statistics: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取通知统计失败: {str(e)}'
+        }), 500
+
+@notifications_bp.route('/mark-all-read', methods=['POST'])
+@jwt_required()
+def mark_all_as_read():
+    """标记所有通知为已读"""
+    try:
+        user_id = get_jwt_identity()
+        updated_count = notification_service.mark_all_as_read(user_id)
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'成功标记{updated_count}条通知为已读',
+            'data': {
+                'updated_count': updated_count
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error marking all notifications as read: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'标记通知为已读失败: {str(e)}'
+        }), 500
+
 @notifications_bp.route('/<string:notification_id>/read', methods=['POST'])
 @jwt_required()
 def mark_as_read(notification_id):
-    """标记通知为已读"""
-    notification_service.mark_as_read(notification_id)
-    return jsonify({'message': '通知已标记为已读'})
+    """标记单个通知为已读"""
+    try:
+        user_id = get_jwt_identity()
+        success = notification_service.mark_as_read(notification_id, user_id)
+        
+        if success:
+            return jsonify({
+                'status': 'success',
+                'message': '通知已标记为已读'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '通知不存在或标记失败'
+            }), 404
+        
+    except Exception as e:
+        logger.error(f"Error marking notification as read: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'标记通知为已读失败: {str(e)}'
+        }), 500
+
+@notifications_bp.route('/clear-all', methods=['POST'])
+@jwt_required()
+def clear_all_notifications():
+    """清空所有通知"""
+    try:
+        user_id = get_jwt_identity()
+        
+        # 获取用户所有通知
+        notifications = notification_service.get_user_notifications(user_id, limit=10000, offset=0)
+        
+        # 删除所有通知
+        deleted_count = 0
+        for notification in notifications:
+            if notification_service.delete_notification(notification.id, user_id):
+                deleted_count += 1
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'成功清空{deleted_count}条通知',
+            'data': {
+                'deleted_count': deleted_count
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error clearing all notifications: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'清空通知失败: {str(e)}'
+        }), 500
+
+@notifications_bp.route('/cleanup', methods=['POST'])
+@jwt_required()
+def cleanup_old_notifications():
+    """清理旧通知数据"""
+    try:
+        data = request.get_json()
+        days = data.get('days', 90)
+        
+        deleted_count = notification_service.cleanup_old_notifications(days=days)
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'成功清理{deleted_count}条旧通知数据',
+            'data': {
+                'deleted_count': deleted_count,
+                'days': days
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error cleaning up old notifications: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'清理旧通知数据失败: {str(e)}'
+        }), 500
 
 @notifications_bp.route('/<string:notification_id>', methods=['DELETE'])
 @jwt_required()
 def delete_notification(notification_id):
     """删除通知"""
-    notification_service.delete_notification(notification_id)
-    return jsonify({'message': '通知已删除'})
+    try:
+        user_id = get_jwt_identity()
+        success = notification_service.delete_notification(notification_id, user_id)
+        
+        if success:
+            return jsonify({
+                'status': 'success',
+                'message': '通知已删除'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '通知不存在或删除失败'
+            }), 404
+        
+    except Exception as e:
+        logger.error(f"Error deleting notification: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'删除通知失败: {str(e)}'
+        }), 500
 
 @notifications_bp.route('/channels', methods=['GET'])
 @jwt_required()

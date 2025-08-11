@@ -595,3 +595,119 @@ def get_operation_logs():
             'per_page': per_page,
             'pages': pagination.pages
         })
+
+@auth_bp.route('/audit-logs/statistics', methods=['GET'])
+@jwt_required()
+def get_audit_statistics():
+    """获取审计日志统计信息"""
+    try:
+        from backend.app.auth.services import AuditService
+        
+        hours = int(request.args.get('hours', 24))
+        statistics = AuditService.get_audit_statistics(hours=hours)
+        
+        return jsonify({
+            'status': 'success',
+            'message': '审计日志统计获取成功',
+            'data': statistics
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting audit statistics: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取审计日志统计失败: {str(e)}'
+        }), 500
+
+@auth_bp.route('/audit-logs/user/<string:user_id>', methods=['GET'])
+@jwt_required()
+def get_user_audit_logs(user_id):
+    """获取指定用户的审计日志"""
+    try:
+        from backend.app.auth.services import AuditService
+        
+        # 获取查询参数
+        start_time = request.args.get('start_time')
+        end_time = request.args.get('end_time')
+        limit = int(request.args.get('limit', 100))
+        
+        audit_logs = AuditService.get_audit_logs_by_user(
+            user_id=user_id,
+            start_time=start_time,
+            end_time=end_time,
+            limit=limit
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'用户{user_id}的审计日志获取成功',
+            'data': [log.to_dict() for log in audit_logs]
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting user audit logs: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取用户审计日志失败: {str(e)}'
+        }), 500
+
+@auth_bp.route('/audit-logs/resource/<string:resource_type>/<string:resource_id>', methods=['GET'])
+@jwt_required()
+def get_resource_audit_logs(resource_type, resource_id):
+    """获取指定资源的审计日志"""
+    try:
+        from backend.app.auth.services import AuditService
+        
+        # 获取查询参数
+        start_time = request.args.get('start_time')
+        end_time = request.args.get('end_time')
+        limit = int(request.args.get('limit', 100))
+        
+        audit_logs = AuditService.get_audit_logs_by_resource(
+            resource_type=resource_type,
+            resource_id=resource_id,
+            start_time=start_time,
+            end_time=end_time,
+            limit=limit
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'资源{resource_type}/{resource_id}的审计日志获取成功',
+            'data': [log.to_dict() for log in audit_logs]
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error getting resource audit logs: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'获取资源审计日志失败: {str(e)}'
+        }), 500
+
+@auth_bp.route('/audit-logs/cleanup', methods=['POST'])
+@jwt_required()
+def cleanup_old_audit_logs():
+    """清理旧审计日志数据"""
+    try:
+        from backend.app.auth.services import AuditService
+        
+        data = request.get_json()
+        days = data.get('days', 365)
+        
+        deleted_count = AuditService.cleanup_old_audit_logs(days=days)
+        
+        return jsonify({
+            'status': 'success',
+            'message': f'成功清理{deleted_count}条旧审计日志数据',
+            'data': {
+                'deleted_count': deleted_count,
+                'days': days
+            }
+        })
+        
+    except Exception as e:
+        current_app.logger.error(f"Error cleaning up old audit logs: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'清理旧审计日志数据失败: {str(e)}'
+        }), 500

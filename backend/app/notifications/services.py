@@ -1667,4 +1667,93 @@ class NotificationService:
                 title=title,
                 content=content,
                 level=level
-            ) 
+            )
+    
+    def create_notification_from_event(self, event):
+        """从事件创建用户友好的通知"""
+        try:
+            # 事件到通知的映射
+            notification_mapping = {
+                'storage_connect_failed': {
+                    'title': '存储连接失败',
+                    'content': '您的存储设备连接失败，请检查网络连接和配置',
+                    'level': 'error'
+                },
+                'storage_sync_error': {
+                    'title': '同步错误',
+                    'content': '数据同步过程中发生错误，请检查存储配置和网络状态',
+                    'level': 'error'
+                },
+                'storage_disk_full': {
+                    'title': '磁盘空间不足',
+                    'content': '存储设备磁盘空间不足，请清理空间或扩容',
+                    'level': 'warning'
+                },
+                'storage_sync_complete': {
+                    'title': '同步完成',
+                    'content': '数据同步任务已完成',
+                    'level': 'success'
+                },
+                'client_offline': {
+                    'title': '客户端离线',
+                    'content': '检测到客户端离线，请检查网络连接',
+                    'level': 'warning'
+                },
+                'client_error': {
+                    'title': '客户端错误',
+                    'content': '客户端发生错误，请检查客户端状态',
+                    'level': 'error'
+                },
+                'agent_task_error': {
+                    'title': '任务执行错误',
+                    'content': '任务执行过程中发生错误，请检查任务配置',
+                    'level': 'error'
+                },
+                'agent_service_down': {
+                    'title': '代理服务异常',
+                    'content': '代理服务异常，请检查代理节点状态',
+                    'level': 'error'
+                },
+                'agent_task_complete': {
+                    'title': '任务完成',
+                    'content': '任务执行完成',
+                    'level': 'success'
+                },
+                'system_resource_high': {
+                    'title': '系统资源告警',
+                    'content': '系统资源使用率较高，建议检查系统状态',
+                    'level': 'warning'
+                },
+                'system_network_error': {
+                    'title': '网络错误',
+                    'content': '检测到网络连接异常，请检查网络配置',
+                    'level': 'error'
+                },
+                'system_security_alert': {
+                    'title': '安全告警',
+                    'content': '检测到安全相关事件，请及时处理',
+                    'level': 'warning'
+                }
+            }
+            
+            event_key = f"{event.event_type}_{event.event_action}"
+            if event_key in notification_mapping:
+                mapping = notification_mapping[event_key]
+                
+                # 创建通知
+                notification = self.create_notification(
+                    user_id=event.user_id,
+                    type='system_alert',
+                    title=mapping['title'],
+                    content=mapping['content'],
+                    level=mapping['level']
+                )
+                
+                logger.info(f"Notification created from event: {event_key}")
+                return notification
+            
+            return None
+            
+        except Exception as e:
+            logger.error(f"Error creating notification from event: {e}")
+            return None 
