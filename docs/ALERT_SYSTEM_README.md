@@ -1,262 +1,308 @@
-# 告警系统功能说明
+# 告警系统设计文档
 
 ## 概述
 
-根据您的设计需求，我已经重新实现了告警和通知系统，包含以下三个核心模块：
+EasySync 告警系统支持两种类型的告警：
 
-1. **告警策略** - 定义资源告警和事件告警
-2. **通知对象** - 关联告警器和通知渠道
-3. **通知渠道** - 支持多种通知方式
+1. **资源告警** - 监控系统资源（CPU、内存、磁盘、网络等）
+2. **事件告警** - 监控系统事件（用户操作、存储操作、任务执行等）
 
-## 功能架构
+## 系统架构
 
-### 1. 告警策略 (Alert Policies)
+### 核心组件
 
-#### 资源告警
-- **告警器名称**: 自定义告警器名称
-- **级别**: info、warning、error、critical
-- **启动状态**: 启用/禁用
-- **资源类型**: Nodes、Clients、系统
-- **监控资源**: 根据资源类型自动列出可监控的资源
-- **报警条目**: CPU、内存、磁盘、网络等
-- **触发规则**: 设置阈值、操作符、持续时间
-- **通知对象**: 关联已创建的通知对象
-- **告警器描述**: 详细描述
+1. **告警模型层**
 
-#### 事件告警
-- **告警器名称**: 自定义告警器名称
-- **级别**: info、warning、error、critical
-- **启动状态**: 启用/禁用
-- **事件类型**: 存储、客户端、代理等
-- **事件动作**: 创建、删除、获取等
-- **事件结果**: 成功、失败、超时、错误、警告
-- **通知对象**: 关联已创建的通知对象
-- **告警器描述**: 详细描述
+   - `AlertResourceType` - 资源类型定义
+   - `AlertResourceItem` - 资源监控条目
+   - `AlertEventType` - 事件类型定义
+   - `AlertEventAction` - 事件动作定义
+   - `AlertEventResult` - 事件结果定义
+   - `AlertPolicy` - 告警策略
+   - `AlertInstance` - 告警实例
+   - `AlertTemplate` - 告警模板
 
-### 2. 通知对象 (Notification Targets)
+2. **服务层**
 
-- **通知对象名称**: 自定义名称
-- **启动状态**: 启用/禁用
-- **告警器**: 选择关联的告警器
-- **发送通道**: 设置好的通知渠道
-- **通知对象类型**: 邮件、短信、WebHook等
-- **通知配置**: 根据类型配置具体参数
-- **描述**: 详细描述
+   - `AlertService` - 告警服务
+   - `AlertEvaluator` - 告警评估器
+   - `EventService` - 事件服务
 
-### 3. 通知渠道 (Notification Channels)
+3. **API 层**
+   - 告警策略管理 API
+   - 事件管理 API
+   - 告警实例查询 API
 
-- **渠道名称**: 自定义渠道名称
-- **渠道类型**: 邮件、短信、WebHook、钉钉、Slack
-- **启动状态**: 启用/禁用
-- **渠道配置**: 根据类型配置具体参数
-- **重试发送次数**: 发送失败时的重试次数
-- **速率限制**: 每小时最大发送次数
-- **超时时间**: 发送超时时间
-- **默认设置**: 是否设为默认渠道
+## 资源告警
 
-## 数据模型
+### 支持的资源类型
 
-### AlertPolicy (告警策略)
-```python
-class AlertPolicy(BaseModel):
-    name = db.Column(db.String(100), nullable=False)  # 告警器名称
-    description = db.Column(db.Text)  # 告警器描述
-    level = db.Column(db.String(20), default='warning')  # 告警级别
-    enabled = db.Column(db.Boolean, default=True)  # 启动状态
-    policy_type = db.Column(db.String(20), nullable=False)  # 策略类型: resource, event
-    
-    # 资源告警配置
-    resource_type = db.Column(db.String(50))  # 资源类型
-    monitored_resources = db.Column(db.JSON)  # 监控资源列表
-    alert_items = db.Column(db.JSON)  # 报警条目
-    trigger_rules = db.Column(db.JSON)  # 触发规则配置
-    
-    # 事件告警配置
-    event_type = db.Column(db.String(50))  # 事件类型
-    event_actions = db.Column(db.JSON)  # 事件动作
-    event_results = db.Column(db.JSON)  # 事件结果
-    
-    # 通知配置
-    notification_targets = db.Column(db.JSON)  # 关联的通知对象ID列表
-```
+1. **系统资源** (`system`)
 
-### NotificationChannel (通知渠道)
-```python
-class NotificationChannel(BaseModel):
-    name = db.Column(db.String(100), nullable=False)  # 渠道名称
-    channel_type = db.Column(db.String(50), nullable=False)  # 渠道类型
-    enabled = db.Column(db.Boolean, default=True)  # 启动状态
-    config = db.Column(db.JSON, nullable=False)  # 渠道配置
-    retry_count = db.Column(db.Integer, default=3)  # 重试发送次数
-    rate_limit = db.Column(db.Integer, default=100)  # 速率限制
-    timeout = db.Column(db.Integer, default=30)  # 超时时间
-    is_default = db.Column(db.Boolean, default=False)  # 是否设置为默认
-```
+   - CPU 使用率 - 监控 CPU 使用率百分比
+   - 内存使用率 - 监控内存使用率百分比
+   - 磁盘使用率 - 监控磁盘使用率百分比
+   - 系统负载 - 监控系统平均负载
 
-### NotificationTarget (通知对象)
-```python
-class NotificationTarget(BaseModel):
-    name = db.Column(db.String(100), nullable=False)  # 通知对象名称
-    enabled = db.Column(db.Boolean, default=True)  # 启动状态
-    description = db.Column(db.Text)  # 描述
-    alert_policies = db.Column(db.JSON)  # 关联的告警器ID列表
-    channels = db.Column(db.JSON)  # 关联的通知渠道ID列表
-    target_type = db.Column(db.String(50), nullable=False)  # 通知对象类型
-    target_config = db.Column(db.JSON, nullable=False)  # 通知对象配置
-```
+2. **存储资源** (`storage`)
 
-## API 接口
+   - 存储状态 - 监控存储连接状态（active/error/disabled）
+   - 存储连接时间 - 监控存储连接响应时间
+   - 存储可用空间 - 监控存储可用空间百分比
 
-### 告警策略接口
-- `GET /api/alerts/policies` - 获取告警策略列表
-- `POST /api/alerts/policies` - 创建告警策略
-- `GET /api/alerts/policies/{id}` - 获取告警策略详情
-- `PUT /api/alerts/policies/{id}` - 更新告警策略
-- `DELETE /api/alerts/policies/{id}` - 删除告警策略
-- `PUT /api/alerts/policies/{id}/toggle` - 切换启用状态
-- `POST /api/alerts/policies/{id}/test` - 测试告警策略
+3. **网络资源** (`network`)
 
-### 通知渠道接口
-- `GET /api/notifications/channels` - 获取通知渠道列表
-- `POST /api/notifications/channels` - 创建通知渠道
-- `PUT /api/notifications/channels/{id}` - 更新通知渠道
-- `DELETE /api/notifications/channels/{id}` - 删除通知渠道
+   - 网络延迟 - 监控网络延迟时间
+   - 网络连接数 - 监控当前网络连接数
 
-### 通知对象接口
-- `GET /api/notifications/targets` - 获取通知对象列表
-- `POST /api/notifications/targets` - 创建通知对象
-- `PUT /api/notifications/targets/{id}` - 更新通知对象
-- `DELETE /api/notifications/targets/{id}` - 删除通知对象
+4. **客户端资源** (`client`)
 
-### 辅助接口
-- `GET /api/alerts/resources` - 获取可监控的资源列表
-- `GET /api/alerts/events` - 获取可监控的事件列表
-- `GET /api/alerts/templates` - 获取告警策略模板
+   - 客户端连接状态 - 监控客户端连接状态（online/offline）
+   - 客户端代理状态 - 监控客户端代理运行状态（active/inactive/error）
+   - 客户端响应时间 - 监控客户端响应时间
+   - 客户端最后心跳时间 - 监控客户端最后心跳时间间隔
 
-## 前端页面
+5. **节点资源** (`node`)
+   - 节点状态 - 监控同步节点运行状态（online/offline/error）
+   - 代理状态 - 监控节点代理运行状态（active/inactive/error）
+   - 任务执行数量 - 监控当前执行的任务数量
+   - 节点最后心跳时间 - 监控节点最后心跳时间间隔
 
-### 1. 告警策略页面 (`/alert-policies`)
-- 支持资源告警和事件告警的创建和管理
-- 提供策略模板库
-- 支持策略的启用/禁用、编辑、删除、测试
-- 显示策略详情和关联信息
+### 配置示例
 
-### 2. 通知渠道页面 (`/notification-channels`)
-- 支持邮件、短信、WebHook、钉钉、Slack等渠道
-- 提供渠道配置和测试功能
-- 支持设置默认渠道
-- 显示渠道状态和配置信息
-
-### 3. 通知对象页面 (`/notification-targets`)
-- 支持邮件、短信、WebHook等通知对象类型
-- 关联告警器和通知渠道
-- 配置具体的通知地址
-- 显示关联信息和状态
-
-## 使用流程
-
-### 1. 创建通知渠道
-1. 进入"通知渠道"页面
-2. 点击"创建渠道"
-3. 选择渠道类型（邮件、短信、WebHook等）
-4. 配置渠道参数
-5. 保存渠道
-
-### 2. 创建通知对象
-1. 进入"通知对象"页面
-2. 点击"创建通知对象"
-3. 选择对象类型
-4. 配置通知地址
-5. 关联通知渠道
-6. 保存对象
-
-### 3. 创建告警策略
-1. 进入"告警策略"页面
-2. 点击"创建告警器"
-3. 选择策略类型（资源告警或事件告警）
-4. 配置监控参数和触发规则
-5. 关联通知对象
-6. 保存策略
-
-## 配置示例
-
-### 邮件渠道配置
 ```json
 {
-  "name": "邮件通知",
-  "channel_type": "email",
-  "config": {
-    "smtp_server": "smtp.gmail.com",
-    "smtp_port": 587,
-    "username": "your@email.com",
-    "password": "your_password"
-  }
-}
-```
-
-### 资源告警策略配置
-```json
-{
-  "name": "CPU使用率告警",
+  "name": "CPU告警策略",
   "policy_type": "resource",
   "resource_type": "system",
-  "alert_items": ["CPU"],
+  "alert_items": ["cpu_percent"],
   "trigger_rules": {
-    "CPU": {
+    "cpu_percent": {
       "operator": ">",
-      "threshold": 80,
+      "threshold": 80.0,
       "duration": 300
     }
   },
-  "notification_targets": ["target_id"]
+  "level": "warning",
+  "enabled": true
 }
 ```
 
-### 事件告警策略配置
+## 事件告警
+
+### 支持的事件类型
+
+1. **用户资源** (`user`)
+
+   - 登录、登出、修改密码、重置密码、修改邮箱、修改个人信息
+   - 用户注册、删除用户、用户权限变更、用户锁定、用户解锁
+
+2. **存储资源** (`storage`)
+
+   - 添加、删除、更新存储，测试存储连通性，获取存储信息
+   - 存储失联、存储恢复、存储空间不足、存储挂载、存储卸载、存储同步
+
+3. **同步代理资源** (`agent`)
+
+   - 代理启动、停止、重启、连接、断开、错误、升级
+   - 代理配置更新、代理心跳
+
+4. **客户端资源** (`client`)
+
+   - 客户端连接、断开、错误、超时、认证失败
+   - 客户端添加、删除、更新、代理安装/卸载/升级、客户端心跳
+
+5. **监控资源** (`monitor`)
+
+   - 监控数据收集、监控告警触发/恢复、监控服务异常
+   - 监控阈值设置、监控策略创建/更新/删除
+
+6. **任务资源** (`task`)
+
+   - 任务创建、启动、完成、失败、暂停、恢复、取消、删除
+   - 任务重试、任务分配、任务进度更新、任务配置更新
+
+7. **系统资源** (`system`)
+
+   - 系统启动、关闭、重启、错误、维护
+   - 配置更新、数据库备份/恢复、日志清理、系统升级
+
+8. **节点资源** (`node`)
+   - 节点添加、删除、更新、连接、断开、心跳
+   - 节点代理安装/卸载/升级、节点分组变更
+
+### 事件结果
+
+- `success` - 成功
+- `failed` - 失败
+- `timeout` - 超时
+- `error` - 错误
+- `warning` - 警告
+- `running` - 进行中
+- `cancelled` - 已取消
+- `partial_success` - 部分成功
+
+### 配置示例
+
 ```json
 {
   "name": "存储操作失败告警",
   "policy_type": "event",
   "event_type": "storage",
-  "event_actions": ["create", "delete", "update"],
+  "event_actions": ["add_storage", "delete_storage", "update_storage"],
   "event_results": ["failed", "error"],
-  "notification_targets": ["target_id"]
+  "level": "error",
+  "enabled": true
 }
 ```
 
-### 客户端连接失败告警配置
-```json
-{
-  "name": "客户端连接失败告警",
-  "policy_type": "event",
-  "event_type": "client",
-  "event_actions": ["connect"],
-  "event_results": ["failed", "timeout"],
-  "notification_targets": ["target_id"]
+## API 接口
+
+### 告警策略管理
+
+- `GET /api/alerts/policies` - 获取告警策略列表
+- `POST /api/alerts/policies` - 创建告警策略
+- `GET /api/alerts/policies/{id}` - 获取策略详情
+- `PUT /api/alerts/policies/{id}` - 更新策略
+- `DELETE /api/alerts/policies/{id}` - 删除策略
+- `PUT /api/alerts/policies/{id}/toggle` - 切换启用状态
+
+### 告警分类管理
+
+- `GET /api/alerts/categories` - 获取告警分类信息
+- `GET /api/alerts/resource-types` - 获取资源类型
+- `GET /api/alerts/resource-items` - 获取资源条目
+- `GET /api/alerts/event-types` - 获取事件类型
+- `GET /api/alerts/event-actions` - 获取事件动作
+- `GET /api/alerts/event-results` - 获取事件结果
+
+### 事件管理
+
+- `GET /api/events/list` - 获取事件列表
+- `POST /api/events/create` - 创建事件
+- `POST /api/events/user` - 创建用户事件
+- `POST /api/events/storage` - 创建存储事件
+- `POST /api/events/agent` - 创建代理事件
+- `POST /api/events/client` - 创建客户端事件
+- `POST /api/events/task` - 创建任务事件
+- `POST /api/events/system` - 创建系统事件
+
+### 告警实例管理
+
+- `GET /api/alerts/instances` - 获取告警实例列表
+- `PUT /api/alerts/instances/{id}/resolve` - 解决告警实例
+
+## 使用示例
+
+### 1. 创建资源告警策略
+
+```python
+from backend.app.alerts.services import AlertService
+
+alert_service = AlertService()
+
+policy_data = {
+    "name": "内存使用率告警",
+    "description": "监控系统内存使用率",
+    "policy_type": "resource",
+    "resource_type": "system",
+    "alert_items": ["memory_percent"],
+    "trigger_rules": {
+        "memory_percent": {
+            "operator": ">",
+            "threshold": 85.0,
+            "duration": 60
+        }
+    },
+    "level": "warning",
+    "enabled": True
 }
+
+policy = alert_service.create_policy(policy_data, user_id)
 ```
 
-## 测试
+### 2. 创建事件告警策略
 
-运行测试脚本验证功能：
+```python
+policy_data = {
+    "name": "存储操作失败告警",
+    "description": "监控存储操作失败事件",
+    "policy_type": "event",
+    "event_type": "storage",
+    "event_actions": ["add_storage", "delete_storage"],
+    "event_results": ["failed", "error"],
+    "level": "error",
+    "enabled": True
+}
+
+policy = alert_service.create_policy(policy_data, user_id)
+```
+
+### 3. 创建事件
+
+```python
+from backend.app.events.service import event_service
+
+# 创建存储事件
+event = event_service.create_storage_event(
+    user_id=user_id,
+    event_action="add_storage",
+    event_result="failed",
+    message="添加存储失败：连接超时",
+    details={"storage_name": "test-storage", "error": "connection timeout"}
+)
+```
+
+## 部署说明
+
+### 1. 创建数据库表
+
 ```bash
-python test_alert_system.py
+cd migrations
+python create_alert_tables.py
 ```
+
+### 2. 初始化基础数据
+
+系统会自动初始化以下基础数据：
+
+- 资源类型和条目
+- 事件类型和动作
+- 事件结果类型
+- 系统默认模板
+
+### 3. 配置告警策略
+
+用户可以通过 Web 界面或 API 配置告警策略：
+
+1. 选择告警类型（资源/事件）
+2. 配置监控条件
+3. 设置告警级别
+4. 关联通知模板
+5. 配置通知目标
+
+## 监控和告警流程
+
+1. **数据收集** - 系统收集监控数据和事件
+2. **策略评估** - 告警评估器检查是否触发策略
+3. **实例创建** - 创建告警实例
+4. **通知发送** - 根据配置发送通知
+5. **状态管理** - 管理告警状态（触发/解决）
+
+## 扩展性
+
+系统设计具有良好的扩展性：
+
+1. **新增资源类型** - 在`AlertResourceType`表中添加
+2. **新增监控条目** - 在`AlertResourceItem`表中添加
+3. **新增事件类型** - 在`AlertEventType`表中添加
+4. **新增事件动作** - 在`AlertEventAction`表中添加
+5. **自定义通知模板** - 支持多种通知渠道
 
 ## 注意事项
 
-1. 确保数据库已正确初始化
-2. 配置正确的通知渠道参数
-3. 测试告警策略前先创建通知对象和渠道
-4. 定期检查告警策略的有效性
-5. 监控通知发送的成功率
-
-## 扩展功能
-
-未来可以考虑添加的功能：
-1. 告警历史记录和统计
-2. 告警升级机制
-3. 告警抑制和静默
-4. 告警聚合和去重
-5. 告警仪表板
-6. 告警规则模板市场 
+1. 告警策略支持频率限制，避免告警风暴
+2. 事件告警支持持续时间检查
+3. 告警实例支持去重机制
+4. 系统提供告警统计和分析功能
+5. 支持告警模板的变量替换

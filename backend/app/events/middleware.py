@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from functools import wraps
 from flask import request, g, current_app
+from flask_jwt_extended import get_jwt_identity
 from backend.app.models.event import Event
 from backend.app.events.service import EventService
 
@@ -40,7 +41,7 @@ class EventMiddleware:
         """记录成功事件"""
         try:
             # 获取用户信息
-            user_id = getattr(g, 'user_id', None)
+            user_id = get_jwt_identity()
             if not user_id:
                 return
             
@@ -56,7 +57,7 @@ class EventMiddleware:
             if details:
                 event_details.update(details)
             
-            # 记录成功事件
+            # 记录成功事件 - 使用EventService来触发告警评估
             self.event_service.create_event(
                 user_id=user_id,
                 event_type=event_type,
@@ -74,7 +75,7 @@ class EventMiddleware:
         """记录失败事件"""
         try:
             # 获取用户信息
-            user_id = getattr(g, 'user_id', None)
+            user_id = get_jwt_identity()
             if not user_id:
                 return
             
@@ -91,7 +92,7 @@ class EventMiddleware:
             if details:
                 event_details.update(details)
             
-            # 记录失败事件
+            # 记录失败事件 - 使用EventService来触发告警评估
             self.event_service.create_event(
                 user_id=user_id,
                 event_type=event_type,

@@ -3,7 +3,11 @@ from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 from sqlalchemy import and_, or_, desc
 from backend import db
-from backend.app.models.alert import AlertPolicy, AlertInstance, AlertTemplate
+from backend.app.models.alert import (
+    AlertPolicy, AlertInstance, AlertTemplate, 
+    AlertResourceType, AlertResourceItem, 
+    AlertEventType, AlertEventAction, AlertEventResult
+)
 from backend.app.models.notification import NotificationChannel, NotificationTarget
 from backend.app.models.client import Client
 from backend.app.models.node import Node
@@ -19,6 +23,75 @@ class AlertService:
     
     def __init__(self):
         self.notification_service = NotificationService()
+
+    def get_resource_types(self) -> List[Dict[str, Any]]:
+        """获取所有资源类型"""
+        try:
+            resource_types = AlertResourceType.query.filter_by(enabled=True).order_by(AlertResourceType.sort_order).all()
+            return [rt.to_dict() for rt in resource_types]
+        except Exception as e:
+            logger.error(f"获取资源类型失败: {e}")
+            return []
+
+    def get_resource_items(self, resource_type_code: str = None) -> List[Dict[str, Any]]:
+        """获取资源条目"""
+        try:
+            query = AlertResourceItem.query.filter_by(enabled=True)
+            if resource_type_code:
+                resource_type = AlertResourceType.query.filter_by(code=resource_type_code).first()
+                if resource_type:
+                    query = query.filter_by(resource_type_id=resource_type.id)
+            
+            resource_items = query.order_by(AlertResourceItem.sort_order).all()
+            return [item.to_dict() for item in resource_items]
+        except Exception as e:
+            logger.error(f"获取资源条目失败: {e}")
+            return []
+
+    def get_event_types(self) -> List[Dict[str, Any]]:
+        """获取所有事件类型"""
+        try:
+            event_types = AlertEventType.query.filter_by(enabled=True).order_by(AlertEventType.sort_order).all()
+            return [et.to_dict() for et in event_types]
+        except Exception as e:
+            logger.error(f"获取事件类型失败: {e}")
+            return []
+
+    def get_event_actions(self, event_type_code: str = None) -> List[Dict[str, Any]]:
+        """获取事件动作"""
+        try:
+            query = AlertEventAction.query.filter_by(enabled=True)
+            if event_type_code:
+                event_type = AlertEventType.query.filter_by(code=event_type_code).first()
+                if event_type:
+                    query = query.filter_by(event_type_id=event_type.id)
+            
+            event_actions = query.order_by(AlertEventAction.sort_order).all()
+            return [action.to_dict() for action in event_actions]
+        except Exception as e:
+            logger.error(f"获取事件动作失败: {e}")
+            return []
+
+    def get_event_results(self) -> List[Dict[str, Any]]:
+        """获取所有事件结果"""
+        try:
+            event_results = AlertEventResult.query.filter_by(enabled=True).order_by(AlertEventResult.sort_order).all()
+            return [result.to_dict() for result in event_results]
+        except Exception as e:
+            logger.error(f"获取事件结果失败: {e}")
+            return []
+
+    def get_alert_categories(self) -> Dict[str, Any]:
+        """获取告警分类信息"""
+        try:
+            return {
+                'resource_types': self.get_resource_types(),
+                'event_types': self.get_event_types(),
+                'event_results': self.get_event_results()
+            }
+        except Exception as e:
+            logger.error(f"获取告警分类失败: {e}")
+            return {}
     
     def get_policies(self, user_id: str, page: int = 1, per_page: int = 12,
                     policy_type: str = '', level: str = '', enabled: str = '', keyword: str = '') -> Dict[str, Any]:

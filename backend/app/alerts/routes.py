@@ -334,3 +334,72 @@ def get_policies_with_templates():
         'status': 'success',
         'data': policies
     })
+
+@alerts_bp.route('/categories', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_alert_categories():
+    """获取告警分类信息"""
+    user_id = get_jwt_identity()
+    categories = alert_service.get_alert_categories()
+    return jsonify({'categories': categories})
+
+@alerts_bp.route('/resource-types', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_resource_types():
+    """获取资源类型列表"""
+    resource_types = alert_service.get_resource_types()
+    return jsonify({'resource_types': resource_types})
+
+@alerts_bp.route('/resource-items', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_resource_items():
+    """获取资源条目列表"""
+    resource_type_code = request.args.get('resource_type_code', '')
+    resource_items = alert_service.get_resource_items(resource_type_code)
+    return jsonify({'resource_items': resource_items})
+
+@alerts_bp.route('/event-types', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_event_types():
+    """获取事件类型列表"""
+    event_types = alert_service.get_event_types()
+    return jsonify({'event_types': event_types})
+
+@alerts_bp.route('/event-actions', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_event_actions():
+    """获取事件动作列表"""
+    event_type_code = request.args.get('event_type_code', '')
+    event_actions = alert_service.get_event_actions(event_type_code)
+    return jsonify({'event_actions': event_actions})
+
+@alerts_bp.route('/event-results', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_event_results():
+    """获取事件结果列表"""
+    event_results = alert_service.get_event_results()
+    return jsonify({'event_results': event_results})
+
+@alerts_bp.route('/init-data', methods=['POST'])
+@jwt_required()
+@handle_errors
+def init_alert_data():
+    """初始化告警系统数据"""
+    user_id = get_jwt_identity()
+    # 检查是否为管理员
+    user = User.query.get(user_id)
+    if not user or user.role != 'admin':
+        return jsonify({'message': '只有管理员可以初始化系统数据'}), 403
+    
+    try:
+        from backend.app.alerts.init_data import init_all_alert_data
+        init_all_alert_data()
+        return jsonify({'message': '告警系统数据初始化成功'})
+    except Exception as e:
+        return jsonify({'error': f'初始化失败: {str(e)}'}), 500

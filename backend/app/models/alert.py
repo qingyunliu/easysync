@@ -3,6 +3,148 @@ from backend import db
 from backend.app.models.base import BaseModel
 
 
+class AlertResourceType(BaseModel):
+    """告警资源类型模型 - 存储可监控的资源类型"""
+    __tablename__ = 'alert_resource_types'
+    
+    name = db.Column(db.String(50), nullable=False, comment='资源类型名称')
+    code = db.Column(db.String(50), nullable=False, unique=True, comment='资源类型代码')
+    description = db.Column(db.Text, comment='资源类型描述')
+    category = db.Column(db.String(50), nullable=False, comment='资源分类: system, storage, client, node等')
+    icon = db.Column(db.String(100), comment='资源类型图标')
+    sort_order = db.Column(db.Integer, default=0, comment='排序顺序')
+    enabled = db.Column(db.Boolean, default=True, comment='是否启用')
+    
+    # 关联关系
+    alert_items = db.relationship('AlertResourceItem', backref='resource_type', cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        data = super().to_dict()
+        data.update({
+            'name': self.name,
+            'code': self.code,
+            'description': self.description,
+            'category': self.category,
+            'icon': self.icon,
+            'sort_order': self.sort_order,
+            'enabled': self.enabled
+        })
+        return data
+
+
+class AlertResourceItem(BaseModel):
+    """告警资源条目模型 - 存储具体的监控指标"""
+    __tablename__ = 'alert_resource_items'
+    
+    resource_type_id = db.Column(db.String(36), db.ForeignKey('alert_resource_types.id'), nullable=False)
+    name = db.Column(db.String(50), nullable=False, comment='条目名称')
+    code = db.Column(db.String(50), nullable=False, comment='条目代码')
+    description = db.Column(db.Text, comment='条目描述')
+    unit = db.Column(db.String(20), comment='单位: %, MB, GB, ms等')
+    data_type = db.Column(db.String(20), default='float', comment='数据类型: float, int, string等')
+    default_threshold = db.Column(db.Float, comment='默认阈值')
+    min_value = db.Column(db.Float, comment='最小值')
+    max_value = db.Column(db.Float, comment='最大值')
+    operators = db.Column(db.JSON, comment='支持的比较操作符: >, >=, <, <=, ==, !=')
+    sort_order = db.Column(db.Integer, default=0, comment='排序顺序')
+    enabled = db.Column(db.Boolean, default=True, comment='是否启用')
+    
+    def to_dict(self):
+        data = super().to_dict()
+        data.update({
+            'resource_type_id': self.resource_type_id,
+            'name': self.name,
+            'code': self.code,
+            'description': self.description,
+            'unit': self.unit,
+            'data_type': self.data_type,
+            'default_threshold': self.default_threshold,
+            'min_value': self.min_value,
+            'max_value': self.max_value,
+            'operators': self.operators,
+            'sort_order': self.sort_order,
+            'enabled': self.enabled
+        })
+        return data
+
+
+class AlertEventType(BaseModel):
+    """告警事件类型模型 - 存储可监控的事件类型"""
+    __tablename__ = 'alert_event_types'
+    
+    name = db.Column(db.String(50), nullable=False, comment='事件类型名称')
+    code = db.Column(db.String(50), nullable=False, unique=True, comment='事件类型代码')
+    description = db.Column(db.Text, comment='事件类型描述')
+    category = db.Column(db.String(50), nullable=False, comment='事件分类: user, storage, client, node, sync等')
+    icon = db.Column(db.String(100), comment='事件类型图标')
+    sort_order = db.Column(db.Integer, default=0, comment='排序顺序')
+    enabled = db.Column(db.Boolean, default=True, comment='是否启用')
+    
+    # 关联关系
+    event_actions = db.relationship('AlertEventAction', backref='event_type', cascade='all, delete-orphan')
+    
+    def to_dict(self):
+        data = super().to_dict()
+        data.update({
+            'name': self.name,
+            'code': self.code,
+            'description': self.description,
+            'category': self.category,
+            'icon': self.icon,
+            'sort_order': self.sort_order,
+            'enabled': self.enabled
+        })
+        return data
+
+
+class AlertEventAction(BaseModel):
+    """告警事件动作模型 - 存储具体的事件动作"""
+    __tablename__ = 'alert_event_actions'
+    
+    event_type_id = db.Column(db.String(36), db.ForeignKey('alert_event_types.id'), nullable=False)
+    name = db.Column(db.String(50), nullable=False, comment='动作名称')
+    code = db.Column(db.String(50), nullable=False, comment='动作代码')
+    description = db.Column(db.Text, comment='动作描述')
+    sort_order = db.Column(db.Integer, default=0, comment='排序顺序')
+    enabled = db.Column(db.Boolean, default=True, comment='是否启用')
+    
+    def to_dict(self):
+        data = super().to_dict()
+        data.update({
+            'event_type_id': self.event_type_id,
+            'name': self.name,
+            'code': self.code,
+            'description': self.description,
+            'sort_order': self.sort_order,
+            'enabled': self.enabled
+        })
+        return data
+
+
+class AlertEventResult(BaseModel):
+    """告警事件结果模型 - 存储事件结果类型"""
+    __tablename__ = 'alert_event_results'
+    
+    name = db.Column(db.String(20), nullable=False, comment='结果名称')
+    code = db.Column(db.String(20), nullable=False, unique=True, comment='结果代码')
+    description = db.Column(db.Text, comment='结果描述')
+    color = db.Column(db.String(20), comment='显示颜色')
+    sort_order = db.Column(db.Integer, default=0, comment='排序顺序')
+    enabled = db.Column(db.Boolean, default=True, comment='是否启用')
+    
+    def to_dict(self):
+        data = super().to_dict()
+        data.update({
+            'name': self.name,
+            'code': self.code,
+            'description': self.description,
+            'color': self.color,
+            'sort_order': self.sort_order,
+            'enabled': self.enabled
+        })
+        return data
+
+
 class AlertPolicy(BaseModel):
     """告警策略模型"""
     __tablename__ = 'alert_policies'

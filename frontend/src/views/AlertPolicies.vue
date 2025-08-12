@@ -217,9 +217,12 @@
             <el-col :span="12">
               <el-form-item label="资源类型" prop="resource_type">
                 <el-select v-model="policyForm.resource_type" placeholder="请选择资源类型" @change="handleResourceTypeChange">
-                  <el-option label="客户端" value="client" />
-                  <el-option label="同步代理节点" value="proxy_node" />
-                  <el-option label="存储节点" value="storage_node" />
+                  <el-option 
+                    v-for="type in resourceTypes" 
+                    :key="type.code" 
+                    :label="type.name" 
+                    :value="type.code"
+                  />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -240,12 +243,14 @@
           
           <el-form-item label="告警项目" prop="alert_items">
             <el-checkbox-group v-model="policyForm.alert_items">
-              <el-checkbox label="cpu">CPU使用率</el-checkbox>
-              <el-checkbox label="memory">内存使用率</el-checkbox>
-              <el-checkbox label="disk">磁盘使用率</el-checkbox>
-              <el-checkbox label="network">网络流量</el-checkbox>
-              <el-checkbox label="connections">连接数</el-checkbox>
-              <el-checkbox label="response_time">响应时间</el-checkbox>
+              <el-checkbox 
+                v-for="item in resourceItems" 
+                :key="item.code" 
+                :label="item.code"
+              >
+                {{ item.name }}
+                <span v-if="item.unit" class="item-unit">({{ item.unit }})</span>
+              </el-checkbox>
             </el-checkbox-group>
           </el-form-item>
           
@@ -303,22 +308,25 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="事件类型" prop="event_type">
-                <el-select v-model="policyForm.event_type" placeholder="请选择事件类型">
-                  <el-option label="存储" value="storage" />
-                  <el-option label="客户端" value="client" />
-                  <el-option label="代理" value="agent" />
-                  <el-option label="系统" value="system" />
+                <el-select v-model="policyForm.event_type" placeholder="请选择事件类型" @change="handleEventTypeChange">
+                  <el-option 
+                    v-for="type in eventTypes" 
+                    :key="type.code" 
+                    :label="type.name" 
+                    :value="type.code"
+                  />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
               <el-form-item label="事件动作" prop="event_actions">
                 <el-select v-model="policyForm.event_actions" multiple placeholder="请选择事件动作">
-                  <el-option label="创建" value="create" />
-                  <el-option label="更新" value="update" />
-                  <el-option label="删除" value="delete" />
-                  <el-option label="启动" value="start" />
-                  <el-option label="停止" value="stop" />
+                  <el-option 
+                    v-for="action in eventActions" 
+                    :key="action.code" 
+                    :label="action.name" 
+                    :value="action.code"
+                  />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -326,9 +334,13 @@
           
           <el-form-item label="事件结果" prop="event_results">
             <el-checkbox-group v-model="policyForm.event_results">
-              <el-checkbox label="success">成功</el-checkbox>
-              <el-checkbox label="failure">失败</el-checkbox>
-              <el-checkbox label="timeout">超时</el-checkbox>
+              <el-checkbox 
+                v-for="result in eventResults" 
+                :key="result.code" 
+                :label="result.code"
+              >
+                {{ result.name }}
+              </el-checkbox>
             </el-checkbox-group>
           </el-form-item>
         </el-card>
@@ -676,6 +688,13 @@ const notificationChannels = ref([])
 const templates = ref([])
 const policyFormRef = ref()
 
+// 告警定义数据
+const resourceTypes = ref([])
+const resourceItems = ref([])
+const eventTypes = ref([])
+const eventActions = ref([])
+const eventResults = ref([])
+
 // 筛选表单
 const filterForm = reactive({
   policy_type: '',
@@ -848,6 +867,46 @@ const loadTemplates = async () => {
   }
 }
 
+// 新增：加载告警定义数据
+const loadAlertDefinitions = async () => {
+  try {
+    // 加载资源类型
+    const resourceTypesResponse = await axios.get('/api/alerts/resource-types')
+    resourceTypes.value = resourceTypesResponse.data.data || []
+    
+    // 加载事件类型
+    const eventTypesResponse = await axios.get('/api/alerts/event-types')
+    eventTypes.value = eventTypesResponse.data.data || []
+    
+    // 加载事件结果
+    const eventResultsResponse = await axios.get('/api/alerts/event-results')
+    eventResults.value = eventResultsResponse.data.data || []
+    
+  } catch (error) {
+    console.error('获取告警定义数据失败:', error)
+  }
+}
+
+// 新增：根据资源类型加载资源条目
+const loadResourceItems = async (resourceTypeCode) => {
+  try {
+    const response = await axios.get(`/api/alerts/resource-items?resource_type=${resourceTypeCode}`)
+    resourceItems.value = response.data.data || []
+  } catch (error) {
+    console.error('获取资源条目失败:', error)
+  }
+}
+
+// 新增：根据事件类型加载事件动作
+const loadEventActions = async (eventTypeCode) => {
+  try {
+    const response = await axios.get(`/api/alerts/event-actions?event_type=${eventTypeCode}`)
+    eventActions.value = response.data.data || []
+  } catch (error) {
+    console.error('获取事件动作失败:', error)
+  }
+}
+
 const resetFilter = () => {
   filterForm.policy_type = ''
   filterForm.level = ''
@@ -940,9 +999,23 @@ const handlePolicyTypeChange = () => {
   }
 }
 
-const handleResourceTypeChange = () => {
+const handleResourceTypeChange = async () => {
   policyForm.monitored_resources = []
+  policyForm.alert_items = []
+  policyForm.trigger_rules = {}
+  
+  if (policyForm.resource_type) {
+    await loadResourceItems(policyForm.resource_type)
+  }
   loadResources()
+}
+
+const handleEventTypeChange = async () => {
+  policyForm.event_actions = []
+  
+  if (policyForm.event_type) {
+    await loadEventActions(policyForm.event_type)
+  }
 }
 
 const openResourceSelector = () => {
@@ -1092,25 +1165,29 @@ const getPolicyTypeTagType = (type) => {
   return types[type] || 'info'
 }
 
-const getResourceTypeLabel = (type) => {
-  const labels = {
-    proxy_node: '源端同步代理',
-    storage_node: '存储节点',
-    client: '客户端'
-  }
-  return labels[type] || type
+const getResourceTypeLabel = (code) => {
+  const type = resourceTypes.value.find(t => t.code === code)
+  return type ? type.name : code
 }
 
-const getAlertItemLabel = (item) => {
-  const labels = {
-    cpu: 'CPU使用率',
-    memory: '内存使用率',
-    disk: '磁盘使用率',
-    network: '网络流量',
-    connections: '连接数',
-    response_time: '响应时间'
-  }
-  return labels[item] || item
+const getAlertItemLabel = (code) => {
+  const item = resourceItems.value.find(i => i.code === code)
+  return item ? item.name : code
+}
+
+const getEventTypeLabel = (code) => {
+  const type = eventTypes.value.find(t => t.code === code)
+  return type ? type.name : code
+}
+
+const getEventActionLabel = (code) => {
+  const action = eventActions.value.find(a => a.code === code)
+  return action ? action.name : code
+}
+
+const getEventResultLabel = (code) => {
+  const result = eventResults.value.find(r => r.code === code)
+  return result ? result.name : code
 }
 
 const formatDate = (date) => {
@@ -1148,6 +1225,7 @@ onMounted(() => {
   loadNotificationTargets()
   loadNotificationChannels()
   loadTemplates()
+  loadAlertDefinitions() // 新增：加载告警定义数据
 })
 </script>
 
@@ -1230,8 +1308,14 @@ onMounted(() => {
 
 .more-items {
   font-size: 12px;
-  color: (--text-color);
+  color: var(--text-secondary);
   margin-top: 4px;
+}
+
+.item-unit {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 4px;
 }
 
 /* 侧拉抽屉样式 */

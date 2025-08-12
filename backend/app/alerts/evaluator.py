@@ -122,8 +122,8 @@ class AlertEvaluator:
                     return False
             
             # 检查频率限制（可选）
-            if self._check_event_frequency_limit(policy, event):
-                return True
+            if not self._check_event_frequency_limit(policy, event):
+                return False
             
             return True
             

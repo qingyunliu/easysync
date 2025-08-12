@@ -6,7 +6,11 @@ from .storage import Storage
 from .client import Client
 from .node import Node, NodeStatus
 from .sync import SyncRule
-from .alert import AlertPolicy, AlertInstance, AlertTemplate
+from .alert import (
+    AlertPolicy, AlertInstance, AlertTemplate, 
+    AlertResourceType, AlertResourceItem, 
+    AlertEventType, AlertEventAction, AlertEventResult
+)
 from .notification import Notification, NotificationChannel, NotificationTarget, NotificationSetting
 from .command import RealTimeCommand
 
@@ -29,8 +33,14 @@ __all__ = [
     'TaskPriority',
     'TaskLog',
     'AlertPolicy',
+    'AlertInstance',
+    'AlertTemplate',
+    'AlertResourceType',
+    'AlertResourceItem',
+    'AlertEventType',
+    'AlertEventAction',
+    'AlertEventResult',
     'NotificationChannel',
     'NotificationTarget',
-    'AlertInstance',
     'RealTimeCommand'
 ] 

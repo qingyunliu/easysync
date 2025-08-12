@@ -1,303 +1,160 @@
 #!/usr/bin/env python3
 """
 告警系统测试脚本
-测试告警策略、通知渠道和通知对象的功能
+用于验证告警系统的各项功能
 """
 
-import requests
-import json
-import time
-from datetime import datetime
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# 配置
-BASE_URL = "http://localhost:5000/api"
-HEADERS = {
-    "Content-Type": "application/json",
-    "Authorization": "Bearer YOUR_TOKEN_HERE"  # 需要替换为实际的token
-}
+from backend import create_app, db
+from backend.app.models.alert import (
+    AlertResourceType, AlertResourceItem, 
+    AlertEventType, AlertEventAction, AlertEventResult,
+    AlertPolicy, AlertInstance, AlertTemplate
+)
+from backend.app.models.user import User
+from backend.app.alerts.services import AlertService
+from backend.app.events.service import event_service
+from backend.app.alerts.init_data import init_all_alert_data
 
 def test_alert_system():
     """测试告警系统功能"""
-    print("=== 告警系统功能测试 ===\n")
+    app = create_app()
     
-    # 1. 测试创建通知渠道
-    print("1. 测试创建通知渠道...")
-    channel_data = {
-        "name": "测试邮件渠道",
-        "channel_type": "email",
-        "enabled": True,
-        "retry_count": 3,
-        "rate_limit": 100,
-        "timeout": 30,
-        "is_default": True,
-        "config": {
-            "smtp_server": "smtp.gmail.com",
-            "smtp_port": 587,
-            "username": "test@example.com",
-            "password": "password123"
-        }
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/notifications/channels", 
-                               headers=HEADERS, 
-                               json=channel_data)
-        if response.status_code == 201:
-            channel = response.json()["channel"]
-            print(f"✓ 通知渠道创建成功: {channel['name']}")
-            channel_id = channel["id"]
-        else:
-            print(f"✗ 通知渠道创建失败: {response.text}")
-            return
-    except Exception as e:
-        print(f"✗ 通知渠道创建异常: {e}")
-        return
-    
-    # 2. 测试创建通知对象
-    print("\n2. 测试创建通知对象...")
-    target_data = {
-        "name": "测试通知对象",
-        "target_type": "email",
-        "enabled": True,
-        "description": "测试用的通知对象",
-        "alert_policies": [],
-        "channels": [channel_id],
-        "target_config": {
-            "email": "admin@example.com"
-        }
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/alerts/targets", 
-                               headers=HEADERS, 
-                               json=target_data)
-        if response.status_code == 201:
-            target = response.json()["target"]
-            print(f"✓ 通知对象创建成功: {target['name']}")
-            target_id = target["id"]
-        else:
-            print(f"✗ 通知对象创建失败: {response.text}")
-            return
-    except Exception as e:
-        print(f"✗ 通知对象创建异常: {e}")
-        return
-    
-    # 3. 测试创建资源告警策略
-    print("\n3. 测试创建资源告警策略...")
-    resource_policy_data = {
-        "name": "CPU使用率告警",
-        "description": "监控CPU使用率，超过80%时告警",
-        "level": "warning",
-        "policy_type": "resource",
-        "enabled": True,
-        "resource_type": "system",
-        "monitored_resources": ["system"],
-        "alert_items": ["CPU"],
-        "trigger_rules": {
-            "CPU": {
-                "operator": ">",
-                "threshold": 80,
-                "duration": 300
-            }
-        },
-        "notification_targets": [target_id]
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/alerts/policies", 
-                               headers=HEADERS, 
-                               json=resource_policy_data)
-        if response.status_code == 201:
-            policy = response.json()["policy"]
-            print(f"✓ 资源告警策略创建成功: {policy['name']}")
-            resource_policy_id = policy["id"]
-        else:
-            print(f"✗ 资源告警策略创建失败: {response.text}")
-            return
-    except Exception as e:
-        print(f"✗ 资源告警策略创建异常: {e}")
-        return
-    
-    # 3.1. 测试创建事件告警策略
-    print("\n3.1. 测试创建事件告警策略...")
-    event_policy_data = {
-        "name": "存储操作失败告警",
-        "description": "监控存储操作失败事件",
-        "level": "error",
-        "policy_type": "event",
-        "enabled": True,
-        "event_type": "storage",
-        "event_actions": ["create", "delete", "update"],
-        "event_results": ["failed", "error"],
-        "notification_targets": [target_id]
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/alerts/policies", 
-                               headers=HEADERS, 
-                               json=event_policy_data)
-        if response.status_code == 201:
-            policy = response.json()["policy"]
-            print(f"✓ 事件告警策略创建成功: {policy['name']}")
-            event_policy_id = policy["id"]
-        else:
-            print(f"✗ 事件告警策略创建失败: {response.text}")
-            return
-    except Exception as e:
-        print(f"✗ 事件告警策略创建异常: {e}")
-        return
-    
-    try:
-        response = requests.post(f"{BASE_URL}/alerts/policies", 
-                               headers=HEADERS, 
-                               json=policy_data)
-        if response.status_code == 201:
-            policy = response.json()["policy"]
-            print(f"✓ 告警策略创建成功: {policy['name']}")
-            policy_id = policy["id"]
-        else:
-            print(f"✗ 告警策略创建失败: {response.text}")
-            return
-    except Exception as e:
-        print(f"✗ 告警策略创建异常: {e}")
-        return
-    
-    # 4. 测试获取告警策略列表
-    print("\n4. 测试获取告警策略列表...")
-    try:
-        response = requests.get(f"{BASE_URL}/alerts/policies", headers=HEADERS)
-        if response.status_code == 200:
-            policies = response.json()["policies"]
-            print(f"✓ 获取到 {len(policies)} 个告警策略")
-            for policy in policies:
-                print(f"  - {policy['name']} ({policy['policy_type']})")
-        else:
-            print(f"✗ 获取告警策略失败: {response.text}")
-    except Exception as e:
-        print(f"✗ 获取告警策略异常: {e}")
-    
-    # 5. 测试获取通知渠道列表
-    print("\n5. 测试获取通知渠道列表...")
-    try:
-        response = requests.get(f"{BASE_URL}/notifications/channels", headers=HEADERS)
-        if response.status_code == 200:
-            channels = response.json()["channels"]
-            print(f"✓ 获取到 {len(channels)} 个通知渠道")
-            for channel in channels:
-                print(f"  - {channel['name']} ({channel['channel_type']})")
-        else:
-            print(f"✗ 获取通知渠道失败: {response.text}")
-    except Exception as e:
-        print(f"✗ 获取通知渠道异常: {e}")
-    
-    # 6. 测试获取通知对象列表
-    print("\n6. 测试获取通知对象列表...")
-    try:
-        response = requests.get(f"{BASE_URL}/notifications/targets", headers=HEADERS)
-        if response.status_code == 200:
-            targets = response.json()["targets"]
-            print(f"✓ 获取到 {len(targets)} 个通知对象")
-            for target in targets:
-                print(f"  - {target['name']} ({target['target_type']})")
-        else:
-            print(f"✗ 获取通知对象失败: {response.text}")
-    except Exception as e:
-        print(f"✗ 获取通知对象异常: {e}")
-    
-    # 7. 测试告警策略模板
-    print("\n7. 测试获取告警策略模板...")
-    try:
-        response = requests.get(f"{BASE_URL}/alerts/templates", headers=HEADERS)
-        if response.status_code == 200:
-            templates = response.json()["templates"]
-            print(f"✓ 获取到 {len(templates)} 个告警策略模板")
-            for template in templates:
-                print(f"  - {template['name']} ({template['policy_type']})")
-        else:
-            print(f"✗ 获取告警策略模板失败: {response.text}")
-    except Exception as e:
-        print(f"✗ 获取告警策略模板异常: {e}")
-    
-    # 8. 测试获取可监控资源
-    print("\n8. 测试获取可监控资源...")
-    try:
-        response = requests.get(f"{BASE_URL}/alerts/resources", headers=HEADERS)
-        if response.status_code == 200:
-            resources = response.json()["resources"]
-            print("✓ 获取到可监控资源:")
-            for resource_type, resource_list in resources.items():
-                print(f"  - {resource_type}: {len(resource_list)} 个")
-        else:
-            print(f"✗ 获取可监控资源失败: {response.text}")
-    except Exception as e:
-        print(f"✗ 获取可监控资源异常: {e}")
-    
-    # 9. 测试获取可监控事件
-    print("\n9. 测试获取可监控事件...")
-    try:
-        response = requests.get(f"{BASE_URL}/alerts/events", headers=HEADERS)
-        if response.status_code == 200:
-            data = response.json()
-            events = data["events"]
-            results = data["results"]
-            print("✓ 获取到可监控事件:")
-            for event_type, event_list in events.items():
-                print(f"  - {event_type}: {len(event_list)} 个")
-            print(f"  - 结果类型: {len(results)} 个")
-            for result in results:
-                print(f"    * {result['name']} ({result['id']})")
-        else:
-            print(f"✗ 获取可监控事件失败: {response.text}")
-    except Exception as e:
-        print(f"✗ 获取可监控事件异常: {e}")
-    
-    print("\n=== 测试完成 ===")
+    with app.app_context():
+        try:
+            print("=== 告警系统测试开始 ===")
+            
+            # 1. 初始化基础数据
+            print("\n1. 初始化基础数据...")
+            init_all_alert_data()
+            print("✓ 基础数据初始化完成")
+            
+            # 2. 测试资源类型
+            print("\n2. 测试资源类型...")
+            resource_types = AlertResourceType.query.all()
+            print(f"✓ 找到 {len(resource_types)} 个资源类型:")
+            for rt in resource_types:
+                print(f"  - {rt.name} ({rt.code})")
+            
+            # 3. 测试事件类型
+            print("\n3. 测试事件类型...")
+            event_types = AlertEventType.query.all()
+            print(f"✓ 找到 {len(event_types)} 个事件类型:")
+            for et in event_types:
+                print(f"  - {et.name} ({et.code})")
+            
+            # 4. 测试事件结果
+            print("\n4. 测试事件结果...")
+            event_results = AlertEventResult.query.all()
+            print(f"✓ 找到 {len(event_results)} 个事件结果:")
+            for er in event_results:
+                print(f"  - {er.name} ({er.code})")
+            
+            # 5. 测试告警服务
+            print("\n5. 测试告警服务...")
+            alert_service = AlertService()
+            
+            # 获取资源类型
+            resource_types_data = alert_service.get_resource_types()
+            print(f"✓ 获取到 {len(resource_types_data)} 个资源类型")
+            
+            # 获取事件类型
+            event_types_data = alert_service.get_event_types()
+            print(f"✓ 获取到 {len(event_types_data)} 个事件类型")
+            
+            # 获取事件结果
+            event_results_data = alert_service.get_event_results()
+            print(f"✓ 获取到 {len(event_results_data)} 个事件结果")
+            
+            # 6. 测试事件服务
+            print("\n6. 测试事件服务...")
+            
+            # 创建测试用户
+            test_user = User.query.first()
+            if not test_user:
+                print("⚠ 没有找到测试用户，跳过事件测试")
+            else:
+                # 创建用户事件
+                user_event = event_service.create_user_event(
+                    user_id=test_user.id,
+                    event_action="login",
+                    event_result="success",
+                    message="用户登录成功",
+                    details={"ip": "192.168.1.100", "user_agent": "Mozilla/5.0"}
+                )
+                print(f"✓ 创建用户事件: {user_event.id}")
+                
+                # 创建存储事件
+                storage_event = event_service.create_storage_event(
+                    user_id=test_user.id,
+                    event_action="add_storage",
+                    event_result="failed",
+                    message="添加存储失败",
+                    details={"storage_name": "test-storage", "error": "connection timeout"}
+                )
+                print(f"✓ 创建存储事件: {storage_event.id}")
+                
+                # 获取事件列表
+                events = event_service.get_events(user_id=test_user.id, page=1, per_page=10)
+                print(f"✓ 获取到 {len(events['events'])} 个事件")
+                
+                # 获取事件统计
+                stats = event_service.get_event_statistics(user_id=test_user.id, time_range='24h')
+                print(f"✓ 事件统计: {stats}")
+            
+            # 7. 测试告警策略创建
+            print("\n7. 测试告警策略创建...")
+            if test_user:
+                # 创建资源告警策略
+                resource_policy_data = {
+                    "name": "测试CPU告警",
+                    "description": "测试CPU使用率告警策略",
+                    "policy_type": "resource",
+                    "resource_type": "system",
+                    "alert_items": ["cpu_percent"],
+                    "trigger_rules": {
+                        "cpu_percent": {
+                            "operator": ">",
+                            "threshold": 80.0,
+                            "duration": 60
+                        }
+                    },
+                    "level": "warning",
+                    "enabled": True
+                }
+                
+                resource_policy = alert_service.create_policy(resource_policy_data, test_user.id)
+                print(f"✓ 创建资源告警策略: {resource_policy.id}")
+                
+                # 创建事件告警策略
+                event_policy_data = {
+                    "name": "测试存储失败告警",
+                    "description": "测试存储操作失败告警策略",
+                    "policy_type": "event",
+                    "event_type": "storage",
+                    "event_actions": ["add_storage", "delete_storage"],
+                    "event_results": ["failed", "error"],
+                    "level": "error",
+                    "enabled": True
+                }
+                
+                event_policy = alert_service.create_policy(event_policy_data, test_user.id)
+                print(f"✓ 创建事件告警策略: {event_policy.id}")
+                
+                # 获取策略列表
+                policies = alert_service.get_policies(user_id=test_user.id, page=1, per_page=10)
+                print(f"✓ 获取到 {len(policies['policies'])} 个告警策略")
+            
+            print("\n=== 告警系统测试完成 ===")
+            print("✓ 所有测试通过！")
+            
+        except Exception as e:
+            print(f"❌ 测试失败: {e}")
+            import traceback
+            traceback.print_exc()
 
-def test_notification_system():
-    """测试通知系统功能"""
-    print("\n=== 通知系统功能测试 ===\n")
-    
-    # 测试发送通知
-    print("测试发送通知...")
-    notification_data = {
-        "level": "warning",
-        "title": "测试告警",
-        "content": "这是一个测试告警消息",
-        "metadata": {
-            "test": True,
-            "timestamp": datetime.now().isoformat()
-        }
-    }
-    
-    try:
-        response = requests.post(f"{BASE_URL}/notifications", 
-                               headers=HEADERS, 
-                               json=notification_data)
-        if response.status_code == 200:
-            print("✓ 测试通知发送成功")
-        else:
-            print(f"✗ 测试通知发送失败: {response.text}")
-    except Exception as e:
-        print(f"✗ 测试通知发送异常: {e}")
-
-if __name__ == "__main__":
-    print("告警系统测试脚本")
-    print("请确保后端服务正在运行，并更新脚本中的TOKEN")
-    print("=" * 50)
-    
-    # 检查服务是否可用
-    try:
-        response = requests.get(f"{BASE_URL}/health", timeout=5)
-        if response.status_code == 200:
-            print("✓ 后端服务连接正常")
-        else:
-            print("✗ 后端服务连接异常")
-            exit(1)
-    except Exception as e:
-        print(f"✗ 无法连接到后端服务: {e}")
-        print("请确保后端服务正在运行在 http://localhost:5000")
-        exit(1)
-    
-    # 运行测试
-    test_alert_system()
-    test_notification_system() 
+if __name__ == '__main__':
+    test_alert_system() 
