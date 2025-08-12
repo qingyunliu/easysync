@@ -129,6 +129,25 @@ class AlertService:
     def create_policy(self, data: dict, user_id: str) -> AlertPolicy:
         """创建告警策略"""
         try:
+            # 类型匹配验证
+            from backend.app.utils.type_matcher import TypeMatcher
+            validation_result = TypeMatcher.validate_multi_channel_configuration(
+                notification_channels=data.get('notification_channels', []),
+                template_id=data.get('template_id'),
+                notification_targets=data.get('notification_targets', []),
+                user_id=user_id
+            )
+            
+            if not validation_result['valid']:
+                raise AlertOperationError("配置验证失败: " + "; ".join(validation_result['errors']))
+            
+            if validation_result['warnings']:
+                logger.warning(f"告警策略配置警告: {validation_result['warnings']}")
+            
+            # 记录兼容性信息
+            if validation_result.get('compatibility_info'):
+                logger.info(f"多渠道配置信息: {validation_result['compatibility_info']['message']}")
+            
             # 验证模板是否存在
             template_id = data.get('template_id')
             if template_id:
@@ -188,6 +207,25 @@ class AlertService:
         """更新告警策略"""
         try:
             policy = self.get_policy(policy_id, user_id)
+            
+            # 类型匹配验证
+            from backend.app.utils.type_matcher import TypeMatcher
+            validation_result = TypeMatcher.validate_multi_channel_configuration(
+                notification_channels=data.get('notification_channels', []),
+                template_id=data.get('template_id'),
+                notification_targets=data.get('notification_targets', []),
+                user_id=user_id
+            )
+            
+            if not validation_result['valid']:
+                raise AlertOperationError("配置验证失败: " + "; ".join(validation_result['errors']))
+            
+            if validation_result['warnings']:
+                logger.warning(f"告警策略配置警告: {validation_result['warnings']}")
+            
+            # 记录兼容性信息
+            if validation_result.get('compatibility_info'):
+                logger.info(f"多渠道配置信息: {validation_result['compatibility_info']['message']}")
             
             # 验证模板是否存在
             template_id = data.get('template_id')

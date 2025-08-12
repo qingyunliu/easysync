@@ -367,29 +367,48 @@
           
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="告警模板" prop="template_id">
-                <el-select v-model="policyForm.template_id" placeholder="请选择告警模板" clearable>
-                  <el-option 
-                    v-for="template in templates" 
-                    :key="template.id" 
-                    :label="template.name" 
-                    :value="template.id"
-                  />
-                </el-select>
-                <div class="form-tip">选择用于发送通知的模板</div>
-              </el-form-item>
-            </el-col>
-            <el-col :span="12">
               <el-form-item label="通知渠道" prop="notification_channels">
-                <el-select v-model="policyForm.notification_channels" multiple placeholder="请选择通知渠道">
+                <el-select 
+                  v-model="policyForm.notification_channels" 
+                  multiple 
+                  placeholder="请选择通知渠道"
+                  @change="handleNotificationChannelsChange"
+                >
                   <el-option 
                     v-for="channel in notificationChannels" 
                     :key="channel.id" 
-                    :label="channel.name" 
+                    :label="`${channel.name} (${getChannelTypeName(channel.channel_type)})`" 
                     :value="channel.id"
                   />
                 </el-select>
-                <div class="form-tip">选择通知发送的渠道</div>
+                <div class="form-tip">选择通知发送的渠道，将自动筛选兼容的模板和对象</div>
+                <!-- 兼容性信息提示 -->
+                <div v-if="compatibilityInfo.message" class="compatibility-info">
+                  <el-alert 
+                    :title="compatibilityInfo.message" 
+                    :type="compatibilityInfo.compatible ? 'info' : 'warning'"
+                    :closable="false"
+                    show-icon
+                  />
+                </div>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="告警模板" prop="template_id">
+                <el-select 
+                  v-model="policyForm.template_id" 
+                  placeholder="请选择告警模板" 
+                  clearable
+                  :disabled="!policyForm.notification_channels.length"
+                >
+                  <el-option 
+                    v-for="template in compatibleTemplates" 
+                    :key="template.id" 
+                    :label="`${template.name} (${getTemplateTypeName(template.template_type)})`" 
+                    :value="template.id"
+                  />
+                </el-select>
+                <div class="form-tip">选择用于发送通知的模板（根据渠道类型自动筛选）</div>
               </el-form-item>
             </el-col>
           </el-row>
@@ -397,10 +416,20 @@
           <el-row :gutter="20">
             <el-col :span="12">
               <el-form-item label="通知对象" prop="notification_targets">
-                <el-button @click="openNotificationSelector" type="primary" plain>
-                  选择对象 ({{ policyForm.notification_targets?.length || 0 }})
-                </el-button>
-                <div class="form-tip">选择接收通知的目标对象</div>
+                <el-select 
+                  v-model="policyForm.notification_targets" 
+                  multiple 
+                  placeholder="请选择通知对象"
+                  :disabled="!policyForm.notification_channels.length"
+                >
+                  <el-option 
+                    v-for="target in compatibleTargets" 
+                    :key="target.id" 
+                    :label="`${target.name} (${getTargetTypeName(target.target_type)})`" 
+                    :value="target.id"
+                  />
+                </el-select>
+                <div class="form-tip">选择接收通知的目标对象（根据渠道类型自动筛选）</div>
               </el-form-item>
             </el-col>
             <el-col :span="12">
@@ -700,6 +729,9 @@ const availableResources = ref([])
 const notificationTargets = ref([])
 const notificationChannels = ref([])
 const templates = ref([])
+const compatibleTemplates = ref([])
+const compatibleTargets = ref([])
+const compatibilityInfo = ref({})
 const policyFormRef = ref()
 
 // 告警定义数据
@@ -918,6 +950,79 @@ const getNotificationTargetName = (targetId) => {
   const target = notificationTargets.value.find(t => t.id === targetId)
   return target ? target.name : targetId
 }
+
+// 处理通知渠道变化
+const handleNotificationChannelsChange = async () => {
+  if (!policyForm.notification_channels.length) {
+    compatibleTemplates.value = []
+    compatibleTargets.value = []
+    policyForm.template_id = ''
+    policyForm.notification_targets = []
+    return
+  }
+  
+  try {
+    // 获取选择的渠道类型
+    const selectedChannels = notificationChannels.value.filter(
+      channel => policyForm.notification_channels.includes(channel.id)
+    )
+    const channelTypes = selectedChannels.map(channel => channel.channel_type)
+    
+    // 获取兼容的模板
+    const templatesQueryString = channelTypes.map(type => `channel_types=${encodeURIComponent(type)}`).join('&')
+    const templatesResponse = await axios.get(`/api/notifications/compatible-templates?${templatesQueryString}`)
+    compatibleTemplates.value = templatesResponse.data.templates || []
+    
+    // 获取兼容的通知对象
+    const targetsQueryString = channelTypes.map(type => `channel_types=${encodeURIComponent(type)}`).join('&')
+    const targetsResponse = await axios.get(`/api/notifications/compatible-targets?${targetsQueryString}`)
+    compatibleTargets.value = targetsResponse.data.targets || []
+    
+    // 获取兼容性信息
+    const compatibilityResponse = await axios.get(`/api/alerts/policies/compatibility-info?${templatesQueryString}`)
+    compatibilityInfo.value = compatibilityResponse.data
+    
+    // 清除不兼容的选择
+    if (policyForm.template_id) {
+      const templateExists = compatibleTemplates.value.find(t => t.id === policyForm.template_id)
+      if (!templateExists) {
+        policyForm.template_id = ''
+      }
+    }
+    
+    if (policyForm.notification_targets.length) {
+      policyForm.notification_targets = policyForm.notification_targets.filter(targetId => {
+        return compatibleTargets.value.find(t => t.id === targetId)
+      })
+    }
+    
+  } catch (error) {
+    console.error('获取兼容数据失败:', error)
+    ElMessage.error('获取兼容数据失败')
+  }
+}
+
+// 获取渠道类型显示名称
+const getChannelTypeName = (type) => {
+  const typeNames = {
+    'email': '邮件',
+    'sms': '短信',
+    'webhook': 'WebHook',
+    'dingtalk': '钉钉',
+    'slack': 'Slack'
+  }
+  return typeNames[type] || type
+}
+
+// 获取模板类型显示名称
+const getTemplateTypeName = (type) => {
+  return getChannelTypeName(type)
+}
+
+// 获取对象类型显示名称
+const getTargetTypeName = (type) => {
+  return getChannelTypeName(type)
+}
 const loadEventActions = async (eventTypeCode) => {
   try {
     const response = await axios.get(`/api/alerts/event-actions?event_type_code=${eventTypeCode}`)
@@ -940,7 +1045,7 @@ const openCreateDialog = () => {
   showCreateDialog.value = true
 }
 
-const editPolicy = (policy) => {
+const editPolicy = async (policy) => {
   editingPolicy.value = policy
   Object.assign(policyForm, {
     name: policy.name,
@@ -978,6 +1083,11 @@ const editPolicy = (policy) => {
   }
   
   showCreateDialog.value = true
+  
+  // 如果有通知渠道，加载兼容数据
+  if (policy.notification_channels && policy.notification_channels.length > 0) {
+    await handleNotificationChannelsChange()
+  }
 }
 
 const resetPolicyForm = () => {
@@ -1125,6 +1235,36 @@ const savePolicy = async () => {
     
     const data = { ...policyForm }
     
+    // 验证配置
+    const validationResponse = await axios.post('/api/alerts/policies/validate-configuration', {
+      notification_channels: data.notification_channels,
+      template_id: data.template_id,
+      notification_targets: data.notification_targets
+    })
+    
+    const validationResult = validationResponse.data
+    
+    if (!validationResult.valid) {
+      ElMessage.error('配置验证失败: ' + validationResult.errors.join('; '))
+      return
+    }
+    
+    if (validationResult.warnings.length > 0) {
+      const confirmed = await ElMessageBox.confirm(
+        '配置存在以下警告，是否继续？\n' + validationResult.warnings.join('\n'),
+        '配置警告',
+        {
+          confirmButtonText: '继续',
+          cancelButtonText: '取消',
+          type: 'warning'
+        }
+      ).catch(() => false)
+      
+      if (!confirmed) {
+        return
+      }
+    }
+    
     if (editingPolicy.value) {
       await axios.put(`/api/alerts/policies/${editingPolicy.value.id}`, data)
       ElMessage.success('更新成功')
@@ -1256,6 +1396,14 @@ onMounted(() => {
 
 .text-muted {
   color: #909399;
+}
+
+.compatibility-info {
+  margin-top: 8px;
+}
+
+.compatibility-info .el-alert {
+  margin-bottom: 0;
 }
 .alert-policies-page {
   padding: 20px;

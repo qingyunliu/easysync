@@ -5,6 +5,7 @@ from backend.app.utils.decorators import handle_errors, require_user
 from . import notifications_bp
 from backend.app.models import User
 from backend.app.utils.logger import get_logger
+from backend.app.utils.type_matcher import TypeMatcher
 
 logger = get_logger(__name__)
 
@@ -271,6 +272,38 @@ def delete_notification_channel(channel_id):
     user_id = get_jwt_identity()
     notification_service.delete_channel(channel_id, user_id)
     return jsonify({'message': '通知渠道删除成功'})
+
+@notifications_bp.route('/compatible-templates', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_compatible_templates():
+    """根据渠道类型获取兼容的模板"""
+    user_id = get_jwt_identity()
+    # 处理前端传递的数组参数格式
+    channel_types = request.args.getlist('channel_types') or request.args.getlist('channel_types[]')
+    
+    if not channel_types:
+        return jsonify({'templates': []})
+    
+    templates = TypeMatcher.get_compatible_templates(channel_types, user_id)
+    
+    return jsonify({'templates': templates})
+
+@notifications_bp.route('/compatible-targets', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_compatible_targets():
+    """根据渠道类型获取兼容的通知对象"""
+    user_id = get_jwt_identity()
+    # 处理前端传递的数组参数格式
+    channel_types = request.args.getlist('channel_types') or request.args.getlist('channel_types[]')
+    
+    if not channel_types:
+        return jsonify({'targets': []})
+    
+    targets = TypeMatcher.get_compatible_targets(channel_types, user_id)
+    
+    return jsonify({'targets': targets})
 
 @notifications_bp.route('/targets', methods=['GET'])
 @jwt_required()

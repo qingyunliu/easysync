@@ -7,6 +7,7 @@ from backend.app.utils.decorators import handle_errors, require_user
 from . import alerts_bp
 import logging
 from backend.app.models.user import User
+from backend.app.utils.type_matcher import TypeMatcher
 
 logger = logging.getLogger(__name__)
 
@@ -103,10 +104,41 @@ def test_alert_policy(policy_id):
     """测试告警策略"""
     user_id = get_jwt_identity()
     result = alert_service.test_policy(policy_id, user_id)
-    return jsonify({
-        'message': '告警策略测试完成',
-        'result': result
-    })
+    return jsonify(result)
+
+@alerts_bp.route('/policies/validate-configuration', methods=['POST'])
+@jwt_required()
+@handle_errors
+def validate_policy_configuration():
+    """验证告警策略配置的类型匹配性"""
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    
+    validation_result = TypeMatcher.validate_multi_channel_configuration(
+        notification_channels=data.get('notification_channels', []),
+        template_id=data.get('template_id'),
+        notification_targets=data.get('notification_targets', []),
+        user_id=user_id
+    )
+    
+    return jsonify(validation_result)
+
+@alerts_bp.route('/policies/compatibility-info', methods=['GET'])
+@jwt_required()
+@handle_errors
+def get_compatibility_info():
+    """获取多渠道兼容性信息"""
+    user_id = get_jwt_identity()
+    channel_types = request.args.getlist('channel_types') or request.args.getlist('channel_types[]')
+    
+    if not channel_types:
+        return jsonify({
+            'compatible': False,
+            'message': '未选择任何渠道类型'
+        })
+    
+    compatibility_info = TypeMatcher.get_multi_channel_compatibility(channel_types)
+    return jsonify(compatibility_info)
 
 @alerts_bp.route('/statistics', methods=['GET'])
 @jwt_required()
