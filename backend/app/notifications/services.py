@@ -138,7 +138,8 @@ class NotificationService:
                 and_(NotificationChannel.user_id == data['user_id'], NotificationChannel.is_default == True)
             ).update({'is_default': False})
         
-            channel = NotificationChannel(
+        # 创建新渠道
+        channel = NotificationChannel(
             name=data['name'],
             channel_type=data['channel_type'],
             enabled=data.get('enabled', True),
@@ -148,13 +149,14 @@ class NotificationService:
             timeout=data.get('timeout', 30),
             is_default=data.get('is_default', False),
             user_id=data['user_id']
-            )
-            
-            db.session.add(channel)
-            db.session.commit()
-            
-            logger.info(f"Notification channel created: {channel.id}")
-            return channel
+        )
+        
+        db.session.add(channel)
+        db.session.commit()
+        
+        logger.info(f"Notification channel created: {channel.id}")
+        return channel
+        
             
     def update_channel(self, channel_id: str, user_id: str, data: Dict[str, Any]) -> NotificationChannel:
         """更新通知渠道"""
@@ -207,7 +209,7 @@ class NotificationService:
     
     def create_target(self, data: Dict[str, Any]) -> NotificationTarget:
         """创建通知对象"""
-        # 验证数据
+
         self._validate_target_data(data)
         
         target = NotificationTarget(
@@ -223,6 +225,10 @@ class NotificationService:
             
         db.session.add(target)
         db.session.commit()
+        
+        # 处理双向绑定：更新告警策略中的通知对象关联
+        if data.get('alert_policies'):
+            self._update_alert_policies_binding(target.id, data['alert_policies'], data['user_id'])
             
         logger.info(f"Notification target created: {target.id}")
         return target
@@ -244,6 +250,10 @@ class NotificationService:
         target.updated_at = datetime.utcnow()
         db.session.commit()
         
+        # 处理双向绑定：更新告警策略中的通知对象关联
+        if 'alert_policies' in data:
+            self._update_alert_policies_binding(target_id, data['alert_policies'], user_id)
+        
         logger.info(f"Notification target updated: {target_id}")
         return target
     
@@ -261,6 +271,66 @@ class NotificationService:
         
         logger.info(f"Notification target deleted: {target_id}")
 
+    def test_notification_channel(self, channel_id: str, user_id: str) -> None:
+        """测试通知渠道"""
+        channel = NotificationChannel.query.filter(
+            and_(NotificationChannel.id == channel_id, NotificationChannel.user_id == user_id)
+        ).first()
+
+        user_email = User.query.filter(User.id == user_id).first().email
+        
+        if not channel:
+            raise ValueError("通知渠道不存在")
+        
+        if channel.channel_type == 'email':
+            self._send_test_email(channel.config, 
+                                  email_from=channel.config.get('username'),
+                                  email_to=user_email,
+                                  username=channel.config.get('username'),
+                                  password=channel.config.get('password'),
+                                  smtp_server=channel.config.get('smtp_server'),
+                                  smtp_port=channel.config.get('smtp_port'))
+        elif channel.channel_type == 'dingtalk':
+            self._send_test_dingtalk(channel.config)
+        elif channel.channel_type == 'webhook':
+            self._send_test_webhook(channel.config)
+        elif channel.channel_type == 'sms':
+            self._send_test_sms(channel.config)
+        
+        logger.info(f"Notification channel tested: {channel_id}")
+        return True
+    
+    def _update_alert_policies_binding(self, target_id: str, alert_policies: list, user_id: str):
+        """更新告警策略与通知对象的双向绑定"""
+        try:
+            from backend.app.models.alert import AlertPolicy
+            
+            # 获取所有属于该用户的告警策略
+            all_policies = AlertPolicy.query.filter_by(user_id=user_id).all()
+            
+            # 更新每个告警策略的通知对象关联
+            for policy in all_policies:
+                current_targets = policy.notification_targets or []
+                
+                if policy.id in alert_policies:
+                    # 如果当前通知对象不在关联列表中，添加它
+                    if target_id not in current_targets:
+                        current_targets.append(target_id)
+                else:
+                    # 如果当前通知对象在关联列表中，移除它
+                    if target_id in current_targets:
+                        current_targets.remove(target_id)
+                
+                policy.notification_targets = current_targets
+                policy.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            logger.info(f"Updated alert policies binding for target: {target_id}")
+            
+        except Exception as e:
+            logger.error(f"Error updating alert policies binding: {e}")
+            # 不抛出异常，避免影响主流程
+        
     def test_notification(self, user_id, type=None):
         """测试通知发送"""
         setting = self.get_user_setting(user_id)
@@ -335,18 +405,23 @@ class NotificationService:
             'notificationInterval': 300  # 5分钟
         }
     
-    def _send_test_email(self, setting, to_email=None):
+    def _send_test_email(self, email_config, email_from=None, email_to=None, username=None, 
+                         password=None, smtp_server=None, smtp_port=None, to_email=None):
         """发送测试邮件，兼容 dict/config 和 ORM setting"""
-        get = setting.get if isinstance(setting, dict) else lambda k: getattr(setting, k, None)
+        get = email_config.get if isinstance(email_config, dict) else lambda k: getattr(email_config, k, None)
         msg = MIMEMultipart()
         msg['Subject'] = 'EasySync 通知测试'
-        msg['From'] = get('email')
-        msg['To'] = to_email or get('email')
+        msg['From'] = email_from or get('email')
+        msg['To'] = email_to or get('email')
         body = '这是一封测试邮件，用于验证邮件通知配置是否正确。'
         msg.attach(MIMEText(body, 'plain'))
+        smtp_server = smtp_server or get('smtp_host')
+        smtp_port = smtp_port or get('smtp_port')
+        username = username or get('smtp_username')
+        password = password or get('smtp_password')
         try:
-            server = smtplib.SMTP_SSL(get('smtp_host'), get('smtp_port'))
-            server.login(get('smtp_username'), get('smtp_password'))
+            server = smtplib.SMTP_SSL(smtp_server, smtp_port)
+            server.login(username, password)
             server.send_message(msg)
             server.quit()
         except Exception as e:
@@ -975,8 +1050,6 @@ class NotificationService:
             bytes /= 1024
         return f"{bytes:.2f} PB"
     
-    # =============== 节点相关通知 ===============
-    
     def notify_node_online(self, user_id: int, node_name: str, node_ip: str = None) -> None:
         """通知节点上线"""
         content = f'节点 {node_name} 已成功上线。'
@@ -1175,8 +1248,6 @@ class NotificationService:
             level='info'
         )
     
-    # =============== 任务扩展通知 ===============
-    
     def notify_task_paused(self, user_id: int, task_name: str, reason: str = None) -> None:
         """通知任务暂停"""
         content = f'同步任务 {task_name} 已暂停。'
@@ -1224,8 +1295,6 @@ class NotificationService:
             content=f'同步任务 {task_name} 正在进行第 {retry_count} 次重试（最多 {max_retries} 次）。',
             level='info'
         )
-    
-    # =============== 系统相关通知 ===============
     
     def notify_system_error(self, user_id: int, component: str, error_message: str) -> None:
         """通知系统错误"""
@@ -1277,8 +1346,6 @@ class NotificationService:
             level='warning'
         )
     
-    # =============== 安全相关通知 ===============
-    
     def notify_security_login_failed(self, user_id: int, ip_address: str, attempts: int) -> None:
         """通知登录失败"""
         self.create_notification(
@@ -1308,8 +1375,6 @@ class NotificationService:
             content=f'检测到未授权访问尝试。\n目标资源: {resource}\nIP地址: {ip_address}',
             level='error'
         )
-    
-    # =============== 数据同步相关通知 ===============
     
     def notify_sync_started(self, user_id: int, source: str, destination: str) -> None:
         """通知数据同步开始"""
@@ -1357,8 +1422,6 @@ class NotificationService:
             content=f'文件同步过程中发生冲突。\n文件路径: {file_path}\n冲突类型: {conflict_type}',
             level='warning'
         )
-    
-    # =============== 通用通知方法 ===============
     
     def send_notification(self, level: str, title: str, content: str, 
                          user_id: int = None, metadata: Dict[str, Any] = None) -> None:
@@ -1639,8 +1702,6 @@ class NotificationService:
             logger.error(f"Failed to send webhook notification: {str(e)}")
             raise
     
-    # =============== 批量通知方法 ===============
-    
     def notify_all_admins(self, notification_type: str, title: str, content: str, level: str = 'info') -> None:
         """向所有管理员发送通知"""
         from backend.app.models.user import User
@@ -1756,4 +1817,73 @@ class NotificationService:
             
         except Exception as e:
             logger.error(f"Error creating notification from event: {e}")
-            return None 
+            return None
+
+    def _validate_policy_data(self, data: Dict[str, Any]) -> None:
+        """验证告警策略数据"""
+        required_fields = ['name', 'policy_type', 'user_id']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                raise ValueError(f"缺少必填字段: {field}")
+        
+        if data['policy_type'] == 'resource':
+            if not data.get('resource_type'):
+                raise ValueError("资源告警必须指定资源类型")
+            if not data.get('alert_items'):
+                raise ValueError("资源告警必须指定报警条目")
+            if not data.get('trigger_rules'):
+                raise ValueError("资源告警必须指定触发规则")
+        elif data['policy_type'] == 'event':
+            if not data.get('event_type'):
+                raise ValueError("事件告警必须指定事件类型")
+            if not data.get('event_actions'):
+                raise ValueError("事件告警必须指定事件动作")
+            if not data.get('event_results'):
+                raise ValueError("事件告警必须指定事件结果")
+    
+    def _validate_channel_data(self, data: Dict[str, Any]) -> None:
+        """验证通知渠道数据"""
+        required_fields = ['name', 'channel_type', 'config', 'user_id']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                raise ValueError(f"缺少必填字段: {field}")
+        
+        # 验证渠道配置
+        channel_type = data['channel_type']
+        config = data['config']
+        
+        if channel_type == 'email':
+            if not config.get('smtp_server') or not config.get('smtp_port'):
+                raise ValueError("邮件渠道必须配置SMTP服务器")
+            if not config.get('username') or not config.get('password'):
+                raise ValueError("邮件渠道必须配置用户名和密码")
+        elif channel_type == 'sms':
+            if not config.get('api_key') or not config.get('secret'):
+                raise ValueError("短信渠道必须配置API密钥")
+        elif channel_type == 'webhook':
+            if not config.get('url'):
+                raise ValueError("WebHook渠道必须配置URL")
+        elif channel_type in ['dingtalk', 'slack']:
+            if not config.get('webhook_url'):
+                raise ValueError(f"{channel_type}渠道必须配置WebHook URL")
+    
+    def _validate_target_data(self, data: Dict[str, Any]) -> None:
+        """验证通知对象数据"""
+        required_fields = ['name', 'target_type', 'target_config', 'user_id']
+        for field in required_fields:
+            if field not in data or not data[field]:
+                raise ValueError(f"缺少必填字段: {field}")
+        
+        # 验证目标配置
+        target_type = data['target_type']
+        config = data['target_config']
+        
+        if target_type == 'email':
+            if not config.get('email'):
+                raise ValueError("邮件通知对象必须配置邮箱地址")
+        elif target_type == 'sms':
+            if not config.get('phone'):
+                raise ValueError("短信通知对象必须配置手机号码")
+        elif target_type == 'webhook':
+            if not config.get('url'):
+                raise ValueError("WebHook通知对象必须配置URL")

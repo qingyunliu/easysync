@@ -161,6 +161,10 @@ class AlertService:
             db.session.add(policy)
             db.session.commit()
             
+            # 处理双向绑定：更新通知对象中的告警策略关联
+            if data.get('notification_targets'):
+                self._update_notification_targets_binding(policy.id, data['notification_targets'], user_id)
+            
             logger.info(f"Alert policy created: {policy.id}")
             return policy
             
@@ -199,6 +203,10 @@ class AlertService:
             
             db.session.commit()
             
+            # 处理双向绑定：更新通知对象中的告警策略关联
+            if 'notification_targets' in data:
+                self._update_notification_targets_binding(policy.id, data['notification_targets'], user_id)
+            
             logger.info(f"Alert policy updated: {policy_id}")
             return policy
             
@@ -225,6 +233,37 @@ class AlertService:
             db.session.rollback()
             logger.error(f"删除告警策略失败: {e}")
             raise AlertOperationError(f"删除告警策略失败: {str(e)}")
+    
+    def _update_notification_targets_binding(self, policy_id: str, notification_targets: list, user_id: str):
+        """更新通知对象与告警策略的双向绑定"""
+        try:
+            from backend.app.models.notification import NotificationTarget
+            
+            # 获取所有属于该用户的通知对象
+            all_targets = NotificationTarget.query.filter_by(user_id=user_id).all()
+            
+            # 更新每个通知对象的告警策略关联
+            for target in all_targets:
+                current_policies = target.alert_policies or []
+                
+                if target.id in notification_targets:
+                    # 如果当前策略不在关联列表中，添加它
+                    if policy_id not in current_policies:
+                        current_policies.append(policy_id)
+                else:
+                    # 如果当前策略在关联列表中，移除它
+                    if policy_id in current_policies:
+                        current_policies.remove(policy_id)
+                
+                target.alert_policies = current_policies
+                target.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            logger.info(f"Updated notification targets binding for policy: {policy_id}")
+            
+        except Exception as e:
+            logger.error(f"Error updating notification targets binding: {e}")
+            # 不抛出异常，避免影响主流程
     
     def toggle_policy(self, policy_id: str, user_id: str) -> AlertPolicy:
         """切换告警策略启用状态"""

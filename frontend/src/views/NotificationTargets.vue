@@ -82,13 +82,41 @@
         
         <el-table-column label="关联告警器" sortable>
           <template #default="{ row }">
-            {{ row.alert_policies?.length || 0 }}个
+            <div v-if="row.alert_policies && row.alert_policies.length > 0">
+              <el-tag 
+                v-for="policyId in row.alert_policies.slice(0, 2)" 
+                :key="policyId"
+                size="small"
+                type="warning"
+                class="mr-1"
+              >
+                {{ getAlertPolicyName(policyId) }}
+              </el-tag>
+              <el-tag v-if="row.alert_policies.length > 2" size="small" type="warning">
+                +{{ row.alert_policies.length - 2 }}
+              </el-tag>
+            </div>
+            <span v-else class="text-muted">无</span>
           </template>
         </el-table-column>
         
         <el-table-column label="发送通道" sortable>
           <template #default="{ row }">
-            {{ row.channels?.length || 0 }}个
+            <div v-if="row.channels && row.channels.length > 0">
+              <el-tag 
+                v-for="channelId in row.channels.slice(0, 2)" 
+                :key="channelId"
+                size="small"
+                type="success"
+                class="mr-1"
+              >
+                {{ getNotificationChannelName(channelId) }}
+              </el-tag>
+              <el-tag v-if="row.channels.length > 2" size="small" type="success">
+                +{{ row.channels.length - 2 }}
+              </el-tag>
+            </div>
+            <span v-else class="text-muted">无</span>
           </template>
         </el-table-column>
         
@@ -272,12 +300,12 @@
             <span class="label">告警器列表:</span>
             <div class="value">
               <el-tag 
-                v-for="policy in selectedTarget.alert_policies" 
-                :key="policy.id"
+                v-for="policyId in selectedTarget.alert_policies" 
+                :key="policyId"
                 size="small"
                 style="margin-right: 8px; margin-bottom: 4px;"
               >
-                {{ policy.name }}
+                {{ getAlertPolicyName(policyId) }}
               </el-tag>
             </div>
           </div>
@@ -289,12 +317,12 @@
             <span class="label">通道列表:</span>
             <div class="value">
               <el-tag 
-                v-for="channel in selectedTarget.channels" 
-                :key="channel.id"
+                v-for="channelId in selectedTarget.channels" 
+                :key="channelId"
                 size="small"
                 style="margin-right: 8px; margin-bottom: 4px;"
               >
-                {{ channel.name }}
+                {{ getNotificationChannelName(channelId) }}
               </el-tag>
             </div>
           </div>
@@ -433,6 +461,18 @@ const fetchNotificationChannels = async () => {
   } catch (error) {
     console.error('获取通知渠道失败:', error)
   }
+}
+
+// 获取告警策略名称
+const getAlertPolicyName = (policyId) => {
+  const policy = alertPolicies.value.find(p => p.id === policyId)
+  return policy ? policy.name : policyId
+}
+
+// 获取通知渠道名称
+const getNotificationChannelName = (channelId) => {
+  const channel = notificationChannels.value.find(c => c.id === channelId)
+  return channel ? channel.name : channelId
 }
 
 const openCreateDialog = () => {
@@ -587,6 +627,13 @@ const formatDate = (date) => {
 </script>
 
 <style scoped>
+.mr-1 {
+  margin-right: 4px;
+}
+
+.text-muted {
+  color: #909399;
+}
 .notification-targets-page {
   padding: 20px;
   min-height: 100vh;

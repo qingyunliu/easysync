@@ -99,9 +99,23 @@
           </template>
         </el-table-column>
         
-        <el-table-column label="通知对象数量" sortable>
+        <el-table-column label="通知对象" sortable>
           <template #default="{ row }">
-            {{ row.notification_targets?.length || 0 }}
+            <div v-if="row.notification_targets && row.notification_targets.length > 0">
+              <el-tag 
+                v-for="targetId in row.notification_targets.slice(0, 2)" 
+                :key="targetId"
+                size="small"
+                type="info"
+                class="mr-1"
+              >
+                {{ getNotificationTargetName(targetId) }}
+              </el-tag>
+              <el-tag v-if="row.notification_targets.length > 2" size="small" type="info">
+                +{{ row.notification_targets.length - 2 }}
+              </el-tag>
+            </div>
+            <span v-else class="text-muted">无</span>
           </template>
         </el-table-column>
         
@@ -898,6 +912,12 @@ const loadResourceItems = async (resourceTypeCode) => {
 }
 
 // 新增：根据事件类型加载事件动作
+
+// 获取通知对象名称
+const getNotificationTargetName = (targetId) => {
+  const target = notificationTargets.value.find(t => t.id === targetId)
+  return target ? target.name : targetId
+}
 const loadEventActions = async (eventTypeCode) => {
   try {
     const response = await axios.get(`/api/alerts/event-actions?event_type_code=${eventTypeCode}`)
@@ -1230,6 +1250,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.mr-1 {
+  margin-right: 4px;
+}
+
+.text-muted {
+  color: #909399;
+}
 .alert-policies-page {
   padding: 20px;
   min-height: 100vh;

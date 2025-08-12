@@ -254,6 +254,15 @@ def update_notification_channel(channel_id):
         'channel': channel.to_dict()
     })
 
+@notifications_bp.route('/channels/<channel_id>/test', methods=['POST'])
+@jwt_required()
+@handle_errors
+def test_notification_channel(channel_id):
+    """测试通知渠道"""
+    user_id = get_jwt_identity()
+    notification_service.test_notification_channel(channel_id, user_id)
+    return jsonify({'message': '通知渠道测试成功'})
+
 @notifications_bp.route('/channels/<channel_id>', methods=['DELETE'])
 @jwt_required()
 @handle_errors
@@ -280,7 +289,7 @@ def create_notification_target():
     data = request.get_json()
     user_id = get_jwt_identity()
     data['user_id'] = user_id
-    
+
     target = notification_service.create_target(data)
     return jsonify({
         'message': '通知对象创建成功',
