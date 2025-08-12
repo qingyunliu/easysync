@@ -398,7 +398,7 @@ def init_alert_data():
         return jsonify({'message': '只有管理员可以初始化系统数据'}), 403
     
     try:
-        from backend.app.alerts.init_data import init_all_alert_data
+        from backend.app.alerts.alerts_data import init_all_alert_data
         init_all_alert_data()
         return jsonify({'message': '告警系统数据初始化成功'})
     except Exception as e:

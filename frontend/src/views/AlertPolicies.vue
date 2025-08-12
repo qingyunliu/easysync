@@ -872,15 +872,15 @@ const loadAlertDefinitions = async () => {
   try {
     // 加载资源类型
     const resourceTypesResponse = await axios.get('/api/alerts/resource-types')
-    resourceTypes.value = resourceTypesResponse.data.data || []
+    resourceTypes.value = resourceTypesResponse.data.resource_types || []
     
     // 加载事件类型
     const eventTypesResponse = await axios.get('/api/alerts/event-types')
-    eventTypes.value = eventTypesResponse.data.data || []
+    eventTypes.value = eventTypesResponse.data.event_types || []
     
     // 加载事件结果
     const eventResultsResponse = await axios.get('/api/alerts/event-results')
-    eventResults.value = eventResultsResponse.data.data || []
+    eventResults.value = eventResultsResponse.data.event_results || []
     
   } catch (error) {
     console.error('获取告警定义数据失败:', error)
@@ -890,8 +890,8 @@ const loadAlertDefinitions = async () => {
 // 新增：根据资源类型加载资源条目
 const loadResourceItems = async (resourceTypeCode) => {
   try {
-    const response = await axios.get(`/api/alerts/resource-items?resource_type=${resourceTypeCode}`)
-    resourceItems.value = response.data.data || []
+    const response = await axios.get(`/api/alerts/resource-items?resource_type_code=${resourceTypeCode}`)
+    resourceItems.value = response.data.resource_items || []
   } catch (error) {
     console.error('获取资源条目失败:', error)
   }
@@ -900,8 +900,8 @@ const loadResourceItems = async (resourceTypeCode) => {
 // 新增：根据事件类型加载事件动作
 const loadEventActions = async (eventTypeCode) => {
   try {
-    const response = await axios.get(`/api/alerts/event-actions?event_type=${eventTypeCode}`)
-    eventActions.value = response.data.data || []
+    const response = await axios.get(`/api/alerts/event-actions?event_type_code=${eventTypeCode}`)
+    eventActions.value = response.data.event_actions || []
   } catch (error) {
     console.error('获取事件动作失败:', error)
   }

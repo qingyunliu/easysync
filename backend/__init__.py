@@ -131,6 +131,15 @@ def create_app(config_name=None):
         with app.app_context():
             db.create_all()
             logger.debug("数据库表创建成功")
+            
+            # 初始化应用数据
+            try:
+                from .app.init_data import init_all_data
+                init_all_data()
+            except Exception as e:
+                logger.warning(f"应用数据初始化失败: {str(e)}")
+                # 数据初始化失败不应该阻止应用启动
+                
     except Exception as e:
         logger.error(f"数据库连接失败: {str(e)}")
         # 在开发环境中，我们可以继续运行，但在生产环境中应该退出

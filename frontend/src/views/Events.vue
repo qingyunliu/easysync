@@ -410,7 +410,7 @@ export default {
           params.end_time = filters.time_range[1]
         }
         
-        const response = await axios.get('/api/events/', { params })
+        const response = await axios.get('/api/events', { params })
         if (response.data.status === 'success') {
           events.value = response.data.data.events
           pagination.total = response.data.data.total
@@ -440,7 +440,7 @@ export default {
     // 获取告警统计
     const loadAlertStatistics = async () => {
       try {
-        const response = await axios.get('/api/events/alert-statistics')
+        const response = await axios.get('/api/alerts/statistics')
         if (response.data.status === 'success') {
           alertStatistics.value = response.data.data
         }

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-from flask import request, jsonify, g
+from flask import request, jsonify, g, Blueprint
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from . import commands_bp
 from .service import RealTimeCommandService
 from backend.app.utils.decorators import require_user

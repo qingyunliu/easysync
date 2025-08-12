@@ -4,7 +4,7 @@
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
 from backend import db
 from backend.app.models.event import Event
@@ -12,7 +12,6 @@ from backend.app.alerts.evaluator import AlertEvaluator
 from backend.app.alerts.services import AlertService
 
 logger = logging.getLogger(__name__)
-
 
 class EventService:
     """事件服务类"""

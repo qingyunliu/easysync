@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # 事件服务实例
 event_service = EventService()
 
-@events_bp.route('/list', methods=['GET'])
+@events_bp.route('', methods=['GET'])
 @jwt_required()
 @handle_errors
 def get_events():

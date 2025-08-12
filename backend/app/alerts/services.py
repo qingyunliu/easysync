@@ -416,39 +416,6 @@ class AlertService:
         
         return resources
     
-    def get_monitorable_events(self) -> Dict[str, Any]:
-        """获取可监控的事件列表"""
-        events = {
-            'storage': [
-                {'id': 'create', 'name': '创建'},
-                {'id': 'delete', 'name': '删除'},
-                {'id': 'get', 'name': '获取'},
-                {'id': 'update', 'name': '更新'}
-            ],
-            'client': [
-                {'id': 'connect', 'name': '连接'},
-                {'id': 'disconnect', 'name': '断开'},
-                {'id': 'error', 'name': '错误'}
-            ],
-            'proxy': [
-                {'id': 'start', 'name': '启动'},
-                {'id': 'stop', 'name': '停止'},
-                {'id': 'restart', 'name': '重启'},
-                {'id': 'error', 'name': '错误'}
-            ]
-        }
-        
-        return {
-            'events': events,
-            'results': [
-                {'id': 'success', 'name': '成功'},
-                {'id': 'failed', 'name': '失败'},
-                {'id': 'timeout', 'name': '超时'},
-                {'id': 'error', 'name': '错误'},
-                {'id': 'warning', 'name': '警告'}
-            ]
-        }
-    
     def get_templates(self, user_id: str = None, category: str = '', template_type: str = '') -> List[Dict[str, Any]]:
         """获取告警策略模板"""
         try:
