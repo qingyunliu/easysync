@@ -337,8 +337,15 @@ class ProxyAgent:
         storage_config = params.get('storage_config')
         if not storage_config:
             raise ValueError("缺少存储配置")
-        
-        return self._execute_storage_operation(storage_config, 'get_stats', {})
+
+        storage_type = storage_config.get('type', '').lower()
+
+        # 对于NAS类型，需要处理挂载点
+        if storage_type in ['nas', 'nfs']:
+            return self._execute_nas_get_stats(params)
+        else:
+            # 对于S3/OBS类型，使用原有逻辑
+            return self._execute_storage_operation(storage_config, 'get_stats', {})
 
     def _execute_list_objects(self, params):
         """获取对象列表"""
@@ -360,7 +367,52 @@ class ProxyAgent:
                 'page_size': params.get('page_size', 20)
             }
             return self._execute_storage_operation(storage_config, 'list_objects', operation_params)
-    
+
+    def _execute_nas_get_stats(self, params):
+        """执行NAS存储的统计信息获取操作"""
+        storage_config = params.get('storage_config')
+        storage_id = storage_config.get('id', 'unknown')
+
+        try:
+            # 使用挂载管理器获取或创建挂载点
+            mount_manager = get_mount_manager()
+
+            # 检查是否已经挂载
+            if mount_manager.is_mounted(storage_id):
+                mount_point = mount_manager.get_mount_point(storage_id)
+                self.logger.info(f"存储 {storage_id} 已挂载到 {mount_point}")
+            else:
+                # 执行挂载
+                mount_point = mount_manager.mount_storage(storage_id, storage_config)
+                if not mount_point:
+                    return {
+                        'error': '挂载失败',
+                        'storage_id': storage_id
+                    }
+                self.logger.info(f"存储 {storage_id} 新挂载到 {mount_point}")
+
+            # 使用挂载点创建NASProvider
+            config = storage_config.get('config', {})
+            # 临时修改配置中的path为挂载点
+            config['path'] = mount_point
+            provider = NASProvider(config)
+
+            # 获取统计信息
+            stats = provider.get_stats()
+
+            # 添加挂载点信息
+            stats['mount_point'] = mount_point
+            stats['storage_id'] = storage_id
+
+            return stats
+
+        except Exception as e:
+            self.logger.error(f"执行NAS统计信息获取失败: {e}")
+            return {
+                'error': str(e),
+                'storage_id': storage_id
+            }
+
     def _execute_nas_list_objects(self, params):
         """执行NAS存储的对象列表操作"""
         storage_config = params.get('storage_config')

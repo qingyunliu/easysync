@@ -811,12 +811,15 @@ class NotificationService:
             .limit(limit)\
             .all()
             
-    def mark_as_read(self, notification_id: int) -> None:
+    def mark_as_read(self, notification_id: int, user_id: str) -> None:
         """标记通知为已读"""
         notification = Notification.query.get_or_404(notification_id)
+        if notification.user_id != user_id:
+            raise ValueError("您没有权限标记此通知为已读")
         notification.read = True
         notification.read_at = datetime.utcnow()
         db.session.commit()
+        return True
         
     def delete_notification(self, notification_id: int) -> None:
         """删除通知"""

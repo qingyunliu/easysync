@@ -45,7 +45,7 @@
               <el-icon><Warning /></el-icon>
             </div>
             <div class="stats-info">
-              <div class="stats-value">{{ statistics.failed_events || 0 }}</div>
+              <div class="stats-value">{{ statistics.event_results?.failed || 0 }}</div>
               <div class="stats-label">失败事件</div>
             </div>
           </div>
@@ -387,7 +387,7 @@ export default {
     
     const pagination = reactive({
       current_page: 1,
-      per_page: 20,
+      per_page: 10,
       total: 0
     })
     
@@ -412,10 +412,10 @@ export default {
         
         const response = await axios.get('/api/events', { params })
         if (response.data.status === 'success') {
-          events.value = response.data.data.events
-          pagination.total = response.data.data.total
-          pagination.current_page = response.data.data.current_page
-          pagination.per_page = response.data.data.per_page
+          events.value = response.data.events
+          pagination.total = response.data.total
+          pagination.current_page = response.data.current_page
+          pagination.per_page = response.data.per_page
         }
       } catch (error) {
         ElMessage.error('获取事件列表失败')
@@ -430,7 +430,7 @@ export default {
       try {
         const response = await axios.get('/api/events/statistics')
         if (response.data.status === 'success') {
-          statistics.value = response.data.data
+          statistics.value = response.data
         }
       } catch (error) {
         console.error('Error loading statistics:', error)
@@ -726,8 +726,8 @@ export default {
   align-items: center;
   justify-content: center;
   margin-right: 16px;
-  background: var(--primary-color);
-  color: white;
+  background: var(--bg-secondary);
+  color: var(--text-color);
   font-size: 24px;
 }
 

@@ -255,7 +255,6 @@ class RealTimeCommandService:
         try:
             mount_point = result.get('mount_point')
             auto_mounted = result.get('auto_mounted', False)
-            
             if not mount_point:
                 return
             
@@ -275,13 +274,12 @@ class RealTimeCommandService:
             
             # 更新存储配置，添加挂载点信息
             config = storage.config or {}
-            
             # 如果存储配置中没有挂载点，或者这是自动挂载的，则更新挂载点
             if auto_mounted or not config.get('mount_point'):
                 config['mount_point'] = mount_point
                 config['auto_mounted'] = auto_mounted
                 config['last_mount_time'] = datetime.utcnow().isoformat()
-                
+
                 storage.config = config
                 db.session.commit()
                 

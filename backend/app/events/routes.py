@@ -58,7 +58,7 @@ def get_events():
         page=page,
         per_page=per_page
     )
-    
+    events["status"] = "success"
     return jsonify(events)
 
 
@@ -71,6 +71,7 @@ def get_event_statistics():
     time_range = request.args.get('time_range', '24h')
     
     stats = event_service.get_event_statistics(user_id, time_range)
+    stats["status"] = "success"
     return jsonify(stats)
 
 
