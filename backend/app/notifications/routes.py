@@ -135,6 +135,28 @@ def mark_as_read(notification_id):
             'message': f'标记通知为已读失败: {str(e)}'
         }), 500
 
+@notifications_bp.route('/<string:notification_id>/unread', methods=['POST'])
+@jwt_required()
+def mark_as_unread(notification_id):
+    """标记单个通知为未读"""
+    try:
+        user_id = get_jwt_identity()
+        success = notification_service.mark_as_unread(notification_id, user_id)
+
+        if success:
+            return jsonify({
+                'status': 'success',
+                'message': '通知已标记为未读'
+            })
+        else:
+            return jsonify({
+                'status': 'error',
+                'message': '通知不存在或标记失败'
+            }), 404
+        
+    except Exception as e:
+        logger.error(f"Error marking notification as unread: {e}")
+
 @notifications_bp.route('/clear-all', methods=['POST'])
 @jwt_required()
 def clear_all_notifications():

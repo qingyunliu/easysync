@@ -811,21 +811,40 @@ class NotificationService:
             .limit(limit)\
             .all()
             
-    def mark_as_read(self, notification_id: int, user_id: str) -> None:
+    def mark_as_read(self, notification_id: int, user_id: str) -> bool:
         """标记通知为已读"""
         notification = Notification.query.get_or_404(notification_id)
         if notification.user_id != user_id:
             raise ValueError("您没有权限标记此通知为已读")
-        notification.read = True
-        notification.read_at = datetime.utcnow()
+        notification.is_read = True
+        db.session.commit()
+        return True
+    
+    def mark_all_as_read(self, user_id: str) -> bool:
+        """标记所有通知为已读"""
+        notifications = Notification.query.filter_by(user_id=user_id).all()
+        for notification in notifications:
+            notification.is_read = True
+        db.session.commit()
+        return len(notifications)
+    
+    def mark_as_unread(self, notification_id: int, user_id: str) -> bool:
+        """标记通知为未读"""
+        notification = Notification.query.get_or_404(notification_id)
+        if notification.user_id != user_id:
+            raise ValueError("您没有权限标记此通知为未读")
+        notification.is_read = False
         db.session.commit()
         return True
         
-    def delete_notification(self, notification_id: int) -> None:
+    def delete_notification(self, notification_id: int, user_id: str) -> bool:
         """删除通知"""
         notification = Notification.query.get_or_404(notification_id)
+        if notification.user_id != user_id:
+            raise ValueError("您没有权限删除此通知")
         db.session.delete(notification)
         db.session.commit()
+        return True
         
     def _send_notification_by_user_settings(self, notification: Notification) -> None:
         """根据用户设置发送通知"""

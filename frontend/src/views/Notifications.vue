@@ -273,7 +273,7 @@ import axios from 'axios'
 const loading = ref(false)
 const notifications = ref([])
 const currentPage = ref(1)
-const pageSize = ref(20)
+const pageSize = ref(10)
 
 // 过滤器
 const filters = reactive({
@@ -491,8 +491,9 @@ const handleNotificationAction = async (command, notification) => {
 
 const markAsUnread = async (notificationId) => {
   try {
-    // 注意：这里假设后端有标记未读的接口，如果没有需要添加
-    // 暂时通过更新本地数据模拟
+    await axios.post(`/api/notifications/${notificationId}/unread`)
+    
+    // 更新本地数据
     const notification = notifications.value.find(n => n.id === notificationId)
     if (notification) {
       notification.is_read = false
@@ -737,13 +738,14 @@ const formatTime = (timeStr) => {
 }
 
 .notification-item:hover {
-  border-color: var(--primary-color);
+  border-color: var(--border-light);
   transform: translateX(2px);
 }
 
 .notification-item.unread {
-  background: var(--bg-color-page);
-  border-left: 4px solid var(--primary-color);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--card-shadow);
 }
 
 .notification-content {
