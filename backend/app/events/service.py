@@ -6,12 +6,39 @@
 import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, Optional
+from flask import Response
 from backend import db
 from backend.app.models.event import Event
 from backend.app.alerts.evaluator import AlertEvaluator
 from backend.app.alerts.services import AlertService
 
 logger = logging.getLogger(__name__)
+
+
+def clean_serializable_data(data: Any) -> Any:
+    """清理数据，确保可以序列化为JSON"""
+    if isinstance(data, dict):
+        return {k: clean_serializable_data(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [clean_serializable_data(item) for item in data]
+    elif isinstance(data, Response):
+        # 处理Flask Response对象
+        return {
+            'type': 'Response',
+            'status_code': data.status_code,
+            'status': data.status,
+            'headers': dict(data.headers),
+            'content_length': data.content_length
+        }
+    elif hasattr(data, '__dict__'):
+        # 处理其他对象，尝试转换为字典
+        try:
+            return str(data)
+        except:
+            return f"<{type(data).__name__} object>"
+    else:
+        return data
+
 
 class EventService:
     """事件服务类"""
@@ -40,6 +67,9 @@ class EventService:
             Event: 创建的事件对象
         """
         try:
+            # 清理details数据，确保可以序列化为JSON
+            cleaned_details = clean_serializable_data(details) if details else None
+            
             # 创建事件
             event = Event.create_event(
                 user_id=user_id,
@@ -49,7 +79,7 @@ class EventService:
                 event_action=event_action,
                 event_result=event_result,
                 message=message,
-                details=details
+                details=cleaned_details
             )
             
             # 评估告警策略

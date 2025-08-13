@@ -317,31 +317,70 @@ class AlertService:
         """测试告警策略"""
         policy = self.get_policy(policy_id, user_id)
         
-        # 模拟告警触发
-        test_instance = AlertInstance(
-            policy_id=policy.id,
-            alert_name=f"测试告警 - {policy.name}",
-            severity=policy.level,
-            status='firing',
-            metric_name='test_metric',
-            current_value=100.0,
-            threshold_value=80.0,
-            labels={'test': 'true'},
-            annotations={'description': '这是一个测试告警'},
-            fingerprint=f"test_{policy.id}_{datetime.utcnow().timestamp()}",
-            starts_at=datetime.utcnow()
-        )
+        # 根据策略类型创建测试实例
+        if policy.policy_type == 'event':
+            # 事件告警测试
+            test_instance = AlertInstance(
+                policy_id=policy.id,
+                alert_name=f"测试事件告警 - {policy.name}",
+                severity=policy.level,
+                status='firing',
+                metric_name=f"{policy.event_type}.{policy.event_actions[0] if policy.event_actions else 'test'}",
+                current_value=0,
+                threshold_value=0,
+                labels={
+                    'test': 'true',
+                    'event_type': policy.event_type or 'test',
+                    'event_action': policy.event_actions[0] if policy.event_actions else 'test_action',
+                    'event_result': policy.event_results[0] if policy.event_results else 'failed'
+                },
+                annotations={
+                    'description': '这是一个测试事件告警',
+                    'message': f'测试{policy.event_type or "事件"}操作失败',
+                    'details': {'test': True, 'policy_id': policy.id}
+                },
+                fingerprint=f"test_event_{policy.id}_{datetime.utcnow().timestamp()}",
+                starts_at=datetime.utcnow()
+            )
+        else:
+            # 资源告警测试
+            test_instance = AlertInstance(
+                policy_id=policy.id,
+                alert_name=f"测试资源告警 - {policy.name}",
+                severity=policy.level,
+                status='firing',
+                metric_name=policy.alert_items[0] if policy.alert_items else 'test_metric',
+                current_value=100.0,
+                threshold_value=80.0,
+                labels={
+                    'test': 'true',
+                    'resource_type': policy.resource_type or 'test'
+                },
+                annotations={
+                    'description': '这是一个测试资源告警',
+                    'message': f'测试{policy.alert_items[0] if policy.alert_items else "指标"}超过阈值',
+                    'details': {'test': True, 'policy_id': policy.id}
+                },
+                fingerprint=f"test_resource_{policy.id}_{datetime.utcnow().timestamp()}",
+                starts_at=datetime.utcnow()
+            )
         
         db.session.add(test_instance)
         db.session.commit()
             
         # 发送测试通知
-        self._send_notifications(policy, test_instance)
+        try:
+            self._send_notifications(policy, test_instance)
+            notification_sent = True
+        except Exception as e:
+            logger.warning(f"测试通知发送失败: {e}")
+            notification_sent = False
         
         return {
             'success': True,
             'message': '测试告警已触发',
-            'instance_id': test_instance.id
+            'instance_id': test_instance.id,
+            'notification_sent': notification_sent
         }
 
     def get_alert_statistics(self, time_range: str) -> Dict[str, Any]:
@@ -720,16 +759,47 @@ class AlertService:
             notification_content = self.render_policy_notification(policy.id, alert_instance)
             
             if not notification_content:
-                logger.warning(f"无法渲染策略 {policy.id} 的通知内容")
-                return
+                # 如果没有模板，创建默认通知内容
+                logger.info(f"策略 {policy.id} 没有关联模板，使用默认通知内容")
+                notification_content = self._create_default_notification_content(policy, alert_instance)
             
             # 获取通知目标
             notification_targets = policy.notification_targets or []
             
+            logger.info(f"策略 {policy.id} 的通知目标: {notification_targets}")
+            
+            if not notification_targets:
+                logger.warning(f"策略 {policy.id} 没有配置通知目标")
+                return
+            
             for target_config in notification_targets:
                 try:
-                    target_type = target_config.get('type')
-                    target_data = target_config.get('data', {})
+                    logger.info(f"处理通知目标配置: {target_config}, 类型: {type(target_config)}")
+                    
+                    # 处理不同的数据结构
+                    if isinstance(target_config, str):
+                        # 如果是字符串，可能是通知目标ID
+                        target_id = target_config
+                        target_info = self._get_notification_target_info(target_id)
+                        if not target_info:
+                            logger.warning(f"找不到通知目标: {target_id}")
+                            continue
+                        target_type = target_info.get('target_type')
+                        target_data = target_info.get('target_config', {})
+                    elif isinstance(target_config, dict):
+                        # 如果是字典，直接使用
+                        if 'type' in target_config and 'data' in target_config:
+                            target_type = target_config.get('type')
+                            target_data = target_config.get('data', {})
+                        elif 'target_type' in target_config and 'target_config' in target_config:
+                            target_type = target_config.get('target_type')
+                            target_data = target_config.get('target_config', {})
+                        else:
+                            logger.warning(f"通知目标配置格式不正确: {target_config}")
+                            continue
+                    else:
+                        logger.warning(f"不支持的通知目标配置类型: {type(target_config)}")
+                        continue
                     
                     if target_type == 'email':
                         self._send_email_notification(target_data, notification_content)
@@ -749,6 +819,79 @@ class AlertService:
                     
         except Exception as e:
             logger.error(f"发送告警通知失败: {e}")
+    
+    def _create_default_notification_content(self, policy: AlertPolicy, alert_instance: AlertInstance) -> dict:
+        """创建默认通知内容"""
+        try:
+            # 获取资源名称
+            resource_name = '未知资源'
+            if alert_instance.labels:
+                if 'event_type' in alert_instance.labels:
+                    event_type = alert_instance.labels.get('event_type', '')
+                    event_action = alert_instance.labels.get('event_action', '')
+                    resource_name = f"{event_type}.{event_action}"
+                else:
+                    resource_name = alert_instance.metric_name or '未知资源'
+            
+            # 创建默认标题和内容
+            if policy.policy_type == 'event':
+                title = f"[{policy.level.upper()}] 事件告警: {policy.name}"
+                content = f"""
+告警策略: {policy.name}
+告警级别: {policy.level}
+事件类型: {alert_instance.labels.get('event_type', '未知') if alert_instance.labels else '未知'}
+事件动作: {alert_instance.labels.get('event_action', '未知') if alert_instance.labels else '未知'}
+事件结果: {alert_instance.labels.get('event_result', '未知') if alert_instance.labels else '未知'}
+触发时间: {alert_instance.starts_at.strftime('%Y-%m-%d %H:%M:%S') if alert_instance.starts_at else '未知'}
+描述: {policy.description or '无描述'}
+消息: {alert_instance.annotations.get('message', '无消息') if alert_instance.annotations else '无消息'}
+                """.strip()
+            else:
+                title = f"[{policy.level.upper()}] 资源告警: {policy.name}"
+                content = f"""
+告警策略: {policy.name}
+告警级别: {policy.level}
+资源名称: {resource_name}
+指标名称: {alert_instance.metric_name or '未知'}
+当前值: {alert_instance.current_value or '未知'}
+阈值: {alert_instance.threshold_value or '未知'}
+触发时间: {alert_instance.starts_at.strftime('%Y-%m-%d %H:%M:%S') if alert_instance.starts_at else '未知'}
+描述: {policy.description or '无描述'}
+                """.strip()
+            
+            return {
+                'title': title,
+                'content': content,
+                'template_type': 'default'
+            }
+            
+        except Exception as e:
+            logger.error(f"创建默认通知内容失败: {e}")
+            return {
+                'title': f'告警: {policy.name}',
+                'content': f'策略 {policy.name} 触发了告警',
+                'template_type': 'default'
+            }
+    
+    def _get_notification_target_info(self, target_id: str) -> dict:
+        """获取通知目标信息"""
+        try:
+            from backend.app.models.notification import NotificationTarget
+            
+            target = NotificationTarget.query.get(target_id)
+            if not target:
+                return None
+            
+            return {
+                'id': target.id,
+                'name': target.name,
+                'target_type': target.target_type,
+                'target_config': target.target_config
+            }
+            
+        except Exception as e:
+            logger.error(f"获取通知目标信息失败: {e}")
+            return None
 
     def _send_email_notification(self, target_data: dict, content: dict):
         """发送邮件通知"""
@@ -1043,16 +1186,45 @@ class AlertService:
             if not policy or not policy.template:
                 return None
             
+            # 获取资源名称
+            resource_name = '未知资源'
+            if alert_instance.labels:
+                if 'event_type' in alert_instance.labels:
+                    # 事件告警
+                    event_type = alert_instance.labels.get('event_type', '')
+                    event_action = alert_instance.labels.get('event_action', '')
+                    resource_name = f"{event_type}.{event_action}"
+                else:
+                    # 资源告警
+                    resource_name = alert_instance.metric_name or '未知资源'
+            
             # 准备变量数据
             variables = {
                 'alert_name': policy.name,
                 'severity': policy.level,
-                'resource_name': alert_instance.resource_name or '未知资源',
+                'resource_name': resource_name,
                 'current_value': alert_instance.current_value or '未知',
-                'threshold': alert_instance.threshold or '未知',
-                'triggered_at': alert_instance.triggered_at.strftime('%Y-%m-%d %H:%M:%S') if alert_instance.triggered_at else '未知',
-                'description': policy.description or '无描述'
+                'threshold': alert_instance.threshold_value or '未知',
+                'triggered_at': alert_instance.starts_at.strftime('%Y-%m-%d %H:%M:%S') if alert_instance.starts_at else '未知',
+                'description': policy.description or '无描述',
+                'metric_name': alert_instance.metric_name or '未知指标',
+                'status': alert_instance.status or 'firing'
             }
+            
+            # 添加事件相关信息
+            if alert_instance.labels:
+                variables.update({
+                    'event_type': alert_instance.labels.get('event_type', ''),
+                    'event_action': alert_instance.labels.get('event_action', ''),
+                    'event_result': alert_instance.labels.get('event_result', '')
+                })
+            
+            # 添加注释信息
+            if alert_instance.annotations:
+                variables.update({
+                    'message': alert_instance.annotations.get('message', ''),
+                    'details': str(alert_instance.annotations.get('details', ''))
+                })
             
             # 渲染模板
             return self.render_template(policy.template.id, variables)

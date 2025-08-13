@@ -2,12 +2,37 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
 from functools import wraps
-from flask import request, g, current_app
+from flask import request, g, current_app, Response
 from flask_jwt_extended import get_jwt_identity
 from backend.app.models.event import Event
 from backend.app.events.service import EventService
 
 logger = logging.getLogger(__name__)
+
+
+def clean_serializable_data(data: Any) -> Any:
+    """清理数据，确保可以序列化为JSON"""
+    if isinstance(data, dict):
+        return {k: clean_serializable_data(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [clean_serializable_data(item) for item in data]
+    elif isinstance(data, Response):
+        # 处理Flask Response对象
+        return {
+            'type': 'Response',
+            'status_code': data.status_code,
+            'status': data.status,
+            'headers': dict(data.headers),
+            'content_length': data.content_length
+        }
+    elif hasattr(data, '__dict__'):
+        # 处理其他对象，尝试转换为字典
+        try:
+            return str(data)
+        except:
+            return f"<{type(data).__name__} object>"
+    else:
+        return data
 
 
 class EventMiddleware:
@@ -47,7 +72,7 @@ class EventMiddleware:
             
             # 构建事件详情
             event_details = {
-                'result': result,
+                'result': clean_serializable_data(result),
                 'request_method': request.method,
                 'request_path': request.path,
                 'request_args': dict(request.args),
@@ -55,7 +80,7 @@ class EventMiddleware:
                 'ip_address': request.remote_addr
             }
             if details:
-                event_details.update(details)
+                event_details.update(clean_serializable_data(details))
             
             # 记录成功事件 - 使用EventService来触发告警评估
             self.event_service.create_event(
@@ -90,7 +115,7 @@ class EventMiddleware:
                 'ip_address': request.remote_addr
             }
             if details:
-                event_details.update(details)
+                event_details.update(clean_serializable_data(details))
             
             # 记录失败事件 - 使用EventService来触发告警评估
             self.event_service.create_event(
