@@ -46,14 +46,21 @@ cat > $INSTALL_DIR/config/config.json << EOF
 {
     "server": {
         "host": "${SERVER_IP}",
-        "port": 5000
+        "port": 5001
     },
     "node": {
         "id": "${NODE_ID}",
         "user": "${USER_ID}",
-        "token": ""
+        "token": "${TOKEN}"
     },
     "heartbeat_interval": 30,
+    "command": {
+        "interval": 3,
+        "max_concurrent": 3
+    },
+    "task": {
+        "max_concurrent": 3
+    },
     "monitor": {
         "interval": 5,
         "max_history": 1000,
@@ -69,7 +76,8 @@ cat > $INSTALL_DIR/config/config.json << EOF
         "max_concurrent": 3
     },
     "state_dir": "state",
-    "log_level": "INFO"
+    "log_level": "DEBUG",
+    "log_dir": "logs"
 } 
 EOF
 

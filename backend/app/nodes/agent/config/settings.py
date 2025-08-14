@@ -37,7 +37,7 @@ class Settings:
         return {
             'server': {
                 'host': 'localhost',
-                'port': 5000,
+                'port': 5001,
                 'api_version': 'v1'
             },
             'node': {
