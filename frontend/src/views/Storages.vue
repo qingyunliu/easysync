@@ -148,6 +148,8 @@
       direction="rtl"
       size="60%"
       :before-close="handleDrawerClose"
+      v-loading="isDrawerLoading"
+      element-loading-text="正在加载存储详情..."
     >
       <el-tabs v-model="activeTab" class="fixed-tabs">
         <!-- 基本信息标签页 -->
@@ -237,7 +239,7 @@
                     </el-button>
                   </div>
                 </template>
-                <div class="stats-grid" v-loading="refreshingStats">
+                <div class="stats-grid" v-loading="refreshingStats || loadingNASStats" element-loading-text="正在获取存储统计信息...">
                   <div class="stat-item">
                     <div class="stat-icon">
                       <Icon icon="mdi:harddisk" :width="24" />
@@ -387,10 +389,57 @@
                     currentPath.split('/').filter(Boolean).slice(0, index + 1).join('/') + '/'
                   )"
                   style="cursor: pointer;"
+                  :title="path"
                 >
-                  {{ path }}
+                  <el-tooltip 
+                    :content="path" 
+                    placement="top" 
+                    :show-after="500"
+                    :disabled="path.length <= 20"
+                  >
+                    <span class="breadcrumb-path">{{ path.length > 20 ? path.slice(0, 20) + '...' : path }}</span>
+                  </el-tooltip>
                 </el-breadcrumb-item>
               </el-breadcrumb>
+            </div>
+            
+            <!-- 文件状态信息 -->
+            <div class="file-status" v-if="!loadingFiles && total > 0">
+              <el-tag type="info" size="small">
+                共 {{ total }} 个文件/文件夹
+              </el-tag>
+                              <el-tag type="success" size="small" v-if="currentPath">
+                  <el-tooltip 
+                    :content="`当前路径: ${currentPath}`" 
+                    placement="top" 
+                    :show-after="300"
+                    :disabled="currentPath.length <= 40"
+                  >
+                    <span>当前路径: {{ pathExpanded ? currentPath : truncatePath(currentPath, 40) }}</span>
+                  </el-tooltip>
+                  <el-button 
+                    v-if="currentPath.length > 40"
+                    type="text" 
+                    size="small" 
+                    @click="togglePathExpanded"
+                    class="path-expand-button"
+                  >
+                    <Icon :icon="pathExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'" :width="12" />
+                  </el-button>
+                </el-tag>
+            </div>
+            <!-- 加载状态信息 -->
+            <div class="file-status" v-if="loadingFiles">
+              <el-tag type="warning" size="small">
+                <Icon icon="mdi:loading" class="rotating" />
+                正在加载文件列表...
+              </el-tag>
+            </div>
+            <!-- 空状态信息 -->
+            <div class="file-status" v-if="!loadingFiles && total === 0">
+              <el-tag type="info" size="small">
+                当前目录为空
+              </el-tag>
             </div>
 
             <!-- 文件列表 -->
@@ -399,6 +448,7 @@
               style="width: 100%"
               v-loading="loadingFiles"
               @row-click="handleFileClick"
+              :empty-text="loadingFiles ? '正在加载文件列表...' : '当前目录为空'"
             >
               <el-table-column label="名称" min-width="300">
                 <template #default="{ row }">
@@ -433,7 +483,7 @@
             </el-table>
 
             <!-- 分页 -->
-            <div class="pagination">
+            <div class="pagination" v-if="total > 0">
               <el-pagination
                 v-model:current-page="currentPage"
                 v-model:page-size="pageSize"
@@ -506,10 +556,60 @@
                       currentPath.split('/').filter(Boolean).slice(0, index + 1).join('/') + '/'
                     )"
                     style="cursor: pointer;"
+                    :title="path"
                   >
-                    {{ path }}
+                    <el-tooltip 
+                      :content="path" 
+                      placement="top" 
+                      :show-after="500"
+                      :disabled="path.length <= 20"
+                    >
+                      <span class="breadcrumb-path">{{ path.length > 20 ? path.slice(0, 20) + '...' : path }}</span>
+                    </el-tooltip>
                   </el-breadcrumb-item>
                 </el-breadcrumb>
+              </div>
+              
+              <!-- 对象状态信息 -->
+              <div class="object-status" v-if="!loadingObjects && total > 0">
+                <el-tag type="info" size="small">
+                  共 {{ total }} 个对象
+                </el-tag>
+                <el-tag type="success" size="small" v-if="currentPath">
+                  <el-tooltip 
+                    :content="`当前路径: ${currentPath}`" 
+                    placement="top" 
+                    :show-after="300"
+                    :disabled="currentPath.length <= 40"
+                  >
+                    <span>当前路径: {{ pathExpanded ? currentPath : truncatePath(currentPath, 40) }}</span>
+                  </el-tooltip>
+                  <el-button 
+                    v-if="currentPath.length > 40"
+                    type="text" 
+                    size="small" 
+                    @click="togglePathExpanded"
+                    class="path-expand-button"
+                  >
+                    <Icon :icon="pathExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'" :width="12" />
+                  </el-button>
+                </el-tag>
+                <el-tag type="primary" size="small">
+                  存储桶: {{ currentBucket }}
+                </el-tag>
+              </div>
+              <!-- 对象加载状态信息 -->
+              <div class="object-status" v-if="loadingObjects">
+                <el-tag type="warning" size="small">
+                  <Icon icon="mdi:loading" class="rotating" />
+                  正在加载对象列表...
+                </el-tag>
+              </div>
+              <!-- 对象空状态信息 -->
+              <div class="object-status" v-if="!loadingObjects && total === 0">
+                <el-tag type="info" size="small">
+                  当前目录为空
+                </el-tag>
               </div>
 
               <!-- 对象列表 -->
@@ -518,6 +618,7 @@
                 style="width: 100%"
                 v-loading="loadingObjects"
                 @row-click="handleObjectClick"
+                :empty-text="loadingObjects ? '正在加载对象列表...' : '当前目录为空'"
               >
                 <el-table-column label="名称" min-width="300">
                   <template #default="{ row }">
@@ -552,7 +653,7 @@
               </el-table>
 
               <!-- 分页 -->
-              <div class="pagination">
+              <div class="pagination" v-if="total > 0">
                 <el-pagination
                   v-model:current-page="currentPage"
                   v-model:page-size="pageSize"
@@ -566,9 +667,16 @@
             </template>
             <template v-else>
               <!-- 没有选择存储桶 -->
-              <div style="padding: 40px; text-align: center; color: #888;">
-                <Icon icon="mdi:folder-outline" :width="40" />
-                <p>请先选择一个存储桶</p>
+              <div class="empty-state">
+                <div class="empty-icon">
+                  <Icon icon="mdi:bucket-outline" :width="60" />
+                </div>
+                <h3>请先选择存储桶</h3>
+                <p>在"存储桶"标签页中选择一个存储桶来浏览其中的对象</p>
+                <el-button type="primary" @click="activeTab = 'buckets'">
+                  <Icon icon="mdi:bucket" />
+                  查看存储桶
+                </el-button>
               </div>
             </template>
           </div>
@@ -879,12 +987,79 @@ const total = ref(0)
 
 // 添加刷新状态变量
 const refreshingStats = ref(false)
+// 添加 NAS 统计信息初始加载状态
+const loadingNASStats = ref(false)
 
 // 添加高级选项的响应式变量
 const advancedOptions = ref([])  // 默认不展开
 
 const testNodeId = ref('')
 const availableNodes = ref([])
+
+// 计算抽屉是否正在加载
+const isDrawerLoading = computed(() => {
+  if (currentStorage.value.type === 'nas') {
+    return loadingNASStats.value || loadingFiles.value
+  } else {
+    return loadingObjects.value || loadingBuckets.value
+  }
+})
+
+// 路径截断工具函数
+const truncatePath = (path, maxLength = 50) => {
+  if (!path || path.length <= maxLength) {
+    return path
+  }
+  
+  // 如果路径以 / 开头，保留开头的 /
+  const hasLeadingSlash = path.startsWith('/')
+  const cleanPath = hasLeadingSlash ? path.slice(1) : path
+  
+  // 分割路径
+  const parts = cleanPath.split('/')
+  
+  if (parts.length <= 2) {
+    // 如果只有1-2个部分，直接截断
+    return (hasLeadingSlash ? '/' : '') + cleanPath.slice(0, maxLength - 3) + '...'
+  }
+  
+  // 保留开头和结尾的部分
+  const firstPart = parts[0]
+  const lastPart = parts[parts.length - 1]
+  const middleParts = parts.slice(1, -1)
+  
+  // 计算可用长度
+  const availableLength = maxLength - firstPart.length - lastPart.length - 6 // '...' + '/' + '...'
+  
+  if (availableLength <= 0) {
+    // 如果空间不够，只显示开头和结尾
+    return (hasLeadingSlash ? '/' : '') + firstPart + '/.../' + lastPart
+  }
+  
+  // 尝试保留一些中间部分
+  let result = (hasLeadingSlash ? '/' : '') + firstPart + '/...'
+  let currentLength = firstPart.length + 4
+  
+  for (const part of middleParts) {
+    if (currentLength + part.length + 1 <= availableLength) {
+      result += '/' + part
+      currentLength += part.length + 1
+    } else {
+      break
+    }
+  }
+  
+  result += '/.../' + lastPart
+  return result
+}
+
+// 路径展开状态
+const pathExpanded = ref(false)
+
+// 切换路径展开状态
+const togglePathExpanded = () => {
+  pathExpanded.value = !pathExpanded.value
+}
 
 // 获取存储列表
 const fetchStorages = async () => {
@@ -1059,10 +1234,29 @@ const handleNameClick = async (row) => {
     bucketPageSize.value = 10
 
     if (row.type === "nas") {
-      // 获取存储桶列表
+      // 重置 NAS 文件浏览状态
+      currentPath.value = ''
+      currentPage.value = 1
+      pageSize.value = 20
+      total.value = 0
+      files.value = []
+      loadingFiles.value = true  // 设置为 true 以显示加载状态
+      loadingNASStats.value = true  // 设置为 true 以显示统计信息加载状态
+      
+      // 获取存储统计信息
       await fetchNASDetails()
+      // 获取根目录文件列表
       await fetchFiles()
     } else {
+      // 重置 S3 对象浏览状态
+      currentBucket.value = ''
+      currentPath.value = ''
+      currentPage.value = 1
+      pageSize.value = 20
+      total.value = 0
+      objects.value = []
+      loadingObjects.value = false
+      
       await fetchBuckets()
     }
   } catch (error) {
@@ -1075,7 +1269,8 @@ const handleNameClick = async (row) => {
 const handleFileClick = (row) => {
   if (row.type === 'directory') {
     currentPath.value = row.path
-    currentPage.value = 1
+    currentPage.value = 1  // 重置到第一页
+    total.value = 0  // 重置总数
     fetchFiles()
   }
 }
@@ -1089,7 +1284,7 @@ const fetchNASDetails = async () => {
       return
     }
     
-    loading.value = true
+    loadingNASStats.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
     
     if (response.data.status === 'task_created') {
@@ -1103,7 +1298,7 @@ const fetchNASDetails = async () => {
     console.error('获取 NAS 存储信息失败:', error)
     ElMessage.error('获取 NAS 存储信息失败')
   } finally {
-    loading.value = false
+    loadingNASStats.value = false
   }
 }
 
@@ -1195,8 +1390,21 @@ const fetchFiles = async () => {
     if (response.data.status === 'task_created') {
       ElMessage.info(`文件列表获取任务已创建，任务ID: ${response.data.task_id}`)
     } else if (response.data.status === 'success') {
-      files.value = response.data.data.objects
-      total.value = response.data.data.total
+      const responseData = response.data.data
+      
+      // 处理分页数据结构，与 fetchBuckets 保持一致
+      if (responseData.objects && Array.isArray(responseData.objects)) {
+        files.value = responseData.objects
+        // 使用分页信息中的total_count
+        if (responseData.pagination) {
+          total.value = responseData.pagination.total_count
+        } else {
+          total.value = responseData.total || responseData.objects.length
+        }
+      } else {
+        files.value = responseData
+        total.value = responseData.length
+      }
     } else {
       ElMessage.error(response.data.message || '获取文件列表失败')
     }
@@ -1296,8 +1504,21 @@ const fetchObjects = async () => {
     if (response.data.status === 'task_created') {
       ElMessage.info(`对象列表获取任务已创建，任务ID: ${response.data.task_id}`)
     } else if (response.data.status === 'success') {
-      objects.value = response.data.data.objects
-      total.value = response.data.data.total
+      const responseData = response.data.data
+      
+      // 处理分页数据结构，与 fetchFiles 保持一致
+      if (responseData.objects && Array.isArray(responseData.objects)) {
+        objects.value = responseData.objects
+        // 使用分页信息中的total_count
+        if (responseData.pagination) {
+          total.value = responseData.pagination.total_count
+        } else {
+          total.value = responseData.total || responseData.objects.length
+        }
+      } else {
+        objects.value = responseData
+        total.value = responseData.length
+      }
     } else {
       ElMessage.error(response.data.message || '获取对象列表失败')
     }
@@ -1314,6 +1535,7 @@ const handleBucketClick = (row) => {
   currentBucket.value = row.name
   currentPath.value = ''
   currentPage.value = 1
+  total.value = 0  // 重置总数
   activeTab.value = 'objects'
   fetchObjects()
 }
@@ -1322,7 +1544,8 @@ const handleBucketClick = (row) => {
 const handleObjectClick = (row) => {
   if (row.type === 'directory') {
     currentPath.value = row.prefix
-    currentPage.value = 1
+    currentPage.value = 1  // 重置到第一页
+    total.value = 0  // 重置总数
     fetchObjects()
   }
 }
@@ -1331,14 +1554,16 @@ const handleObjectClick = (row) => {
 const handleS3BreadcrumbClick = (path) => {
   if (!currentBucket.value) return 
   currentPath.value = path
-  currentPage.value = 1
+  currentPage.value = 1  // 重置到第一页
+  total.value = 0  // 重置总数
   fetchObjects()
 }
 
 // 处理面包屑点击
 const handleNASBreadcrumbClick = (path) => {
   currentPath.value = path
-  currentPage.value = 1
+  currentPage.value = 1  // 重置到第一页
+  total.value = 0  // 重置总数
   fetchFiles()
 }
 
@@ -1346,10 +1571,11 @@ const handleNASBreadcrumbClick = (path) => {
 const handleSizeChange = (val) => {
   pageSize.value = val
   currentPage.value = 1  // 重置到第一页
+  total.value = 0  // 重置总数
   if (currentStorage.value.type === 'nas') {
     fetchFiles()
   } else {
-  fetchObjects()
+    fetchObjects()
   }
 }
 
@@ -1359,7 +1585,7 @@ const handleCurrentChange = (val) => {
   if (currentStorage.value.type === 'nas') {
     fetchFiles()
   } else {
-  fetchObjects()
+    fetchObjects()
   }
 }
 
@@ -1398,7 +1624,13 @@ const handleDrawerClose = () => {
   currentBucket.value = ''
   currentPath.value = ''
   currentPage.value = 1
+  pageSize.value = 20  // 重置页面大小
   total.value = 0
+  files.value = []  // 重置文件列表
+  loadingFiles.value = false  // 重置加载状态
+  loadingObjects.value = false  // 重置对象加载状态
+  loadingNASStats.value = false  // 重置 NAS 统计信息加载状态
+  pathExpanded.value = false  // 重置路径展开状态
 }
 
 // 添加提供商相关的辅助函数
@@ -2010,6 +2242,38 @@ onUnmounted(() => {
   border-radius: 4px;
 }
 
+.breadcrumb :deep(.el-breadcrumb__item) {
+  max-width: 200px;
+}
+
+.breadcrumb :deep(.el-breadcrumb__inner) {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 路径展开按钮样式 */
+.path-expand-button {
+  margin-left: 4px;
+  padding: 0 4px;
+  color: var(--el-color-primary);
+  transition: all 0.3s ease;
+}
+
+.path-expand-button:hover {
+  color: var(--el-color-primary-dark-2);
+  transform: scale(1.1);
+}
+
+/* 路径标签样式 */
+.path-tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+}
+
 .pagination {
   margin-top: 16px;
   display: flex;
@@ -2141,6 +2405,57 @@ onUnmounted(() => {
 
 .file-name:hover {
   color: var(--el-color-primary);
+}
+
+.file-status {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.object-status {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  align-items: center;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--el-text-color-secondary);
+}
+
+.empty-icon {
+  margin-bottom: 16px;
+  color: var(--el-color-info);
+}
+
+.empty-state h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
+.empty-state p {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.breadcrumb-path {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: bottom;
 }
 
 .breadcrumb {
