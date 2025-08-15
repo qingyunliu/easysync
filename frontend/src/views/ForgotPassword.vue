@@ -5,14 +5,14 @@
         <div class="forgot-header">
           <div class="forgot-logo">
             <img src="/src/assets/logo/easysync-login-page.svg">
-            <p>数据同步管理平台</p>
+            <p>{{ $t('auth.dataSyncPlatform') }}</p>
           </div>
         </div>
         <el-card class="forgot-card" shadow="hover">
-          <h2>找回密码</h2>
+          <h2>{{ $t('auth.forgotPassword') }}</h2>
           <el-form :model="form" :rules="rules" ref="formRef" label-width="0" @submit.prevent="handleSubmit">
             <el-form-item prop="email">
-              <el-input v-model="form.email" placeholder="请输入注册邮箱">
+              <el-input v-model="form.email" :placeholder="$t('auth.enterRegisteredEmail')">
                 <template #prefix>
                   <el-icon><Message /></el-icon>
                 </template>
@@ -25,11 +25,11 @@
                 :loading="loading" 
                 class="forgot-btn"
               >
-                发送重置邮件
+                {{ $t('auth.sendResetEmail') }}
               </el-button>
             </el-form-item>
             <div class="login-link">
-              <router-link to="/login">返回登录</router-link>
+              <router-link to="/login">{{ $t('auth.backToLogin') }}</router-link>
             </div>
           </el-form>
         </el-card>
@@ -41,18 +41,20 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Message } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 const router = useRouter()
+const { t } = useI18n()
 const formRef = ref(null)
 const loading = ref(false)
 const form = ref({ email: '' })
 const rules = {
   email: [
-    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+    { required: true, message: t('auth.emailInvalid'), trigger: 'blur' },
+    { type: 'email', message: t('auth.emailInvalid'), trigger: 'blur' }
   ]
 }
 const handleSubmit = async () => {
@@ -65,10 +67,10 @@ const handleSubmit = async () => {
         if (res.data.status === 'success') {
           router.push({ name: 'ResetMailSent', query: { email: form.value.email } })
         } else {
-          ElMessage.error(res.data.msg || '发送失败')
+          ElMessage.error(res.data.msg || t('auth.sendFailed'))
         }
       } catch (e) {
-        ElMessage.error(e.response?.data?.msg || '发送失败')
+        ElMessage.error(e.response?.data?.msg || t('auth.sendFailed'))
       } finally {
         loading.value = false
       }

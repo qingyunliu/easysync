@@ -5,13 +5,13 @@
         <div class="login-header">
           <div class="login-logo">
             <img src="/src/assets/logo/easysync-login-page.svg">
-            <p>数据同步管理平台</p>
+            <p>{{ $t('auth.dataSyncPlatform') }}</p>
           </div>
         </div>
         <el-card class="login-card" shadow="hover">
           <template #header>
             <div class="card-header">
-              <h2>欢迎登录</h2>
+              <h2>{{ $t('auth.welcomeBack') }}</h2>
               <ThemeToggle class="theme-toggle-inline" />
             </div>
           </template>
@@ -19,7 +19,7 @@
             <el-form-item prop="username">
               <el-input 
                 v-model="loginForm.username" 
-                placeholder="用户名或邮箱"
+                :placeholder="$t('auth.username')"
                 class="custom-input"
               >
                 <template #prefix>
@@ -31,7 +31,7 @@
               <el-input 
                 v-model="loginForm.password" 
                 type="password" 
-                placeholder="密码" 
+                :placeholder="$t('auth.password')" 
                 show-password
                 class="custom-input"
               >
@@ -43,14 +43,14 @@
             <el-form-item prop="captcha">
               <el-row :gutter="8">
                 <el-col :span="12">
-                  <el-input v-model="loginForm.captcha" maxlength="4" placeholder="请输入验证码" />
+                  <el-input v-model="loginForm.captcha" maxlength="4" :placeholder="$t('auth.captcha')" />
                 </el-col>
                 <el-col :span="12">
                   <img
                     :src="captchaImg"
                     @click="refreshCaptcha"
                     style="height: 40px; cursor: pointer; border-radius: 4px; border:1px solid var(--border-color); background:var(--bg-color);"
-                    :title="'点击刷新验证码'"
+                    :title="$t('auth.clickToRefresh')"
                   />
                 </el-col>
               </el-row>
@@ -62,14 +62,14 @@
                 :loading="loading" 
                 class="login-button"
               >
-                登录
+                {{ $t('auth.login') }}
               </el-button>
             </el-form-item>
             <div class="register-link">
-              <span>还没有账号？</span>
-              <router-link to="/register">立即注册</router-link>
+              <span>{{ $t('auth.noAccount') }}</span>
+              <router-link to="/register">{{ $t('auth.registerNow') }}</router-link>
               <span class="forgot-link-sep">|</span>
-              <router-link to="/forgot_password" class="forgot-link">忘记密码？</router-link>
+              <router-link to="/forgot_password" class="forgot-link">{{ $t('auth.forgotPasswordLink') }}</router-link>
             </div>
           </el-form>
         </el-card>
@@ -81,6 +81,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
@@ -112,18 +113,20 @@ const loginForm = reactive({
   captcha: ''
 })
 
+const { t } = useI18n()
+
 const rules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 50, message: '用户名长度应在3-50个字符之间', trigger: 'blur' }
+    { required: true, message: t('auth.usernameInvalid'), trigger: 'blur' },
+    { min: 3, max: 50, message: t('auth.usernameTooShort'), trigger: 'blur' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, max: 50, message: '密码长度应在6-50个字符之间', trigger: 'blur' }
+    { required: true, message: t('auth.passwordInvalid'), trigger: 'blur' },
+    { min: 6, max: 50, message: t('auth.passwordTooShort'), trigger: 'blur' }
   ],
   captcha: [
-    { required: true, message: '请输入验证码', trigger: 'blur' },
-    { len: 4, message: '验证码为4位字符', trigger: 'blur' }
+    { required: true, message: t('auth.captchaInvalid'), trigger: 'blur' },
+    { len: 4, message: t('auth.captchaInvalid'), trigger: 'blur' }
   ]
 }
 
@@ -146,7 +149,7 @@ const handleLogin = async () => {
           // 设置axios默认请求头
           axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.access_token}`
           ElMessage.success({
-            message: '登录成功，3秒后自动跳转到主页',
+            message: t('auth.loginSuccess'),
             duration: 3000
           })
           setTimeout(() => {
@@ -154,7 +157,7 @@ const handleLogin = async () => {
           }, 3000)
         }
       } catch (error) {
-        ElMessage.error(error.response?.data?.msg || error.response?.data?.message || '登录失败，请检查用户名、密码和验证码')
+        ElMessage.error(error.response?.data?.msg || error.response?.data?.message || t('auth.loginFailed'))
         refreshCaptcha()
         loginForm.captcha = ''
       } finally {

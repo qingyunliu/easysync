@@ -4,7 +4,7 @@
     <el-card class="system-card">
       <template #header>
         <div class="card-header">
-          <span>系统状态</span>
+          <span>{{ $t('dashboard.systemStatus') }}</span>
         </div>
       </template>
       <div class="system-content">
@@ -12,7 +12,7 @@
           <div class="status-value" :class="getSystemStatusClass(stats.system.systemStatus)">
             {{ stats.system.systemStatus }}
           </div>
-          <div class="status-label">当前系统状态</div>
+          <div class="status-label">{{ $t('dashboard.currentSystemStatus') }}</div>
         </div>
         <div class="system-metrics">
           <div class="metric-item">
@@ -21,7 +21,7 @@
             </div>
             <div class="metric-info">
               <div class="metric-value">{{ stats.system.cpuUsage }}%</div>
-              <div class="metric-label">CPU使用率</div>
+              <div class="metric-label">{{ $t('dashboard.cpuUsage') }}</div>
             </div>
           </div>
           <div class="metric-item">
@@ -30,7 +30,7 @@
             </div>
             <div class="metric-info">
               <div class="metric-value">{{ stats.system.memoryUsage }}%</div>
-              <div class="metric-label">内存使用率</div>
+              <div class="metric-label">{{ $t('dashboard.memoryUsage') }}</div>
             </div>
           </div>
           <div class="metric-item">
@@ -39,7 +39,7 @@
             </div>
             <div class="metric-info">
               <div class="metric-value">{{ stats.system.diskUsage }}%</div>
-              <div class="metric-label">磁盘使用率</div>
+              <div class="metric-label">{{ $t('dashboard.diskUsage') }}</div>
             </div>
           </div>
           <div class="metric-item">
@@ -48,7 +48,7 @@
             </div>
             <div class="metric-info">
               <div class="metric-value">{{ formatSize(stats.system.networkTraffic) }}/s</div>
-              <div class="metric-label">网络流量</div>
+              <div class="metric-label">{{ $t('dashboard.networkTraffic') }}</div>
             </div>
           </div>
         </div>
@@ -61,28 +61,28 @@
         <el-card class="resource-card">
           <template #header>
             <div class="card-header">
-              <span>客户端</span>
-              <el-button type="text" @click="$router.push('/clients')">查看全部</el-button>
+              <span>{{ $t('dashboard.clients') }}</span>
+              <el-button type="text" @click="$router.push('/clients')">{{ $t('dashboard.viewAll') }}</el-button>
             </div>
           </template>
           <div class="resource-content">
             <div class="resource-value">{{ stats.clients.clientCount }}</div>
-            <div class="resource-label">已配置客户端</div>
+            <div class="resource-label">{{ $t('dashboard.configuredClients') }}</div>
             <div class="resource-detail">
               <div class="detail-item">
-                <span class="label">在线:</span>
+                <span class="label">{{ $t('dashboard.online') }}:</span>
                 <span class="value success">{{ stats.clients.onlineClients }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">离线:</span>
+                <span class="label">{{ $t('dashboard.offline') }}:</span>
                 <span class="value warning">{{ stats.clients.offlineClients }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">Agent已安装:</span>
+                <span class="label">{{ $t('dashboard.installed') }}:</span>
                 <span class="value">{{ stats.clients.installedAgents }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">Agent未安装:</span>
+                <span class="label">{{ $t('dashboard.uninstalled') }}:</span>
                 <span class="value">{{ stats.clients.uninstalledAgents }}</span>
               </div>
             </div>
@@ -94,28 +94,28 @@
         <el-card class="resource-card">
           <template #header>
             <div class="card-header">
-              <span>节点</span>
-              <el-button type="text" @click="$router.push('/nodes')">查看全部</el-button>
+              <span>{{ $t('dashboard.nodes') }}</span>
+              <el-button type="text" @click="$router.push('/nodes')">{{ $t('dashboard.viewAll') }}</el-button>
             </div>
           </template>
           <div class="resource-content">
             <div class="resource-value">{{ stats.nodes.nodeCount }}</div>
-            <div class="resource-label">已配置节点</div>
+            <div class="resource-label">{{ $t('dashboard.configuredNodes') }}</div>
             <div class="resource-detail">
               <div class="detail-item">
-                <span class="label">在线:</span>
+                <span class="label">{{ $t('dashboard.online') }}:</span>
                 <span class="value success">{{ stats.nodes.onlineNodes }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">离线:</span>
+                <span class="label">{{ $t('dashboard.offline') }}:</span>
                 <span class="value warning">{{ stats.nodes.offlineNodes }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">Proxy已安装:</span>
+                <span class="label">{{ $t('dashboard.proxyInstalled') }}:</span>
                 <span class="value">{{ stats.nodes.installedNodes }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">Proxy未安装:</span>
+                <span class="label">{{ $t('dashboard.proxyUninstalled') }}:</span>
                 <span class="value">{{ stats.nodes.uninstalledNodes }}</span>
               </div>
             </div>
@@ -127,28 +127,28 @@
         <el-card class="resource-card">
           <template #header>
             <div class="card-header">
-              <span>存储节点</span>
-              <el-button type="text" @click="$router.push('/storages')">查看全部</el-button>
+              <span>{{ $t('dashboard.storages') }}</span>
+              <el-button type="text" @click="$router.push('/storages')">{{ $t('dashboard.viewAll') }}</el-button>
             </div>
           </template>
           <div class="resource-content">
             <div class="resource-value">{{ stats.storages.storageCount }}</div>
-            <div class="resource-label">已配置存储节点</div>
+            <div class="resource-label">{{ $t('dashboard.configuredStorages') }}</div>
             <div class="resource-detail">
               <div class="detail-item">
-                <span class="label">已挂载:</span>
+                <span class="label">{{ $t('dashboard.mounted') }}:</span>
                 <span class="value success">{{ stats.storages.mountedCount }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">未挂载:</span>
+                <span class="label">{{ $t('dashboard.unmounted') }}:</span>
                 <span class="value warning">{{ stats.storages.unmountedCount }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">总容量:</span>
+                <span class="label">{{ $t('dashboard.totalCapacity') }}:</span>
                 <span class="value">{{ formatSize(stats.storages.totalStorageSize) }}</span>
               </div>
               <div class="detail-item">
-                <span class="label">已使用:</span>
+                <span class="label">{{ $t('dashboard.usedCapacity') }}:</span>
                 <span class="value">{{ formatSize(stats.storages.usedStorageSize) }}</span>
               </div>
             </div>
@@ -161,51 +161,51 @@
     <el-card class="task-card">
       <template #header>
         <div class="card-header">
-          <span>同步任务</span>
-          <el-button type="text" @click="$router.push('/tasks')">查看全部</el-button>
+          <span>{{ $t('dashboard.tasks') }}</span>
+          <el-button type="text" @click="$router.push('/tasks')">{{ $t('dashboard.viewAll') }}</el-button>
         </div>
       </template>
       <div class="task-content">
         <div class="task-overview">
           <div class="overview-item">
             <div class="overview-value">{{ stats.tasks.taskCount }}</div>
-            <div class="overview-label">总任务数</div>
+            <div class="overview-label">{{ $t('dashboard.totalTasks') }}</div>
           </div>
           <div class="overview-item">
             <div class="overview-value success">{{ stats.tasks.runningCount }}</div>
-            <div class="overview-label">运行中</div>
+            <div class="overview-label">{{ $t('dashboard.running') }}</div>
           </div>
           <div class="overview-item">
             <div class="overview-value">{{ stats.tasks.stoppedCount }}</div>
-            <div class="overview-label">已停止</div>
+            <div class="overview-label">{{ $t('dashboard.stopped') }}</div>
           </div>
           <div class="overview-item">
             <div class="overview-value">{{ stats.tasks.todaySyncCount }}</div>
-            <div class="overview-label">今日同步</div>
+            <div class="overview-label">{{ $t('dashboard.todaySync') }}</div>
           </div>
           <div class="overview-item">
             <div class="overview-value" :class="getSuccessRateClass(calculateSuccessRate())">
               {{ calculateSuccessRate() }}%
             </div>
-            <div class="overview-label">成功率</div>
+            <div class="overview-label">{{ $t('dashboard.successRate') }}</div>
           </div>
         </div>
         <div class="task-detail">
           <el-table :data="recentTasks" style="width: 100%" :max-height="300">
-            <el-table-column prop="name" label="任务名称" min-width="150" />
-            <el-table-column prop="status" label="状态" width="100">
+            <el-table-column prop="name" :label="$t('dashboard.taskName')" min-width="150" />
+            <el-table-column prop="status" :label="$t('dashboard.status')" width="100">
               <template #default="scope">
                 <el-tag :type="getStatusType(scope.row.status)">
                   {{ getStatusText(scope.row.status) }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="start_time" label="开始时间" width="180">
+            <el-table-column prop="start_time" :label="$t('dashboard.startTime')" width="180">
               <template #default="scope">
                 {{ formatDateTime(scope.row.start_time) }}
               </template>
             </el-table-column>
-            <el-table-column prop="end_time" label="结束时间" width="180">
+            <el-table-column prop="end_time" :label="$t('dashboard.endTime')" width="180">
               <template #default="scope">
                 {{ scope.row.end_time ? formatDateTime(scope.row.end_time) : '-' }}
               </template>
@@ -221,7 +221,7 @@
         <div class="card-header">
           <div class="header-left">
             <el-icon class="header-icon"><Bell /></el-icon>
-            <span class="header-title">系统通知</span>
+            <span class="header-title">{{ $t('dashboard.systemNotifications') }}</span>
             <el-badge 
               v-if="unreadNotificationCount > 0" 
               :value="unreadNotificationCount" 
@@ -235,14 +235,14 @@
               v-if="unreadNotificationCount > 0"
               size="small"
             >
-              全部已读
+              {{ $t('dashboard.markAllAsRead') }}
             </el-button>
             <el-button 
               type="text" 
               @click="$router.push('/notifications')" 
               size="small"
             >
-              查看全部
+              {{ $t('dashboard.viewAll') }}
             </el-button>
           </div>
         </div>
@@ -251,8 +251,8 @@
       <div class="notification-content">
         <div v-if="recentNotifications.length === 0" class="empty-notifications">
           <el-icon class="empty-icon"><ChatDotSquare /></el-icon>
-          <p class="empty-text">暂无通知消息</p>
-          <p class="empty-desc">系统消息将在此处显示</p>
+          <p class="empty-text">{{ $t('dashboard.noNotifications') }}</p>
+          <p class="empty-desc">{{ $t('dashboard.systemMessagesWillShowHere') }}</p>
         </div>
         
         <div v-else class="notification-list">
@@ -297,7 +297,7 @@
                 @click.stop="markAsRead(notification.id)"
                 class="mark-read-btn"
               >
-                标记已读
+                {{ $t('dashboard.markAsRead') }}
               </el-button>
               <el-dropdown @command="handleNotificationAction" trigger="click">
                 <el-button type="text" size="small">
@@ -306,7 +306,7 @@
                 <template #dropdown>
                   <el-dropdown-menu>
                     <el-dropdown-item :command="{ action: 'delete', id: notification.id }">
-                      删除通知
+                      {{ $t('dashboard.deleteNotification') }}
                     </el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
@@ -322,7 +322,7 @@
             :loading="loadingMore"
             class="load-more-btn"
           >
-            加载更多
+            {{ $t('dashboard.loadMore') }}
           </el-button>
         </div>
       </div>
@@ -332,6 +332,7 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { 
   Cpu,
@@ -350,6 +351,8 @@ import {
   DataLine as Memory
 } from '@element-plus/icons-vue'
 import axios from 'axios'
+
+const { t } = useI18n()
 
 // 统计数据
 const stats = ref({
@@ -411,7 +414,7 @@ const fetchDashboardData = async () => {
     recentTasks.value = response.data.data.recent_tasks
     recentNotifications.value = response.data.data.recent_notifications
   } catch (error) {
-    ElMessage.error('获取仪表盘数据失败')
+    ElMessage.error(t('dashboard.fetchDataFailed'))
   }
 }
 
@@ -432,13 +435,13 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   switch (status) {
     case 'completed':
-      return '成功'
+      return t('dashboard.success')
     case 'failed':
-      return '失败'
+      return t('dashboard.failed')
     case 'running':
-      return '运行中'
+      return t('dashboard.running')
     default:
-      return '未知'
+      return t('dashboard.unknown')
   }
 }
 
@@ -478,10 +481,10 @@ const formatRelativeTime = (dateStr) => {
   const diffHours = Math.floor(diffMins / 60)
   const diffDays = Math.floor(diffHours / 24)
 
-  if (diffMins < 1) return '刚刚'
-  if (diffMins < 60) return `${diffMins}分钟前`
-  if (diffHours < 24) return `${diffHours}小时前`
-  if (diffDays < 7) return `${diffDays}天前`
+  if (diffMins < 1) return t('dashboard.justNow')
+  if (diffMins < 60) return `${diffMins} ${t('dashboard.minutesAgo')}`
+  if (diffHours < 24) return `${diffHours} ${t('dashboard.hoursAgo')}`
+  if (diffDays < 7) return `${diffDays} ${t('dashboard.daysAgo')}`
   return formatDateTime(dateStr)
 }
 
@@ -527,25 +530,25 @@ const getNotificationTagType = (level) => {
 
 const getNotificationLevelText = (level) => {
   const textMap = {
-    'info': '信息',
-    'success': '成功',
-    'warning': '警告',
-    'error': '错误',
-    'critical': '严重'
+    'info': t('dashboard.info'),
+    'success': t('dashboard.success'),
+    'warning': t('dashboard.warning'),
+    'error': t('dashboard.error'),
+    'critical': t('dashboard.critical')
   }
-  return textMap[level] || '信息'
+  return textMap[level] || t('dashboard.info')
 }
 
 const getNotificationTypeText = (type) => {
   const textMap = {
-    'task_completed': '任务完成',
-    'task_failed': '任务失败',
-    'task_started': '任务开始',
-    'system_error': '系统错误',
-    'storage_mounted': '存储挂载',
-    'storage_unmounted': '存储卸载'
+    'task_completed': t('dashboard.taskCompleted'),
+    'task_failed': t('dashboard.taskFailed'),
+    'task_started': t('dashboard.taskStarted'),
+    'system_error': t('dashboard.systemError'),
+    'storage_mounted': t('dashboard.storageMounted'),
+    'storage_unmounted': t('dashboard.storageUnmounted')
   }
-  return textMap[type] || '系统通知'
+  return textMap[type] || t('dashboard.systemNotification')
 }
 
 // 通知操作方法
@@ -562,9 +565,9 @@ const markAsRead = async (notificationId) => {
     if (notification) {
       notification.is_read = true
     }
-    ElMessage.success('标记已读成功')
+    ElMessage.success(t('dashboard.markAsReadSuccess'))
   } catch (error) {
-    ElMessage.error('标记已读失败')
+    ElMessage.error(t('dashboard.markAsReadFailed'))
   }
 }
 
@@ -580,9 +583,9 @@ const markAllAsRead = async () => {
       n.is_read = true
     })
     
-    ElMessage.success('全部标记已读成功')
+    ElMessage.success(t('dashboard.markAllAsReadSuccess'))
   } catch (error) {
-    ElMessage.error('标记已读失败')
+    ElMessage.error(t('dashboard.markAllAsReadFailed'))
   }
 }
 
@@ -594,9 +597,9 @@ const handleNotificationAction = async ({ action, id }) => {
       if (index > -1) {
         recentNotifications.value.splice(index, 1)
       }
-      ElMessage.success('删除成功')
+      ElMessage.success(t('dashboard.deleteSuccess'))
     } catch (error) {
-      ElMessage.error('删除失败')
+      ElMessage.error(t('dashboard.deleteFailed'))
     }
   }
 }
@@ -622,10 +625,10 @@ const loadMoreNotifications = async () => {
     }
     
     if (newNotifications.length === 0) {
-      ElMessage.info('已加载全部通知')
+      ElMessage.info(t('dashboard.allNotificationsLoaded'))
     }
   } catch (error) {
-    ElMessage.error('加载更多失败')
+    ElMessage.error(t('dashboard.loadMoreFailed'))
   } finally {
     loadingMore.value = false
   }

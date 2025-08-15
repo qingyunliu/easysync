@@ -5,13 +5,13 @@
         <div class="register-header">
           <div class="register-logo">
             <img src="/src/assets/logo/easysync-login-page.svg">
-            <p>数据同步管理平台</p>
+            <p>{{ $t('auth.dataSyncPlatform') }}</p>
           </div>
         </div>
         <el-card class="register-card" shadow="hover">
           <template #header>
             <div class="card-header">
-              <h2>创建账号</h2>
+              <h2>{{ $t('auth.createAccount') }}</h2>
               <ThemeToggle class="theme-toggle-inline" />
             </div>
           </template>
@@ -19,7 +19,7 @@
             <el-form-item prop="username">
               <el-input 
                 v-model="registerForm.username" 
-                placeholder="用户名"
+                :placeholder="$t('auth.username')"
                 class="custom-input"
               >
                 <template #prefix>
@@ -30,7 +30,7 @@
             <el-form-item prop="email">
               <el-input 
                 v-model="registerForm.email" 
-                placeholder="邮箱"
+                :placeholder="$t('auth.email')"
                 class="custom-input"
               >
                 <template #prefix>
@@ -42,7 +42,7 @@
               <el-input 
                 v-model="registerForm.password" 
                 type="password" 
-                placeholder="密码" 
+                :placeholder="$t('auth.password')" 
                 show-password
                 class="custom-input"
               >
@@ -55,7 +55,7 @@
               <el-input 
                 v-model="registerForm.confirmPassword" 
                 type="password" 
-                placeholder="确认密码" 
+                :placeholder="$t('auth.confirmPassword')" 
                 show-password
                 class="custom-input"
               >
@@ -71,12 +71,12 @@
                 :loading="loading" 
                 class="register-button"
               >
-                注册
+                {{ $t('auth.register') }}
               </el-button>
             </el-form-item>
             <div class="login-link">
-              <span>已有账号？</span>
-              <router-link to="/login">立即登录</router-link>
+              <span>{{ $t('auth.haveAccount') }}</span>
+              <router-link to="/login">{{ $t('auth.loginNow') }}</router-link>
             </div>
           </el-form>
         </el-card>
@@ -88,12 +88,14 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { User, Message, Lock } from '@element-plus/icons-vue'
 import axios from 'axios'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 
 const router = useRouter()
+const { t } = useI18n()
 const registerFormRef = ref(null)
 const loading = ref(false)
 
@@ -106,7 +108,7 @@ const registerForm = reactive({
 
 const validatePass = (rule, value, callback) => {
   if (value === '') {
-    callback(new Error('请输入密码'))
+    callback(new Error(t('auth.passwordInvalid')))
   } else {
     if (registerForm.confirmPassword !== '') {
       registerFormRef.value?.validateField('confirmPassword')
@@ -117,9 +119,9 @@ const validatePass = (rule, value, callback) => {
 
 const validatePass2 = (rule, value, callback) => {
   if (value === '') {
-    callback(new Error('请再次输入密码'))
+    callback(new Error(t('auth.confirmPasswordInvalid')))
   } else if (value !== registerForm.password) {
-    callback(new Error('两次输入密码不一致'))
+    callback(new Error(t('auth.passwordMismatch')))
   } else {
     callback()
   }
@@ -127,16 +129,16 @@ const validatePass2 = (rule, value, callback) => {
 
 const rules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度应在3-20个字符之间', trigger: 'blur' }
+    { required: true, message: t('auth.usernameInvalid'), trigger: 'blur' },
+    { min: 3, max: 20, message: t('auth.usernameTooShort'), trigger: 'blur' }
   ],
   email: [
-    { required: true, message: '请输入邮箱地址', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
+    { required: true, message: t('auth.emailInvalid'), trigger: 'blur' },
+    { type: 'email', message: t('auth.emailInvalid'), trigger: 'blur' }
   ],
   password: [
     { required: true, validator: validatePass, trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度应在6-20个字符之间', trigger: 'blur' }
+    { min: 6, max: 20, message: t('auth.passwordTooShort'), trigger: 'blur' }
   ],
   confirmPassword: [
     { required: true, validator: validatePass2, trigger: 'blur' }
@@ -158,7 +160,7 @@ const handleRegister = async () => {
         
         if (response.data.status === 'success') {
           ElMessage.success({
-            message: '注册成功，已发送激活邮件',
+            message: t('auth.registerSuccess'),
             duration: 1500
           })
           setTimeout(() => {
@@ -166,7 +168,7 @@ const handleRegister = async () => {
           }, 1500)
         }
       } catch (error) {
-        ElMessage.error(error.response?.data?.msg || error.response?.data?.message || '注册失败，请稍后再试')
+        ElMessage.error(error.response?.data?.msg || error.response?.data?.message || t('auth.registerFailed'))
       } finally {
         loading.value = false
       }

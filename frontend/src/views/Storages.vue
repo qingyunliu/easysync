@@ -2,14 +2,14 @@
   <div class="storages-container">
     <div class="header">
       <div class="header-left">
-        <h2>存储管理</h2>
-        <p class="page-description">管理和监控存储的创建、配置和使用</p>
+        <h2>{{ $t('storage.title') }}</h2>
+        <p class="page-description">{{ $t('storage.description') }}</p>
       </div>
       <div class="header-right">
         <div class="header-actions">
           <el-input
             v-model="searchQuery"
-            placeholder="搜索存储"
+            :placeholder="$t('storage.searchStorage')"
             clearable
             class="search-input"
           >
@@ -19,13 +19,13 @@
           </el-input>
           <el-dropdown @command="handleAddStorage" trigger="click">
             <el-button type="primary">
-              <Icon icon="mdi:plus" />&nbsp;添加存储
+              <Icon icon="mdi:plus" />&nbsp;{{ $t('storage.addStorage') }}
               <Icon icon="mdi:chevron-down" class="el-icon--right" />
             </el-button>
             <template #dropdown>
               <el-dropdown-menu>
-                <el-dropdown-item command="nas">添加 NAS 存储</el-dropdown-item>
-                <el-dropdown-item command="s3">添加 OBS 存储</el-dropdown-item>
+                <el-dropdown-item command="nas">{{ $t('storage.addNasStorage') }}</el-dropdown-item>
+                <el-dropdown-item command="s3">{{ $t('storage.addObsStorage') }}</el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
@@ -39,7 +39,7 @@
         <template #title>
           <div class="section-header">
             <Icon icon="mdi:folder-network" />
-            <span>NAS 设备</span>
+            <span>{{ $t('storage.nasDevices') }}</span>
             <el-tag type="warning" class="count-tag">{{ nasStorages.length }}</el-tag>
           </div>
         </template>
@@ -50,7 +50,7 @@
           v-loading="loading"
           :fit="false"
         >
-          <el-table-column prop="name" label="名称" min-width="180" :resizable="true">
+          <el-table-column prop="name" :label="$t('storage.name')" min-width="180" :resizable="true">
             <template #default="{ row }">
               <div class="storage-name-cell">
                 <Icon icon="mdi:folder-network" class="icon-nas" :width="20" />
@@ -60,28 +60,28 @@
               </div>
             </template>
       </el-table-column>
-          <el-table-column prop="config.protocol" label="协议类型">
+          <el-table-column prop="config.protocol" :label="$t('storage.protocolType')">
             <template #default="{ row }">
               <el-tag>{{ row.config.protocol === 'nfs' ? 'NFS' : 'CIFS' }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="config.server" label="服务器" min-width="160" :resizable="true" />
-          <el-table-column prop="config.path" label="共享目录" min-width="180" :resizable="true" />
-          <el-table-column prop="config.is_mounted" label="挂载状态" min-width="100" :resizable="true">
+          <el-table-column prop="config.server" :label="$t('storage.server')" min-width="160" :resizable="true" />
+          <el-table-column prop="config.path" :label="$t('storage.sharedDirectory')" min-width="180" :resizable="true" />
+          <el-table-column prop="config.is_mounted" :label="$t('storage.mountStatus')" min-width="100" :resizable="true">
             <template #default="{ row }">
                   <el-tag :type="row.config.is_mounted ? 'success' : 'info'">
-                    {{ row.config.is_mounted ? '已挂载' : '未挂载' }}
+                    {{ row.config.is_mounted ? $t('storage.mounted') : $t('storage.unmounted') }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="created_at" label="创建时间" min-width="160" :resizable="true" />
-          <el-table-column prop="node_id" label="绑定节点" min-width="140" :resizable="true">
+          <el-table-column prop="created_at" :label="$t('storage.createTime')" min-width="160" :resizable="true" />
+          <el-table-column prop="node_id" :label="$t('storage.boundNode')" min-width="140" :resizable="true">
             <template #default="{ row }">
-              <el-tag v-if="row.node_id" type="success" size="small">已绑定</el-tag>
-              <el-tag v-else type="warning" size="small">未绑定</el-tag>
+              <el-tag v-if="row.node_id" type="success" size="small">{{ $t('storage.bound') }}</el-tag>
+              <el-tag v-else type="warning" size="small">{{ $t('storage.unbound') }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" min-width="280" fixed="right">
+          <el-table-column :label="$t('storage.actions')" min-width="280" fixed="right">
             <template #default="{ row }">
               <StorageActions :storage="row" @refresh="fetchStorages" />
             </template>
@@ -94,7 +94,7 @@
         <template #title>
           <div class="section-header">
             <Icon icon="mdi:cloud" />
-            <span>OBS 存储</span>
+            <span>{{ $t('storage.obsStorage') }}</span>
             <el-tag type="primary" class="count-tag">{{ s3Storages.length }}</el-tag>
           </div>
         </template>
@@ -197,27 +197,27 @@
                   </el-descriptions-item>
                   <el-descriptions-item label="挂载状态">
                     <el-tag :type="currentStorage.config.is_mounted ? 'success' : 'info'">
-                      {{ currentStorage.config.is_mounted ? '已挂载' : '未挂载' }}
+                      {{ currentStorage.config.is_mounted ? $t('storage.mounted') : $t('storage.unmounted') }}
                     </el-tag>
                   </el-descriptions-item>
                 </template>
                 <template v-else>
-                  <el-descriptions-item label="提供商">
+                  <el-descriptions-item :label="$t('storage.provider')">
                     <el-tag :type="getProviderType(currentStorage.config?.provider)">
                       {{ getProviderText(currentStorage.config?.provider) }}
                     </el-tag>
                   </el-descriptions-item>
-                  <el-descriptions-item label="Endpoint">
+                  <el-descriptions-item :label="$t('storage.endpoint')">
                     {{ currentStorage.config?.endpoint }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="区域">
+                  <el-descriptions-item :label="$t('storage.region')">
                     {{ currentStorage.config?.region }}
                   </el-descriptions-item>
                 </template>
-                <el-descriptions-item label="创建时间">
+                <el-descriptions-item :label="$t('storage.createTime')">
                   {{ formatDate(currentStorage.created_at) }}
                 </el-descriptions-item>
-                <el-descriptions-item label="最后更新">
+                <el-descriptions-item :label="$t('storage.lastUpdate')">
                   {{ formatDate(currentStorage.updated_at) }}
                 </el-descriptions-item>
               </el-descriptions>
@@ -228,25 +228,25 @@
               <el-card class="info-card">
                 <template #header>
                   <div class="card-header">
-                    <span>存储使用情况</span>
+                    <span>{{ $t('storage.storageUsage') }}</span>
                     <el-button 
                       type="primary" 
                       link 
                       @click="refreshNASStats"
                       :loading="refreshingStats"
                     >
-                      <Icon icon="mdi:refresh" :class="{ 'rotating': refreshingStats }" />刷新
+                      <Icon icon="mdi:refresh" :class="{ 'rotating': refreshingStats }" />{{ $t('storage.refresh') }}
                     </el-button>
                   </div>
                 </template>
-                <div class="stats-grid" v-loading="refreshingStats || loadingNASStats" element-loading-text="正在获取存储统计信息...">
+                <div class="stats-grid" v-loading="refreshingStats || loadingNASStats" :element-loading-text="$t('storage.loadingStorageStats')">
                   <div class="stat-item">
                     <div class="stat-icon">
                       <Icon icon="mdi:harddisk" :width="24" />
                     </div>
                     <div class="stat-content">
                       <div class="stat-value">{{ formatSize(nasStats.total_size) }}</div>
-                      <div class="stat-label">总容量</div>
+                      <div class="stat-label">{{ $t('storage.totalSize') }}</div>
                     </div>
                   </div>
                   <div class="stat-item">
@@ -255,7 +255,7 @@
                     </div>
                     <div class="stat-content">
                       <div class="stat-value">{{ formatSize(nasStats.used_size) }}</div>
-                      <div class="stat-label">已用空间</div>
+                      <div class="stat-label">{{ $t('storage.usedSize') }}</div>
                     </div>
                   </div>
                   <div class="stat-item">
@@ -264,7 +264,7 @@
                     </div>
                     <div class="stat-content">
                       <div class="stat-value">{{ nasStats.total_files || 0 }}</div>
-                      <div class="stat-label">文件数量</div>
+                      <div class="stat-label">{{ $t('storage.totalFiles') }}</div>
                     </div>
                   </div>
                   <div class="stat-item">
@@ -273,7 +273,7 @@
                     </div>
                     <div class="stat-content">
                       <div class="stat-value">{{ nasStats.total_objects || 0 }}</div>
-                      <div class="stat-label">对象数量</div>
+                      <div class="stat-label">{{ $t('storage.totalObjects') }}</div>
                     </div>
                   </div>
                 </div>
@@ -284,7 +284,7 @@
               <el-card class="info-card">
                 <template #header>
                   <div class="card-header">
-                    <span>统计信息</span>
+                    <span>{{ $t('storage.statistics') }}</span>
                     <el-button 
                       type="primary" 
                       link 
@@ -292,18 +292,18 @@
                       :loading="refreshingStats"
                       :disabled="refreshingStats"
                     >
-                      <Icon icon="mdi:refresh" :class="{ 'rotating': refreshingStats }" />刷新
+                      <Icon icon="mdi:refresh" :class="{ 'rotating': refreshingStats }" />{{ $t('storage.refresh') }}
                     </el-button>
                   </div>
                 </template>
-                <div class="stats-grid" v-loading="refreshingStats" element-loading-text="正在获取统计信息...">
+                <div class="stats-grid" v-loading="refreshingStats" :element-loading-text="$t('storage.loadingStats')">
                   <div class="stat-item">
                     <div class="stat-icon">
                       <Icon icon="mdi:bucket" :width="24" />
                     </div>
                     <div class="stat-content">
                       <div class="stat-value">{{ storageStats.bucket_count || 0 }}</div>
-                      <div class="stat-label">存储桶数量</div>
+                      <div class="stat-label">{{ $t('storage.bucketCount') }}</div>
                     </div>
                   </div>
                   <div class="stat-item">
@@ -312,7 +312,7 @@
                     </div>
                     <div class="stat-content">
                       <div class="stat-value">{{ storageStats.object_count || 0 }}</div>
-                      <div class="stat-label">对象数量</div>
+                      <div class="stat-label">{{ $t('storage.totalObjects') }}</div>
                     </div>
                   </div>
                   <div class="stat-item">
@@ -321,7 +321,7 @@
                     </div>
                     <div class="stat-content">
                       <div class="stat-value">{{ formatSize(storageStats.total_size || 0) }}</div>
-                      <div class="stat-label">总存储量</div>
+                      <div class="stat-label">{{ $t('storage.totalStorage') }}</div>
                     </div>
                   </div>
                   <div class="stat-item">
@@ -330,7 +330,7 @@
                     </div>
                     <div class="stat-content">
                       <div class="stat-value">{{ formatDate(storageStats.last_modified) }}</div>
-                      <div class="stat-label">最后更新</div>
+                      <div class="stat-label">{{ $t('storage.lastModified') }}</div>
                     </div>
                   </div>
                 </div>
@@ -341,11 +341,11 @@
             <el-card class="info-card" v-if="storageStats.bucket_stats && storageStats.bucket_stats.length > 0">
               <template #header>
                 <div class="card-header">
-                  <span>存储桶使用情况</span>
+                  <span>{{ $t('storage.bucketUsage') }}</span>
                 </div>
               </template>
               <el-table :data="storageStats.bucket_stats" style="width: 100%">
-                <el-table-column prop="name" label="存储桶名称" min-width="200">
+                <el-table-column prop="name" :label="$t('storage.bucketName')" min-width="200">
                   <template #default="{ row }">
                     <div class="bucket-name">
                       <Icon icon="mdi:bucket" :width="20" />
@@ -353,13 +353,13 @@
                     </div>
                   </template>
                 </el-table-column>
-                <el-table-column prop="object_count" label="对象数量" width="120" />
-                <el-table-column prop="size" label="存储大小" width="120">
+                <el-table-column prop="object_count" :label="$t('storage.objectCount')" width="120" />
+                <el-table-column prop="size" :label="$t('storage.storageSize')" width="120">
                   <template #default="{ row }">
                     {{ formatSize(row.size) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="last_modified" label="最后更新" width="180">
+                <el-table-column prop="last_modified" :label="$t('storage.lastModified')" width="180">
                   <template #default="{ row }">
                     {{ formatDate(row.last_modified) }}
                   </template>
@@ -370,7 +370,7 @@
         </el-tab-pane>
 
         <!-- 文件浏览标签页 -->
-        <el-tab-pane v-if="currentStorage.type === 'nas'" label="文件浏览" name="files">
+        <el-tab-pane v-if="currentStorage.type === 'nas'" :label="$t('storage.fileBrowse')" name="files">
           <div class="files-content scrollable-content">
             <!-- 面包屑导航 -->
             <div class="breadcrumb">
@@ -380,7 +380,7 @@
                   @click="!currentPath && $event.preventDefault(); handleNASBreadcrumbClick('')"
                   style="cursor: pointer;"
                 >
-                  根目录
+                  {{ $t('storage.rootDirectory') }}
                 </el-breadcrumb-item>
                 <el-breadcrumb-item 
                   v-for="(path, index) in currentPath.split('/').filter(Boolean)" 
@@ -406,16 +406,16 @@
             <!-- 文件状态信息 -->
             <div class="file-status" v-if="!loadingFiles && total > 0">
               <el-tag type="info" size="small">
-                共 {{ total }} 个文件/文件夹
+                {{ $t('storage.fileCount', { count: total }) }}
               </el-tag>
                               <el-tag type="success" size="small" v-if="currentPath">
                   <el-tooltip 
-                    :content="`当前路径: ${currentPath}`" 
+                    :content="$t('storage.currentPathLabel', { path: currentPath })" 
                     placement="top" 
                     :show-after="300"
                     :disabled="currentPath.length <= 40"
                   >
-                    <span>当前路径: {{ pathExpanded ? currentPath : truncatePath(currentPath, 40) }}</span>
+                    <span>{{ $t('storage.currentPathLabel', { path: pathExpanded ? currentPath : truncatePath(currentPath, 40) }) }}</span>
                   </el-tooltip>
                   <el-button 
                     v-if="currentPath.length > 40"
@@ -432,13 +432,13 @@
             <div class="file-status" v-if="loadingFiles">
               <el-tag type="warning" size="small">
                 <Icon icon="mdi:loading" class="rotating" />
-                正在加载文件列表...
+                {{ $t('storage.loadingFiles') }}
               </el-tag>
             </div>
             <!-- 空状态信息 -->
             <div class="file-status" v-if="!loadingFiles && total === 0">
               <el-tag type="info" size="small">
-                当前目录为空
+                {{ $t('storage.emptyDirectory') }}
               </el-tag>
             </div>
 
@@ -448,9 +448,9 @@
               style="width: 100%"
               v-loading="loadingFiles"
               @row-click="handleFileClick"
-              :empty-text="loadingFiles ? '正在加载文件列表...' : '当前目录为空'"
+              :empty-text="loadingFiles ? $t('storage.loadingFiles') : $t('storage.emptyDirectory')"
             >
-              <el-table-column label="名称" min-width="300">
+              <el-table-column :label="$t('storage.name')" min-width="300">
                 <template #default="{ row }">
                   <div class="file-name">
                     <Icon :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" :width="20" />
@@ -458,17 +458,17 @@
                   </div>
                 </template>
               </el-table-column>
-              <el-table-column prop="size" label="大小" width="120">
+              <el-table-column prop="size" :label="$t('storage.size')" width="120">
                 <template #default="{ row }">
                   {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="modified_time" label="修改时间" width="180">
+              <el-table-column prop="modified_time" :label="$t('storage.modifiedTime')" width="180">
                 <template #default="{ row }">
                   {{ formatDate(row.modified_time) }}
                 </template>
               </el-table-column>
-              <el-table-column label="操作" width="120" fixed="right">
+              <el-table-column :label="$t('storage.actions')" width="120" fixed="right">
                 <template #default="{ row }">
                   <el-button 
                     v-if="row.type !== 'directory'"
@@ -498,7 +498,7 @@
         </el-tab-pane>
 
         <!-- 存储桶列表标签页 -->
-        <el-tab-pane v-if="currentStorage.type === 's3'" label="存储桶" name="buckets">
+        <el-tab-pane v-if="currentStorage.type === 's3'" :label="$t('storage.buckets')" name="buckets">
           <div class="buckets-content scrollable-content">
             <el-table
               :data="buckets"
@@ -506,7 +506,7 @@
               v-loading="loadingBuckets"
               @row-click="handleBucketClick"
             >
-              <el-table-column prop="name" label="存储桶名称" min-width="200">
+              <el-table-column prop="name" :label="$t('storage.bucketName')" min-width="200">
                 <template #default="{ row }">
                   <div class="bucket-name">
                     <Icon icon="mdi:bucket" :width="20" />
@@ -514,12 +514,12 @@
                   </div>
                   </template>
               </el-table-column>
-              <el-table-column prop="creationDate" label="创建时间" min-width="180">
+              <el-table-column prop="creationDate" :label="$t('storage.createTime')" min-width="180">
                 <template #default="{ row }">
                   {{ formatDate(row.creationDate) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="region" label="区域" min-width="120" />
+              <el-table-column prop="region" :label="$t('storage.region')" min-width="120" />
             </el-table>
             <div class="pagination">
               <el-pagination
@@ -536,7 +536,7 @@
         </el-tab-pane>
 
         <!-- 对象列表标签页 -->
-        <el-tab-pane v-if="currentStorage.type === 's3'" label="对象列表" name="objects">
+        <el-tab-pane v-if="currentStorage.type === 's3'" :label="$t('storage.objectList')" name="objects">
           <div class="objects-content scrollable-content">
             <!-- 面包屑导航 -->
             <template v-if="currentBucket">
@@ -602,7 +602,7 @@
               <div class="object-status" v-if="loadingObjects">
                 <el-tag type="warning" size="small">
                   <Icon icon="mdi:loading" class="rotating" />
-                  正在加载对象列表...
+                  {{ $t('storage.loadingObjects') }}
                 </el-tag>
               </div>
               <!-- 对象空状态信息 -->
@@ -618,9 +618,9 @@
                 style="width: 100%"
                 v-loading="loadingObjects"
                 @row-click="handleObjectClick"
-                :empty-text="loadingObjects ? '正在加载对象列表...' : '当前目录为空'"
+                :empty-text="loadingObjects ? $t('storage.loadingObjects') : $t('storage.emptyDirectory')"
               >
-                <el-table-column label="名称" min-width="300">
+                <el-table-column :label="$t('storage.name')" min-width="300">
                   <template #default="{ row }">
                     <div class="object-name">
                       <Icon :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" :width="20" />
@@ -628,17 +628,17 @@
                     </div>
                   </template>
                 </el-table-column>
-                <el-table-column prop="size" label="大小" width="120">
+                <el-table-column prop="size" :label="$t('storage.size')" width="120">
                   <template #default="{ row }">
                     {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="lastModified" label="最后修改时间" width="180">
+                <el-table-column prop="lastModified" :label="$t('storage.lastModifiedTime')" width="180">
                   <template #default="{ row }">
                     {{ formatDate(row.lastModified) }}
                   </template>
                 </el-table-column>
-                <el-table-column label="操作" width="120" fixed="right">
+                <el-table-column :label="$t('storage.actions')" width="120" fixed="right">
                   <template #default="{ row }">
                       <el-button 
                       v-if="row.type !== 'directory'"
@@ -671,11 +671,11 @@
                 <div class="empty-icon">
                   <Icon icon="mdi:bucket-outline" :width="60" />
                 </div>
-                <h3>请先选择存储桶</h3>
-                <p>在"存储桶"标签页中选择一个存储桶来浏览其中的对象</p>
+                <h3>{{ $t('storage.selectBucketFirst') }}</h3>
+                <p>{{ $t('storage.selectBucketToBrowse') }}</p>
                 <el-button type="primary" @click="activeTab = 'buckets'">
                   <Icon icon="mdi:bucket" />
-                  查看存储桶
+                  {{ $t('storage.viewBuckets') }}
                 </el-button>
               </div>
             </template>
@@ -686,38 +686,38 @@
 
     <!-- 存储编辑对话框 -->
     <el-dialog
-      :title="dialogType === 'add' ? '添加存储' : '编辑存储'"
+      :title="dialogType === 'add' ? $t('storage.addStorage') : $t('storage.editStorage')"
       v-model="dialogVisible"
       width="600px"
       :before-close="handleDialogClose"
     >
       <el-form :model="form" :rules="formRules" ref="formRef" label-width="120px" class="storage-form">
-        <el-form-item label="存储名称" prop="name">
-          <el-input v-model="form.name" placeholder="请输入存储名称" />
+        <el-form-item :label="$t('storage.storageName')" prop="name">
+          <el-input v-model="form.name" :placeholder="$t('storage.enterStorageName')" />
         </el-form-item>
 
         <template v-if="form.type === 'nas'">
-          <el-form-item label="协议类型" prop="config.protocol">
+          <el-form-item :label="$t('storage.protocolType')" prop="config.protocol">
             <el-radio-group v-model="form.config.protocol">
               <el-radio label="cifs">CIFS</el-radio>
               <el-radio label="nfs">NFS</el-radio>
             </el-radio-group>
           </el-form-item>
-          <el-form-item label="IP地址" prop="config.server">
+          <el-form-item :label="$t('storage.ipAddress')" prop="config.server">
             <el-input v-model="form.config.server" />
           </el-form-item>
-          <el-form-item label="共享目录" prop="config.path">
+          <el-form-item :label="$t('storage.sharedDirectory')" prop="config.path">
             <el-input v-model="form.config.path" />
           </el-form-item>
-          <el-form-item label="读写权限" prop="config.permission">
+          <el-form-item :label="$t('storage.readWritePermission')" prop="config.permission">
             <el-radio-group v-model="form.config.permission">
-              <el-radio label="rw">读写</el-radio>
-              <el-radio label="ro">只读</el-radio>
+              <el-radio label="rw">{{ $t('storage.readWrite') }}</el-radio>
+              <el-radio label="ro">{{ $t('storage.readOnly') }}</el-radio>
             </el-radio-group>
           </el-form-item>
           <!-- NFS专属 -->
           <template v-if="form.config.protocol === 'nfs'">
-            <el-form-item label="协议版本" prop="config.version">
+            <el-form-item :label="$t('storage.protocolVersion')" prop="config.version">
               <el-select v-model="form.config.version">
                 <el-option label="NFSv3" value="3" />
                 <el-option label="NFSv4.0" value="4.0" />
@@ -727,19 +727,19 @@
           </template>
           <!-- CIFS专属 -->
           <template v-else>
-            <el-form-item label="协议版本" prop="config.version">
+            <el-form-item :label="$t('storage.protocolVersion')" prop="config.version">
               <el-select v-model="form.config.version">
                 <el-option label="CIFSv2.0" value="2.0" />
                 <el-option label="CIFSv3.0" value="3.0" />
               </el-select>
             </el-form-item>
-            <el-form-item label="用户名" prop="config.username">
+            <el-form-item :label="$t('storage.username')" prop="config.username">
               <el-input v-model="form.config.username" />
             </el-form-item>
-            <el-form-item label="密码" prop="config.password">
+            <el-form-item :label="$t('storage.password')" prop="config.password">
               <el-input v-model="form.config.password" type="password" />
             </el-form-item>
-            <el-form-item label="工作组" prop="config.workgroup">
+            <el-form-item :label="$t('storage.workgroup')" prop="config.workgroup">
               <el-input v-model="form.config.workgroup" />
             </el-form-item>
           </template>
@@ -747,7 +747,7 @@
           <!-- 高级选项折叠面板 -->
           <div class="storage-advanced-section">
             <el-collapse v-model="advancedOptions">
-              <el-collapse-item title="高级选项" name="advanced">
+              <el-collapse-item :title="$t('storage.advancedOptions')" name="advanced">
                 <el-form-item label="端口" prop="config.port">
                   <el-input v-model="form.config.port" placeholder="默认端口：NFS(2049)、CIFS(445)" />
                 </el-form-item>
@@ -850,11 +850,14 @@
 
 <script setup>
 import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Icon } from '@iconify/vue'
 import { Refresh } from '@element-plus/icons-vue'
 import StorageActions from '@/components/StorageActions.vue'
 import axios from 'axios'
+
+const { t } = useI18n()
 
 const storages = ref([])
 const loading = ref(false)
@@ -926,13 +929,13 @@ const renameForm = ref({
 
 const folderRules = {
   name: [
-    { required: true, message: '请输入文件夹名称', trigger: 'blur' }
+    { required: true, message: t('storage.enterFolderName'), trigger: 'blur' }
   ]
 }
 
 const renameRules = {
   name: [
-    { required: true, message: '请输入新名称', trigger: 'blur' }
+    { required: true, message: t('storage.enterNewName'), trigger: 'blur' }
   ]
 }
 

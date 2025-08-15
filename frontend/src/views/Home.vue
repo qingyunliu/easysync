@@ -20,116 +20,116 @@
         :collapse-transition="true"
       >
         <!-- 控制台 -->
-        <div class="menu-group-title" v-if="!isCollapsed">控制台</div>
-        <el-tooltip content="数据看板" placement="right" :disabled="!isCollapsed">
+        <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.dashboard') }}</div>
+        <el-tooltip :content="$t('nav.dashboard')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/dashboard">
             <el-icon><Histogram /></el-icon>
-            <span v-if="!isCollapsed">数据看板</span>
+            <span v-if="!isCollapsed">{{ $t('nav.dashboard') }}</span>
           </el-menu-item>
         </el-tooltip>
 
         <!-- 资源管理 -->
-        <div class="menu-group-title" v-if="!isCollapsed">资源管理</div>
-        <el-tooltip content="服务器管理" placement="right" :disabled="!isCollapsed">
+        <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.resourceManagement') }}</div>
+        <el-tooltip :content="$t('nav.clients')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/clients">
             <el-icon><Monitor /></el-icon>
-            <span v-if="!isCollapsed">服务器管理</span>
+            <span v-if="!isCollapsed">{{ $t('nav.clients') }}</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="节点管理" placement="right" :disabled="!isCollapsed">
+        <el-tooltip :content="$t('nav.nodes')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/nodes">
             <el-icon><Connection /></el-icon>
-            <span v-if="!isCollapsed">节点管理</span>
+            <span v-if="!isCollapsed">{{ $t('nav.nodes') }}</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="存储管理" placement="right" :disabled="!isCollapsed">
+        <el-tooltip :content="$t('nav.storage')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/storages">
             <el-icon><Files /></el-icon>
-            <span v-if="!isCollapsed">存储管理</span>
+            <span v-if="!isCollapsed">{{ $t('nav.storage') }}</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="任务管理" placement="right" :disabled="!isCollapsed">
+        <el-tooltip :content="$t('nav.tasks')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/tasks">
             <el-icon><Clock /></el-icon>
-            <span v-if="!isCollapsed">任务管理</span>
+            <span v-if="!isCollapsed">{{ $t('nav.tasks') }}</span>
           </el-menu-item>
         </el-tooltip>
 
         <!-- 运维管理 -->
-        <div class="menu-group-title" v-if="!isCollapsed">运维管理</div>
-        <el-tooltip content="操作审计" placement="right" :disabled="!isCollapsed">
+        <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.operationsManagement') }}</div>
+        <el-tooltip :content="$t('nav.auditLogs')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/audit-logs">
             <el-icon><Notebook /></el-icon>
-            <span v-if="!isCollapsed">操作审计</span>
+            <span v-if="!isCollapsed">{{ $t('nav.auditLogs') }}</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="事件管理" placement="right" :disabled="!isCollapsed">
+        <el-tooltip :content="$t('nav.events')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/events">
             <el-icon><List /></el-icon>
-            <span v-if="!isCollapsed">事件管理</span>
+            <span v-if="!isCollapsed">{{ $t('nav.events') }}</span>
           </el-menu-item>
         </el-tooltip>
 
         <!-- 监控告警 -->
-        <div class="menu-group-title" v-if="!isCollapsed">监控告警</div>
-        <el-tooltip content="系统监控" placement="right" :disabled="!isCollapsed">
+        <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.monitoring') }}</div>
+        <el-tooltip :content="$t('nav.systemMonitoring')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/monitoring">
             <el-icon><DataAnalysis /></el-icon>
-            <span v-if="!isCollapsed">系统监控</span>
+            <span v-if="!isCollapsed">{{ $t('nav.systemMonitoring') }}</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="告警策略" placement="right" :disabled="!isCollapsed">
+        <el-tooltip :content="$t('nav.alertPolicies')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/alert-policies">
             <el-icon><Warning /></el-icon>
-            <span v-if="!isCollapsed">告警策略</span>
+            <span v-if="!isCollapsed">{{ $t('nav.alertPolicies') }}</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="告警模板" placement="right" :disabled="!isCollapsed">
+        <el-tooltip :content="$t('nav.alertTemplates')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/alert-templates">
             <el-icon><Document /></el-icon>
-            <span v-if="!isCollapsed">告警模板</span>
+            <span v-if="!isCollapsed">{{ $t('nav.alertTemplates') }}</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="通知渠道" placement="right" :disabled="!isCollapsed">
+        <el-tooltip :content="$t('nav.notificationChannels')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/notification-channels">
             <el-icon><Message /></el-icon>
-            <span v-if="!isCollapsed">通知渠道</span>
+            <span v-if="!isCollapsed">{{ $t('nav.notificationChannels') }}</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="通知对象" placement="right" :disabled="!isCollapsed">
+        <el-tooltip :content="$t('nav.notificationTargets')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/notification-targets">
             <el-icon><User /></el-icon>
-            <span v-if="!isCollapsed">通知对象</span>
+            <span v-if="!isCollapsed">{{ $t('nav.notificationTargets') }}</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="消息通知" placement="right" :disabled="!isCollapsed">
+        <el-tooltip :content="$t('nav.notifications')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/notifications">
             <el-icon><Bell /></el-icon>
-            <span v-if="!isCollapsed">消息通知</span>
+            <span v-if="!isCollapsed">{{ $t('nav.notifications') }}</span>
           </el-menu-item>
         </el-tooltip>
 
         <!-- 系统管理 -->
-        <div class="menu-group-title" v-if="!isCollapsed">系统管理</div>
-        <el-tooltip content="日志管理" placement="right" :disabled="!isCollapsed">
+        <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.systemManagement') }}</div>
+        <el-tooltip :content="$t('nav.logs')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/logs">
             <el-icon><Document /></el-icon>
-            <span v-if="!isCollapsed">日志管理</span>
+            <span v-if="!isCollapsed">{{ $t('nav.logs') }}</span>
           </el-menu-item>
         </el-tooltip>
-        <el-tooltip content="系统设置" placement="right" :disabled="!isCollapsed">
+        <el-tooltip :content="$t('nav.settings')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/settings">
             <el-icon><Setting /></el-icon>
-            <span v-if="!isCollapsed">系统设置</span>
+            <span v-if="!isCollapsed">{{ $t('nav.settings') }}</span>
           </el-menu-item>
         </el-tooltip>
 
         <!-- 个人中心 -->
-        <div class="menu-group-title" v-if="!isCollapsed">个人中心</div>
-        <el-tooltip content="个人设置" placement="right" :disabled="!isCollapsed">
+        <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.personalCenter') }}</div>
+        <el-tooltip :content="$t('nav.profile')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/profile">
             <el-icon><User /></el-icon>
-            <span v-if="!isCollapsed">个人设置</span>
+            <span v-if="!isCollapsed">{{ $t('nav.profile') }}</span>
           </el-menu-item>
         </el-tooltip>
       </el-menu>
@@ -138,6 +138,7 @@
     <div class="main-content">
       <div class="header">
         <div class="header-right">
+          <LanguageSwitch />
           <ThemeToggle />
           <el-dropdown @command="handleCommand" trigger="click">
             <div class="user-info">
@@ -151,10 +152,10 @@
               </el-avatar>
               <span class="username">
                 <template v-if="userStore.loaded">
-                  {{ userStore.user?.username || '未登录' }}
+                  {{ userStore.user?.username || $t('auth.notLoggedIn') }}
                 </template>
                 <template v-else>
-                  加载中...
+                  {{ $t('common.loading') }}
                 </template>
               </span>
               <el-icon class="arrow-down"><ArrowDown /></el-icon>
@@ -163,11 +164,11 @@
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">
                   <el-icon><User /></el-icon>
-                  <span>个人信息</span>
+                  <span>{{ $t('nav.profile') }}</span>
                 </el-dropdown-item>
                 <el-dropdown-item command="logout" divided>
                   <el-icon><SwitchButton /></el-icon>
-                  <span>退出登录</span>
+                  <span>{{ $t('auth.logout') }}</span>
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
@@ -185,8 +186,10 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElNotification } from 'element-plus'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import LanguageSwitch from '@/components/LanguageSwitch.vue'
 import { 
   Histogram, 
   DataAnalysis,
@@ -241,18 +244,20 @@ const logoSrc = computed(() => {
 // 获取后端基础URL
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:5000'
 
+const { t } = useI18n()
+
 function getGreeting() {
   const hour = new Date().getHours()
   if (hour >= 5 && hour < 11) {
-    return { text: '早上好', emoji: '🌅' }
+    return { text: t('common.goodMorning'), emoji: '🌅' }
   } else if (hour >= 11 && hour < 13) {
-    return { text: '中午好', emoji: '☀️' }
+    return { text: t('common.goodNoon'), emoji: '☀️' }
   } else if (hour >= 13 && hour < 18) {
-    return { text: '下午好', emoji: '🌤️' }
+    return { text: t('common.goodAfternoon'), emoji: '🌤️' }
   } else if (hour >= 18 && hour < 22) {
-    return { text: '晚上好', emoji: '🌙' }
+    return { text: t('common.goodEvening'), emoji: '🌙' }
   } else {
-    return { text: '深夜好', emoji: '🌃' }
+    return { text: t('common.goodNight'), emoji: '🌃' }
   }
 }
 
@@ -270,7 +275,7 @@ onMounted(async () => {
     const { text, emoji } = getGreeting()
     ElNotification({
       title: `${text} ${emoji}`,
-      message: `欢迎回来，${userStore.user.username}！`,
+      message: `${t('auth.welcomeBack')}，${userStore.user.username}！`,
       type: 'success',
       duration: 0,
       showClose: true,
