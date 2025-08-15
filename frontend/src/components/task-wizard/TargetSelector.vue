@@ -190,50 +190,78 @@
                 </el-breadcrumb>
               </div>
 
-              <el-table
-                :data="obsCurrentItems"
-                v-loading="obsLoading"
-                @row-click="handleObsItemClick"
-                class="directory-table"
-                highlight-current-row
-              >
-                <el-table-column width="50">
-                  <template #default="{ row }">
-                    <Icon 
-                      :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
-                      :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']"
-                    />
-                  </template>
-                </el-table-column>
-                <el-table-column prop="name" label="名称">
-                  <template #default="{ row }">
-                    <span :class="{ 'directory-name': row.type === 'directory' }">
-                      {{ row.name }}
-                    </span>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="size" label="大小" width="120">
-                  <template #default="{ row }">
-                    {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="lastModified" label="修改时间" width="180">
-                  <template #default="{ row }">
-                    {{ formatDate(row.lastModified) }}
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" width="120">
-                  <template #default="{ row }">
-                    <el-button 
-                      v-if="row.type === 'directory'"
-                      size="small" 
-                      @click.stop="selectObsDirectory(row)"
-                    >
-                      选择
-                    </el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
+              <!-- OBS 状态信息 -->
+              <div v-if="!obsLoading && obsPagination.total > 0" class="status-info">
+                <el-tag type="info" size="small">
+                  共 {{ obsPagination.total }} 个对象
+                </el-tag>
+                <el-tag type="success" size="small" v-if="obsPathSegments.length > 0">
+                  当前路径: {{ obsPathSegments.join('/') }}
+                </el-tag>
+              </div>
+
+              <div class="table-wrapper">
+                <el-table
+                  :data="obsCurrentItems"
+                  v-loading="obsLoading"
+                  @row-click="handleObsItemClick"
+                  class="directory-table"
+                  highlight-current-row
+                  :empty-text="obsLoading ? '正在加载对象列表...' : '当前目录为空'"
+                  :max-height="tableMaxHeight"
+                >
+                  <el-table-column width="50">
+                    <template #default="{ row }">
+                      <Icon 
+                        :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
+                        :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']"
+                      />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="name" label="名称">
+                    <template #default="{ row }">
+                      <span :class="{ 'directory-name': row.type === 'directory' }">
+                        {{ row.name }}
+                      </span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="size" label="大小" width="120">
+                    <template #default="{ row }">
+                      {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="lastModified" label="修改时间" width="180">
+                    <template #default="{ row }">
+                      {{ formatDate(row.lastModified) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="120">
+                    <template #default="{ row }">
+                      <el-button 
+                        v-if="row.type === 'directory'"
+                        size="small" 
+                        @click.stop="selectObsDirectory(row)"
+                      >
+                        选择
+                      </el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+
+              <!-- OBS 分页 -->
+              <div v-if="obsPagination.total > 0" class="pagination-container">
+                <el-pagination
+                  v-model:current-page="obsPagination.currentPage"
+                  v-model:page-size="obsPagination.pageSize"
+                  :page-sizes="[10, 20, 50, 100]"
+                  :total="obsPagination.total"
+                  layout="total, sizes, prev, pager, next"
+                  @size-change="handleObsSizeChange"
+                  @current-change="handleObsPageChange"
+                  background
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -303,50 +331,78 @@
                 </el-breadcrumb>
               </div>
 
-              <el-table
-                :data="nasCurrentItems"
-                v-loading="nasLoading"
-                @row-click="handleNasItemClick"
-                class="directory-table"
-                highlight-current-row
-              >
-                <el-table-column width="50">
-                  <template #default="{ row }">
-                    <Icon 
-                      :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
-                      :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']"
-                    />
-                  </template>
-                </el-table-column>
-                <el-table-column prop="name" label="名称">
-                  <template #default="{ row }">
-                    <span :class="{ 'directory-name': row.type === 'directory' }">
-                      {{ row.name }}
-                    </span>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="size" label="大小" width="120">
-                  <template #default="{ row }">
-                    {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="modified_time" label="修改时间" width="180">
-                  <template #default="{ row }">
-                    {{ formatDate(row.modified_time) }}
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" width="120">
-                  <template #default="{ row }">
-                    <el-button 
-                      v-if="row.type === 'directory'"
-                      size="small" 
-                      @click.stop="selectNasDirectory(row)"
-                    >
-                      选择
-                    </el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
+              <!-- NAS 状态信息 -->
+              <div v-if="!nasLoading && nasPagination.total > 0" class="status-info">
+                <el-tag type="info" size="small">
+                  共 {{ nasPagination.total }} 个文件/文件夹
+                </el-tag>
+                <el-tag type="success" size="small" v-if="nasPathSegments.length > 0">
+                  当前路径: {{ nasPathSegments.join('/') }}
+                </el-tag>
+              </div>
+
+              <div class="table-wrapper">
+                <el-table
+                  :data="nasCurrentItems"
+                  v-loading="nasLoading"
+                  @row-click="handleNasItemClick"
+                  class="directory-table"
+                  highlight-current-row
+                  :empty-text="nasLoading ? '正在加载文件列表...' : '当前目录为空'"
+                  :max-height="tableMaxHeight"
+                >
+                  <el-table-column width="50">
+                    <template #default="{ row }">
+                      <Icon 
+                        :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
+                        :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']"
+                      />
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="name" label="名称">
+                    <template #default="{ row }">
+                      <span :class="{ 'directory-name': row.type === 'directory' }">
+                        {{ row.name }}
+                      </span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="size" label="大小" width="120">
+                    <template #default="{ row }">
+                      {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="modified_time" label="修改时间" width="180">
+                    <template #default="{ row }">
+                      {{ formatDate(row.modified_time) }}
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="120">
+                    <template #default="{ row }">
+                      <el-button 
+                        v-if="row.type === 'directory'"
+                        size="small" 
+                        @click.stop="selectNasDirectory(row)"
+                      >
+                        选择
+                      </el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
+
+              <!-- NAS 分页 -->
+              <div v-if="nasPagination.total > 0" class="pagination-container">
+                <el-pagination
+                  v-model:current-page="nasPagination.currentPage"
+                  v-model:page-size="nasPagination.pageSize"
+                  :page-sizes="[10, 20, 50, 100]"
+                  :total="nasPagination.total"
+                  layout="total, sizes, prev, pager, next"
+                  @size-change="handleNasSizeChange"
+                  @current-change="handleNasPageChange"
+                  background
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -403,6 +459,13 @@ const showObsPathSelector = ref(false)
 const obsCurrentItems = ref([])
 const obsPathSegments = ref([])
 
+// OBS 分页数据
+const obsPagination = ref({
+  currentPage: 1,
+  pageSize: 10,
+  total: 0
+})
+
 // NAS 相关数据
 const nasForm = ref({
   targetPath: ''
@@ -412,9 +475,39 @@ const showNasPathSelector = ref(false)
 const nasCurrentItems = ref([])
 const nasPathSegments = ref([])
 
+// NAS 分页数据
+const nasPagination = ref({
+  currentPage: 1,
+  pageSize: 10,
+  total: 0
+})
+
 // 计算属性
 const selectedStorage = computed(() => {
   return storages.value.find(s => s.id === form.value.selectedStorageId)
+})
+
+// 计算表格最大高度
+const tableMaxHeight = computed(() => {
+  // 根据页面大小动态调整表格高度，预留更多空间给表格头部
+  const pageSize = Math.max(obsPagination.value.pageSize, nasPagination.value.pageSize)
+  
+  // 基础行高约40px，加上头部和边距
+  const baseRowHeight = 40
+  const headerHeight = 60
+  const padding = 30
+  
+  if (pageSize <= 20) {
+    return 350
+  } else if (pageSize <= 50) {
+    return 450
+  } else if (pageSize <= 100) {
+    // 为100行提供足够空间：100 * 40 + 60 + 30 = 4090px，但限制在合理范围内
+    return Math.min(650, pageSize * baseRowHeight + headerHeight + padding)
+  } else {
+    // 为更大的页面大小提供足够空间
+    return Math.min(750, pageSize * baseRowHeight + headerHeight + padding)
+  }
 })
 
 const nasStorages = computed(() => {
@@ -467,6 +560,18 @@ const handleStorageChange = async (storageId) => {
     targetPath: ''
   }
   
+  // 重置分页状态
+  obsPagination.value = {
+    currentPage: 1,
+    pageSize: 10,
+    total: 0
+  }
+  nasPagination.value = {
+    currentPage: 1,
+    pageSize: 10,
+    total: 0
+  }
+  
   // 关闭路径选择器
   showObsPathSelector.value = false
   showNasPathSelector.value = false
@@ -512,6 +617,13 @@ const handleBucketChange = async (bucketName) => {
   obsPathSegments.value = []
   obsCurrentItems.value = []
   showObsPathSelector.value = false
+  
+  // 重置 OBS 分页状态
+  obsPagination.value = {
+    currentPage: 1,
+    pageSize: 10,
+    total: 0
+  }
   
   if (bucketName) {
     await loadObsRoot(selectedStorage.value.id, bucketName)
@@ -564,21 +676,126 @@ const collapseAllNas = () => {
   // 实现收起全部逻辑
 }
 
+// OBS 分页事件处理
+const handleObsPageChange = async (page) => {
+  obsPagination.value.currentPage = page
+  await loadObsCurrentPage()
+}
+
+const handleObsSizeChange = async (size) => {
+  obsPagination.value.pageSize = size
+  obsPagination.value.currentPage = 1
+  await loadObsCurrentPage()
+}
+
+const loadObsCurrentPage = async () => {
+  try {
+    obsLoading.value = true
+    const currentPath = obsPathSegments.value.join('/')
+    const prefix = currentPath ? currentPath + '/' : ''
+    
+    const response = await axios.get(`/api/storages/${selectedStorage.value.id}/objects`, {
+      params: {
+        node_id: selectedStorage.value.node_id,
+        bucket: obsForm.value.selectedBucket,
+        prefix: prefix,
+        page: obsPagination.value.currentPage,
+        page_size: obsPagination.value.pageSize
+      }
+    })
+    
+    if (response.data.status === 'success') {
+      const data = response.data.data
+      const objects = data.objects || []
+      obsCurrentItems.value = objects.map(obj => ({
+        name: obj.name,
+        key: obj.key,
+        type: obj.type,
+        size: obj.size,
+        lastModified: obj.lastModified,
+        bucket: obsForm.value.selectedBucket
+      }))
+      
+      // 更新分页信息
+      if (data.pagination) {
+        obsPagination.value.total = data.pagination.total_count || 0
+      }
+    }
+  } catch (error) {
+    ElMessage.error('获取对象列表失败')
+  } finally {
+    obsLoading.value = false
+  }
+}
+
+// NAS 分页事件处理
+const handleNasPageChange = async (page) => {
+  nasPagination.value.currentPage = page
+  await loadNasCurrentPage()
+}
+
+const handleNasSizeChange = async (size) => {
+  nasPagination.value.pageSize = size
+  nasPagination.value.currentPage = 1
+  await loadNasCurrentPage()
+}
+
+const loadNasCurrentPage = async () => {
+  try {
+    nasLoading.value = true
+    const currentPath = nasPathSegments.value.join('/')
+    
+    const response = await axios.get(`/api/storages/${selectedStorage.value.id}/files`, {
+      params: {
+        node_id: selectedStorage.value.node_id,
+        path: currentPath,
+        page: nasPagination.value.currentPage,
+        page_size: nasPagination.value.pageSize
+      }
+    })
+    
+    if (response.data.status === 'success') {
+      const data = response.data.data
+      const files = data.objects || []
+      nasCurrentItems.value = files.map(file => ({
+        name: file.name,
+        path: file.path,
+        type: file.type,
+        size: file.size,
+        modified_time: file.modified_time
+      }))
+      
+      // 更新分页信息
+      if (data.pagination) {
+        nasPagination.value.total = data.pagination.total_count || 0
+      }
+    }
+  } catch (error) {
+    ElMessage.error('获取文件列表失败')
+  } finally {
+    nasLoading.value = false
+  }
+}
+
 const loadObsRoot = async (storageId, bucketName) => {
   try {
     obsLoading.value = true
+    // 重置分页
+    obsPagination.value.currentPage = 1
+    
     const response = await axios.get(`/api/storages/${storageId}/objects`, {
       params: {
         node_id: selectedStorage.value.node_id,
         bucket: bucketName,
         prefix: '',
-        page: 1,
-        page_size: 1000
+        page: obsPagination.value.currentPage,
+        page_size: obsPagination.value.pageSize
       }
     })
     
     if (response.data.status === 'success') {
-      const objects = response.data.data.objects || []
+      const data = response.data.data
+      const objects = data.objects || []
       obsCurrentItems.value = objects.map(obj => ({
         name: obj.name,
         key: obj.key,
@@ -587,6 +804,11 @@ const loadObsRoot = async (storageId, bucketName) => {
         lastModified: obj.lastModified,
         bucket: bucketName
       }))
+      
+      // 更新分页信息
+      if (data.pagination) {
+        obsPagination.value.total = data.pagination.total_count || 0
+      }
     }
   } catch (error) {
     ElMessage.error('获取对象列表失败')
@@ -600,18 +822,22 @@ const navigateToObsPath = async (path) => {
   
   try {
     obsLoading.value = true
+    // 重置分页
+    obsPagination.value.currentPage = 1
+    
     const response = await axios.get(`/api/storages/${selectedStorage.value.id}/objects`, {
       params: {
         node_id: selectedStorage.value.node_id,
         bucket: obsForm.value.selectedBucket,
         prefix: path + '/',
-        page: 1,
-        page_size: 1000
+        page: obsPagination.value.currentPage,
+        page_size: obsPagination.value.pageSize
       }
     })
     
     if (response.data.status === 'success') {
-      const objects = response.data.data.objects || []
+      const data = response.data.data
+      const objects = data.objects || []
       obsCurrentItems.value = objects.map(obj => ({
         name: obj.name,
         key: obj.key,
@@ -620,6 +846,11 @@ const navigateToObsPath = async (path) => {
         lastModified: obj.lastModified,
         bucket: obsForm.value.selectedBucket
       }))
+      
+      // 更新分页信息
+      if (data.pagination) {
+        obsPagination.value.total = data.pagination.total_count || 0
+      }
     }
   } catch (error) {
     ElMessage.error('获取对象列表失败')
@@ -649,17 +880,21 @@ const selectObsDirectory = (row) => {
 const loadNasRoot = async () => {
   try {
     nasLoading.value = true
+    // 重置分页
+    nasPagination.value.currentPage = 1
+    
     const response = await axios.get(`/api/storages/${selectedStorage.value.id}/files`, {
       params: {
         node_id: selectedStorage.value.node_id,
         path: '',
-        page: 1,
-        page_size: 1000
+        page: nasPagination.value.currentPage,
+        page_size: nasPagination.value.pageSize
       }
     })
     
     if (response.data.status === 'success') {
-      const files = response.data.data.objects || []
+      const data = response.data.data
+      const files = data.objects || []
       nasCurrentItems.value = files.map(file => ({
         name: file.name,
         path: file.path,
@@ -667,6 +902,11 @@ const loadNasRoot = async () => {
         size: file.size,
         modified_time: file.modified_time
       }))
+      
+      // 更新分页信息
+      if (data.pagination) {
+        nasPagination.value.total = data.pagination.total_count || 0
+      }
     }
   } catch (error) {
     ElMessage.error('获取文件列表失败')
@@ -680,17 +920,21 @@ const navigateToNasPath = async (path) => {
   
   try {
     nasLoading.value = true
+    // 重置分页
+    nasPagination.value.currentPage = 1
+    
     const response = await axios.get(`/api/storages/${selectedStorage.value.id}/files`, {
       params: {
         node_id: selectedStorage.value.node_id,
         path: path,
-        page: 1,
-        page_size: 1000
+        page: nasPagination.value.currentPage,
+        page_size: nasPagination.value.pageSize
       }
     })
     
     if (response.data.status === 'success') {
-      const files = response.data.data.objects || []
+      const data = response.data.data
+      const files = data.objects || []
       nasCurrentItems.value = files.map(file => ({
         name: file.name,
         path: file.path,
@@ -698,6 +942,11 @@ const navigateToNasPath = async (path) => {
         size: file.size,
         modified_time: file.modified_time
       }))
+      
+      // 更新分页信息
+      if (data.pagination) {
+        nasPagination.value.total = data.pagination.total_count || 0
+      }
     }
   } catch (error) {
     ElMessage.error('获取文件列表失败')
@@ -1104,9 +1353,103 @@ onMounted(() => {
   text-decoration: underline;
 }
 
+/* 确保表格容器有合适的高度 */
+.obs-path-selector,
+.nas-path-selector {
+  max-height: 750px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 表格包装器样式 */
+.table-wrapper {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  padding-bottom: 10px;  /* 增加底部边距 */
+}
+
+/* 表格区域样式 */
 .directory-table {
-  max-height: 400px;
-  overflow-y: auto;
+  height: 100%;
+  width: 100%;
+}
+
+/* 确保表格头部固定 */
+:deep(.el-table__header-wrapper) {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--el-bg-color);
+}
+
+/* 确保表格体可以滚动 */
+:deep(.el-table__body-wrapper) {
+  overflow-y: auto !important;
+  overflow-x: hidden;
+  max-height: calc(100% - 60px) !important;  /* 增加头部预留空间 */
+  scroll-padding-bottom: 15px;  /* 增加滚动底部边距 */
+  scroll-behavior: smooth;
+}
+
+/* 确保表格有足够的底部空间 */
+:deep(.el-table__body) {
+  overflow: visible !important;
+  padding-bottom: 15px;  /* 增加底部边距 */
+}
+
+/* 确保表格容器不会阻止滚动 */
+:deep(.el-table) {
+  overflow: visible;
+}
+
+/* 确保表格行有足够的可见性 */
+:deep(.el-table__row) {
+  cursor: pointer;
+  min-height: 40px;
+}
+
+/* 确保表格单元格内容可以正常显示 */
+:deep(.el-table__cell) {
+  overflow: visible;
+}
+
+/* 优化滚动条样式 */
+:deep(.el-table__body-wrapper::-webkit-scrollbar) {
+  width: 8px;
+}
+
+:deep(.el-table__body-wrapper::-webkit-scrollbar-track) {
+  background: var(--el-border-color-lighter);
+  border-radius: 4px;
+}
+
+:deep(.el-table__body-wrapper::-webkit-scrollbar-thumb) {
+  background: var(--el-border-color);
+  border-radius: 4px;
+}
+
+:deep(.el-table__body-wrapper::-webkit-scrollbar-thumb:hover) {
+  background: var(--el-border-color-dark);
+}
+
+.pagination-container {
+  padding: 16px 20px;
+  background: var(--el-bg-color-page);
+  border-top: 1px solid var(--el-border-color);
+  display: flex;
+  justify-content: center;
+}
+
+.status-info {
+  padding: 12px 20px;
+  background: var(--el-color-primary-light-9);
+  border-bottom: 1px solid var(--el-border-color);
+  display: flex;
+  gap: 8px;
+  align-items: center;
 }
 
 .file-icon {
@@ -1172,7 +1515,11 @@ onMounted(() => {
 }
 
 :deep(.el-table td) {
-  padding: 12px 0;
+  padding: 8px 0;
+}
+
+:deep(.el-table th) {
+  padding: 10px 0;
 }
 
 :deep(.el-alert) {

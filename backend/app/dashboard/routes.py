@@ -21,7 +21,7 @@ def get_dashboard_data():
         client_count = len(clients)
         online_clients = sum(1 for c in clients if c.status == 'online')
         offline_clients = client_count - online_clients
-        installed_agents = sum(1 for c in clients if c.agent_status == 'installed')
+        installed_agents = sum(1 for c in clients if c.agent_status == 'running')
         uninstalled_agents = client_count - installed_agents
 
         # 获取node统计
@@ -29,7 +29,7 @@ def get_dashboard_data():
         node_count = len(nodes)
         online_nodes = sum(1 for n in nodes if n.status == 'online')
         offline_nodes = node_count - online_nodes
-        installed_nodes = sum(1 for n in nodes if n.agent_status == 'installed')
+        installed_nodes = sum(1 for n in nodes if n.agent_status == 'running')
         uninstalled_nodes = node_count - installed_nodes
         
         # 获取任务统计
