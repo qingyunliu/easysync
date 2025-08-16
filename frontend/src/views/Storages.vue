@@ -49,6 +49,7 @@
           style="width: 100%"
           v-loading="loading"
           :fit="false"
+          :empty-text="$t('storage.noNasStorages')"
         >
           <el-table-column prop="name" :label="$t('storage.name')" min-width="180" :resizable="true">
             <template #default="{ row }">
@@ -62,7 +63,7 @@
       </el-table-column>
           <el-table-column prop="config.protocol" :label="$t('storage.protocolType')">
             <template #default="{ row }">
-              <el-tag>{{ row.config.protocol === 'nfs' ? 'NFS' : 'CIFS' }}</el-tag>
+              <el-tag>{{ row.config.protocol === 'nfs' ? $t('storage.protocols.nfs') : $t('storage.protocols.cifs') }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="config.server" :label="$t('storage.server')" min-width="160" :resizable="true" />
@@ -104,8 +105,9 @@
           style="width: 100%"
           v-loading="loading"
           :fit="false"
+          :empty-text="$t('storage.noS3Storages')"
         >
-          <el-table-column prop="name" label="名称" min-width="180" :resizable="true">
+          <el-table-column prop="name" :label="$t('storage.name')" min-width="180" :resizable="true">
             <template #default="{ row }">
               <div class="storage-name-cell">
                 <Icon icon="mdi:cloud" class="icon-s3" :width="20" />
@@ -115,24 +117,24 @@
               </div>
             </template>
           </el-table-column>
-          <el-table-column prop="config.provider" label="提供商" min-width="120" :resizable="true">
+          <el-table-column prop="config.provider" :label="$t('storage.provider')" min-width="120" :resizable="true">
             <template #default="{ row }">
               <el-tag :type="getProviderType(row.config.provider)">
                 {{ getProviderText(row.config.provider) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="config.access_key" label="Access Key ID" min-width="200" :resizable="true" />
-          <el-table-column prop="config.endpoint" label="Endpoint" min-width="200" :resizable="true" />
-          <el-table-column prop="config.region" label="区域" min-width="120" :resizable="true" />
-          <el-table-column prop="created_at" label="创建时间" min-width="160" :resizable="true" />
-          <el-table-column prop="node_id" label="绑定节点" min-width="140" :resizable="true">
+          <el-table-column prop="config.access_key" :label="$t('storage.accessKeyId')" min-width="200" :resizable="true" />
+          <el-table-column prop="config.endpoint" :label="$t('storage.endpoint')" min-width="200" :resizable="true" />
+          <el-table-column prop="config.region" :label="$t('storage.region')" min-width="120" :resizable="true" />
+          <el-table-column prop="created_at" :label="$t('storage.createTime')" min-width="160" :resizable="true" />
+          <el-table-column prop="node_id" :label="$t('storage.boundNode')" min-width="140" :resizable="true">
             <template #default="{ row }">
-              <el-tag v-if="row.node_id" type="success" size="small">已绑定</el-tag>
-              <el-tag v-else type="warning" size="small">未绑定</el-tag>
+              <el-tag v-if="row.node_id" type="success" size="small">{{ $t('storage.bound') }}</el-tag>
+              <el-tag v-else type="warning" size="small">{{ $t('storage.unbound') }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" min-width="280" fixed="right">
+          <el-table-column :label="$t('storage.actions')" min-width="280" fixed="right">
             <template #default="{ row }">
               <StorageActions :storage="row" @refresh="fetchStorages" />
             </template>
@@ -144,58 +146,58 @@
     <!-- 存储详情抽屉 -->
     <el-drawer
       v-model="drawerVisible"
-      title="存储详情"
+      :title="$t('storage.storageDetails')"
       direction="rtl"
       size="60%"
       :before-close="handleDrawerClose"
       v-loading="isDrawerLoading"
-      element-loading-text="正在加载存储详情..."
+      :element-loading-text="$t('storage.loadingStorageDetails')"
     >
       <el-tabs v-model="activeTab" class="fixed-tabs">
         <!-- 基本信息标签页 -->
-        <el-tab-pane label="基本信息" name="basic">
+        <el-tab-pane :label="$t('storage.basicInfo')" name="basic">
           <div class="detail-content scrollable-content">
             <!-- 基本信息卡片 -->
             <el-card class="info-card">
               <template #header>
                 <div class="card-header">
-                  <span>基本信息</span>
+                  <span>{{ $t('storage.basicInfo') }}</span>
                 </div>
               </template>
               <el-descriptions :column="2" border>
-                <el-descriptions-item label="存储名称">
+                <el-descriptions-item :label="$t('storage.storageName')">
                   <el-tag type="info">{{ currentStorage.name }}</el-tag>
                 </el-descriptions-item>
-                <el-descriptions-item label="存储类型">
+                <el-descriptions-item :label="$t('storage.storageType')">
                   <el-tag :type="getStorageTypeTag(currentStorage.type)">
                     {{ getStorageTypeText(currentStorage.type) }}
                   </el-tag>
                 </el-descriptions-item>
                 <template v-if="currentStorage.type === 'nas'">
-                  <el-descriptions-item label="协议类型">
-                    <el-tag :type="currentStorage.config.protocol === 'nfs' ? 'success' : 'warning'">
-                      {{ currentStorage.config.protocol === 'nfs' ? 'NFS' : 'CIFS' }}
-                    </el-tag>
+                  <el-descriptions-item :label="$t('storage.protocolType')">
+                                    <el-tag :type="currentStorage.config.protocol === 'nfs' ? 'success' : 'warning'">
+                  {{ currentStorage.config.protocol === 'nfs' ? $t('storage.protocols.nfs') : $t('storage.protocols.cifs') }}
+                </el-tag>
                   </el-descriptions-item>
-                  <el-descriptions-item label="服务器">
+                  <el-descriptions-item :label="$t('storage.server')">
                     {{ currentStorage.config.server }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="共享目录">
+                  <el-descriptions-item :label="$t('storage.sharedDirectory')">
                     {{ currentStorage.config.path }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="协议版本">
+                  <el-descriptions-item :label="$t('storage.protocolVersion')">
                     NFSv{{ currentStorage.config.version }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="挂载参数">
-                    {{ currentStorage.config.options || '无' }}
+                  <el-descriptions-item :label="$t('storage.mountOptions')">
+                    {{ currentStorage.config.options || $t('storage.none') }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="读写权限">
+                  <el-descriptions-item :label="$t('storage.readWritePermission')">
                     {{ currentStorage.config.permission }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="用户名">
-                    {{ currentStorage.config.username || '无' }}
+                  <el-descriptions-item :label="$t('storage.username')">
+                    {{ currentStorage.config.username || $t('storage.none') }}
                   </el-descriptions-item>
-                  <el-descriptions-item label="挂载状态">
+                  <el-descriptions-item :label="$t('storage.mountStatus')">
                     <el-tag :type="currentStorage.config.is_mounted ? 'success' : 'info'">
                       {{ currentStorage.config.is_mounted ? $t('storage.mounted') : $t('storage.unmounted') }}
                     </el-tag>
@@ -477,6 +479,7 @@
                     @click.stop="handleFileDownload(row)"
                   >
                     <Icon icon="mdi:download" />
+                    {{ $t('storage.download') }}
                   </el-button>
                 </template>
               </el-table-column>
@@ -582,7 +585,7 @@
                     :show-after="300"
                     :disabled="currentPath.length <= 40"
                   >
-                    <span>当前路径: {{ pathExpanded ? currentPath : truncatePath(currentPath, 40) }}</span>
+                    <span>{{ $t('storage.currentPath') }}: {{ pathExpanded ? currentPath : truncatePath(currentPath, 40) }}</span>
                   </el-tooltip>
                   <el-button 
                     v-if="currentPath.length > 40"
@@ -595,7 +598,7 @@
                   </el-button>
                 </el-tag>
                 <el-tag type="primary" size="small">
-                  存储桶: {{ currentBucket }}
+                  {{ $t('storage.bucket') }}: {{ currentBucket }}
                 </el-tag>
               </div>
               <!-- 对象加载状态信息 -->
@@ -608,7 +611,7 @@
               <!-- 对象空状态信息 -->
               <div class="object-status" v-if="!loadingObjects && total === 0">
                 <el-tag type="info" size="small">
-                  当前目录为空
+                  {{ $t('storage.emptyDirectory') }}
                 </el-tag>
               </div>
 
@@ -647,6 +650,7 @@
                       @click.stop="handleS3Download(row)"
                       >
                       <Icon icon="mdi:download" />
+                      {{ $t('storage.download') }}
                       </el-button>
                   </template>
                 </el-table-column>
@@ -699,8 +703,8 @@
         <template v-if="form.type === 'nas'">
           <el-form-item :label="$t('storage.protocolType')" prop="config.protocol">
             <el-radio-group v-model="form.config.protocol">
-              <el-radio label="cifs">CIFS</el-radio>
-              <el-radio label="nfs">NFS</el-radio>
+              <el-radio label="cifs">{{ $t('storage.protocols.cifs') }}</el-radio>
+              <el-radio label="nfs">{{ $t('storage.protocols.nfs') }}</el-radio>
             </el-radio-group>
           </el-form-item>
           <el-form-item :label="$t('storage.ipAddress')" prop="config.server">
@@ -719,9 +723,9 @@
           <template v-if="form.config.protocol === 'nfs'">
             <el-form-item :label="$t('storage.protocolVersion')" prop="config.version">
               <el-select v-model="form.config.version">
-                <el-option label="NFSv3" value="3" />
-                <el-option label="NFSv4.0" value="4.0" />
-                <el-option label="NFSv4.1" value="4.1" />
+                <el-option :label="$t('storage.protocolVersions.nfsv3')" value="3" />
+                <el-option :label="$t('storage.protocolVersions.nfsv40')" value="4.0" />
+                <el-option :label="$t('storage.protocolVersions.nfsv41')" value="4.1" />
               </el-select>
             </el-form-item>
           </template>
@@ -729,8 +733,8 @@
           <template v-else>
             <el-form-item :label="$t('storage.protocolVersion')" prop="config.version">
               <el-select v-model="form.config.version">
-                <el-option label="CIFSv2.0" value="2.0" />
-                <el-option label="CIFSv3.0" value="3.0" />
+                <el-option :label="$t('storage.protocolVersions.cifsv20')" value="2.0" />
+                <el-option :label="$t('storage.protocolVersions.cifsv30')" value="3.0" />
               </el-select>
             </el-form-item>
             <el-form-item :label="$t('storage.username')" prop="config.username">
@@ -748,18 +752,18 @@
           <div class="storage-advanced-section">
             <el-collapse v-model="advancedOptions">
               <el-collapse-item :title="$t('storage.advancedOptions')" name="advanced">
-                <el-form-item label="端口" prop="config.port">
-                  <el-input v-model="form.config.port" placeholder="默认端口：NFS(2049)、CIFS(445)" />
+                <el-form-item :label="$t('storage.port')" prop="config.port">
+                  <el-input v-model="form.config.port" :placeholder="$t('storage.defaultPorts')" />
                 </el-form-item>
-                <el-form-item label="挂载参数" prop="config.options">
-                  <el-input v-model="form.config.options" placeholder="例如：vers=x.0,xxx=xxx" />
+                <el-form-item :label="$t('storage.mountOptions')" prop="config.options">
+                  <el-input v-model="form.config.options" :placeholder="$t('storage.mountOptionsExample')" />
                   <div class="storage-form-tip">
                     <el-icon><InfoFilled /></el-icon>
-                    <span>NFS示例：vers=3,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2</span>
+                    <span>{{ $t('storage.nfsExample') }}</span>
                   </div>
                   <div class="storage-form-tip">
                     <el-icon><InfoFilled /></el-icon>
-                    <span>CIFS示例：vers=3.0,iocharset=utf8,file_mode=0777,dir_mode=0777</span>
+                    <span>{{ $t('storage.cifsExample') }}</span>
                   </div>
                 </el-form-item>
               </el-collapse-item>
@@ -768,43 +772,43 @@
         </template>
 
         <template v-else-if="form.type === 's3'">
-          <el-form-item label="提供商" prop="config.provider">
-            <el-select v-model="form.config.provider" placeholder="请选择提供商">
-              <el-option label="AWS" value="aws" />
-              <el-option label="Google Cloud" value="google" />
-              <el-option label="腾讯云" value="tencent" />
-              <el-option label="阿里云" value="aliyun" />
-              <el-option label="华为云" value="huawei" />
-              <el-option label="MinIO" value="minio" />
-              <el-option label="其他" value="other" />
+          <el-form-item :label="$t('storage.provider')" prop="config.provider">
+            <el-select v-model="form.config.provider" :placeholder="$t('storage.selectProvider')">
+              <el-option :label="$t('storage.providers.aws')" value="aws" />
+              <el-option :label="$t('storage.providers.googleCloud')" value="google" />
+              <el-option :label="$t('storage.providers.tencentCloud')" value="tencent" />
+              <el-option :label="$t('storage.providers.aliCloud')" value="aliyun" />
+              <el-option :label="$t('storage.providers.huaweiCloud')" value="huawei" />
+              <el-option :label="$t('storage.providers.minio')" value="minio" />
+              <el-option :label="$t('storage.providers.other')" value="other" />
               <!-- 其他选项 -->
             </el-select>
           </el-form-item>
-          <el-form-item label="Access Key ID" prop="config.access_key">
-            <el-input v-model="form.config.access_key" placeholder="请输入Access Key" />
+          <el-form-item :label="$t('storage.accessKeyId')" prop="config.access_key">
+            <el-input v-model="form.config.access_key" :placeholder="$t('storage.enterAccessKey')" />
           </el-form-item>
-          <el-form-item label="Secret Key ID" prop="config.secret_key">
-            <el-input v-model="form.config.secret_key" type="password" placeholder="请输入 Secret Key"/>
+          <el-form-item :label="$t('storage.secretKeyId')" prop="config.secret_key">
+            <el-input v-model="form.config.secret_key" type="password" :placeholder="$t('storage.enterSecretKey')"/>
           </el-form-item>
-          <el-form-item label="Endpoint" prop="config.endpoint">
-            <el-input v-model="form.config.endpoint" placeholder="请输入Endpoint" />
+          <el-form-item :label="$t('storage.endpoint')" prop="config.endpoint">
+            <el-input v-model="form.config.endpoint" :placeholder="$t('storage.enterEndpoint')" />
           </el-form-item>
-          <el-form-item label="区域" prop="config.region">
-            <el-input v-model="form.config.region" placeholder="请输入区域" />
+          <el-form-item :label="$t('storage.region')" prop="config.region">
+            <el-input v-model="form.config.region" :placeholder="$t('storage.enterRegion')" />
           </el-form-item>
-          <el-form-item label="存储桶" prop="config.bucket">
-            <el-input v-model="form.config.bucket" placeholder="请输入存储桶名称">
+          <el-form-item :label="$t('storage.bucket')" prop="config.bucket">
+            <el-input v-model="form.config.bucket" :placeholder="$t('storage.enterBucketName')">
             </el-input>
           </el-form-item>
-          <el-form-item label="路径样式" prop="config.path_style">
+          <el-form-item :label="$t('storage.pathStyle')" prop="config.path_style">
             <el-switch v-model="form.config.path_style" />
           </el-form-item>
           <!-- 继续渲染 S3/OBS 相关项 -->
         </template>
 
-        <el-form-item label="测试节点" prop="test_node_id" style="margin-top: 10px;">
+        <el-form-item :label="$t('storage.testNode')" prop="test_node_id" style="margin-top: 10px;">
           <div style="display: flex; gap: 8px; align-items: center; flex:0.8;">
-            <el-select v-model="testNodeId" placeholder="请选择节点" style="flex: 1;">
+            <el-select v-model="testNodeId" :placeholder="$t('storage.selectNode')" style="flex: 1;">
               <el-option 
                 v-for="node in availableNodes" 
                 :key="node.id" 
@@ -814,10 +818,10 @@
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <span>{{ node.name }} ({{ node.ipaddress }})</span>
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <el-tag size="small" type="success" v-if="node.status === 'online'">在线</el-tag>
-                    <el-tag size="small" type="warning" v-else>离线</el-tag>
-                    <el-tag size="small" type="primary" v-if="node.agent_status === 'running'">Agent运行中</el-tag>
-                    <el-tag size="small" type="danger" v-else>Agent未运行</el-tag>
+                    <el-tag size="small" type="success" v-if="node.status === 'online'">{{ $t('storage.online') }}</el-tag>
+                    <el-tag size="small" type="warning" v-else>{{ $t('storage.offline') }}</el-tag>
+                    <el-tag size="small" type="primary" v-if="node.agent_status === 'running'">{{ $t('storage.agentRunning') }}</el-tag>
+                    <el-tag size="small" type="danger" v-else>{{ $t('storage.agentNotRunning') }}</el-tag>
                   </div>
                 </div>
               </el-option>
@@ -828,20 +832,20 @@
               circle 
               size="small" 
               @click="fetchAvailableNodes"
-              title="刷新节点列表"
+              :title="$t('storage.refreshNodeList')"
             />
           </div>
           <div style="font-size: 12px; color: #909399; margin-left: 8px;">
-            <span v-if="availableNodes.length === 0">暂无可用的测试节点，请确保有节点在线且Agent已启动</span>
-            <span v-else>已找到 {{ availableNodes.length }} 个可用节点</span>
+            <span v-if="availableNodes.length === 0">{{ $t('storage.noAvailableTestNodes') }}</span>
+            <span v-else>{{ $t('storage.foundAvailableNodes', { count: availableNodes.length }) }}</span>
           </div>
         </el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button @click="handleTestConnect">测试连接</el-button>
-          <el-button type="primary" @click="handleSubmit">确定</el-button>
+          <el-button @click="dialogVisible = false">{{ $t('common.cancel') }}</el-button>
+          <el-button @click="handleTestConnect">{{ $t('storage.testConnection') }}</el-button>
+          <el-button type="primary" @click="handleSubmit">{{ $t('common.confirm') }}</el-button>
         </span>
       </template>
     </el-dialog>
@@ -1071,7 +1075,7 @@ const fetchStorages = async () => {
     const response = await axios.get('/api/storages');
       storages.value = response.data.storages
   } catch (error) {
-    ElMessage.error('获取存储列表失败')
+            ElMessage.error(t('storage.getStorageListFailed'))
   } finally {
     loading.value = false
   }
@@ -1196,9 +1200,9 @@ const getStorageInfo = async (row) => {
     row.fetching = true
     const response = await axios.get(`/api/storages/${row.id}/info`)
     storageStats.value = response.data.data
-    ElMessage.success('获取信息成功')
+            ElMessage.success(t('storage.getInfoSuccess'))
   } catch (error) {
-    ElMessage.error('获取信息失败')
+          ElMessage.error(t('storage.getInfoFailed'))
   } finally {
     row.fetching = false
   }
@@ -1209,7 +1213,7 @@ const handleNameClick = async (row) => {
   try {
     // 检查存储是否有绑定的节点
     if (!row.node_id) {
-      ElMessage.warning('该存储未绑定任何节点，无法查看详情。请先为存储分配一个节点。')
+              ElMessage.warning(t('storage.noBoundNodeForDetails'))
       return
     }
     
@@ -1218,16 +1222,16 @@ const handleNameClick = async (row) => {
     const boundNode = nodesResponse.data.data.find(node => node.id === row.node_id)
     
     if (!boundNode) {
-      ElMessage.error('绑定的节点不存在，请重新分配节点')
+              ElMessage.error(t('storage.boundNodeNotExists'))
       return
     }
     
     if (boundNode.status !== 'online') {
-      ElMessage.warning(`绑定的节点 "${boundNode.name}" 当前不在线，可能无法正常访问存储`)
+              ElMessage.warning(t('storage.boundNodeOffline', { nodeName: boundNode.name }))
     }
     
     if (boundNode.agent_status !== 'running') {
-      ElMessage.warning(`绑定的节点 "${boundNode.name}" 的 Agent 未运行，可能无法正常访问存储`)
+              ElMessage.warning(t('storage.boundNodeAgentNotRunning', { nodeName: boundNode.name }))
     }
     
     currentStorage.value = row
@@ -1264,7 +1268,7 @@ const handleNameClick = async (row) => {
     }
   } catch (error) {
     console.error('加载存储详情失败:', error)
-    ElMessage.error('加载存储详情失败')
+    ElMessage.error(t('storage.loadStorageDetailsFailed'))
   }
 }
 
@@ -1283,7 +1287,7 @@ const fetchNASDetails = async () => {
   try {
     // 检查存储是否有绑定的节点
     if (!currentStorage.value.node_id) {
-      ElMessage.error('该存储未绑定任何节点，无法获取统计信息')
+      ElMessage.error(t('storage.noBoundNodeForStats'))
       return
     }
     
@@ -1291,15 +1295,15 @@ const fetchNASDetails = async () => {
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
     
     if (response.data.status === 'task_created') {
-      ElMessage.info(`统计信息获取任务已创建，任务ID: ${response.data.task_id}`)
+      ElMessage.info(t('storage.statsTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
       nasStats.value = response.data.data
     } else {
-      ElMessage.error(response.data.message || '获取统计信息失败')
+      ElMessage.error(response.data.message || t('storage.getStatsFailed'))
     }
   } catch (error) {
     console.error('获取 NAS 存储信息失败:', error)
-    ElMessage.error('获取 NAS 存储信息失败')
+    ElMessage.error(t('storage.getNASStorageInfoFailed'))
   } finally {
     loadingNASStats.value = false
   }
@@ -1310,7 +1314,7 @@ const refreshNASStats = async () => {
   try {
     // 检查存储是否有绑定的节点
     if (!currentStorage.value.node_id) {
-      ElMessage.error('该存储未绑定任何节点，无法刷新统计信息')
+      ElMessage.error(t('storage.noBoundNodeForRefreshStats'))
       return
     }
     
@@ -1318,16 +1322,16 @@ const refreshNASStats = async () => {
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
     
     if (response.data.status === 'task_created') {
-      ElMessage.info(`统计信息获取任务已创建，任务ID: ${response.data.task_id}`)
+      ElMessage.info(t('storage.statsTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
       nasStats.value = response.data.data
-      ElMessage.success('统计信息已更新')
+      ElMessage.success(t('storage.statsUpdated'))
     } else {
-      ElMessage.error(response.data.message || '更新统计信息失败')
+      ElMessage.error(response.data.message || t('storage.updateStatsFailed'))
     }
   } catch (error) {
     console.error('更新统计信息失败:', error)
-    ElMessage.error('更新统计信息失败')
+    ElMessage.error(t('storage.updateStatsFailed'))
   } finally {
     refreshingStats.value = false
   }
@@ -1338,7 +1342,7 @@ const handleFileDownload = async (file) => {
   try {
     // 检查存储是否有绑定的节点
     if (!currentStorage.value.node_id) {
-      ElMessage.error('该存储未绑定任何节点，无法下载文件')
+      ElMessage.error(t('storage.noBoundNodeForDownload'))
       return
     }
     
@@ -1352,7 +1356,7 @@ const handleFileDownload = async (file) => {
     })
     
     if (response.data.status === 'task_created') {
-      ElMessage.info(`文件下载任务已创建，任务ID: ${response.data.task_id}`)
+      ElMessage.info(t('storage.downloadTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
       // 处理文件下载
       const url = window.URL.createObjectURL(new Blob([response.data.data]))
@@ -1363,11 +1367,11 @@ const handleFileDownload = async (file) => {
       link.click()
       document.body.removeChild(link)
     } else {
-      ElMessage.error(response.data.message || '下载失败')
+      ElMessage.error(response.data.message || t('storage.downloadFailed'))
     }
   } catch (error) {
     console.error('下载失败:', error)
-    ElMessage.error('下载失败')
+    ElMessage.error(t('storage.downloadFailed'))
   }
 }
 
@@ -1376,7 +1380,7 @@ const fetchFiles = async () => {
   try {
     // 检查存储是否有绑定的节点
     if (!currentStorage.value.node_id) {
-      ElMessage.error('该存储未绑定任何节点，无法获取文件列表')
+      ElMessage.error(t('storage.noBoundNodeForFileList'))
       return
     }
     
@@ -1391,7 +1395,7 @@ const fetchFiles = async () => {
     })
     
     if (response.data.status === 'task_created') {
-      ElMessage.info(`文件列表获取任务已创建，任务ID: ${response.data.task_id}`)
+      ElMessage.info(t('storage.fileListTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
       const responseData = response.data.data
       
@@ -1409,11 +1413,11 @@ const fetchFiles = async () => {
         total.value = responseData.length
       }
     } else {
-      ElMessage.error(response.data.message || '获取文件列表失败')
+      ElMessage.error(response.data.message || t('storage.getFileListFailed'))
     }
   } catch (error) {
     console.error('获取文件列表失败:', error)
-    ElMessage.error('获取文件列表失败')
+    ElMessage.error(t('storage.getFileListFailed'))
   } finally {
     loadingFiles.value = false
   }
@@ -1424,7 +1428,7 @@ const fetchBuckets = async () => {
   try {
     // 检查存储是否有绑定的节点
     if (!currentStorage.value.node_id) {
-      ElMessage.error('该存储未绑定任何节点，无法获取存储桶列表')
+      ElMessage.error(t('storage.noBoundNodeForBucketList'))
       return
     }
     
@@ -1437,7 +1441,7 @@ const fetchBuckets = async () => {
     })
     
     if (response.data.status === 'task_created') {
-      ElMessage.info(`存储桶列表获取任务已创建，任务ID: ${response.data.task_id}`)
+      ElMessage.info(t('storage.bucketListTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
       const responseData = response.data.data
       
@@ -1455,11 +1459,11 @@ const fetchBuckets = async () => {
         bucketTotal.value = responseData.length
       }
     } else {
-      ElMessage.error(response.data.message || '获取存储桶列表失败')
+      ElMessage.error(response.data.message || t('storage.getBucketListFailed'))
     }
   } catch (error) {
     console.error('获取存储桶列表失败:', error)
-    ElMessage.error('获取存储桶列表失败')
+    ElMessage.error(t('storage.getBucketListFailed'))
   } finally {
     loadingBuckets.value = false
   }
@@ -1489,7 +1493,7 @@ const fetchObjects = async () => {
   try {
     // 检查存储是否有绑定的节点
     if (!currentStorage.value.node_id) {
-      ElMessage.error('该存储未绑定任何节点，无法获取对象列表')
+      ElMessage.error(t('storage.noBoundNodeForObjectList'))
       return
     }
     
@@ -1505,7 +1509,7 @@ const fetchObjects = async () => {
     })
     
     if (response.data.status === 'task_created') {
-      ElMessage.info(`对象列表获取任务已创建，任务ID: ${response.data.task_id}`)
+      ElMessage.info(t('storage.objectListTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
       const responseData = response.data.data
       
@@ -1523,11 +1527,11 @@ const fetchObjects = async () => {
         total.value = responseData.length
       }
     } else {
-      ElMessage.error(response.data.message || '获取对象列表失败')
+      ElMessage.error(response.data.message || t('storage.getObjectListFailed'))
     }
   } catch (error) {
     console.error('获取对象列表失败:', error)
-    ElMessage.error('获取对象列表失败')
+    ElMessage.error(t('storage.getObjectListFailed'))
   } finally {
     loadingObjects.value = false
   }
@@ -1610,7 +1614,7 @@ const handleS3Download = async (row) => {
     link.click()
     document.body.removeChild(link)
   } catch (error) {
-    ElMessage.error('下载失败')
+    ElMessage.error(t('storage.downloadFailed'))
   }
 }
 
@@ -1699,33 +1703,33 @@ const handleAddStorage = (type) => {
 const formRules = computed(() => {
   const rules = {
   name: [
-    { required: true, message: '请输入存储名称', trigger: 'blur' }
+    { required: true, message: t('storage.validation.enterStorageName'), trigger: 'blur' }
     ]
   }
   
   if (form.value.type === 's3') {
     rules['config.provider'] = [
-    { required: true, message: '请选择提供商', trigger: 'change' }
+    { required: true, message: t('storage.validation.selectProvider'), trigger: 'change' }
     ]
     rules['config.access_key'] = [
-    { required: true, message: '请输入Access Key', trigger: 'blur' }
+    { required: true, message: t('storage.validation.enterAccessKey'), trigger: 'blur' }
     ]
     rules['config.secret_key'] = [
-    { required: true, message: '请输入Secret Key', trigger: 'blur' }
+    { required: true, message: t('storage.validation.enterSecretKey'), trigger: 'blur' }
     ]
     rules['config.endpoint'] = [
-    { required: true, message: '请输入Endpoint', trigger: 'blur' }
+    { required: true, message: t('storage.validation.enterEndpoint'), trigger: 'blur' }
     ]
     rules['config.region'] = [
     { 
       required: true, 
-      message: '请输入区域', 
+      message: t('storage.validation.enterRegion'), 
       trigger: 'blur',
       validator: (rule, value, callback) => {
         if (form.value.config.provider === 'minio') {
           callback()
         } else if (!value) {
-          callback(new Error('请输入区域'))
+          callback(new Error(t('storage.validation.enterRegion')))
         } else {
           callback()
         }
@@ -1733,23 +1737,23 @@ const formRules = computed(() => {
     }
   ]
     rules['config.bucket'] = [
-      { required: true, message: '请输入存储桶名称', trigger: 'blur' }
+      { required: true, message: t('storage.validation.enterBucketName'), trigger: 'blur' }
     ]
   } else if (form.value.type === 'nas') {
     rules['config.server'] = [
-      { required: true, message: '请输入服务器地址', trigger: 'blur' }
+      { required: true, message: t('storage.validation.enterServerAddress'), trigger: 'blur' }
     ]
     rules['config.path'] = [
-      { required: true, message: '请输入共享目录路径', trigger: 'blur' }
+      { required: true, message: t('storage.validation.enterSharedDirectoryPath'), trigger: 'blur' }
     ]
     rules['config.protocol'] = [
-      { required: true, message: '请选择协议类型', trigger: 'change' }
+      { required: true, message: t('storage.validation.selectProtocolType'), trigger: 'change' }
     ]
     rules['config.permission'] = [
-      { required: true, message: '请选择读写权限', trigger: 'change' }
+      { required: true, message: t('storage.validation.selectReadWritePermission'), trigger: 'change' }
     ]
     rules['config.version'] = [
-      { required: true, message: '请选择协议版本', trigger: 'change' }
+      { required: true, message: t('storage.validation.selectProtocolVersion'), trigger: 'change' }
     ]
   }
   
@@ -1795,7 +1799,7 @@ const handleSubmit = async () => {
     
     // 检查是否选择了节点（仅在创建时强制要求）
     if (dialogType.value === 'add' && !testNodeId.value) {
-      ElMessage.warning('请选择一个节点来绑定此存储')
+      ElMessage.warning(t('storage.selectNodeToBindStorage'))
       return
     }
     
@@ -1836,10 +1840,10 @@ const handleSubmit = async () => {
     
     if (dialogType.value === 'add') {
       const response = await axios.post('/api/storages', submitData)
-      ElMessage.success('添加存储成功')
+      ElMessage.success(t('storage.addStorageSuccess'))
     } else {
       const response = await axios.put(`/api/storages/${form.value.id}`, submitData)
-      ElMessage.success('更新存储成功')
+      ElMessage.success(t('storage.updateStorageSuccess'))
     }
     dialogVisible.value = false
     fetchStorages()
@@ -1869,12 +1873,12 @@ const fetchAvailableNodes = async () => {
     
     // 如果没有可用节点，给出提示
     if (filteredNodes.length === 0 && allNodes.length > 0) {
-      console.warn('没有找到可用的测试节点，请检查节点状态和Agent状态')
+      console.warn(t('storage.noAvailableTestNodes'))
     }
     
   } catch (error) {
     console.error('获取节点列表失败:', error)
-    ElMessage.error('获取节点列表失败')
+    ElMessage.error(t('storage.getNodeListFailed'))
     availableNodes.value = []
   }
 }
@@ -1891,7 +1895,7 @@ const handleTestConnect = async () => {
     
     // 检查是否选择了测试节点
     if (!testNodeId.value) {
-      ElMessage.warning('请先选择一个测试节点')
+      ElMessage.warning(t('storage.selectTestNodeFirst'))
       return
     }
     
@@ -1901,19 +1905,19 @@ const handleTestConnect = async () => {
     // 检查选中的节点是否在线
     const selectedNode = availableNodes.value.find(node => node.id === testNodeId.value)
     if (!selectedNode) {
-      ElMessage.error('选择的测试节点不存在或已离线，请重新选择节点')
+      ElMessage.error(t('storage.testNodeNotExists'))
       return
     }
     
     // 检查节点状态
     if (selectedNode.status !== 'online') {
-      ElMessage.error(`测试节点 "${selectedNode.name}" 当前不在线，请选择其他在线节点`)
+      ElMessage.error(t('storage.testNodeOffline', { nodeName: selectedNode.name }))
       return
     }
     
     // 检查 Agent 状态
     if (selectedNode.agent_status !== 'running') {
-      ElMessage.error(`测试节点 "${selectedNode.name}" 的 Agent 未运行，请确保 Agent 已启动`)
+      ElMessage.error(t('storage.testNodeAgentNotRunning', { nodeName: selectedNode.name }))
       return
     }
     
@@ -1950,21 +1954,21 @@ const handleTestConnect = async () => {
     }
     
     // 显示加载状态
-    ElMessage.info(`正在创建连接测试任务，将使用节点: ${selectedNode.name} (${selectedNode.ipaddress})`)
+    ElMessage.info(t('storage.creatingConnectionTestTask', { nodeName: selectedNode.name, ipAddress: selectedNode.ipaddress }))
     
     const response = await axios.post('/api/storages/test-connection', submitData)
     if (response.data.status == "success") { 
       const taskData = response.data.data
-      ElMessage.success(`连接测试任务已创建，任务ID: ${taskData.task_id}`)
+      ElMessage.success(t('storage.connectionTestTaskCreated', { taskId: taskData.task_id }))
       
       // 可选：自动跳转到任务页面
       // router.push(`/tasks?task_id=${taskData.task_id}`)
     } else {
-      ElMessage.error(response.data.message || '测试连接失败')
+      ElMessage.error(response.data.message || t('storage.testConnectionFailed'))
     }
     } catch (error) {
     if (error.response) {
-      ElMessage.error(error.response.data.message || '操作失败')
+      ElMessage.error(error.response.data.message || t('storage.operationFailed'))
     } else if (error.message) {
       ElMessage.error(error.message)
     }
@@ -1987,15 +1991,15 @@ const beforeUpload = (file) => {
 
 const handleUploadSuccess = (response) => {
   if (response.status === 'success') {
-    ElMessage.success('上传成功')
+    ElMessage.success(t('storage.uploadSuccess'))
     fetchObjects(currentStorage.value.id)
   } else {
-    ElMessage.error(response.message || '上传失败')
+          ElMessage.error(response.message || t('storage.uploadFailed'))
   }
 }
 
 const handleUploadError = () => {
-  ElMessage.error('上传失败')
+  ElMessage.error(t('storage.uploadFailed'))
 }
 
 // 修改刷新统计信息函数
@@ -2007,7 +2011,7 @@ const refreshStats = async () => {
       return
     }
     
-    await ElMessageBox.confirm('此动作将会重新调用接口，如果桶数据量较多那么时间会较长，请耐心等待', '提示', {
+    await ElMessageBox.confirm(t('storage.refreshStatsConfirm'), t('common.tip'), {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
@@ -2017,18 +2021,18 @@ const refreshStats = async () => {
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
     
     if (response.data.status === 'task_created') {
-      ElMessage.info(`统计信息获取任务已创建，任务ID: ${response.data.task_id}`)
+      ElMessage.info(t('storage.statsTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
       storageStats.value = response.data.data
-      ElMessage.success('统计信息已更新')
+      ElMessage.success(t('storage.statsUpdated'))
     } else {
-      ElMessage.error(response.data.message || '获取统计信息失败')
+      ElMessage.error(response.data.message || t('storage.getStatsFailed'))
     }
   } catch (error) {
     // 如果是用户取消操作,不显示错误提示
     if (error !== 'cancel') {
       console.error('获取统计信息失败:', error)
-      ElMessage.error('获取统计信息失败')
+      ElMessage.error(t('storage.getStatsFailed'))
     }
   } finally {
     refreshingStats.value = false

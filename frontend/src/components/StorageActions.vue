@@ -6,18 +6,18 @@
         size="small" 
         @click="handleEdit"
       >
-        <Icon icon="mdi:pencil" />&nbsp;编辑
+        <Icon icon="mdi:pencil" />&nbsp;{{ $t('storage.actions.edit') }}
       </el-button>
       <el-button 
         type="danger" 
         size="small" 
         @click="handleDelete"
       >
-        <Icon icon="mdi:delete" />&nbsp;删除
+        <Icon icon="mdi:delete" />&nbsp;{{ $t('storage.actions.delete') }}
       </el-button>
       <el-dropdown trigger="click">
         <el-button type="primary" size="small">
-          更多<Icon icon="mdi:chevron-down" class="el-icon--right" />
+          {{ $t('storage.actions.more') }}<Icon icon="mdi:chevron-down" class="el-icon--right" />
         </el-button>
         <template #dropdown>
           <el-dropdown-menu>
@@ -27,7 +27,7 @@
                 :loading="storage.testingRealtime"
                 :disabled="storage.status === 'error'"
               >
-                <Icon icon="mdi:flash" />&nbsp;测试连接
+                <Icon icon="mdi:flash" />&nbsp;{{ $t('storage.actions.testConnection') }}
               </el-button>
             </el-dropdown-item>
             <el-dropdown-item @click="handleGetInfo">
@@ -36,7 +36,7 @@
                 :loading="storage.fetchingRealtime"
                 :disabled="storage.status === 'error'"
               >
-                <Icon icon="mdi:flash-circle" />&nbsp;获取信息
+                <Icon icon="mdi:flash-circle" />&nbsp;{{ $t('storage.actions.getInfo') }}
               </el-button>
             </el-dropdown-item>
             <el-dropdown-item v-if="storage.type === 'nas'" @click="handleBrowseFiles">
@@ -45,7 +45,7 @@
                 :loading="storage.browsing"
                 :disabled="storage.status === 'error'"
               >
-                <Icon icon="mdi:folder-open" />&nbsp;浏览文件
+                <Icon icon="mdi:folder-open" />&nbsp;{{ $t('storage.actions.browseFiles') }}
               </el-button>
             </el-dropdown-item>
             <el-dropdown-item v-if="storage.type === 's3'" @click="handleBrowseBuckets">
@@ -54,7 +54,7 @@
                 :loading="storage.browsing"
                 :disabled="storage.status === 'error'"
               >
-                <Icon icon="mdi:bucket" />&nbsp;浏览存储桶
+                <Icon icon="mdi:bucket" />&nbsp;{{ $t('storage.actions.browseBuckets') }}
               </el-button>
             </el-dropdown-item>
             <el-dropdown-item v-if="storage.type === 's3'" @click="handleBrowseBucketObjects">
@@ -63,7 +63,7 @@
                 :loading="storage.browsing"
                 :disabled="storage.status === 'error'"
               >
-                <Icon icon="mdi:files" />&nbsp;浏览存储对象
+                <Icon icon="mdi:files" />&nbsp;{{ $t('storage.actions.browseObjects') }}
               </el-button>
             </el-dropdown-item>
           </el-dropdown-menu>
@@ -76,7 +76,10 @@
 <script setup>
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Icon } from '@iconify/vue'
+import { useI18n } from 'vue-i18n'
 import axios from 'axios'
+
+const { t } = useI18n()
 
 const props = defineProps({
   storage: {
@@ -106,15 +109,15 @@ const handleEdit = () => {
 // 删除存储
 const handleDelete = async () => {
   try {
-    await ElMessageBox.confirm('确定要删除该存储吗？', '提示', {
+    await ElMessageBox.confirm(t('storage.deleteConfirm'), t('common.tip'), {
       type: 'warning'
     })
     await axios.delete(`/api/storages/${props.storage.id}`)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('storage.deleteSuccess'))
     emit('refresh')
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElMessage.error(t('storage.deleteFailed'))
     }
   }
 }
@@ -129,7 +132,7 @@ const handleTestConnection = async () => {
     )
     
     if (availableNodes.length === 0) {
-      ElMessage.error('没有可用的测试节点，请确保有节点在线且Agent已启动')
+      ElMessage.error(t('storage.noAvailableTestNodes'))
       return
     }
     
@@ -144,14 +147,14 @@ const handleTestConnection = async () => {
     
     if (response.data.status === 'success') {
       const result = response.data.data
-      ElMessage.success(`实时连接测试成功！响应时间: ${(result.response_time || 0).toFixed(2)}ms`)
+      ElMessage.success(t('storage.testConnectionSuccess', { time: (result.response_time || 0).toFixed(2) }))
     } else if (response.data.status === 'timeout') {
-      ElMessage.warning('连接测试超时，请检查网络或存储配置')
+      ElMessage.warning(t('storage.testConnectionTimeout'))
     } else {
-      ElMessage.error(response.data.message || '实时连接测试失败')
+      ElMessage.error(response.data.message || t('storage.testConnectionFailed'))
     }
   } catch (error) {
-    ElMessage.error('实时连接测试失败')
+    ElMessage.error(t('storage.testConnectionFailed'))
   } finally {
     props.storage.testingRealtime = false
   }
@@ -170,7 +173,7 @@ const handleGetInfo = async () => {
       )
       
       if (availableNodes.length === 0) {
-        ElMessage.error('没有可用的节点，请确保有节点在线且Agent已启动')
+        ElMessage.error(t('storage.noAvailableTestNodes'))
         return
       }
       
@@ -191,14 +194,14 @@ const handleGetInfo = async () => {
         detail: result 
       }))
       
-      ElMessage.success(`实时获取信息成功！执行时间: ${(response.data.execution_time || 0).toFixed(2)}s`)
+      ElMessage.success(t('storage.getInfoSuccess', { time: (response.data.execution_time || 0).toFixed(2) }))
     } else if (response.data.status === 'timeout') {
-      ElMessage.warning('获取信息超时，请检查网络或存储配置')
+      ElMessage.warning(t('storage.getInfoTimeout'))
     } else {
-      ElMessage.error(response.data.message || '实时获取信息失败')
+      ElMessage.error(response.data.message || t('storage.getInfoFailed'))
     }
   } catch (error) {
-    ElMessage.error('实时获取信息失败')
+    ElMessage.error(t('storage.getInfoFailed'))
   } finally {
     props.storage.fetchingRealtime = false
   }
@@ -217,7 +220,7 @@ const handleBrowseBucketObjects = async () => {
       )
       
       if (availableNodes.length === 0) {
-        ElMessage.error('没有可用的节点，请确保有节点在线且Agent已启动')
+        ElMessage.error(t('storage.noAvailableTestNodes'))
         return
       }
       
@@ -248,12 +251,12 @@ const handleBrowseBucketObjects = async () => {
         }
       }))
       
-      ElMessage.success('对象存储列表获取成功')
+      ElMessage.success(t('storage.objectListGetSuccess'))
     } else {
-      ElMessage.error(response.data.message || '获取对象存储列表失败')
+      ElMessage.error(response.data.message || t('storage.objectListGetFailed'))
     }
   } catch (error) {
-    ElMessage.error('获取对象存储列表失败')
+    ElMessage.error(t('storage.objectListGetFailed'))
   } finally {
     props.storage.browsing = false
   }
@@ -271,7 +274,7 @@ const handleBrowseFiles = async () => {
       )
       
       if (availableNodes.length === 0) {
-        ElMessage.error('没有可用的节点，请确保有节点在线且Agent已启动')
+        ElMessage.error(t('storage.noAvailableTestNodes'))
         return
       }
       
@@ -301,12 +304,12 @@ const handleBrowseFiles = async () => {
         }
       }))
       
-      ElMessage.success('文件列表获取成功')
+      ElMessage.success(t('storage.fileListGetSuccess'))
     } else {
-      ElMessage.error(response.data.message || '获取文件列表失败')
+      ElMessage.error(response.data.message || t('storage.fileListGetFailed'))
     }
   } catch (error) {
-    ElMessage.error('获取文件列表失败')
+    ElMessage.error(t('storage.fileListGetFailed'))
   } finally {
     props.storage.browsing = false
   }
@@ -324,7 +327,7 @@ const handleBrowseBuckets = async () => {
       )
       
       if (availableNodes.length === 0) {
-        ElMessage.error('没有可用的节点，请确保有节点在线且Agent已启动')
+        ElMessage.error(t('storage.noAvailableTestNodes'))
         return
       }
       
@@ -353,12 +356,12 @@ const handleBrowseBuckets = async () => {
         }
       }))
       
-      ElMessage.success('存储桶列表获取成功')
+      ElMessage.success(t('storage.bucketListGetSuccess'))
     } else {
-      ElMessage.error(response.data.message || '获取存储桶列表失败')
+      ElMessage.error(response.data.message || t('storage.bucketListGetFailed'))
     }
   } catch (error) {
-    ElMessage.error('获取存储桶列表失败')
+    ElMessage.error(t('storage.bucketListGetFailed'))
   } finally {
     props.storage.browsing = false
   }
