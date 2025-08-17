@@ -2,8 +2,8 @@
   <div class="task-confirmation">
     <!-- 页面标题 -->
     <div class="confirmation-header">
-      <h3>确认任务配置</h3>
-      <p class="confirmation-description">请确认以下配置信息，确认无误后点击创建任务</p>
+      <h3>{{ $t('taskConfirmation.confirmTaskConfig') }}</h3>
+      <p class="confirmation-description">{{ $t('taskConfirmation.confirmTaskConfigDesc') }}</p>
     </div>
 
     <!-- 配置概览 -->
@@ -12,24 +12,24 @@
       <div class="config-section">
         <div class="section-header">
           <Icon icon="mdi:source" class="section-icon" />
-          <h4>源端配置</h4>
+          <h4>{{ $t('taskConfirmation.sourceConfig') }}</h4>
         </div>
         
         <div class="section-content">
           <div class="info-grid">
             <div class="info-item">
-              <span class="info-label">存储名称</span>
+              <span class="info-label">{{ $t('taskConfirmation.storageName') }}</span>
               <span class="info-value">{{ wizardData.source.storageName }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">存储类型</span>
+              <span class="info-label">{{ $t('taskConfirmation.storageType') }}</span>
               <el-tag :type="getStorageTypeColor(wizardData.source.storageType)" size="small">
                 {{ getStorageTypeText(wizardData.source.storageType) }}
               </el-tag>
             </div>
             <div class="info-item">
-              <span class="info-label">选中项目</span>
-              <span class="info-value">{{ wizardData.source.selectedPaths.length }} 项</span>
+              <span class="info-label">{{ $t('taskConfirmation.selectedItems') }}</span>
+              <span class="info-value">{{ wizardData.source.selectedPaths.length }} {{ $t('taskConfirmation.items') }}</span>
             </div>
           </div>
           
@@ -37,7 +37,7 @@
           <div v-if="wizardData.source.selectedPaths.length > 0" class="selected-items">
             <div class="items-header">
               <Icon icon="mdi:file-multiple" class="items-icon" />
-              <span>选中的文件/目录</span>
+              <span>{{ $t('taskConfirmation.selectedFilesDirectories') }}</span>
             </div>
             <div class="items-list">
               <el-tag
@@ -61,23 +61,23 @@
       <div class="config-section">
         <div class="section-header">
           <Icon icon="mdi:target" class="section-icon" />
-          <h4>目标端配置</h4>
+          <h4>{{ $t('taskConfirmation.targetConfig') }}</h4>
         </div>
         
         <div class="section-content">
           <div class="info-grid">
             <div class="info-item">
-              <span class="info-label">存储名称</span>
+              <span class="info-label">{{ $t('taskConfirmation.storageName') }}</span>
               <span class="info-value">{{ wizardData.target.storageName }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">存储类型</span>
+              <span class="info-label">{{ $t('taskConfirmation.storageType') }}</span>
               <el-tag :type="getStorageTypeColor(wizardData.target.storageType)" size="small">
                 {{ getStorageTypeText(wizardData.target.storageType) }}
               </el-tag>
             </div>
             <div class="info-item">
-              <span class="info-label">目标路径</span>
+              <span class="info-label">{{ $t('taskConfirmation.targetPath') }}</span>
               <span class="info-value path-value">{{ wizardData.target.targetPath }}</span>
             </div>
           </div>
@@ -85,7 +85,7 @@
           <!-- 数据覆盖警告 -->
           <div v-if="showOverrideWarning" class="override-warning">
             <el-alert
-              title="数据覆盖警告"
+              :title="$t('taskConfirmation.dataOverrideWarning')"
               type="warning"
               :description="overrideWarningText"
               show-icon
@@ -99,24 +99,24 @@
       <div class="config-section">
         <div class="section-header">
           <Icon icon="mdi:cog" class="section-icon" />
-          <h4>任务参数</h4>
+          <h4>{{ $t('taskConfirmation.taskParameters') }}</h4>
         </div>
         
         <div class="section-content">
           <div class="info-grid">
             <div class="info-item">
-              <span class="info-label">任务名称</span>
+              <span class="info-label">{{ $t('taskConfirmation.taskName') }}</span>
               <span class="info-value">{{ wizardData.parameters.taskName }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">优先级</span>
+              <span class="info-label">{{ $t('taskConfirmation.priority') }}</span>
               <el-tag :type="getPriorityType(wizardData.parameters.priority)" size="small">
                 {{ getPriorityText(wizardData.parameters.priority) }}
               </el-tag>
             </div>
             <div class="info-item full-width">
-              <span class="info-label">任务描述</span>
-              <span class="info-value">{{ wizardData.parameters.description || '无描述' }}</span>
+              <span class="info-label">{{ $t('taskConfirmation.taskDescription') }}</span>
+              <span class="info-value">{{ wizardData.parameters.description || $t('taskConfirmation.noDescription') }}</span>
             </div>
           </div>
           
@@ -124,40 +124,40 @@
           <div class="options-section">
             <div class="options-header">
               <Icon icon="mdi:sync" class="options-icon" />
-              <span>同步选项</span>
+              <span>{{ $t('taskConfirmation.syncOptions') }}</span>
             </div>
             <div class="options-grid">
               <div class="option-item">
                 <Icon icon="mdi:delete" class="option-icon" />
-                <span>删除目标多余文件</span>
+                <span>{{ $t('taskConfirmation.deleteExtraFiles') }}</span>
                 <el-tag :type="wizardData.parameters.syncOptions.delete ? 'success' : 'info'" size="small">
-                  {{ wizardData.parameters.syncOptions.delete ? '是' : '否' }}
+                  {{ wizardData.parameters.syncOptions.delete ? $t('common.yes') : $t('common.no') }}
                 </el-tag>
               </div>
               <div class="option-item">
                 <Icon icon="mdi:compress" class="option-icon" />
-                <span>启用压缩传输</span>
+                <span>{{ $t('taskConfirmation.enableCompression') }}</span>
                 <el-tag :type="wizardData.parameters.syncOptions.compress ? 'success' : 'info'" size="small">
-                  {{ wizardData.parameters.syncOptions.compress ? '是' : '否' }}
+                  {{ wizardData.parameters.syncOptions.compress ? $t('common.yes') : $t('common.no') }}
                 </el-tag>
               </div>
               <div class="option-item">
                 <Icon icon="mdi:check-circle" class="option-icon" />
-                <span>校验文件完整性</span>
+                <span>{{ $t('taskConfirmation.checksumVerification') }}</span>
                 <el-tag :type="wizardData.parameters.syncOptions.checksum ? 'success' : 'info'" size="small">
-                  {{ wizardData.parameters.syncOptions.checksum ? '是' : '否' }}
+                  {{ wizardData.parameters.syncOptions.checksum ? $t('common.yes') : $t('common.no') }}
                 </el-tag>
               </div>
               <div class="option-item">
                 <Icon icon="mdi:speedometer" class="option-icon" />
-                <span>带宽限制</span>
+                <span>{{ $t('taskConfirmation.bandwidthLimit') }}</span>
                 <el-tag type="info" size="small">
                   {{ wizardData.parameters.syncOptions.bandwidth_limit || 0 }} MB/s
                 </el-tag>
               </div>
               <div class="option-item">
                 <Icon icon="mdi:connection" class="option-icon" />
-                <span>并发连接数</span>
+                <span>{{ $t('taskConfirmation.maxConnections') }}</span>
                 <el-tag type="info" size="small">
                   {{ wizardData.parameters.syncOptions.max_connections }}
                 </el-tag>
@@ -169,21 +169,21 @@
           <div class="options-section">
             <div class="options-header">
               <Icon icon="mdi:connection" class="options-icon" />
-              <span>传输策略</span>
+              <span>{{ $t('taskConfirmation.transferStrategy') }}</span>
             </div>
             <div class="options-grid">
               <div class="option-item">
                 <Icon icon="mdi:refresh" class="option-icon" />
-                <span>重连次数</span>
+                <span>{{ $t('taskConfirmation.retryCount') }}</span>
                 <el-tag type="info" size="small">
                   {{ wizardData.parameters.retryOptions.max_retries }}
                 </el-tag>
               </div>
               <div class="option-item">
                 <Icon icon="mdi:timer" class="option-icon" />
-                <span>重连间隔</span>
+                <span>{{ $t('taskConfirmation.retryInterval') }}</span>
                 <el-tag type="info" size="small">
-                  {{ wizardData.parameters.retryOptions.retry_interval }} 秒
+                  {{ wizardData.parameters.retryOptions.retry_interval }} {{ $t('common.seconds') }}
                 </el-tag>
               </div>
             </div>
@@ -193,28 +193,28 @@
           <div class="options-section">
             <div class="options-header">
               <Icon icon="mdi:settings" class="options-icon" />
-              <span>高级参数</span>
+              <span>{{ $t('taskConfirmation.advancedParameters') }}</span>
             </div>
             <div class="options-grid">
               <div class="option-item">
                 <Icon icon="mdi:memory" class="option-icon" />
-                <span>缓冲区大小</span>
+                <span>{{ $t('taskConfirmation.bufferSize') }}</span>
                 <el-tag type="info" size="small">
                   {{ wizardData.parameters.advancedOptions?.buffer_size || 10 }} MB
                 </el-tag>
               </div>
               <div class="option-item">
                 <Icon icon="mdi:clock" class="option-icon" />
-                <span>超时时间</span>
+                <span>{{ $t('taskConfirmation.timeout') }}</span>
                 <el-tag type="info" size="small">
-                  {{ wizardData.parameters.advancedOptions?.timeout || 300 }} 秒
+                  {{ wizardData.parameters.advancedOptions?.timeout || 300 }} {{ $t('common.seconds') }}
                 </el-tag>
               </div>
               <div class="option-item">
                 <Icon icon="mdi:filter" class="option-icon" />
-                <span>排除模式</span>
+                <span>{{ $t('taskConfirmation.excludePatterns') }}</span>
                 <el-tag type="info" size="small">
-                  {{ wizardData.parameters.advancedOptions?.exclude_patterns || '无' }}
+                  {{ wizardData.parameters.advancedOptions?.exclude_patterns || $t('taskConfirmation.none') }}
                 </el-tag>
               </div>
             </div>
@@ -226,25 +226,25 @@
       <div class="config-section">
         <div class="section-header">
           <Icon icon="mdi:chart-line" class="section-icon" />
-          <h4>预估信息</h4>
+          <h4>{{ $t('taskConfirmation.estimatedInfo') }}</h4>
         </div>
         
         <div class="section-content">
           <div class="info-grid">
             <div class="info-item">
-              <span class="info-label">预估文件数</span>
-              <span class="info-value">{{ estimatedFileCount }} 个文件</span>
+              <span class="info-label">{{ $t('taskConfirmation.estimatedFileCount') }}</span>
+              <span class="info-value">{{ estimatedFileCount }} {{ $t('taskConfirmation.files') }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">预估总大小</span>
+              <span class="info-label">{{ $t('taskConfirmation.estimatedTotalSize') }}</span>
               <span class="info-value">{{ estimatedTotalSize }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">预估传输时间</span>
+              <span class="info-label">{{ $t('taskConfirmation.estimatedTransferTime') }}</span>
               <span class="info-value">{{ estimatedTransferTime }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">预估带宽使用</span>
+              <span class="info-label">{{ $t('taskConfirmation.estimatedBandwidthUsage') }}</span>
               <span class="info-value">{{ estimatedBandwidthUsage }}</span>
             </div>
           </div>
@@ -255,9 +255,9 @@
     <!-- 确认操作 -->
     <div class="confirmation-actions">
       <el-alert
-        title="请确认以上配置信息"
+        :title="$t('taskConfirmation.confirmConfigInfo')"
         type="info"
-        description="确认无误后点击创建任务按钮开始创建同步任务"
+        :description="$t('taskConfirmation.confirmConfigInfoDesc')"
         show-icon
         :closable="false"
       />
@@ -267,7 +267,10 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   wizardData: {
@@ -287,9 +290,9 @@ const showOverrideWarning = computed(() => {
 
 const overrideWarningText = computed(() => {
   if (props.wizardData.target.storageType === 's3') {
-    return '您选择了与源端相同的对象存储，可能会导致数据覆盖。请确保目标路径与源端路径不同。'
+    return t('taskConfirmation.overrideWarningObs')
   } else {
-    return '您选择了与源端相同的存储，可能会导致数据覆盖。请确保目标路径与源端路径不同。'
+    return t('taskConfirmation.overrideWarningNas')
   }
 })
 
@@ -302,7 +305,7 @@ const estimatedTotalSize = computed(() => {
     return sum + (item.size || 0)
   }, 0)
   
-  if (totalSize === 0) return '未知'
+  if (totalSize === 0) return t('taskConfirmation.unknown')
   
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   let size = totalSize
@@ -321,23 +324,23 @@ const estimatedTransferTime = computed(() => {
     return sum + (item.size || 0)
   }, 0)
   
-  if (totalSize === 0) return '未知'
+  if (totalSize === 0) return t('taskConfirmation.unknown')
   
   const bandwidth = props.wizardData.parameters.syncOptions.bandwidth_limit || 10 // MB/s
   const timeInSeconds = totalSize / (1024 * 1024) / bandwidth
   
   if (timeInSeconds < 60) {
-    return `${Math.ceil(timeInSeconds)} 秒`
+    return `${Math.ceil(timeInSeconds)} ${t('common.seconds')}`
   } else if (timeInSeconds < 3600) {
-    return `${Math.ceil(timeInSeconds / 60)} 分钟`
+    return `${Math.ceil(timeInSeconds / 60)} ${t('taskConfirmation.minutes')}`
   } else {
-    return `${Math.ceil(timeInSeconds / 3600)} 小时`
+    return `${Math.ceil(timeInSeconds / 3600)} ${t('taskConfirmation.hours')}`
   }
 })
 
 const estimatedBandwidthUsage = computed(() => {
   const bandwidth = props.wizardData.parameters.syncOptions.bandwidth_limit || 0
-  return bandwidth === 0 ? '无限制' : `${bandwidth} MB/s`
+  return bandwidth === 0 ? t('taskConfirmation.noLimit') : `${bandwidth} MB/s`
 })
 
 // 方法
@@ -373,12 +376,12 @@ const getPriorityType = (priority) => {
 
 const getPriorityText = (priority) => {
   const texts = {
-    1: '低',
-    2: '普通',
-    3: '高',
-    4: '紧急'
+    1: t('taskConfirmation.priorities.low'),
+    2: t('taskConfirmation.priorities.normal'),
+    3: t('taskConfirmation.priorities.high'),
+    4: t('taskConfirmation.priorities.urgent')
   }
-  return texts[priority] || '普通'
+  return texts[priority] || t('taskConfirmation.priorities.normal')
 }
 </script>
 

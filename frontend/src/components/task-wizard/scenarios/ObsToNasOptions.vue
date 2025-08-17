@@ -3,21 +3,21 @@
     <el-form :model="form" label-width="120px">
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="rclone参数">
+          <el-form-item :label="$t('obsToNasOptions.rcloneArgs')">
             <el-input
               v-model="form.rclone_args"
-              placeholder="--exclude=*.tmp --include=*.jpg"
+              :placeholder="$t('obsToNasOptions.rcloneArgsPlaceholder')"
               @input="updateModelValue"
             />
-            <div class="form-tip">自定义rclone参数，多个参数用空格分隔</div>
+            <div class="form-tip">{{ $t('obsToNasOptions.rcloneArgsTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="下载模式">
+          <el-form-item :label="$t('obsToNasOptions.downloadMode')">
             <el-select v-model="form.download_mode" style="width: 100%" @change="updateModelValue">
-              <el-option label="标准下载" value="standard" />
-              <el-option label="流式下载" value="streaming" />
-              <el-option label="分块下载" value="chunked" />
+              <el-option :label="$t('obsToNasOptions.standardDownload')" value="standard" />
+              <el-option :label="$t('obsToNasOptions.streamingDownload')" value="streaming" />
+              <el-option :label="$t('obsToNasOptions.chunkedDownload')" value="chunked" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -25,93 +25,93 @@
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="分块大小(MB)">
+          <el-form-item :label="$t('obsToNasOptions.chunkSize')">
             <el-input-number
               v-model="form.chunk_size"
               :min="1"
               :max="1000"
-              placeholder="分块大小"
+              :placeholder="$t('obsToNasOptions.chunkSizePlaceholder')"
               style="width: 100%"
               @change="updateModelValue"
             />
-            <div class="form-tip">大文件分块下载的块大小</div>
+            <div class="form-tip">{{ $t('obsToNasOptions.chunkSizeTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="并发下载数">
+          <el-form-item :label="$t('obsToNasOptions.downloadConcurrency')">
             <el-input-number
               v-model="form.download_concurrency"
               :min="1"
               :max="20"
-              placeholder="并发数"
+              :placeholder="$t('obsToNasOptions.downloadConcurrencyPlaceholder')"
               style="width: 100%"
               @change="updateModelValue"
             />
-            <div class="form-tip">同时下载的文件数量</div>
+            <div class="form-tip">{{ $t('obsToNasOptions.downloadConcurrencyTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="断点续传">
+          <el-form-item :label="$t('obsToNasOptions.resumeDownload')">
             <el-switch
               v-model="form.resume_download"
               @change="updateModelValue"
             />
-            <div class="form-tip">支持断点续传功能</div>
+            <div class="form-tip">{{ $t('obsToNasOptions.resumeDownloadTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="校验和验证">
+          <el-form-item :label="$t('obsToNasOptions.checksumVerification')">
             <el-switch
               v-model="form.checksum_verification"
               @change="updateModelValue"
             />
-            <div class="form-tip">下载后验证文件完整性</div>
+            <div class="form-tip">{{ $t('obsToNasOptions.checksumVerificationTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="保留元数据">
+          <el-form-item :label="$t('obsToNasOptions.preserveMetadata')">
             <el-switch
               v-model="form.preserve_metadata"
               @change="updateModelValue"
             />
-            <div class="form-tip">保留文件的元数据信息</div>
+            <div class="form-tip">{{ $t('obsToNasOptions.preserveMetadataTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="进度报告">
+          <el-form-item :label="$t('obsToNasOptions.progressReporting')">
             <el-switch
               v-model="form.progress_reporting"
               @change="updateModelValue"
             />
-            <div class="form-tip">实时报告下载进度</div>
+            <div class="form-tip">{{ $t('obsToNasOptions.progressReportingTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="重试策略">
+          <el-form-item :label="$t('obsToNasOptions.retryStrategy')">
             <el-select v-model="form.retry_strategy" style="width: 100%" @change="updateModelValue">
-              <el-option label="指数退避" value="exponential" />
-              <el-option label="固定间隔" value="fixed" />
-              <el-option label="立即重试" value="immediate" />
+              <el-option :label="$t('obsToNasOptions.exponentialBackoff')" value="exponential" />
+              <el-option :label="$t('obsToNasOptions.fixedInterval')" value="fixed" />
+              <el-option :label="$t('obsToNasOptions.immediateRetry')" value="immediate" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="临时目录">
+          <el-form-item :label="$t('obsToNasOptions.tempDirectory')">
             <el-input
               v-model="form.temp_directory"
-              placeholder="/tmp/downloads"
+              :placeholder="$t('obsToNasOptions.tempDirectoryPlaceholder')"
               @input="updateModelValue"
             />
-            <div class="form-tip">下载文件的临时存储目录</div>
+            <div class="form-tip">{{ $t('obsToNasOptions.tempDirectoryTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
@@ -121,6 +121,9 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {

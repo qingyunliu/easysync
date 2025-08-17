@@ -3,19 +3,19 @@
     <!-- 存储选择 -->
     <div class="storage-selection">
       <div class="selection-header">
-        <h3>选择目标端存储</h3>
-        <p class="selection-description">请选择要同步到的目标存储设备</p>
+        <h3>{{ $t('targetSelector.selectTargetStorage') }}</h3>
+        <p class="selection-description">{{ $t('targetSelector.selectTargetStorageDesc') }}</p>
       </div>
       
       <el-form :model="form" label-width="120px">
-        <el-form-item label="目标端存储" required>
+        <el-form-item :label="$t('targetSelector.targetStorage')" required>
           <el-select 
             v-model="form.selectedStorageId" 
-            placeholder="请选择目标端存储" 
+            :placeholder="$t('targetSelector.selectTargetStoragePlaceholder')" 
             style="width: 100%"
             @change="handleStorageChange"
           >
-            <el-option-group label="NAS 存储">
+            <el-option-group :label="$t('targetSelector.nasStorage')">
               <el-option
                 v-for="storage in nasStorages"
                 :key="storage.id"
@@ -32,12 +32,12 @@
                     :type="storage.config.is_mounted ? 'success' : 'warning'" 
                     size="small"
                   >
-                    {{ storage.config.is_mounted ? '已挂载' : '未挂载' }}
+                    {{ storage.config.is_mounted ? $t('targetSelector.mounted') : $t('targetSelector.notMounted') }}
                   </el-tag>
                 </div>
               </el-option>
             </el-option-group>
-            <el-option-group label="OBS 存储">
+            <el-option-group :label="$t('targetSelector.obsStorage')">
               <el-option
                 v-for="storage in obsStorages"
                 :key="storage.id"
@@ -64,7 +64,7 @@
     <!-- 数据覆盖警告 -->
     <div v-if="showOverrideWarning" class="override-warning">
       <el-alert
-        title="数据覆盖警告"
+        :title="$t('targetSelector.dataOverrideWarning')"
         type="warning"
         :description="overrideWarningText"
         show-icon
@@ -78,32 +78,32 @@
       <template v-if="selectedStorage.type === 's3'">
         <div class="obs-config">
           <div class="config-header">
-            <h4>配置目标位置</h4>
-            <p class="config-description">您可以选择浏览现有存储桶或创建新的存储桶来作为同步目标</p>
+            <h4>{{ $t('targetSelector.configureTargetLocation') }}</h4>
+            <p class="config-description">{{ $t('targetSelector.configureTargetLocationDesc') }}</p>
           </div>
 
           <div class="config-content">
             <el-form :model="obsForm" label-width="120px">
-              <el-form-item label="操作模式" required>
+              <el-form-item :label="$t('targetSelector.operationMode')" required>
                 <el-radio-group v-model="obsForm.mode" @change="handleObsModeChange">
-                  <el-radio label="browse">浏览现有存储桶</el-radio>
-                  <el-radio label="create">创建新存储桶</el-radio>
+                  <el-radio label="browse">{{ $t('targetSelector.browseExistingBucket') }}</el-radio>
+                  <el-radio label="create">{{ $t('targetSelector.createNewBucket') }}</el-radio>
                 </el-radio-group>
               </el-form-item>
 
               <!-- 创建新存储桶模式 -->
               <template v-if="obsForm.mode === 'create'">
-                <el-form-item label="存储桶名称" required>
+                <el-form-item :label="$t('targetSelector.bucketName')" required>
                   <el-input 
                     v-model="obsForm.bucketName" 
-                    placeholder="请输入存储桶名称"
+                    :placeholder="$t('targetSelector.enterBucketName')"
                     @input="updateTargetPath"
                   />
                 </el-form-item>
-                <el-form-item label="目标路径">
+                <el-form-item :label="$t('targetSelector.targetPath')">
                   <el-input 
                     v-model="obsForm.targetPath" 
-                    placeholder="可选：指定存储桶内的路径，如 folder1/subfolder"
+                    :placeholder="$t('targetSelector.targetPathPlaceholder')"
                     @input="updateTargetPath"
                   />
                 </el-form-item>
@@ -111,10 +111,10 @@
 
               <!-- 浏览现有存储桶模式 -->
               <template v-else>
-                <el-form-item label="存储桶" required>
+                <el-form-item :label="$t('targetSelector.bucket')" required>
                   <el-select 
                     v-model="obsForm.selectedBucket" 
-                    placeholder="请选择存储桶"
+                    :placeholder="$t('targetSelector.selectBucket')"
                     @change="handleBucketChange"
                     style="width: 100%"
                   >
@@ -135,17 +135,17 @@
                   </el-select>
                 </el-form-item>
 
-                <el-form-item label="目标路径">
+                <el-form-item :label="$t('targetSelector.targetPath')">
                   <div class="path-input-group">
                     <el-input
                       v-model="obsForm.targetPath"
-                      placeholder="请选择或输入目标路径"
+                      :placeholder="$t('targetSelector.selectOrEnterTargetPath')"
                       @input="updateTargetPath"
                     >
                       <template #append>
                         <el-button @click="toggleObsPathSelector">
                           <Icon icon="mdi:folder-open" />
-                          浏览
+                          {{ $t('targetSelector.browse') }}
                         </el-button>
                       </template>
                     </el-input>
@@ -157,19 +157,19 @@
             <!-- OBS 路径选择器 -->
             <div v-if="showObsPathSelector && obsForm.selectedBucket" class="obs-path-selector">
               <div class="path-selector-header">
-                <h5>浏览存储桶内容</h5>
+                <h5>{{ $t('targetSelector.browseBucketContent') }}</h5>
                 <div class="path-actions">
                   <el-button @click="refreshObsTree" :loading="obsLoading" size="small">
                     <Icon icon="mdi:refresh" />
-                    刷新
+                    {{ $t('targetSelector.refresh') }}
                   </el-button>
                   <el-button @click="expandAllObs" size="small">
                     <Icon icon="mdi:arrow-expand-all" />
-                    展开全部
+                    {{ $t('targetSelector.expandAll') }}
                   </el-button>
                   <el-button @click="collapseAllObs" size="small">
                     <Icon icon="mdi:arrow-collapse-all" />
-                    收起全部
+                    {{ $t('targetSelector.collapseAll') }}
                   </el-button>
                 </div>
               </div>
@@ -193,10 +193,10 @@
               <!-- OBS 状态信息 -->
               <div v-if="!obsLoading && obsPagination.total > 0" class="status-info">
                 <el-tag type="info" size="small">
-                  共 {{ obsPagination.total }} 个对象
+                  {{ $t('targetSelector.totalObjects', { count: obsPagination.total }) }}
                 </el-tag>
                 <el-tag type="success" size="small" v-if="obsPathSegments.length > 0">
-                  当前路径: {{ obsPathSegments.join('/') }}
+                  {{ $t('targetSelector.currentPath') }}: {{ obsPathSegments.join('/') }}
                 </el-tag>
               </div>
 
@@ -207,7 +207,7 @@
                   @row-click="handleObsItemClick"
                   class="directory-table"
                   highlight-current-row
-                  :empty-text="obsLoading ? '正在加载对象列表...' : '当前目录为空'"
+                  :empty-text="obsLoading ? $t('targetSelector.loadingObjectList') : $t('targetSelector.currentDirectoryEmpty')"
                   :max-height="tableMaxHeight"
                 >
                   <el-table-column width="50">
@@ -218,31 +218,31 @@
                       />
                     </template>
                   </el-table-column>
-                  <el-table-column prop="name" label="名称">
+                  <el-table-column prop="name" :label="$t('targetSelector.name')">
                     <template #default="{ row }">
                       <span :class="{ 'directory-name': row.type === 'directory' }">
                         {{ row.name }}
                       </span>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="size" label="大小" width="120">
+                  <el-table-column prop="size" :label="$t('targetSelector.size')" width="120">
                     <template #default="{ row }">
                       {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="lastModified" label="修改时间" width="180">
+                  <el-table-column prop="lastModified" :label="$t('targetSelector.lastModified')" width="180">
                     <template #default="{ row }">
                       {{ formatDate(row.lastModified) }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="操作" width="120">
+                  <el-table-column :label="$t('targetSelector.actions')" width="120">
                     <template #default="{ row }">
                       <el-button 
                         v-if="row.type === 'directory'"
                         size="small" 
                         @click.stop="selectObsDirectory(row)"
                       >
-                        选择
+                        {{ $t('targetSelector.select') }}
                       </el-button>
                     </template>
                   </el-table-column>
@@ -271,23 +271,23 @@
       <template v-else>
         <div class="nas-config">
           <div class="config-header">
-            <h4>配置目标位置</h4>
-            <p class="config-description">请选择目标目录路径，您可以通过浏览功能查看目录结构</p>
+            <h4>{{ $t('targetSelector.configureTargetLocation') }}</h4>
+            <p class="config-description">{{ $t('targetSelector.configureTargetLocationNasDesc') }}</p>
           </div>
 
           <div class="config-content">
             <el-form :model="nasForm" label-width="120px">
-              <el-form-item label="目标路径" required>
+              <el-form-item :label="$t('targetSelector.targetPath')" required>
                 <div class="path-input-group">
                   <el-input
                     v-model="nasForm.targetPath"
-                    placeholder="请选择或输入目标路径"
+                    :placeholder="$t('targetSelector.selectOrEnterTargetPath')"
                     @input="updateTargetPath"
                   >
                     <template #append>
                       <el-button @click="toggleNasPathSelector">
                         <Icon icon="mdi:folder-open" />
-                        浏览
+                        {{ $t('targetSelector.browse') }}
                       </el-button>
                     </template>
                   </el-input>
@@ -298,19 +298,19 @@
             <!-- NAS 路径选择器 -->
             <div v-if="showNasPathSelector" class="nas-path-selector">
               <div class="path-selector-header">
-                <h5>浏览目录结构</h5>
+                <h5>{{ $t('targetSelector.browseDirectoryStructure') }}</h5>
                 <div class="path-actions">
                   <el-button @click="refreshNasTree" :loading="nasLoading" size="small">
                     <Icon icon="mdi:refresh" />
-                    刷新
+                    {{ $t('targetSelector.refresh') }}
                   </el-button>
                   <el-button @click="expandAllNas" size="small">
                     <Icon icon="mdi:arrow-expand-all" />
-                    展开全部
+                    {{ $t('targetSelector.expandAll') }}
                   </el-button>
                   <el-button @click="collapseAllNas" size="small">
                     <Icon icon="mdi:arrow-collapse-all" />
-                    收起全部
+                    {{ $t('targetSelector.collapseAll') }}
                   </el-button>
                 </div>
               </div>
@@ -318,7 +318,7 @@
               <div class="breadcrumb">
                 <el-breadcrumb separator="/">
                   <el-breadcrumb-item @click="navigateToNasPath('')" class="breadcrumb-link">
-                    根目录
+                    {{ $t('targetSelector.rootDirectory') }}
                   </el-breadcrumb-item>
                   <el-breadcrumb-item 
                     v-for="(segment, index) in nasPathSegments" 
@@ -334,10 +334,10 @@
               <!-- NAS 状态信息 -->
               <div v-if="!nasLoading && nasPagination.total > 0" class="status-info">
                 <el-tag type="info" size="small">
-                  共 {{ nasPagination.total }} 个文件/文件夹
+                  {{ $t('targetSelector.totalFilesFolders', { count: nasPagination.total }) }}
                 </el-tag>
                 <el-tag type="success" size="small" v-if="nasPathSegments.length > 0">
-                  当前路径: {{ nasPathSegments.join('/') }}
+                  {{ $t('targetSelector.currentPath') }}: {{ nasPathSegments.join('/') }}
                 </el-tag>
               </div>
 
@@ -348,7 +348,7 @@
                   @row-click="handleNasItemClick"
                   class="directory-table"
                   highlight-current-row
-                  :empty-text="nasLoading ? '正在加载文件列表...' : '当前目录为空'"
+                  :empty-text="nasLoading ? $t('targetSelector.loadingFileList') : $t('targetSelector.currentDirectoryEmpty')"
                   :max-height="tableMaxHeight"
                 >
                   <el-table-column width="50">
@@ -413,9 +413,12 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Icon } from '@iconify/vue'
 import axios from 'axios'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {
@@ -526,9 +529,9 @@ const showOverrideWarning = computed(() => {
 
 const overrideWarningText = computed(() => {
   if (selectedStorage.value?.type === 's3') {
-    return '您选择了与源端相同的对象存储，可能会导致数据覆盖。请确保目标路径与源端路径不同。'
+    return t('targetSelector.overrideWarningObs')
   } else {
-    return '您选择了与源端相同的存储，可能会导致数据覆盖。请确保目标路径与源端路径不同。'
+    return t('targetSelector.overrideWarningNas')
   }
 })
 
@@ -539,10 +542,10 @@ const fetchStorages = async () => {
     if (response.data.status === 'success') {
       storages.value = response.data.storages || []
     } else {
-      ElMessage.error('获取存储列表失败')
+      ElMessage.error(t('targetSelector.messages.getStorageListFailed'))
     }
   } catch (error) {
-    ElMessage.error('获取存储列表失败')
+    ElMessage.error(t('targetSelector.messages.getStorageListFailed'))
   }
 }
 
@@ -595,7 +598,7 @@ const fetchBuckets = async (storageId) => {
       buckets.value = response.data.data.buckets || []
     }
   } catch (error) {
-    ElMessage.error('获取存储桶列表失败')
+    ElMessage.error(t('targetSelector.messages.getBucketListFailed'))
   } finally {
     obsLoading.value = false
   }
@@ -634,7 +637,7 @@ const handleBucketChange = async (bucketName) => {
 
 const toggleObsPathSelector = () => {
   if (!obsForm.value.selectedBucket) {
-    ElMessage.warning('请先选择存储桶')
+    ElMessage.warning(t('targetSelector.messages.selectBucketFirst'))
     return
   }
   showObsPathSelector.value = !showObsPathSelector.value
@@ -722,7 +725,7 @@ const loadObsCurrentPage = async () => {
       }
     }
   } catch (error) {
-    ElMessage.error('获取对象列表失败')
+    ElMessage.error(t('targetSelector.messages.getObjectListFailed'))
   } finally {
     obsLoading.value = false
   }
@@ -771,7 +774,7 @@ const loadNasCurrentPage = async () => {
       }
     }
   } catch (error) {
-    ElMessage.error('获取文件列表失败')
+    ElMessage.error(t('targetSelector.messages.getFileListFailed'))
   } finally {
     nasLoading.value = false
   }

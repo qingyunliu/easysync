@@ -314,18 +314,18 @@ frontend/src/i18n/
 
 #### 1.1 核心功能页面
 
-- [ ] **任务管理页面** (`frontend/src/views/Tasks.vue`)
+- [x] **任务管理页面** (`frontend/src/views/Tasks.vue`)
 
-  - [ ] 页面标题和描述
-  - [ ] 任务列表表格
-  - [ ] 任务状态标签
-  - [ ] 任务操作按钮
-  - [ ] 任务详情对话框
-  - [ ] 任务创建向导
-  - [ ] 任务日志查看
-  - [ ] 任务统计信息
-  - [ ] 表单验证规则
-  - [ ] 操作反馈消息
+  - [x] 页面标题和描述
+  - [x] 任务列表表格
+  - [x] 任务状态标签
+  - [x] 任务操作按钮
+  - [x] 任务详情对话框
+  - [x] 任务创建向导
+  - [x] 任务日志查看
+  - [x] 任务统计信息
+  - [x] 表单验证规则
+  - [x] 操作反馈消息
 
 - [ ] **用户管理页面** (`frontend/src/views/Users.vue`)
 
@@ -611,6 +611,8 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 
 ### 存储管理模块国际化完成度：100% ✅
 
+### 任务管理模块国际化完成度：100% ✅
+
 #### 已完成的国际化内容：
 
 **1. 页面基础元素**
@@ -735,6 +737,171 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - ✅ 存储桶数量、对象数量、总存储量、最后修改时间
 - ✅ 刷新按钮和加载提示
 
+### 任务管理模块国际化完成度：100% ✅
+
+#### 已完成的国际化内容：
+
+**1. 页面基础元素**
+
+- ✅ 页面标题和描述 (`tasks.title`, `tasks.description`)
+- ✅ 创建任务按钮 (`tasks.createTask`)
+- ✅ 复制任务标题 (`tasks.copyTask`)
+
+**2. 统计面板**
+
+- ✅ 总任务数 (`tasks.stats.totalTasks`)
+- ✅ 运行中 (`tasks.stats.running`)
+- ✅ 等待中 (`tasks.stats.pending`)
+- ✅ 已完成 (`tasks.stats.completed`)
+- ✅ 已失败 (`tasks.stats.failed`)
+- ✅ 在线节点 (`tasks.stats.onlineNodes`)
+
+**3. 工具栏**
+
+- ✅ 搜索框占位符 (`tasks.searchPlaceholder`)
+- ✅ 状态筛选 (`tasks.statusFilter`)
+- ✅ 类型筛选 (`tasks.typeFilter`)
+- ✅ 筛选选项 (`tasks.all`, `tasks.statuses.*`, `tasks.types.*`)
+- ✅ 刷新按钮 (`tasks.refresh`, `tasks.pauseRefresh`, `tasks.enableRefresh`)
+
+**4. 批量操作**
+
+- ✅ 已选择任务数量 (`tasks.selectedTasks`)
+- ✅ 批量操作按钮 (`tasks.batchCancel`, `tasks.batchRetry`, `tasks.batchDelete`)
+
+**5. 表格列标题**
+
+- ✅ 任务名称 (`tasks.taskName`)
+- ✅ 任务描述 (`tasks.taskDescription`)
+- ✅ 类型 (`tasks.type`)
+- ✅ 状态 (`tasks.status`)
+- ✅ 进度 (`tasks.progress`)
+- ✅ 执行节点 (`tasks.executionNode`)
+- ✅ 优先级 (`tasks.priority`)
+- ✅ 创建时间 (`tasks.createTime`)
+- ✅ 操作 (`tasks.actions`)
+- ✅ 无描述提示 (`tasks.noDescription`)
+- ✅ 未分配提示 (`tasks.unassigned`)
+
+**6. 任务类型和状态**
+
+- ✅ 任务类型文本 (`tasks.types.sync`, `tasks.types.copy`, `tasks.types.mountCheck`)
+- ✅ 任务状态文本 (`tasks.statuses.*`)
+- ✅ 优先级文本 (`tasks.priorities.*`)
+
+**7. 操作按钮**
+
+- ✅ 启动/暂停/恢复/取消/重试按钮 (`tasks.actions.*`)
+- ✅ 更多操作下拉菜单 (`tasks.actions.more`)
+- ✅ 查看日志/详情/复制任务/删除 (`tasks.actions.*`)
+
+**8. 任务详情和日志**
+
+- ✅ 任务详情标题 (`tasks.taskDetail`, `tasks.taskDetailTitle`)
+- ✅ 任务日志标题 (`tasks.taskLogs`, `tasks.taskLogsTitle`)
+- ✅ 日志级别筛选 (`tasks.logLevels.*`)
+- ✅ 刷新间隔选项 (`tasks.refreshInterval`, `tasks.closeRefresh`, `tasks.seconds`, `tasks.minutes`)
+- ✅ 自动刷新/手动刷新 (`tasks.autoRefresh`, `tasks.manualRefresh`)
+- ✅ 清理日志按钮 (`tasks.refreshDuplicateLogs`, `tasks.refreshOldLogs`)
+
+**9. 消息和验证**
+
+- ✅ 操作成功/失败消息 (`tasks.messages.*`)
+- ✅ 确认对话框消息 (`tasks.messages.confirm*`)
+- ✅ 验证规则消息 (`tasks.validation.*`)
+
+**10. 通用文本**
+
+- ✅ 时间列标题 (`common.time`)
+- ✅ 消息列标题 (`common.message`)
+
+### 任务详情组件国际化完成度：100% ✅
+
+#### 已完成的国际化内容：
+
+**1. 基础信息**
+
+- ✅ 基础信息标题 (`taskDetail.basicInfo`)
+- ✅ 任务名称、类型、状态、进度、优先级、执行节点 (`taskDetail.taskName`, `taskDetail.type`, `taskDetail.status`, `taskDetail.progress`, `taskDetail.priority`, `taskDetail.executionNode`)
+- ✅ 创建时间、开始时间、完成时间 (`taskDetail.createTime`, `taskDetail.startTime`, `taskDetail.completeTime`)
+- ✅ 未分配、未开始、未完成状态 (`taskDetail.unassigned`, `taskDetail.notStarted`, `taskDetail.notCompleted`)
+
+**2. 源端信息**
+
+- ✅ 源端信息标题 (`taskDetail.sourceInfo`)
+- ✅ 存储名称、存储类型、源端路径 (`taskDetail.storageName`, `taskDetail.storageType`, `taskDetail.sourcePath`)
+- ✅ 客户端名称、IP 地址 (`taskDetail.clientName`, `taskDetail.ipAddress`)
+- ✅ 无源端信息提示 (`taskDetail.noSourceInfo`)
+
+**3. 目标端信息**
+
+- ✅ 目标端信息标题 (`taskDetail.targetInfo`)
+- ✅ 目标路径 (`taskDetail.targetPath`)
+- ✅ 无目标端信息提示 (`taskDetail.noTargetInfo`)
+
+**4. 同步选项**
+
+- ✅ 同步选项标题 (`taskDetail.syncOptions`)
+- ✅ 删除多余文件、校验和检查、压缩传输 (`taskDetail.deleteExtraFiles`, `taskDetail.checksumCheck`, `taskDetail.compressTransfer`)
+- ✅ 带宽限制、最大连接数、重试次数 (`taskDetail.bandwidthLimit`, `taskDetail.maxConnections`, `taskDetail.retryCount`)
+- ✅ 无限制、默认值、无同步选项提示 (`taskDetail.noLimit`, `taskDetail.default`, `taskDetail.noSyncOptions`)
+
+**5. 传输统计**
+
+- ✅ 传输统计标题 (`taskDetail.transferStatistics`)
+- ✅ 已传输文件、总文件数、已传输大小、总大小 (`taskDetail.transferredFiles`, `taskDetail.totalFiles`, `taskDetail.transferredSize`, `taskDetail.totalSize`)
+- ✅ 传输速度、预计剩余时间、完成进度 (`taskDetail.transferSpeed`, `taskDetail.estimatedTime`, `taskDetail.completionProgress`)
+
+**6. 当前阶段和文件**
+
+- ✅ 当前阶段、阶段、已处理文件 (`taskDetail.currentPhase`, `taskDetail.phase`, `taskDetail.processedFiles`)
+- ✅ 当前传输文件、文件路径、文件大小、已传输 (`taskDetail.currentTransferFile`, `taskDetail.filePath`, `taskDetail.fileSize`, `taskDetail.transferred`)
+
+**7. 任务统计和错误信息**
+
+- ✅ 任务统计标题、已处理大小 (`taskDetail.taskStatistics`, `taskDetail.processedSize`)
+- ✅ 错误信息标题 (`taskDetail.errorInfo`)
+- ✅ 最后更新时间 (`taskDetail.lastUpdate`)
+
+**8. 函数文本**
+
+- ✅ 任务状态文本 (`tasks.statuses.*`)
+- ✅ 任务类型文本 (`tasks.types.*`)
+- ✅ 优先级文本 (`tasks.priorities.*`)
+- ✅ 阶段文本 (`taskDetail.phases.*`)
+- ✅ 节点名称 (`taskDetail.node`)
+- ✅ 存储类型文本 (`taskDetail.storageTypes.*`)
+
+### 任务创建向导组件国际化完成度：100% ✅
+
+#### 已完成的国际化内容：
+
+**1. 复制任务提示**
+
+- ✅ 复制任务配置标题 (`taskWizard.copyTaskConfig`)
+- ✅ 复制任务配置描述 (`taskWizard.copyingTaskConfig`)
+
+**2. 步骤配置**
+
+- ✅ 选择源端、选择目标端、任务参数、确认配置 (`taskWizard.steps.selectSource`, `taskWizard.steps.selectTarget`, `taskWizard.steps.configureParameters`, `taskWizard.steps.confirmConfig`)
+- ✅ 步骤描述文本 (`taskWizard.steps.*Desc`)
+
+**3. 步骤内容**
+
+- ✅ 选择源端存储和文件标题 (`taskWizard.selectSourceStorageAndFiles`)
+- ✅ 选择源端存储和文件描述 (`taskWizard.selectSourceStorageAndFilesDesc`)
+
+**4. 按钮和进度**
+
+- ✅ 上一步、下一步、重置按钮 (`taskWizard.previousStep`, `taskWizard.nextStep`, `taskWizard.reset`)
+- ✅ 创建任务、创建副本按钮 (`taskWizard.createTask`, `taskWizard.createCopy`)
+- ✅ 步骤进度显示 (`taskWizard.stepProgress`)
+
+**5. 消息提示**
+
+- ✅ 完善配置信息提示 (`taskWizard.messages.completeAllRequiredConfig`)
+- ✅ 任务创建成功/失败提示 (`taskWizard.messages.taskCreatedSuccess`, `taskWizard.messages.createTaskFailed`)
+
 ### 语言包统计
 
 **中文语言包 (zh-CN.js)**
@@ -744,7 +911,18 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - 导航菜单 (nav): 25+ 个键值对
 - 仪表板 (dashboard): 30+ 个键值对
 - 存储管理 (storage): 120+ 个键值对
-- **总计**: 255+ 个翻译键值对
+- 任务管理 (tasks): 80+ 个键值对
+- 任务详情 (taskDetail): 60+ 个键值对
+- 任务创建向导 (taskWizard): 30+ 个键值对
+- 任务参数 (taskParameters): 35+ 个键值对
+- 任务确认 (taskConfirmation): 25+ 个键值对
+- 目标选择器 (targetSelector): 50+ 个键值对
+- 源选择器 (sourceSelector): 30+ 个键值对
+- OBS 到 OBS 选项 (obsToObsOptions): 25+ 个键值对
+- OBS 到 NAS 选项 (obsToNasOptions): 25+ 个键值对
+- NAS 到 OBS 选项 (nasToObsOptions): 25+ 个键值对
+- NAS 到 NAS 选项 (nasToNasOptions): 20+ 个键值对
+- **总计**: 700+ 个翻译键值对
 
 **英文语言包 (en-US.js)**
 
@@ -753,7 +931,18 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - 导航菜单 (nav): 25+ 个键值对
 - 仪表板 (dashboard): 30+ 个键值对
 - 存储管理 (storage): 120+ 个键值对
-- **总计**: 255+ 个翻译键值对
+- 任务管理 (tasks): 80+ 个键值对
+- 任务详情 (taskDetail): 60+ 个键值对
+- 任务创建向导 (taskWizard): 30+ 个键值对
+- 任务参数 (taskParameters): 35+ 个键值对
+- 任务确认 (taskConfirmation): 25+ 个键值对
+- 目标选择器 (targetSelector): 50+ 个键值对
+- 源选择器 (sourceSelector): 30+ 个键值对
+- OBS 到 OBS 选项 (obsToObsOptions): 25+ 个键值对
+- OBS 到 NAS 选项 (obsToNasOptions): 25+ 个键值对
+- NAS 到 OBS 选项 (nasToObsOptions): 25+ 个键值对
+- NAS 到 NAS 选项 (nasToNasOptions): 20+ 个键值对
+- **总计**: 700+ 个翻译键值对
 
 ## 下一步计划
 

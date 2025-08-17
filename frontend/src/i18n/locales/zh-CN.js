@@ -763,5 +763,686 @@ export default {
     goodAfternoon: "下午好",
     goodEvening: "晚上好",
     goodNight: "深夜好",
+    time: "时间",
+    message: "消息",
+    yes: "是",
+    no: "否",
+    seconds: "秒",
+  },
+
+  // 任务管理模块
+  tasks: {
+    title: "任务管理",
+    description: "管理和监控同步任务的创建、执行和状态",
+    createTask: "创建任务",
+    copyTask: "复制任务",
+
+    // 统计面板
+    stats: {
+      totalTasks: "总任务数",
+      running: "运行中",
+      pending: "等待中",
+      completed: "已完成",
+      failed: "已失败",
+      onlineNodes: "在线节点",
+    },
+
+    // 工具栏
+    searchPlaceholder: "搜索任务名称...",
+    statusFilter: "状态筛选",
+    typeFilter: "类型筛选",
+    all: "全部",
+    pauseRefresh: "暂停刷新",
+    enableRefresh: "开启刷新",
+    refresh: "刷新",
+
+    // 批量操作
+    selectedTasks: "已选择 {count} 个任务",
+    batchCancel: "批量取消",
+    batchRetry: "批量重试",
+    batchDelete: "批量删除",
+
+    // 表格列
+    taskName: "任务名称",
+    taskDescription: "任务描述",
+    type: "类型",
+    status: "状态",
+    progress: "进度",
+    executionNode: "执行节点",
+    priority: "优先级",
+    createTime: "创建时间",
+    actions: "操作",
+    noDescription: "无描述",
+    unassigned: "未分配",
+
+    // 任务类型
+    types: {
+      sync: "文件同步",
+      copy: "文件复制",
+      mountCheck: "挂载检测",
+    },
+
+    // 任务状态
+    statuses: {
+      pending: "等待中",
+      assigned: "已分配",
+      running: "运行中",
+      completed: "已完成",
+      failed: "失败",
+      cancelled: "已取消",
+      paused: "已暂停",
+    },
+
+    // 优先级
+    priorities: {
+      low: "低",
+      normal: "普通",
+      high: "高",
+      urgent: "紧急",
+    },
+
+    // 操作按钮
+    actions: {
+      start: "启动",
+      pause: "暂停",
+      resume: "恢复",
+      cancel: "取消",
+      retry: "重试",
+      more: "更多",
+      viewLogs: "查看日志",
+      detail: "详情",
+      duplicate: "复制任务",
+      delete: "删除",
+    },
+
+    // 任务详情
+    taskDetail: "任务详情",
+    taskDetailTitle: "任务详情",
+
+    // 任务日志
+    taskLogs: "任务日志",
+    taskLogsTitle: "任务日志",
+    autoRefresh: "自动刷新",
+    manualRefresh: "手动刷新",
+    refreshInterval: "刷新间隔",
+    closeRefresh: "关闭刷新",
+    seconds: "秒",
+    minutes: "分钟",
+    refreshDuplicateLogs: "清理重复日志",
+    refreshOldLogs: "清理过期日志",
+
+    // 日志级别
+    logLevels: {
+      all: "全部",
+      error: "错误",
+      progress: "进度",
+    },
+
+    // 消息
+    messages: {
+      taskCreated: "任务创建成功",
+      taskUpdated: "任务更新成功",
+      taskDeleted: "任务删除成功",
+      taskStarted: "任务启动成功",
+      taskPaused: "任务暂停成功",
+      taskResumed: "任务恢复成功",
+      taskCancelled: "任务取消成功",
+      taskRetried: "任务重试成功",
+      batchOperationSuccess: "批量操作成功",
+      batchOperationFailed: "批量操作失败",
+      confirmDelete: "确定要删除选中的任务吗？",
+      confirmCancel: "确定要取消选中的任务吗？",
+      confirmRetry: "确定要重试选中的任务吗？",
+      noTasksSelected: "请先选择要操作的任务",
+      taskNotFound: "任务不存在",
+      operationFailed: "操作失败",
+      networkError: "网络错误，请检查连接",
+      permissionDenied: "权限不足",
+      invalidTaskStatus: "无效的任务状态",
+      nodeOffline: "执行节点离线",
+      taskInProgress: "任务正在执行中，无法操作",
+    },
+
+    // 验证规则
+    validation: {
+      taskNameRequired: "请输入任务名称",
+      taskTypeRequired: "请选择任务类型",
+      sourceRequired: "请选择源存储",
+      targetRequired: "请选择目标存储",
+      nodeRequired: "请选择执行节点",
+    },
+  },
+
+  // 任务详情模块
+  taskDetail: {
+    // 基础信息
+    basicInfo: "基础信息",
+    taskName: "任务名称",
+    type: "类型",
+    status: "状态",
+    progress: "进度",
+    priority: "优先级",
+    executionNode: "执行节点",
+    createTime: "创建时间",
+    startTime: "开始时间",
+    completeTime: "完成时间",
+    unassigned: "未分配",
+    notStarted: "未开始",
+    notCompleted: "未完成",
+
+    // 源端信息
+    sourceInfo: "源端信息",
+    storageName: "存储名称",
+    storageType: "存储类型",
+    sourcePath: "源端路径",
+    clientName: "客户端名称",
+    ipAddress: "IP地址",
+    noSourceInfo: "无源端信息",
+
+    // 目标端信息
+    targetInfo: "目标端信息",
+    targetPath: "目标路径",
+    noTargetInfo: "无目标端信息",
+
+    // 同步选项
+    syncOptions: "同步选项",
+    deleteExtraFiles: "删除目标多余文件",
+    checksumCheck: "校验和检查",
+    compressTransfer: "压缩传输",
+    bandwidthLimit: "带宽限制",
+    maxConnections: "最大连接数",
+    retryCount: "重试次数",
+    noLimit: "无限制",
+    default: "默认",
+    noSyncOptions: "无同步选项",
+
+    // 传输统计
+    transferStatistics: "传输统计",
+    transferredFiles: "已传输文件",
+    totalFiles: "总文件数",
+    transferredSize: "已传输大小",
+    totalSize: "总大小",
+    transferSpeed: "传输速度",
+    estimatedTime: "预计剩余时间",
+    completionProgress: "完成进度",
+
+    // 当前阶段
+    currentPhase: "当前阶段",
+    phase: "阶段",
+    processedFiles: "已处理文件",
+
+    // 当前传输文件
+    currentTransferFile: "当前传输文件",
+    filePath: "文件路径",
+    fileSize: "文件大小",
+    transferred: "已传输",
+
+    // 任务统计
+    taskStatistics: "任务统计",
+    processedSize: "已处理大小",
+
+    // 错误信息
+    errorInfo: "错误信息",
+
+    // 最后更新
+    lastUpdate: "最后更新",
+
+    // 节点
+    node: "节点",
+
+    // 阶段
+    phases: {
+      initializing: "初始化中",
+      checking: "检查文件",
+      transferring: "传输文件",
+      completed: "已完成",
+    },
+
+    // 存储类型
+    storageTypes: {
+      local: "本地",
+    },
+  },
+
+  // 任务创建向导模块
+  taskWizard: {
+    // 复制任务
+    copyTaskConfig: "复制任务配置",
+    copyingTaskConfig: '正在复制任务 "{taskName}" 的配置信息',
+
+    // 步骤
+    steps: {
+      selectSource: "选择源端",
+      selectSourceDesc: "选择源端存储和文件",
+      selectTarget: "选择目标端",
+      selectTargetDesc: "选择目标端存储和路径",
+      configureParameters: "任务参数",
+      configureParametersDesc: "配置同步参数",
+      confirmConfig: "确认配置",
+      confirmConfigDesc: "确认并创建任务",
+    },
+
+    // 步骤内容
+    selectSourceStorageAndFiles: "选择源端存储和文件",
+    selectSourceStorageAndFilesDesc:
+      "请选择要同步的源端存储，并勾选需要同步的目录或文件",
+
+    // 按钮
+    previousStep: "上一步",
+    nextStep: "下一步",
+    reset: "重置",
+    createTask: "创建任务",
+    createCopy: "创建副本",
+
+    // 进度
+    stepProgress: "步骤 {current} / {total}",
+
+    // 消息
+    messages: {
+      completeAllRequiredConfig: "请完善所有必要的配置信息",
+      taskCreatedSuccess: "任务创建成功",
+      createTaskFailed: "创建任务失败",
+    },
+  },
+
+  // 任务参数配置模块
+  taskParameters: {
+    // 页面标题
+    configureTaskParameters: "配置任务参数",
+    configureTaskParametersDesc: "根据源端和目标端类型配置相应的同步参数",
+
+    // 基础信息
+    basicInfo: "基础信息",
+    taskName: "任务名称",
+    enterTaskName: "请输入任务名称",
+    priority: "优先级",
+    priorities: {
+      low: "低",
+      normal: "普通",
+      high: "高",
+      urgent: "紧急",
+    },
+    taskDescription: "任务描述",
+    enterTaskDescription: "请输入任务描述",
+
+    // 同步选项
+    syncOptions: "同步选项",
+    deleteExtraFiles: "删除目标多余文件",
+    deleteExtraFilesDesc: "同步时删除目标端多余的文件",
+    enableCompression: "启用压缩传输",
+    enableCompressionDesc: "传输时压缩数据以减少带宽",
+    checksumVerification: "校验文件完整性",
+    checksumVerificationDesc: "传输后校验文件完整性",
+    bandwidthLimit: "带宽限制",
+    bandwidthLimitPlaceholder: "0表示无限制",
+    maxConnections: "并发连接数",
+    maxConnectionsPlaceholder: "默认为1",
+
+    // 传输策略
+    transferStrategy: "传输策略",
+    retryCount: "重连次数",
+    retryCountPlaceholder: "最大重试次数",
+    retryInterval: "重连间隔",
+    retryIntervalPlaceholder: "重试间隔时间",
+
+    // 高级参数
+    advancedParameters: "高级参数",
+    bufferSize: "缓冲区大小",
+    bufferSizePlaceholder: "传输缓冲区大小",
+    timeout: "超时时间",
+    timeoutPlaceholder: "连接超时时间",
+    excludePatterns: "排除模式",
+    excludePatternsPlaceholder: "*.tmp,*.log,.git/",
+    includePatterns: "包含模式",
+    includePatternsPlaceholder: "*.jpg,*.png,*.pdf",
+    patternsTip: "多个模式用逗号分隔",
+  },
+
+  // 任务确认模块
+  taskConfirmation: {
+    // 页面标题
+    confirmTaskConfig: "确认任务配置",
+    confirmTaskConfigDesc: "请确认以下配置信息，确认无误后点击创建任务",
+
+    // 配置信息
+    sourceConfig: "源端配置",
+    targetConfig: "目标端配置",
+    taskParameters: "任务参数",
+    estimatedInfo: "预估信息",
+
+    // 基本信息
+    storageName: "存储名称",
+    storageType: "存储类型",
+    selectedItems: "选中项目",
+    items: "项",
+    selectedFilesDirectories: "选中的文件/目录",
+    targetPath: "目标路径",
+    taskName: "任务名称",
+    priority: "优先级",
+    taskDescription: "任务描述",
+    noDescription: "无描述",
+
+    // 同步选项
+    syncOptions: "同步选项",
+    deleteExtraFiles: "删除目标多余文件",
+    enableCompression: "启用压缩传输",
+    checksumVerification: "校验文件完整性",
+    bandwidthLimit: "带宽限制",
+    maxConnections: "并发连接数",
+
+    // 传输策略
+    transferStrategy: "传输策略",
+    retryCount: "重连次数",
+    retryInterval: "重连间隔",
+
+    // 高级参数
+    advancedParameters: "高级参数",
+    bufferSize: "缓冲区大小",
+    timeout: "超时时间",
+    excludePatterns: "排除模式",
+    none: "无",
+
+    // 预估信息
+    estimatedFileCount: "预估文件数",
+    estimatedTotalSize: "预估总大小",
+    estimatedTransferTime: "预估传输时间",
+    estimatedBandwidthUsage: "预估带宽使用",
+    files: "个文件",
+    unknown: "未知",
+    minutes: "分钟",
+    hours: "小时",
+    noLimit: "无限制",
+
+    // 优先级
+    priorities: {
+      low: "低",
+      normal: "普通",
+      high: "高",
+      urgent: "紧急",
+    },
+
+    // 警告信息
+    dataOverrideWarning: "数据覆盖警告",
+    overrideWarningObs:
+      "您选择了与源端相同的对象存储，可能会导致数据覆盖。请确保目标路径与源端路径不同。",
+    overrideWarningNas:
+      "您选择了与源端相同的存储，可能会导致数据覆盖。请确保目标路径与源端路径不同。",
+
+    // 确认操作
+    confirmConfigInfo: "请确认以上配置信息",
+    confirmConfigInfoDesc: "确认无误后点击创建任务按钮开始创建同步任务",
+  },
+
+  // 目标端选择器模块
+  targetSelector: {
+    // 页面标题
+    selectTargetStorage: "选择目标端存储",
+    selectTargetStorageDesc: "请选择要同步到的目标存储设备",
+
+    // 存储选择
+    targetStorage: "目标端存储",
+    selectTargetStoragePlaceholder: "请选择目标端存储",
+    nasStorage: "NAS 存储",
+    obsStorage: "OBS 存储",
+    mounted: "已挂载",
+    notMounted: "未挂载",
+
+    // 数据覆盖警告
+    dataOverrideWarning: "数据覆盖警告",
+    overrideWarningObs:
+      "您选择了与源端相同的对象存储，可能会导致数据覆盖。请确保目标路径与源端路径不同。",
+    overrideWarningNas:
+      "您选择了与源端相同的存储，可能会导致数据覆盖。请确保目标路径与源端路径不同。",
+
+    // 配置目标位置
+    configureTargetLocation: "配置目标位置",
+    configureTargetLocationDesc:
+      "您可以选择浏览现有存储桶或创建新的存储桶来作为同步目标",
+    configureTargetLocationNasDesc:
+      "请选择目标目录路径，您可以通过浏览功能查看目录结构",
+
+    // OBS 配置
+    operationMode: "操作模式",
+    browseExistingBucket: "浏览现有存储桶",
+    createNewBucket: "创建新存储桶",
+    bucketName: "存储桶名称",
+    enterBucketName: "请输入存储桶名称",
+    bucket: "存储桶",
+    selectBucket: "请选择存储桶",
+    targetPath: "目标路径",
+    targetPathPlaceholder: "可选：指定存储桶内的路径，如 folder1/subfolder",
+    selectOrEnterTargetPath: "请选择或输入目标路径",
+    browse: "浏览",
+
+    // 路径选择器
+    browseBucketContent: "浏览存储桶内容",
+    browseDirectoryStructure: "浏览目录结构",
+    refresh: "刷新",
+    expandAll: "展开全部",
+    collapseAll: "收起全部",
+    rootDirectory: "根目录",
+
+    // 状态信息
+    totalObjects: "共 {count} 个对象",
+    totalFilesFolders: "共 {count} 个文件/文件夹",
+    currentPath: "当前路径",
+    loadingObjectList: "正在加载对象列表...",
+    loadingFileList: "正在加载文件列表...",
+    currentDirectoryEmpty: "当前目录为空",
+
+    // 表格列
+    name: "名称",
+    size: "大小",
+    lastModified: "修改时间",
+    actions: "操作",
+    select: "选择",
+
+    // 消息
+    messages: {
+      getStorageListFailed: "获取存储列表失败",
+      getBucketListFailed: "获取存储桶列表失败",
+      selectBucketFirst: "请先选择存储桶",
+      getObjectListFailed: "获取对象列表失败",
+      getFileListFailed: "获取文件列表失败",
+    },
+  },
+
+  // 源端选择器模块
+  sourceSelector: {
+    // 存储选择
+    sourceStorage: "源端存储",
+    selectSourceStorage: "请选择源端存储",
+    nasStorage: "NAS 存储",
+    obsStorage: "OBS 存储",
+    mounted: "已挂载",
+    notMounted: "未挂载",
+
+    // 目录树
+    selectDirectoriesFiles: "选择要同步的目录或文件",
+    refresh: "刷新",
+    expandAll: "展开全部",
+    collapseAll: "收起全部",
+
+    // 选择摘要
+    selectedItems: "已选择 {count} 项",
+    original: "原始",
+    includeSubdirectories: "包含子目录",
+    showDetailed: "显示详细",
+    smartCompression: "智能压缩",
+    clearSelection: "清空选择",
+
+    // 分组标题
+    recursiveDirectories: "递归目录",
+    directories: "目录",
+    files: "文件",
+
+    // 统计信息
+    directories: "目录",
+    files: "文件",
+    recursive: "递归",
+
+    // 消息
+    messages: {
+      getStorageListFailed: "获取存储列表失败",
+      getFileListFailed: "获取文件列表失败",
+      getBucketListFailed: "获取存储桶列表失败",
+      getObjectListFailed: "获取对象列表失败",
+    },
+  },
+
+  // OBS到OBS选项模块
+  obsToObsOptions: {
+    // 传输配置
+    rcloneArgs: "rclone参数",
+    rcloneArgsPlaceholder: "--exclude=*.tmp --include=*.jpg",
+    rcloneArgsTip: "自定义rclone参数，多个参数用空格分隔",
+    transferMode: "传输模式",
+    directTransfer: "直接传输",
+    localTransfer: "本地中转",
+    streamingTransfer: "流式传输",
+
+    // 性能配置
+    chunkSize: "分块大小(MB)",
+    chunkSizePlaceholder: "分块大小",
+    chunkSizeTip: "大文件分块传输的块大小",
+    transferConcurrency: "并发传输数",
+    transferConcurrencyPlaceholder: "并发数",
+    transferConcurrencyTip: "同时传输的文件数量",
+
+    // 安全配置
+    encryptTransfer: "加密传输",
+    encryptTransferTip: "使用TLS加密传输数据",
+    serverSideEncryption: "服务器端加密",
+    serverSideEncryptionTip: "在目标对象存储端加密数据",
+
+    // 数据完整性
+    preserveMetadata: "保留元数据",
+    preserveMetadataTip: "保留文件的元数据信息",
+    checksumVerification: "校验和验证",
+    checksumVerificationTip: "传输后验证文件完整性",
+
+    // 重试和监控
+    retryStrategy: "重试策略",
+    exponentialBackoff: "指数退避",
+    fixedInterval: "固定间隔",
+    immediateRetry: "立即重试",
+    progressReporting: "进度报告",
+    progressReportingTip: "实时报告传输进度",
+
+    // 临时文件管理
+    tempDirectory: "临时目录",
+    tempDirectoryPlaceholder: "/tmp/obs_transfer",
+    tempDirectoryTip: "本地中转时的临时存储目录",
+    cleanupTemp: "清理临时文件",
+    cleanupTempTip: "传输完成后清理临时文件",
+  },
+
+  // OBS到NAS选项模块
+  obsToNasOptions: {
+    // 下载配置
+    rcloneArgs: "rclone参数",
+    rcloneArgsPlaceholder: "--exclude=*.tmp --include=*.jpg",
+    rcloneArgsTip: "自定义rclone参数，多个参数用空格分隔",
+    downloadMode: "下载模式",
+    standardDownload: "标准下载",
+    streamingDownload: "流式下载",
+    chunkedDownload: "分块下载",
+
+    // 性能配置
+    chunkSize: "分块大小(MB)",
+    chunkSizePlaceholder: "分块大小",
+    chunkSizeTip: "大文件分块下载的块大小",
+    downloadConcurrency: "并发下载数",
+    downloadConcurrencyPlaceholder: "并发数",
+    downloadConcurrencyTip: "同时下载的文件数量",
+
+    // 功能配置
+    resumeDownload: "断点续传",
+    resumeDownloadTip: "支持断点续传功能",
+    checksumVerification: "校验和验证",
+    checksumVerificationTip: "下载后验证文件完整性",
+    preserveMetadata: "保留元数据",
+    preserveMetadataTip: "保留文件的元数据信息",
+    progressReporting: "进度报告",
+    progressReportingTip: "实时报告下载进度",
+
+    // 重试和临时文件
+    retryStrategy: "重试策略",
+    exponentialBackoff: "指数退避",
+    fixedInterval: "固定间隔",
+    immediateRetry: "立即重试",
+    tempDirectory: "临时目录",
+    tempDirectoryPlaceholder: "/tmp/downloads",
+    tempDirectoryTip: "下载文件的临时存储目录",
+  },
+
+  // NAS到OBS选项模块
+  nasToObsOptions: {
+    // 传输配置
+    rcloneArgs: "rclone参数",
+    rcloneArgsPlaceholder: "--exclude=*.tmp --include=*.jpg",
+    rcloneArgsTip: "自定义rclone参数，多个参数用空格分隔",
+    transferMode: "传输模式",
+    standardTransfer: "标准传输",
+    streamingTransfer: "流式传输",
+    chunkedTransfer: "分块传输",
+
+    // 性能配置
+    chunkSize: "分块大小(MB)",
+    chunkSizePlaceholder: "分块大小",
+    chunkSizeTip: "大文件分块传输的块大小",
+    uploadConcurrency: "并发上传数",
+    uploadConcurrencyPlaceholder: "并发数",
+    uploadConcurrencyTip: "同时上传的文件数量",
+
+    // 安全配置
+    encryptTransfer: "加密传输",
+    encryptTransferTip: "使用TLS加密传输数据",
+    serverSideEncryption: "服务器端加密",
+    serverSideEncryptionTip: "在对象存储端加密数据",
+
+    // 数据完整性
+    preserveMetadata: "保留元数据",
+    preserveMetadataTip: "保留文件的元数据信息",
+    checksumVerification: "校验和验证",
+    checksumVerificationTip: "上传后验证文件完整性",
+
+    // 重试和监控
+    retryStrategy: "重试策略",
+    exponentialBackoff: "指数退避",
+    fixedInterval: "固定间隔",
+    immediateRetry: "立即重试",
+    progressReporting: "进度报告",
+    progressReportingTip: "实时报告传输进度",
+  },
+
+  // NAS到NAS选项模块
+  nasToNasOptions: {
+    // 同步配置
+    rsyncArgs: "rsync参数",
+    rsyncArgsPlaceholder: "--exclude=*.tmp --include=*.jpg",
+    rsyncArgsTip: "自定义rsync参数，多个参数用空格分隔",
+    syncMode: "同步模式",
+    incrementalSync: "增量同步",
+    fullSync: "完全同步",
+    mirrorSync: "镜像同步",
+
+    // 文件属性
+    preservePermissions: "保留权限",
+    preservePermissionsTip: "是否保留文件权限和所有者信息",
+    preserveTimestamps: "保留时间戳",
+    preserveTimestampsTip: "是否保留文件的修改时间",
+
+    // 优化选项
+    hardLinks: "硬链接优化",
+    hardLinksTip: "使用硬链接优化存储空间",
+    sparseFiles: "稀疏文件",
+    sparseFilesTip: "优化稀疏文件的传输",
+
+    // 传输选项
+    partialTransfer: "部分传输",
+    partialTransferTip: "支持断点续传",
+    progressDisplay: "进度显示",
+    progressDisplayTip: "显示详细的传输进度",
   },
 };

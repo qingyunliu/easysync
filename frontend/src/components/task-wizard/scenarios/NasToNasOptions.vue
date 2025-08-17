@@ -3,21 +3,21 @@
     <el-form :model="form" label-width="120px">
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="rsync参数">
+          <el-form-item :label="$t('nasToNasOptions.rsyncArgs')">
             <el-input
               v-model="form.rsync_args"
-              placeholder="--exclude=*.tmp --include=*.jpg"
+              :placeholder="$t('nasToNasOptions.rsyncArgsPlaceholder')"
               @input="updateModelValue"
             />
-            <div class="form-tip">自定义rsync参数，多个参数用空格分隔</div>
+            <div class="form-tip">{{ $t('nasToNasOptions.rsyncArgsTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="同步模式">
+          <el-form-item :label="$t('nasToNasOptions.syncMode')">
             <el-select v-model="form.sync_mode" style="width: 100%" @change="updateModelValue">
-              <el-option label="增量同步" value="incremental" />
-              <el-option label="完全同步" value="full" />
-              <el-option label="镜像同步" value="mirror" />
+              <el-option :label="$t('nasToNasOptions.incrementalSync')" value="incremental" />
+              <el-option :label="$t('nasToNasOptions.fullSync')" value="full" />
+              <el-option :label="$t('nasToNasOptions.mirrorSync')" value="mirror" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -25,63 +25,63 @@
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="保留权限">
+          <el-form-item :label="$t('nasToNasOptions.preservePermissions')">
             <el-switch
               v-model="form.preserve_permissions"
               @change="updateModelValue"
             />
-            <div class="form-tip">是否保留文件权限和所有者信息</div>
+            <div class="form-tip">{{ $t('nasToNasOptions.preservePermissionsTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="保留时间戳">
+          <el-form-item :label="$t('nasToNasOptions.preserveTimestamps')">
             <el-switch
               v-model="form.preserve_timestamps"
               @change="updateModelValue"
             />
-            <div class="form-tip">是否保留文件的修改时间</div>
+            <div class="form-tip">{{ $t('nasToNasOptions.preserveTimestampsTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="硬链接优化">
+          <el-form-item :label="$t('nasToNasOptions.hardLinks')">
             <el-switch
               v-model="form.hard_links"
               @change="updateModelValue"
             />
-            <div class="form-tip">使用硬链接优化存储空间</div>
+            <div class="form-tip">{{ $t('nasToNasOptions.hardLinksTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="稀疏文件">
+          <el-form-item :label="$t('nasToNasOptions.sparseFiles')">
             <el-switch
               v-model="form.sparse_files"
               @change="updateModelValue"
             />
-            <div class="form-tip">优化稀疏文件的传输</div>
+            <div class="form-tip">{{ $t('nasToNasOptions.sparseFilesTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="部分传输">
+          <el-form-item :label="$t('nasToNasOptions.partialTransfer')">
             <el-switch
               v-model="form.partial"
               @change="updateModelValue"
             />
-            <div class="form-tip">支持断点续传</div>
+            <div class="form-tip">{{ $t('nasToNasOptions.partialTransferTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="进度显示">
+          <el-form-item :label="$t('nasToNasOptions.progressDisplay')">
             <el-switch
               v-model="form.progress"
               @change="updateModelValue"
             />
-            <div class="form-tip">显示详细的传输进度</div>
+            <div class="form-tip">{{ $t('nasToNasOptions.progressDisplayTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
@@ -91,6 +91,9 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {

@@ -3,13 +3,13 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h1>任务管理</h1>
-        <p class="page-description">管理和监控同步任务的创建、执行和状态</p>
+        <h1>{{ $t('tasks.title') }}</h1>
+        <p class="page-description">{{ $t('tasks.description') }}</p>
       </div>
       <div class="header-right">
       <el-button type="primary" @click="showCreateDialog">
           <el-icon><Plus /></el-icon>
-        创建任务
+        {{ $t('tasks.createTask') }}
       </el-button>
       </div>
     </div>
@@ -24,7 +24,7 @@
             </div>
             <div>
               <div class="stat-number">{{ taskStats.total || 0 }}</div>
-              <div class="stat-label">总任务数</div>
+              <div class="stat-label">{{ $t('tasks.stats.totalTasks') }}</div>
             </div>
           </div>
         </el-card>
@@ -37,7 +37,7 @@
             </div>
             <div>
               <div class="stat-number">{{ taskStats.running || 0 }}</div>
-              <div class="stat-label">运行中</div>
+              <div class="stat-label">{{ $t('tasks.stats.running') }}</div>
             </div>
           </div>
         </el-card>
@@ -50,7 +50,7 @@
             </div>
             <div>
               <div class="stat-number">{{ taskStats.pending || 0 }}</div>
-              <div class="stat-label">等待中</div>
+              <div class="stat-label">{{ $t('tasks.stats.pending') }}</div>
             </div>
           </div>
         </el-card>
@@ -63,7 +63,7 @@
             </div>
             <div>
               <div class="stat-number">{{ taskStats.completed || 0 }}</div>
-              <div class="stat-label">已完成</div>
+              <div class="stat-label">{{ $t('tasks.stats.completed') }}</div>
             </div>
           </div>
         </el-card>
@@ -76,7 +76,7 @@
             </div>
             <div>
               <div class="stat-number">{{ taskStats.failed || 0 }}</div>
-              <div class="stat-label">已失败</div>
+              <div class="stat-label">{{ $t('tasks.stats.failed') }}</div>
             </div>
           </div>
         </el-card>
@@ -89,7 +89,7 @@
             </div>
             <div>
               <div class="stat-number">{{ OnlineNodeStats || 0 }}</div>
-              <div class="stat-label">在线节点</div>
+              <div class="stat-label">{{ $t('tasks.stats.onlineNodes') }}</div>
             </div>
           </div>
         </el-card>
@@ -101,7 +101,7 @@
       <div class="toolbar-left">
         <el-input
           v-model="searchQuery"
-          placeholder="搜索任务名称..."
+          :placeholder="$t('tasks.searchPlaceholder')"
           style="width: 300px"
           clearable
           @input="handleSearch"
@@ -113,31 +113,31 @@
         
         <el-select
           v-model="statusFilter"
-          placeholder="状态筛选"
+          :placeholder="$t('tasks.statusFilter')"
           style="width: 150px; margin-left: 10px"
           clearable
           @change="handleFilter"
         >
-          <el-option label="全部" value="" />
-          <el-option label="等待中" value="pending" />
-          <el-option label="已分配" value="assigned" />
-          <el-option label="运行中" value="running" />
-          <el-option label="已完成" value="completed" />
-          <el-option label="失败" value="failed" />
-          <el-option label="已取消" value="cancelled" />
+          <el-option :label="$t('tasks.all')" value="" />
+          <el-option :label="$t('tasks.statuses.pending')" value="pending" />
+          <el-option :label="$t('tasks.statuses.assigned')" value="assigned" />
+          <el-option :label="$t('tasks.statuses.running')" value="running" />
+          <el-option :label="$t('tasks.statuses.completed')" value="completed" />
+          <el-option :label="$t('tasks.statuses.failed')" value="failed" />
+          <el-option :label="$t('tasks.statuses.cancelled')" value="cancelled" />
         </el-select>
 
         <el-select
           v-model="typeFilter"
-          placeholder="类型筛选"
+          :placeholder="$t('tasks.typeFilter')"
           style="width: 150px; margin-left: 10px"
           clearable
           @change="handleFilter"
         >
-          <el-option label="全部" value="" />
-          <el-option label="文件同步" value="sync" />
-          <el-option label="文件复制" value="copy" />
-          <el-option label="挂载检测" value="mount-check" />
+          <el-option :label="$t('tasks.all')" value="" />
+          <el-option :label="$t('tasks.types.sync')" value="sync" />
+          <el-option :label="$t('tasks.types.copy')" value="copy" />
+          <el-option :label="$t('tasks.types.mountCheck')" value="mount-check" />
         </el-select>
       </div>
       
@@ -148,10 +148,10 @@
             @click="toggleAutoRefresh"
             :icon="autoRefresh ? VideoPause : Refresh"
           >
-            {{ autoRefresh ? '暂停刷新' : '开启刷新' }}
+            {{ autoRefresh ? $t('tasks.pauseRefresh') : $t('tasks.enableRefresh') }}
           </el-button>
           <el-button @click="fetchTasks" :icon="Refresh">
-            刷新
+            {{ $t('tasks.refresh') }}
           </el-button>
         </el-button-group>
       </div>
@@ -160,12 +160,12 @@
     <!-- 批量操作栏 -->
     <div v-if="selectedTasks.length > 0" class="batch-toolbar">
       <div class="batch-info">
-        已选择 {{ selectedTasks.length }} 个任务
+        {{ $t('tasks.selectedTasks', { count: selectedTasks.length }) }}
       </div>
       <div class="batch-actions">
-        <el-button size="small" @click="batchCancel">批量取消</el-button>
-        <el-button size="small" @click="batchRetry">批量重试</el-button>
-        <el-button size="small" type="danger" @click="batchDelete">批量删除</el-button>
+        <el-button size="small" @click="batchCancel">{{ $t('tasks.batchCancel') }}</el-button>
+        <el-button size="small" @click="batchRetry">{{ $t('tasks.batchRetry') }}</el-button>
+        <el-button size="small" type="danger" @click="batchDelete">{{ $t('tasks.batchDelete') }}</el-button>
       </div>
     </div>
 
@@ -180,20 +180,20 @@
       >
         <el-table-column type="selection" width="55" />
         
-        <el-table-column prop="name" label="任务名称" min-width="320" show-overflow-tooltip>
+        <el-table-column prop="name" :label="$t('tasks.taskName')" min-width="320" show-overflow-tooltip>
         <template #default="{ row }">
             <div class="task-name">
               <el-link type="primary" @click="handleViewDetail(row)">
                 {{ row.name }}
               </el-link>
-              <div class="task-description">{{ row.description || '无描述' }}</div>
+              <div class="task-description">{{ row.description || $t('tasks.noDescription') }}</div>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" label="任务描述" min-width="380"/>
+        <el-table-column prop="description" :label="$t('tasks.taskDescription')" min-width="380"/>
 
-        <el-table-column prop="type" label="类型" width="100">
+        <el-table-column prop="type" :label="$t('tasks.type')" width="100">
           <template #default="{ row }">
             <el-tag :type="getTaskTypeColor(row.type)" size="small">
               {{ getTaskTypeText(row.type) }}
@@ -201,7 +201,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="status" label="状态" width="100">
+        <el-table-column prop="status" :label="$t('tasks.status')" width="100">
           <template #default="{ row }">
             <el-tag :type="getStatusType(row.status)" size="small">
               <el-icon style="vertical-align: middle; margin-right: 4px;">
@@ -212,7 +212,7 @@
         </template>
       </el-table-column>
 
-        <el-table-column prop="progress" label="进度" width="180">
+        <el-table-column prop="progress" :label="$t('tasks.progress')" width="180">
         <template #default="{ row }">
             <el-tooltip
               :content="getProgressTooltip(row)"
@@ -232,16 +232,16 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="node_id" label="执行节点" width="120">
+        <el-table-column prop="node_id" :label="$t('tasks.executionNode')" width="120">
           <template #default="{ row }">
             <el-tag v-if="row.node_id" type="info" size="small">
               {{ getNodeName(row.node_id) }}
             </el-tag>
-            <span v-else class="text-muted">未分配</span>
+            <span v-else class="text-muted">{{ $t('tasks.unassigned') }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column prop="priority" label="优先级" width="80">
+        <el-table-column prop="priority" :label="$t('tasks.priority')" width="80">
           <template #default="{ row }">
             <el-tag :type="getPriorityType(row.priority)" size="small">
               {{ getPriorityText(row.priority) }}
@@ -249,35 +249,35 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="created_at" label="创建时间" width="160">
+        <el-table-column prop="created_at" :label="$t('tasks.createTime')" width="160">
           <template #default="{ row }">
             {{ formatDateTime(row.created_at) }}
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="300" fixed="right">
+        <el-table-column :label="$t('tasks.actions')" width="300" fixed="right">
           <template #default="{ row }">
             <el-button-group size="small">
               <!-- 启动/停止按钮 -->
-            <el-button
+                          <el-button
                 v-if="['pending', 'failed'].includes(row.status)"
                 type="success"
                 @click="handleStartTask(row)"
                 :icon="VideoPlay"
                 :loading="loadingTasks.has(row.id)"
               >
-                启动
+                {{ $t('tasks.actions.start') }}
             </el-button>
               
               <!-- 暂停/恢复按钮 -->
-            <el-button
+                          <el-button
                 v-if="row.status === 'running'"
                 type="warning"
                 @click="handlePauseTask(row)"
                 :icon="VideoPause"
                 :loading="loadingTasks.has(row.id)"
               >
-                暂停
+                {{ $t('tasks.actions.pause') }}
             </el-button>
               
             <el-button
@@ -287,18 +287,18 @@
                 :icon="VideoPlay"
                 :loading="loadingTasks.has(row.id)"
               >
-                恢复
+                {{ $t('tasks.actions.resume') }}
             </el-button>
               
               <!-- 取消按钮 -->
-            <el-button
+                          <el-button
                 v-if="['running', 'assigned', 'paused'].includes(row.status)"
               type="danger"
                 @click="handleCancelTask(row)"
                 :icon="Close"
                 :loading="loadingTasks.has(row.id)"
               >
-                取消
+                {{ $t('tasks.actions.cancel') }}
               </el-button>
               
               <!-- 重试按钮 -->
@@ -309,32 +309,32 @@
                 :icon="RefreshRight"
                 :loading="loadingTasks.has(row.id)"
               >
-                重试
+                {{ $t('tasks.actions.retry') }}
             </el-button>
           </el-button-group>
             
             <!-- 更多操作下拉菜单 -->
             <el-dropdown @command="(command) => handleDropdownCommand(command, row)" style="margin-left: 8px;">
               <el-button type="primary" :icon="More" size="small">
-                更多
+                {{ $t('tasks.actions.more') }}
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="logs">
-                    <el-icon><Document /></el-icon>查看日志
+                    <el-icon><Document /></el-icon>{{ $t('tasks.actions.viewLogs') }}
                   </el-dropdown-item>
                   <el-dropdown-item command="detail">
-                    <el-icon><InfoFilled /></el-icon>详情
+                    <el-icon><InfoFilled /></el-icon>{{ $t('tasks.actions.detail') }}
                   </el-dropdown-item>
                   <el-dropdown-item command="duplicate">
-                    <el-icon><CopyDocument /></el-icon>复制任务
+                    <el-icon><CopyDocument /></el-icon>{{ $t('tasks.actions.duplicate') }}
                   </el-dropdown-item>
                   <el-dropdown-item 
                     command="delete" 
                     :disabled="['running', 'assigned'].includes(row.status)"
                     style="color: #f56c6c;"
                   >
-                    <el-icon><Delete /></el-icon>删除
+                    <el-icon><Delete /></el-icon>{{ $t('tasks.actions.delete') }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -360,7 +360,7 @@
     
     <!-- 任务创建向导对话框 -->
     <el-dialog
-      :title="copyFromTask ? '复制任务' : '创建任务'"
+      :title="copyFromTask ? $t('tasks.copyTask') : $t('tasks.createTask')"
       v-model="taskWizardVisible"
       width="60vw"
       :before-close="handleWizardClose"
@@ -377,7 +377,7 @@
     <!-- 任务详情对话框 -->
     <el-drawer
       v-model="detailDialogVisible"
-      title="任务详情"
+      :title="$t('tasks.taskDetail')"
       direction="rtl"
       :size="isFullscreen ? '80vw' : '45vw'"
       :with-header="false"
@@ -385,7 +385,7 @@
       :close-on-click-modal="false"
     >
       <div class="drawer-header">
-        <span>任务详情</span>
+        <span>{{ $t('tasks.taskDetailTitle') }}</span>
         <div>
           <el-button :icon="FullScreen" @click="isFullscreen = !isFullscreen" circle />
           <el-button :icon="Close" @click="detailDialogVisible = false" circle />
@@ -401,7 +401,7 @@
     
     <!-- 任务日志对话框 -->
     <el-dialog
-      :title="`任务日志${logsAutoRefresh ? ` (自动刷新: ${logsRefreshCountdown}s)` : ''}`"
+      :title="`${$t('tasks.taskLogs')}${logsAutoRefresh ? ` (${$t('tasks.autoRefresh')}: ${logsRefreshCountdown}s)` : ''}`"
       v-model="logsDialogVisible"
       width="1000px"
       :before-close="handleLogsDialogClose"
@@ -414,19 +414,19 @@
                 :type="logLevel === 'all' ? 'primary' : 'default'"
                 @click="logLevel = 'all'"
               >
-                全部
+                {{ $t('tasks.logLevels.all') }}
               </el-button>
               <el-button
                 :type="logLevel === 'error' ? 'danger' : 'default'"
                 @click="logLevel = 'error'"
               >
-                错误
+                {{ $t('tasks.logLevels.error') }}
               </el-button>
               <el-button
                 :type="logLevel === 'progress' ? 'success' : 'default'"
                 @click="logLevel = 'progress'"
               >
-                进度
+                {{ $t('tasks.logLevels.progress') }}
               </el-button>
             </el-button-group>
             
@@ -434,17 +434,17 @@
             <div class="refresh-config">
               <el-select 
                 v-model="logsRefreshInterval" 
-                placeholder="刷新间隔" 
+                :placeholder="$t('tasks.refreshInterval')" 
                 size="small"
                 style="width: 120px; margin-left: 10px;"
                 @change="handleLogsRefreshIntervalChange"
               >
-                <el-option label="关闭刷新" :value="0" />
-                <el-option label="3秒" :value="3000" />
-                <el-option label="5秒" :value="5000" />
-                <el-option label="30秒" :value="30000" />
-                <el-option label="1分钟" :value="60000" />
-                <el-option label="5分钟" :value="300000" />
+                <el-option :label="$t('tasks.closeRefresh')" :value="0" />
+                <el-option :label="`3${$t('tasks.seconds')}`" :value="3000" />
+                <el-option :label="`5${$t('tasks.seconds')}`" :value="5000" />
+                <el-option :label="`30${$t('tasks.seconds')}`" :value="30000" />
+                <el-option :label="`1${$t('tasks.minutes')}`" :value="60000" />
+                <el-option :label="`5${$t('tasks.minutes')}`" :value="300000" />
               </el-select>
               
               <el-button 
@@ -455,18 +455,18 @@
                 @click="toggleLogsAutoRefresh"
                 :loading="logsAutoRefresh"
               >
-                {{ logsAutoRefresh ? `${logsRefreshCountdown}s` : '手动刷新' }}
+                {{ logsAutoRefresh ? `${logsRefreshCountdown}s` : $t('tasks.manualRefresh') }}
               </el-button>
             </div>
           </div>
           
           <div class="logs-toolbar-right">
-            <el-button @click="fetchTaskLogs" :icon="Refresh">刷新</el-button>
+            <el-button @click="fetchTaskLogs" :icon="Refresh">{{ $t('tasks.refresh') }}</el-button>
             <el-button @click="cleanupLogs('duplicate')" :icon="Delete" style="margin-left: 10px;">
-              清理重复日志
+              {{ $t('tasks.refreshDuplicateLogs') }}
             </el-button>
             <el-button @click="cleanupLogs('old')" :icon="Warning" style="margin-left: 10px;">
-              清理过期日志
+              {{ $t('tasks.refreshOldLogs') }}
             </el-button>
           </div>
         </div>
@@ -479,19 +479,19 @@
           :default-sort="{ prop: 'created_at', order: 'descending' }"
           :row-key="(row) => row.id"
         >
-          <el-table-column prop="created_at" label="时间" width="180" sortable>
+          <el-table-column prop="created_at" :label="$t('common.time')" width="180" sortable>
             <template #default="{ row }">
               {{ formatDateTime(row.created_at) }}
             </template>
           </el-table-column>
-          <el-table-column prop="status" label="状态" width="100">
+          <el-table-column prop="status" :label="$t('tasks.status')" width="100">
             <template #default="{ row }">
-              <el-tag :type="getLogStatusType(row.status, row.message)" size="small">
-                {{ row.message && row.message.includes('同步进度') ? '进度' : row.status }}
-              </el-tag>
+                              <el-tag :type="getLogStatusType(row.status, row.message)" size="small">
+                  {{ row.message && row.message.includes('同步进度') ? $t('tasks.logLevels.progress') : row.status }}
+                </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="message" label="消息" show-overflow-tooltip>
+          <el-table-column prop="message" :label="$t('common.message')" show-overflow-tooltip>
             <template #default="{ row }">
               <span :class="getLogMessageClass(row.status, row.message)">{{ row.message }}</span>
             </template>
@@ -518,6 +518,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed, nextTick } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import {
   Plus, Search, Refresh, VideoPlay, VideoPause,
   RefreshRight, More, InfoFilled, Close, FullScreen,
@@ -527,6 +528,8 @@ import {
 import TaskWizard from '@/components/task-wizard/TaskWizard.vue'
 import TaskDetail from '@/components/TaskDetail.vue'
 import axios from 'axios'
+
+const { t } = useI18n()
 
 // 响应式数据
 const loading = ref(false)
@@ -678,7 +681,7 @@ const fetchTasks = async () => {
     }
     fetchStatistics()
   } catch (error) {
-    ElMessage.error('获取任务列表失败')
+    ElMessage.error(t('tasks.messages.operationFailed'))
   } finally {
     loading.value = false
   }
@@ -691,7 +694,7 @@ const fetchNodes = async () => {
       nodes.value = response.data.data || []
     }
   } catch (error) {
-    ElMessage.error('获取节点列表失败')
+    ElMessage.error(t('tasks.messages.operationFailed'))
   }
 }
 
@@ -1263,14 +1266,14 @@ const getStatusType = (status) => {
 
 const getStatusText = (status) => {
   const texts = {
-    active: '活跃',
-    pending: '等待中',
-    assigned: '已分配',
-    running: '运行中',
-    completed: '已完成',
-    failed: '失败',
-    cancelled: '已取消',
-    cancel_requested: '取消中'
+    active: t('tasks.statuses.running'),
+    pending: t('tasks.statuses.pending'),
+    assigned: t('tasks.statuses.assigned'),
+    running: t('tasks.statuses.running'),
+    completed: t('tasks.statuses.completed'),
+    failed: t('tasks.statuses.failed'),
+    cancelled: t('tasks.statuses.cancelled'),
+    cancel_requested: t('tasks.statuses.cancelled')
   }
   return texts[status] || status
 }
@@ -1301,9 +1304,9 @@ const getTaskTypeColor = (type) => {
 
 const getTaskTypeText = (type) => {
   const texts = {
-    sync: '同步',
-    copy: '复制',
-    'mount-check': '挂载检测'
+    sync: t('tasks.types.sync'),
+    copy: t('tasks.types.copy'),
+    'mount-check': t('tasks.types.mountCheck')
   }
   return texts[type] || type
 }
@@ -1320,12 +1323,12 @@ const getPriorityType = (priority) => {
 
 const getPriorityText = (priority) => {
   const texts = {
-    1: '低',
-    2: '普通',
-    3: '高',
-    4: '紧急'
+    1: t('tasks.priorities.low'),
+    2: t('tasks.priorities.normal'),
+    3: t('tasks.priorities.high'),
+    4: t('tasks.priorities.urgent')
   }
-  return texts[priority] || '普通'
+  return texts[priority] || t('tasks.priorities.normal')
 }
 
 const getProgressStatus = (status) => {

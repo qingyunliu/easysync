@@ -1,15 +1,15 @@
 <template>
   <div class="task-detail">
     <!-- 基础信息 -->
-    <el-card class="detail-card" header="基础信息">
+    <el-card class="detail-card" :header="$t('taskDetail.basicInfo')">
       <el-descriptions :column="3" border>
-        <el-descriptions-item label="任务名称">{{ task.name }}</el-descriptions-item>
-        <el-descriptions-item label="类型">
+        <el-descriptions-item :label="$t('taskDetail.taskName')">{{ task.name }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('taskDetail.type')">
           <el-tag :type="getTaskTypeColor(task.type)">
             {{ getTaskTypeText(task.type) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="状态">
+        <el-descriptions-item :label="$t('taskDetail.status')">
           <el-tag :type="getStatusType(task.status)">
             <el-icon style="vertical-align: middle; margin-right: 4px;">
               <component :is="getStatusIcon(task.status)" />
@@ -17,112 +17,112 @@
             {{ getStatusText(task.status) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="进度">
+        <el-descriptions-item :label="$t('taskDetail.progress')">
           <el-progress :percentage="task.progress || 0" :status="getProgressStatus(task.status)" :stroke-width="6" />
         </el-descriptions-item>
-        <el-descriptions-item label="优先级">
+        <el-descriptions-item :label="$t('taskDetail.priority')">
           <el-tag :type="getPriorityType(task.priority)">
             {{ getPriorityText(task.priority) }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="执行节点">
-          {{ task.node_id ? getNodeName(task.node_id) : '未分配' }}
+        <el-descriptions-item :label="$t('taskDetail.executionNode')">
+          {{ task.node_id ? getNodeName(task.node_id) : $t('taskDetail.unassigned') }}
         </el-descriptions-item>
-        <el-descriptions-item label="创建时间">{{ formatDateTime(task.created_at) }}</el-descriptions-item>
-        <el-descriptions-item label="开始时间">{{ task.started_at ? formatDateTime(task.started_at) : '未开始' }}</el-descriptions-item>
-        <el-descriptions-item label="完成时间">{{ task.completed_at ? formatDateTime(task.completed_at) : '未完成' }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('taskDetail.createTime')">{{ formatDateTime(task.created_at) }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('taskDetail.startTime')">{{ task.started_at ? formatDateTime(task.started_at) : $t('taskDetail.notStarted') }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('taskDetail.completeTime')">{{ task.completed_at ? formatDateTime(task.completed_at) : $t('taskDetail.notCompleted') }}</el-descriptions-item>
       </el-descriptions>
     </el-card>
 
     <!-- 源端信息 -->
-    <el-card class="detail-card" header="源端信息">
+    <el-card class="detail-card" :header="$t('taskDetail.sourceInfo')">
       <template v-if="task.source_type === 'storage' && task.source_storage_config">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="存储名称">{{ task.source_storage_config.name }}</el-descriptions-item>
-          <el-descriptions-item label="存储类型">
+          <el-descriptions-item :label="$t('taskDetail.storageName')">{{ task.source_storage_config.name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.storageType')">
             <el-tag :type="getStorageTypeColor(task.source_storage_config.type)">
               {{ getStorageTypeText(task.source_storage_config.type) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="状态">
+          <el-descriptions-item :label="$t('taskDetail.status')">
             <el-tag :type="getStatusType(task.source_storage_config.status)">
               {{ getStatusText(task.source_storage_config.status) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="源端路径">{{ task.source_path }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.sourcePath')">{{ task.source_path }}</el-descriptions-item>
         </el-descriptions>
       </template>
       <template v-else-if="task.source_type === 'client' && task.source_client_config">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="客户端名称">{{ task.source_client_config.name }}</el-descriptions-item>
-          <el-descriptions-item label="IP地址">{{ task.source_client_config.ip_address }}</el-descriptions-item>
-          <el-descriptions-item label="状态">
-            <el-tag :type="getStatusType(task.source_client_config.status)">
-              {{ getStatusText(task.source_client_config.status) }}
-            </el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="源端路径">{{ task.source_path }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.clientName')">{{ task.source_client_config.name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.ipAddress')">{{ task.source_client_config.ip_address }}</el-descriptions-item>
+                      <el-descriptions-item :label="$t('taskDetail.status')">
+              <el-tag :type="getStatusType(task.source_client_config.status)">
+                {{ getStatusText(task.source_client_config.status) }}
+              </el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item :label="$t('taskDetail.sourcePath')">{{ task.source_path }}</el-descriptions-item>
         </el-descriptions>
       </template>
       <template v-else>
-        <div class="no-data">无源端信息</div>
+        <div class="no-data">{{ $t('taskDetail.noSourceInfo') }}</div>
       </template>
     </el-card>
 
     <!-- 目标端信息 -->
-    <el-card class="detail-card" header="目标端信息">
+    <el-card class="detail-card" :header="$t('taskDetail.targetInfo')">
       <template v-if="task.target_storage_config">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="存储名称">{{ task.target_storage_config.name }}</el-descriptions-item>
-          <el-descriptions-item label="存储类型">
+          <el-descriptions-item :label="$t('taskDetail.storageName')">{{ task.target_storage_config.name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.storageType')">
             <el-tag :type="getStorageTypeColor(task.target_storage_config.type)">
               {{ getStorageTypeText(task.target_storage_config.type) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="状态">
+          <el-descriptions-item :label="$t('taskDetail.status')">
             <el-tag :type="getStatusType(task.target_storage_config.status)">
               {{ getStatusText(task.target_storage_config.status) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="目标路径">{{ task.target_path }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.targetPath')">{{ task.target_path }}</el-descriptions-item>
         </el-descriptions>
       </template>
       <template v-else>
-        <div class="no-data">无目标端信息</div>
+        <div class="no-data">{{ $t('taskDetail.noTargetInfo') }}</div>
       </template>
     </el-card>
 
     <!-- 同步选项 -->
-    <el-card class="detail-card" header="同步选项">
+    <el-card class="detail-card" :header="$t('taskDetail.syncOptions')">
       <template v-if="task.options">
         <el-descriptions :column="3" border>
-          <el-descriptions-item label="删除目标多余文件">
-            <el-tag :type="task.options.delete ? 'success' : 'info'">{{ task.options.delete ? '是' : '否' }}</el-tag>
+          <el-descriptions-item :label="$t('taskDetail.deleteExtraFiles')">
+            <el-tag :type="task.options.delete ? 'success' : 'info'">{{ task.options.delete ? $t('common.yes') : $t('common.no') }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="校验和检查">
-            <el-tag :type="task.options.checksum ? 'success' : 'info'">{{ task.options.checksum ? '是' : '否' }}</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="压缩传输">
-            <el-tag :type="task.options.compress ? 'success' : 'info'">{{ task.options.compress ? '是' : '否' }}</el-tag>
-          </el-descriptions-item>
-          <el-descriptions-item label="带宽限制">
-            {{ task.options.bandwidth_limit ? `${task.options.bandwidth_limit} KB/s` : '无限制' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="最大连接数">
-            {{ task.options.max_connections || '默认' }}
-          </el-descriptions-item>
-          <el-descriptions-item label="重试次数">
-            {{ task.options.retry_options?.max_retries || '默认' }}
-          </el-descriptions-item>
+                      <el-descriptions-item :label="$t('taskDetail.checksumCheck')">
+              <el-tag :type="task.options.checksum ? 'success' : 'info'">{{ task.options.checksum ? $t('common.yes') : $t('common.no') }}</el-tag>
+            </el-descriptions-item>
+                      <el-descriptions-item :label="$t('taskDetail.compressTransfer')">
+              <el-tag :type="task.options.compress ? 'success' : 'info'">{{ task.options.compress ? $t('common.yes') : $t('common.no') }}</el-tag>
+            </el-descriptions-item>
+                      <el-descriptions-item :label="$t('taskDetail.bandwidthLimit')">
+              {{ task.options.bandwidth_limit ? `${task.options.bandwidth_limit} KB/s` : $t('taskDetail.noLimit') }}
+            </el-descriptions-item>
+                      <el-descriptions-item :label="$t('taskDetail.maxConnections')">
+              {{ task.options.max_connections || $t('taskDetail.default') }}
+            </el-descriptions-item>
+                      <el-descriptions-item :label="$t('taskDetail.retryCount')">
+              {{ task.options.retry_options?.max_retries || $t('taskDetail.default') }}
+            </el-descriptions-item>
         </el-descriptions>
       </template>
       <template v-else>
-        <div class="no-data">无同步选项</div>
+        <div class="no-data">{{ $t('taskDetail.noSyncOptions') }}</div>
       </template>
     </el-card>
 
     <!-- 传输统计信息 -->
-    <el-card class="detail-card" header="传输统计" v-if="task.details && hasTransferStats(task.details)">
+    <el-card class="detail-card" :header="$t('taskDetail.transferStatistics')" v-if="task.details && hasTransferStats(task.details)">
       <el-row :gutter="20">
         <el-col :span="6">
           <div class="stat-item">
@@ -131,7 +131,7 @@
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ task.details.transferred_files || 0 }}</div>
-              <div class="stat-label">已传输文件</div>
+              <div class="stat-label">{{ $t('taskDetail.transferredFiles') }}</div>
             </div>
           </div>
         </el-col>
@@ -142,7 +142,7 @@
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ task.details.total_files || 0 }}</div>
-              <div class="stat-label">总文件数</div>
+              <div class="stat-label">{{ $t('taskDetail.totalFiles') }}</div>
             </div>
           </div>
         </el-col>
@@ -153,7 +153,7 @@
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ formatFileSize(task.details.transferred_size || 0) }}</div>
-              <div class="stat-label">已传输大小</div>
+              <div class="stat-label">{{ $t('taskDetail.transferredSize') }}</div>
             </div>
           </div>
         </el-col>
@@ -164,7 +164,7 @@
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ formatFileSize(task.details.total_size || 0) }}</div>
-              <div class="stat-label">总大小</div>
+              <div class="stat-label">{{ $t('taskDetail.totalSize') }}</div>
             </div>
           </div>
         </el-col>
@@ -179,7 +179,7 @@
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ task.details.transfer_speed || '0 B/s' }}</div>
-              <div class="stat-label">传输速度</div>
+              <div class="stat-label">{{ $t('taskDetail.transferSpeed') }}</div>
             </div>
           </div>
         </el-col>
@@ -190,7 +190,7 @@
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ task.details.eta || '--:--' }}</div>
-              <div class="stat-label">预计剩余时间</div>
+              <div class="stat-label">{{ $t('taskDetail.estimatedTime') }}</div>
             </div>
           </div>
         </el-col>
@@ -201,7 +201,7 @@
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ task.details.progress || 0 }}%</div>
-              <div class="stat-label">完成进度</div>
+              <div class="stat-label">{{ $t('taskDetail.completionProgress') }}</div>
             </div>
           </div>
         </el-col>
@@ -209,64 +209,64 @@
       
       <!-- 当前阶段 -->
       <div v-if="task.details.current_phase" style="margin-top: 20px;">
-        <el-divider content-position="left">当前阶段</el-divider>
+        <el-divider content-position="left">{{ $t('taskDetail.currentPhase') }}</el-divider>
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="阶段">{{ getPhaseText(task.details.current_phase) }}</el-descriptions-item>
-          <el-descriptions-item label="进度">{{ task.details.progress || 0 }}%</el-descriptions-item>
-          <el-descriptions-item v-if="task.details.transferred_files !== undefined" label="已处理文件">{{ task.details.transferred_files }}/{{ task.details.total_files }}</el-descriptions-item>
-          <el-descriptions-item v-if="task.details.transfer_speed" label="传输速度">{{ task.details.transfer_speed }}</el-descriptions-item>
+                      <el-descriptions-item :label="$t('taskDetail.phase')">{{ getPhaseText(task.details.current_phase) }}</el-descriptions-item>
+            <el-descriptions-item :label="$t('taskDetail.progress')">{{ task.details.progress || 0 }}%</el-descriptions-item>
+            <el-descriptions-item v-if="task.details.transferred_files !== undefined" :label="$t('taskDetail.processedFiles')">{{ task.details.transferred_files }}/{{ task.details.total_files }}</el-descriptions-item>
+            <el-descriptions-item v-if="task.details.transfer_speed" :label="$t('taskDetail.transferSpeed')">{{ task.details.transfer_speed }}</el-descriptions-item>
         </el-descriptions>
       </div>
       
       <!-- 当前传输文件 -->
       <div v-if="task.details.current_file" style="margin-top: 20px;">
-        <el-divider content-position="left">当前传输文件</el-divider>
+        <el-divider content-position="left">{{ $t('taskDetail.currentTransferFile') }}</el-divider>
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="文件路径">{{ task.details.current_file.path }}</el-descriptions-item>
-          <el-descriptions-item label="文件大小">{{ formatFileSize(task.details.current_file.size) }}</el-descriptions-item>
-          <el-descriptions-item label="已传输">{{ formatFileSize(task.details.current_file.transferred) }}</el-descriptions-item>
-          <el-descriptions-item label="传输速度">{{ task.details.current_file.speed }}</el-descriptions-item>
+                      <el-descriptions-item :label="$t('taskDetail.filePath')">{{ task.details.current_file.path }}</el-descriptions-item>
+            <el-descriptions-item :label="$t('taskDetail.fileSize')">{{ formatFileSize(task.details.current_file.size) }}</el-descriptions-item>
+            <el-descriptions-item :label="$t('taskDetail.transferred')">{{ formatFileSize(task.details.current_file.transferred) }}</el-descriptions-item>
+            <el-descriptions-item :label="$t('taskDetail.transferSpeed')">{{ task.details.current_file.speed }}</el-descriptions-item>
         </el-descriptions>
       </div>
       
       <!-- 最后更新时间 -->
       <div v-if="task.details.last_update" style="margin-top: 15px; text-align: right; color: var(--text-secondary); font-size: 12px;">
-        最后更新: {{ formatDateTime(task.details.last_update) }}
+        {{ $t('taskDetail.lastUpdate') }}: {{ formatDateTime(task.details.last_update) }}
       </div>
     </el-card>
 
     <!-- 任务统计 -->
-    <el-card class="detail-card" header="任务统计">
+    <el-card class="detail-card" :header="$t('taskDetail.taskStatistics')">
       <el-row :gutter="20">
         <el-col :span="6">
           <div class="stat-item">
             <div class="stat-number">{{ task.stats?.total_files || 0 }}</div>
-            <div class="stat-label">总文件数</div>
+            <div class="stat-label">{{ $t('taskDetail.totalFiles') }}</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="stat-item">
             <div class="stat-number">{{ task.stats?.processed_files || 0 }}</div>
-            <div class="stat-label">已处理文件</div>
+            <div class="stat-label">{{ $t('taskDetail.processedFiles') }}</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="stat-item">
             <div class="stat-number">{{ formatSize(task.stats?.total_size || 0) }}</div>
-            <div class="stat-label">总大小</div>
+            <div class="stat-label">{{ $t('taskDetail.totalSize') }}</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="stat-item">
             <div class="stat-number">{{ formatSize(task.stats?.processed_size || 0) }}</div>
-            <div class="stat-label">已处理大小</div>
+            <div class="stat-label">{{ $t('taskDetail.processedSize') }}</div>
           </div>
         </el-col>
       </el-row>
     </el-card>
 
     <!-- 错误信息 -->
-    <el-card v-if="task.error_message" class="detail-card" header="错误信息">
+    <el-card v-if="task.error_message" class="detail-card" :header="$t('taskDetail.errorInfo')">
       <el-alert
         :title="task.error_message"
         type="error"
@@ -279,9 +279,12 @@
 
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   CircleCheck, Clock, Loading, Warning, CircleClose, Document, Connection
 } from '@element-plus/icons-vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   task: {
@@ -311,14 +314,14 @@ const getStatusType = (status) => {
 
 const getStatusText = (status) => {
   const texts = {
-    active: '活跃',
-    pending: '等待中',
-    assigned: '已分配',
-    running: '运行中',
-    completed: '已完成',
-    failed: '失败',
-    cancelled: '已取消',
-    cancel_requested: '取消中'
+    active: t('tasks.statuses.running'),
+    pending: t('tasks.statuses.pending'),
+    assigned: t('tasks.statuses.assigned'),
+    running: t('tasks.statuses.running'),
+    completed: t('tasks.statuses.completed'),
+    failed: t('tasks.statuses.failed'),
+    cancelled: t('tasks.statuses.cancelled'),
+    cancel_requested: t('tasks.statuses.cancelled')
   }
   return texts[status] || status
 }
@@ -348,9 +351,9 @@ const getTaskTypeColor = (type) => {
 
 const getTaskTypeText = (type) => {
   const texts = {
-    sync: '同步',
-    copy: '复制',
-    'mount-check': '挂载检测'
+    sync: t('tasks.types.sync'),
+    copy: t('tasks.types.copy'),
+    'mount-check': t('tasks.types.mountCheck')
   }
   return texts[type] || type
 }
@@ -367,12 +370,12 @@ const getPriorityType = (priority) => {
 
 const getPriorityText = (priority) => {
   const texts = {
-    1: '低',
-    2: '普通',
-    3: '高',
-    4: '紧急'
+    1: t('tasks.priorities.low'),
+    2: t('tasks.priorities.normal'),
+    3: t('tasks.priorities.high'),
+    4: t('tasks.priorities.urgent')
   }
-  return texts[priority] || '普通'
+  return texts[priority] || t('tasks.priorities.normal')
 }
 
 const getProgressStatus = (status) => {
@@ -383,17 +386,17 @@ const getProgressStatus = (status) => {
 
 const getPhaseText = (phase) => {
   const phases = {
-    'initializing': '初始化中',
-    'checking': '检查文件',
-    'transferring': '传输文件',
-    'completed': '已完成'
+    'initializing': t('taskDetail.phases.initializing'),
+    'checking': t('taskDetail.phases.checking'),
+    'transferring': t('taskDetail.phases.transferring'),
+    'completed': t('taskDetail.phases.completed')
   }
   return phases[phase] || phase
 }
 
 const getNodeName = (nodeId) => {
   const node = props.nodes.find(n => n.id === nodeId)
-  return node ? node.name : `节点${nodeId}`
+  return node ? node.name : `${t('taskDetail.node')}${nodeId}`
 }
 
 const getStorageTypeColor = (type) => {
@@ -411,7 +414,7 @@ const getStorageTypeColor = (type) => {
 
 const getStorageTypeText = (type) => {
   const texts = {
-    local: '本地',
+    local: t('taskDetail.storageTypes.local'),
     nfs: 'NFS',
     smb: 'SMB',
     ftp: 'FTP',

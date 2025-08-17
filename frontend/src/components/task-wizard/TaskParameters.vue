@@ -2,17 +2,17 @@
   <div class="task-parameters">
     <!-- 页面标题 -->
     <div class="parameters-header">
-      <h3>配置任务参数</h3>
-      <p class="parameters-description">根据源端和目标端类型配置相应的同步参数</p>
+      <h3>{{ $t('taskParameters.configureTaskParameters') }}</h3>
+      <p class="parameters-description">{{ $t('taskParameters.configureTaskParametersDesc') }}</p>
     </div>
 
     <!-- 基础信息 -->
     <el-collapse v-model="activeNames" accordion>
-      <el-collapse-item name="basic" title="基础信息">
+      <el-collapse-item name="basic" :title="$t('taskParameters.basicInfo')">
         <template #title>
           <div class="collapse-title">
             <Icon icon="mdi:information" class="title-icon" />
-            <span>基础信息</span>
+            <span>{{ $t('taskParameters.basicInfo') }}</span>
           </div>
         </template>
         
@@ -20,39 +20,39 @@
           <el-form :model="form" label-width="120px">
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="任务名称" required>
+                <el-form-item :label="$t('taskParameters.taskName')" required>
                   <el-input 
                     v-model="form.taskName" 
-                    placeholder="请输入任务名称"
+                    :placeholder="$t('taskParameters.enterTaskName')"
                     @input="updateModelValue"
                   />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="优先级">
+                <el-form-item :label="$t('taskParameters.priority')">
                   <el-select v-model="form.priority" style="width: 100%" @change="updateModelValue">
-                    <el-option label="低" :value="1">
+                    <el-option :label="$t('taskParameters.priorities.low')" :value="1">
                       <div class="priority-option">
                         <Icon icon="mdi:flag" class="priority-icon low" />
-                        <span>低</span>
+                        <span>{{ $t('taskParameters.priorities.low') }}</span>
                       </div>
                     </el-option>
-                    <el-option label="普通" :value="2">
+                    <el-option :label="$t('taskParameters.priorities.normal')" :value="2">
                       <div class="priority-option">
                         <Icon icon="mdi:flag" class="priority-icon normal" />
-                        <span>普通</span>
+                        <span>{{ $t('taskParameters.priorities.normal') }}</span>
                       </div>
                     </el-option>
-                    <el-option label="高" :value="3">
+                    <el-option :label="$t('taskParameters.priorities.high')" :value="3">
                       <div class="priority-option">
                         <Icon icon="mdi:flag" class="priority-icon high" />
-                        <span>高</span>
+                        <span>{{ $t('taskParameters.priorities.high') }}</span>
                       </div>
                     </el-option>
-                    <el-option label="紧急" :value="4">
+                    <el-option :label="$t('taskParameters.priorities.urgent')" :value="4">
                       <div class="priority-option">
                         <Icon icon="mdi:flag" class="priority-icon urgent" />
-                        <span>紧急</span>
+                        <span>{{ $t('taskParameters.priorities.urgent') }}</span>
                       </div>
                     </el-option>
                   </el-select>
@@ -60,12 +60,12 @@
               </el-col>
             </el-row>
             
-            <el-form-item label="任务描述">
+            <el-form-item :label="$t('taskParameters.taskDescription')">
               <el-input 
                 v-model="form.description" 
                 type="textarea" 
                 :rows="3"
-                placeholder="请输入任务描述"
+                :placeholder="$t('taskParameters.enterTaskDescription')"
                 @input="updateModelValue"
               />
             </el-form-item>
@@ -74,11 +74,11 @@
       </el-collapse-item>
 
       <!-- 同步选项 -->
-      <el-collapse-item name="sync" title="同步选项">
+      <el-collapse-item name="sync" :title="$t('taskParameters.syncOptions')">
         <template #title>
           <div class="collapse-title">
             <Icon icon="mdi:sync" class="title-icon" />
-            <span>同步选项</span>
+            <span>{{ $t('taskParameters.syncOptions') }}</span>
           </div>
         </template>
         
@@ -93,8 +93,8 @@
                   <div class="option-content">
                     <Icon icon="mdi:delete" class="option-icon" />
                     <div class="option-text">
-                      <div class="option-title">删除目标多余文件</div>
-                      <div class="option-desc">同步时删除目标端多余的文件</div>
+                      <div class="option-title">{{ $t('taskParameters.deleteExtraFiles') }}</div>
+                      <div class="option-desc">{{ $t('taskParameters.deleteExtraFilesDesc') }}</div>
                     </div>
                   </div>
                 </el-checkbox>
@@ -108,8 +108,8 @@
                   <div class="option-content">
                     <Icon icon="mdi:compress" class="option-icon" />
                     <div class="option-text">
-                      <div class="option-title">启用压缩传输</div>
-                      <div class="option-desc">传输时压缩数据以减少带宽</div>
+                      <div class="option-title">{{ $t('taskParameters.enableCompression') }}</div>
+                      <div class="option-desc">{{ $t('taskParameters.enableCompressionDesc') }}</div>
                     </div>
                   </div>
                 </el-checkbox>
@@ -123,8 +123,8 @@
                   <div class="option-content">
                     <Icon icon="mdi:check-circle" class="option-icon" />
                     <div class="option-text">
-                      <div class="option-title">校验文件完整性</div>
-                      <div class="option-desc">传输后校验文件完整性</div>
+                      <div class="option-title">{{ $t('taskParameters.checksumVerification') }}</div>
+                      <div class="option-desc">{{ $t('taskParameters.checksumVerificationDesc') }}</div>
                     </div>
                   </div>
                 </el-checkbox>
@@ -135,12 +135,12 @@
             
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="带宽限制">
+                <el-form-item :label="$t('taskParameters.bandwidthLimit')">
                   <el-input-number
                     v-model="form.syncOptions.bandwidth_limit"
                     :min="0"
                     :max="1000"
-                    placeholder="0表示无限制"
+                    :placeholder="$t('taskParameters.bandwidthLimitPlaceholder')"
                     style="width: 100%"
                     @change="updateModelValue"
                   >
@@ -149,12 +149,12 @@
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="并发连接数">
+                <el-form-item :label="$t('taskParameters.maxConnections')">
                   <el-input-number
                     v-model="form.syncOptions.max_connections"
                     :min="1"
                     :max="10"
-                    placeholder="默认为1"
+                    :placeholder="$t('taskParameters.maxConnectionsPlaceholder')"
                     style="width: 100%"
                     @change="updateModelValue"
                   />
@@ -166,11 +166,11 @@
       </el-collapse-item>
 
       <!-- 传输策略 -->
-      <el-collapse-item name="retry" title="传输策略">
+      <el-collapse-item name="retry" :title="$t('taskParameters.transferStrategy')">
         <template #title>
           <div class="collapse-title">
             <Icon icon="mdi:connection" class="title-icon" />
-            <span>传输策略</span>
+            <span>{{ $t('taskParameters.transferStrategy') }}</span>
           </div>
         </template>
         
@@ -178,28 +178,28 @@
           <el-form :model="form.retryOptions" label-width="120px">
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="重连次数">
+                <el-form-item :label="$t('taskParameters.retryCount')">
                   <el-input-number
                     v-model="form.retryOptions.max_retries"
                     :min="0"
                     :max="10"
-                    placeholder="最大重试次数"
+                    :placeholder="$t('taskParameters.retryCountPlaceholder')"
                     style="width: 100%"
                     @change="updateModelValue"
                   />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="重连间隔">
+                <el-form-item :label="$t('taskParameters.retryInterval')">
                   <el-input-number
                     v-model="form.retryOptions.retry_interval"
                     :min="5"
                     :max="300"
-                    placeholder="重试间隔时间"
+                    :placeholder="$t('taskParameters.retryIntervalPlaceholder')"
                     style="width: 100%"
                     @change="updateModelValue"
                   >
-                    <template #suffix>秒</template>
+                    <template #suffix>{{ $t('common.seconds') }}</template>
                   </el-input-number>
                 </el-form-item>
               </el-col>
@@ -209,11 +209,11 @@
       </el-collapse-item>
 
       <!-- 高级参数 -->
-      <el-collapse-item name="advanced" title="高级参数">
+      <el-collapse-item name="advanced" :title="$t('taskParameters.advancedParameters')">
         <template #title>
           <div class="collapse-title">
             <Icon icon="mdi:cog" class="title-icon" />
-            <span>高级参数</span>
+            <span>{{ $t('taskParameters.advancedParameters') }}</span>
           </div>
         </template>
         
@@ -221,12 +221,12 @@
           <el-form :model="form.advancedOptions" label-width="120px">
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="缓冲区大小">
+                <el-form-item :label="$t('taskParameters.bufferSize')">
                   <el-input-number
                     v-model="form.advancedOptions.buffer_size"
                     :min="1"
                     :max="100"
-                    placeholder="传输缓冲区大小"
+                    :placeholder="$t('taskParameters.bufferSizePlaceholder')"
                     style="width: 100%"
                     @change="updateModelValue"
                   >
@@ -235,16 +235,16 @@
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="超时时间">
+                <el-form-item :label="$t('taskParameters.timeout')">
                   <el-input-number
                     v-model="form.advancedOptions.timeout"
                     :min="30"
                     :max="3600"
-                    placeholder="连接超时时间"
+                    :placeholder="$t('taskParameters.timeoutPlaceholder')"
                     style="width: 100%"
                     @change="updateModelValue"
                   >
-                    <template #suffix>秒</template>
+                    <template #suffix>{{ $t('common.seconds') }}</template>
                   </el-input-number>
                 </el-form-item>
               </el-col>
@@ -252,23 +252,23 @@
             
             <el-row :gutter="20">
               <el-col :span="12">
-                <el-form-item label="排除模式">
+                <el-form-item :label="$t('taskParameters.excludePatterns')">
                   <el-input
                     v-model="form.advancedOptions.exclude_patterns"
-                    placeholder="*.tmp,*.log,.git/"
+                    :placeholder="$t('taskParameters.excludePatternsPlaceholder')"
                     @input="updateModelValue"
                   />
-                  <div class="form-tip">多个模式用逗号分隔</div>
+                  <div class="form-tip">{{ $t('taskParameters.patternsTip') }}</div>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
-                <el-form-item label="包含模式">
+                <el-form-item :label="$t('taskParameters.includePatterns')">
                   <el-input
                     v-model="form.advancedOptions.include_patterns"
-                    placeholder="*.jpg,*.png,*.pdf"
+                    :placeholder="$t('taskParameters.includePatternsPlaceholder')"
                     @input="updateModelValue"
                   />
-                  <div class="form-tip">多个模式用逗号分隔</div>
+                  <div class="form-tip">{{ $t('taskParameters.patternsTip') }}</div>
                 </el-form-item>
               </el-col>
             </el-row>
@@ -301,11 +301,14 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { Icon } from '@iconify/vue'
 import NasToNasOptions from './scenarios/NasToNasOptions.vue'
 import NasToObsOptions from './scenarios/NasToObsOptions.vue'
 import ObsToNasOptions from './scenarios/ObsToNasOptions.vue'
 import ObsToObsOptions from './scenarios/ObsToObsOptions.vue'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {

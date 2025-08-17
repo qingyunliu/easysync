@@ -3,21 +3,21 @@
     <el-form :model="form" label-width="120px">
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="rclone参数">
+          <el-form-item :label="$t('nasToObsOptions.rcloneArgs')">
             <el-input
               v-model="form.rclone_args"
-              placeholder="--exclude=*.tmp --include=*.jpg"
+              :placeholder="$t('nasToObsOptions.rcloneArgsPlaceholder')"
               @input="updateModelValue"
             />
-            <div class="form-tip">自定义rclone参数，多个参数用空格分隔</div>
+            <div class="form-tip">{{ $t('nasToObsOptions.rcloneArgsTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="传输模式">
+          <el-form-item :label="$t('nasToObsOptions.transferMode')">
             <el-select v-model="form.transfer_mode" style="width: 100%" @change="updateModelValue">
-              <el-option label="标准传输" value="standard" />
-              <el-option label="流式传输" value="streaming" />
-              <el-option label="分块传输" value="chunked" />
+              <el-option :label="$t('nasToObsOptions.standardTransfer')" value="standard" />
+              <el-option :label="$t('nasToObsOptions.streamingTransfer')" value="streaming" />
+              <el-option :label="$t('nasToObsOptions.chunkedTransfer')" value="chunked" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -25,92 +25,92 @@
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="分块大小(MB)">
+          <el-form-item :label="$t('nasToObsOptions.chunkSize')">
             <el-input-number
               v-model="form.chunk_size"
               :min="1"
               :max="1000"
-              placeholder="分块大小"
+              :placeholder="$t('nasToObsOptions.chunkSizePlaceholder')"
               style="width: 100%"
               @change="updateModelValue"
             />
-            <div class="form-tip">大文件分块传输的块大小</div>
+            <div class="form-tip">{{ $t('nasToObsOptions.chunkSizeTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="并发上传数">
+          <el-form-item :label="$t('nasToObsOptions.uploadConcurrency')">
             <el-input-number
               v-model="form.upload_concurrency"
               :min="1"
               :max="20"
-              placeholder="并发数"
+              :placeholder="$t('nasToObsOptions.uploadConcurrencyPlaceholder')"
               style="width: 100%"
               @change="updateModelValue"
             />
-            <div class="form-tip">同时上传的文件数量</div>
+            <div class="form-tip">{{ $t('nasToObsOptions.uploadConcurrencyTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="加密传输">
+          <el-form-item :label="$t('nasToObsOptions.encryptTransfer')">
             <el-switch
               v-model="form.encrypt_transfer"
               @change="updateModelValue"
             />
-            <div class="form-tip">使用TLS加密传输数据</div>
+            <div class="form-tip">{{ $t('nasToObsOptions.encryptTransferTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="服务器端加密">
+          <el-form-item :label="$t('nasToObsOptions.serverSideEncryption')">
             <el-switch
               v-model="form.server_side_encryption"
               @change="updateModelValue"
             />
-            <div class="form-tip">在对象存储端加密数据</div>
+            <div class="form-tip">{{ $t('nasToObsOptions.serverSideEncryptionTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="保留元数据">
+          <el-form-item :label="$t('nasToObsOptions.preserveMetadata')">
             <el-switch
               v-model="form.preserve_metadata"
               @change="updateModelValue"
             />
-            <div class="form-tip">保留文件的元数据信息</div>
+            <div class="form-tip">{{ $t('nasToObsOptions.preserveMetadataTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="校验和验证">
+          <el-form-item :label="$t('nasToObsOptions.checksumVerification')">
             <el-switch
               v-model="form.checksum_verification"
               @change="updateModelValue"
             />
-            <div class="form-tip">上传后验证文件完整性</div>
+            <div class="form-tip">{{ $t('nasToObsOptions.checksumVerificationTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="重试策略">
+          <el-form-item :label="$t('nasToObsOptions.retryStrategy')">
             <el-select v-model="form.retry_strategy" style="width: 100%" @change="updateModelValue">
-              <el-option label="指数退避" value="exponential" />
-              <el-option label="固定间隔" value="fixed" />
-              <el-option label="立即重试" value="immediate" />
+              <el-option :label="$t('nasToObsOptions.exponentialBackoff')" value="exponential" />
+              <el-option :label="$t('nasToObsOptions.fixedInterval')" value="fixed" />
+              <el-option :label="$t('nasToObsOptions.immediateRetry')" value="immediate" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="进度报告">
+          <el-form-item :label="$t('nasToObsOptions.progressReporting')">
             <el-switch
               v-model="form.progress_reporting"
               @change="updateModelValue"
             />
-            <div class="form-tip">实时报告传输进度</div>
+            <div class="form-tip">{{ $t('nasToObsOptions.progressReportingTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
@@ -120,6 +120,9 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {

@@ -787,5 +787,698 @@ export default {
     goodAfternoon: "Good Afternoon",
     goodEvening: "Good Evening",
     goodNight: "Good Night",
+    time: "Time",
+    message: "Message",
+    yes: "Yes",
+    no: "No",
+    seconds: "seconds",
+  },
+
+  // Task Management Module
+  tasks: {
+    title: "Task Management",
+    description:
+      "Manage and monitor synchronization task creation, execution and status",
+    createTask: "Create Task",
+    copyTask: "Copy Task",
+
+    // Statistics Panel
+    stats: {
+      totalTasks: "Total Tasks",
+      running: "Running",
+      pending: "Pending",
+      completed: "Completed",
+      failed: "Failed",
+      onlineNodes: "Online Nodes",
+    },
+
+    // Toolbar
+    searchPlaceholder: "Search task name...",
+    statusFilter: "Status Filter",
+    typeFilter: "Type Filter",
+    all: "All",
+    pauseRefresh: "Pause Refresh",
+    enableRefresh: "Enable Refresh",
+    refresh: "Refresh",
+
+    // Batch Operations
+    selectedTasks: "Selected {count} tasks",
+    batchCancel: "Batch Cancel",
+    batchRetry: "Batch Retry",
+    batchDelete: "Batch Delete",
+
+    // Table Columns
+    taskName: "Task Name",
+    taskDescription: "Task Description",
+    type: "Type",
+    status: "Status",
+    progress: "Progress",
+    executionNode: "Execution Node",
+    priority: "Priority",
+    createTime: "Create Time",
+    actions: "Actions",
+    noDescription: "No Description",
+    unassigned: "Unassigned",
+
+    // Task Types
+    types: {
+      sync: "File Sync",
+      copy: "File Copy",
+      mountCheck: "Mount Check",
+    },
+
+    // Task Statuses
+    statuses: {
+      pending: "Pending",
+      assigned: "Assigned",
+      running: "Running",
+      completed: "Completed",
+      failed: "Failed",
+      cancelled: "Cancelled",
+      paused: "Paused",
+    },
+
+    // Priorities
+    priorities: {
+      low: "Low",
+      normal: "Normal",
+      high: "High",
+      urgent: "Urgent",
+    },
+
+    // Action Buttons
+    actions: {
+      start: "Start",
+      pause: "Pause",
+      resume: "Resume",
+      cancel: "Cancel",
+      retry: "Retry",
+      more: "More",
+      viewLogs: "View Logs",
+      detail: "Detail",
+      duplicate: "Duplicate Task",
+      delete: "Delete",
+    },
+
+    // Task Detail
+    taskDetail: "Task Detail",
+    taskDetailTitle: "Task Detail",
+
+    // Task Logs
+    taskLogs: "Task Logs",
+    taskLogsTitle: "Task Logs",
+    autoRefresh: "Auto Refresh",
+    manualRefresh: "Manual Refresh",
+    refreshInterval: "Refresh Interval",
+    closeRefresh: "Close Refresh",
+    seconds: "seconds",
+    minutes: "minutes",
+    refreshDuplicateLogs: "Clean Duplicate Logs",
+    refreshOldLogs: "Clean Old Logs",
+
+    // Log Levels
+    logLevels: {
+      all: "All",
+      error: "Error",
+      progress: "Progress",
+    },
+
+    // Messages
+    messages: {
+      taskCreated: "Task created successfully",
+      taskUpdated: "Task updated successfully",
+      taskDeleted: "Task deleted successfully",
+      taskStarted: "Task started successfully",
+      taskPaused: "Task paused successfully",
+      taskResumed: "Task resumed successfully",
+      taskCancelled: "Task cancelled successfully",
+      taskRetried: "Task retried successfully",
+      batchOperationSuccess: "Batch operation successful",
+      batchOperationFailed: "Batch operation failed",
+      confirmDelete: "Are you sure you want to delete the selected tasks?",
+      confirmCancel: "Are you sure you want to cancel the selected tasks?",
+      confirmRetry: "Are you sure you want to retry the selected tasks?",
+      noTasksSelected: "Please select tasks to operate",
+      taskNotFound: "Task not found",
+      operationFailed: "Operation failed",
+      networkError: "Network error, please check connection",
+      permissionDenied: "Permission denied",
+      invalidTaskStatus: "Invalid task status",
+      nodeOffline: "Execution node offline",
+      taskInProgress: "Task is in progress, cannot operate",
+    },
+
+    // Validation Rules
+    validation: {
+      taskNameRequired: "Please enter task name",
+      taskTypeRequired: "Please select task type",
+      sourceRequired: "Please select source storage",
+      targetRequired: "Please select target storage",
+      nodeRequired: "Please select execution node",
+    },
+  },
+
+  // Task Detail Module
+  taskDetail: {
+    // Basic Information
+    basicInfo: "Basic Information",
+    taskName: "Task Name",
+    type: "Type",
+    status: "Status",
+    progress: "Progress",
+    priority: "Priority",
+    executionNode: "Execution Node",
+    createTime: "Create Time",
+    startTime: "Start Time",
+    completeTime: "Complete Time",
+    unassigned: "Unassigned",
+    notStarted: "Not Started",
+    notCompleted: "Not Completed",
+
+    // Source Information
+    sourceInfo: "Source Information",
+    storageName: "Storage Name",
+    storageType: "Storage Type",
+    sourcePath: "Source Path",
+    clientName: "Client Name",
+    ipAddress: "IP Address",
+    noSourceInfo: "No Source Information",
+
+    // Target Information
+    targetInfo: "Target Information",
+    targetPath: "Target Path",
+    noTargetInfo: "No Target Information",
+
+    // Sync Options
+    syncOptions: "Sync Options",
+    deleteExtraFiles: "Delete Extra Files",
+    checksumCheck: "Checksum Check",
+    compressTransfer: "Compress Transfer",
+    bandwidthLimit: "Bandwidth Limit",
+    maxConnections: "Max Connections",
+    retryCount: "Retry Count",
+    noLimit: "No Limit",
+    default: "Default",
+    noSyncOptions: "No Sync Options",
+
+    // Transfer Statistics
+    transferStatistics: "Transfer Statistics",
+    transferredFiles: "Transferred Files",
+    totalFiles: "Total Files",
+    transferredSize: "Transferred Size",
+    totalSize: "Total Size",
+    transferSpeed: "Transfer Speed",
+    estimatedTime: "Estimated Time",
+    completionProgress: "Completion Progress",
+
+    // Current Phase
+    currentPhase: "Current Phase",
+    phase: "Phase",
+    processedFiles: "Processed Files",
+
+    // Current Transfer File
+    currentTransferFile: "Current Transfer File",
+    filePath: "File Path",
+    fileSize: "File Size",
+    transferred: "Transferred",
+
+    // Task Statistics
+    taskStatistics: "Task Statistics",
+    processedSize: "Processed Size",
+
+    // Error Information
+    errorInfo: "Error Information",
+
+    // Last Update
+    lastUpdate: "Last Update",
+
+    // Node
+    node: "Node",
+
+    // Phases
+    phases: {
+      initializing: "Initializing",
+      checking: "Checking Files",
+      transferring: "Transferring Files",
+      completed: "Completed",
+    },
+
+    // Storage Types
+    storageTypes: {
+      local: "Local",
+    },
+  },
+
+  // Task Creation Wizard Module
+  taskWizard: {
+    // Copy Task
+    copyTaskConfig: "Copy Task Configuration",
+    copyingTaskConfig: 'Copying configuration from task "{taskName}"',
+
+    // Steps
+    steps: {
+      selectSource: "Select Source",
+      selectSourceDesc: "Select source storage and files",
+      selectTarget: "Select Target",
+      selectTargetDesc: "Select target storage and path",
+      configureParameters: "Task Parameters",
+      configureParametersDesc: "Configure sync parameters",
+      confirmConfig: "Confirm Configuration",
+      confirmConfigDesc: "Confirm and create task",
+    },
+
+    // Step Content
+    selectSourceStorageAndFiles: "Select Source Storage and Files",
+    selectSourceStorageAndFilesDesc:
+      "Please select the source storage to sync and check the directories or files to sync",
+
+    // Buttons
+    previousStep: "Previous",
+    nextStep: "Next",
+    reset: "Reset",
+    createTask: "Create Task",
+    createCopy: "Create Copy",
+
+    // Progress
+    stepProgress: "Step {current} / {total}",
+
+    // Messages
+    messages: {
+      completeAllRequiredConfig:
+        "Please complete all required configuration information",
+      taskCreatedSuccess: "Task created successfully",
+      createTaskFailed: "Failed to create task",
+    },
+  },
+
+  // Task Parameters Configuration Module
+  taskParameters: {
+    // Page Title
+    configureTaskParameters: "Configure Task Parameters",
+    configureTaskParametersDesc:
+      "Configure sync parameters based on source and target storage types",
+
+    // Basic Information
+    basicInfo: "Basic Information",
+    taskName: "Task Name",
+    enterTaskName: "Please enter task name",
+    priority: "Priority",
+    priorities: {
+      low: "Low",
+      normal: "Normal",
+      high: "High",
+      urgent: "Urgent",
+    },
+    taskDescription: "Task Description",
+    enterTaskDescription: "Please enter task description",
+
+    // Sync Options
+    syncOptions: "Sync Options",
+    deleteExtraFiles: "Delete Extra Files",
+    deleteExtraFilesDesc: "Delete extra files on target during sync",
+    enableCompression: "Enable Compression",
+    enableCompressionDesc: "Compress data during transfer to reduce bandwidth",
+    checksumVerification: "Checksum Verification",
+    checksumVerificationDesc: "Verify file integrity after transfer",
+    bandwidthLimit: "Bandwidth Limit",
+    bandwidthLimitPlaceholder: "0 means no limit",
+    maxConnections: "Max Connections",
+    maxConnectionsPlaceholder: "Default is 1",
+
+    // Transfer Strategy
+    transferStrategy: "Transfer Strategy",
+    retryCount: "Retry Count",
+    retryCountPlaceholder: "Maximum retry count",
+    retryInterval: "Retry Interval",
+    retryIntervalPlaceholder: "Retry interval time",
+
+    // Advanced Parameters
+    advancedParameters: "Advanced Parameters",
+    bufferSize: "Buffer Size",
+    bufferSizePlaceholder: "Transfer buffer size",
+    timeout: "Timeout",
+    timeoutPlaceholder: "Connection timeout",
+    excludePatterns: "Exclude Patterns",
+    excludePatternsPlaceholder: "*.tmp,*.log,.git/",
+    includePatterns: "Include Patterns",
+    includePatternsPlaceholder: "*.jpg,*.png,*.pdf",
+    patternsTip: "Multiple patterns separated by commas",
+  },
+
+  // Task Confirmation Module
+  taskConfirmation: {
+    // Page Title
+    confirmTaskConfig: "Confirm Task Configuration",
+    confirmTaskConfigDesc:
+      "Please confirm the following configuration information, then click create task",
+
+    // Configuration Information
+    sourceConfig: "Source Configuration",
+    targetConfig: "Target Configuration",
+    taskParameters: "Task Parameters",
+    estimatedInfo: "Estimated Information",
+
+    // Basic Information
+    storageName: "Storage Name",
+    storageType: "Storage Type",
+    selectedItems: "Selected Items",
+    items: "items",
+    selectedFilesDirectories: "Selected Files/Directories",
+    targetPath: "Target Path",
+    taskName: "Task Name",
+    priority: "Priority",
+    taskDescription: "Task Description",
+    noDescription: "No Description",
+
+    // Sync Options
+    syncOptions: "Sync Options",
+    deleteExtraFiles: "Delete Extra Files",
+    enableCompression: "Enable Compression",
+    checksumVerification: "Checksum Verification",
+    bandwidthLimit: "Bandwidth Limit",
+    maxConnections: "Max Connections",
+
+    // Transfer Strategy
+    transferStrategy: "Transfer Strategy",
+    retryCount: "Retry Count",
+    retryInterval: "Retry Interval",
+
+    // Advanced Parameters
+    advancedParameters: "Advanced Parameters",
+    bufferSize: "Buffer Size",
+    timeout: "Timeout",
+    excludePatterns: "Exclude Patterns",
+    none: "None",
+
+    // Estimated Information
+    estimatedFileCount: "Estimated File Count",
+    estimatedTotalSize: "Estimated Total Size",
+    estimatedTransferTime: "Estimated Transfer Time",
+    estimatedBandwidthUsage: "Estimated Bandwidth Usage",
+    files: "files",
+    unknown: "Unknown",
+    minutes: "minutes",
+    hours: "hours",
+    noLimit: "No Limit",
+
+    // Priorities
+    priorities: {
+      low: "Low",
+      normal: "Normal",
+      high: "High",
+      urgent: "Urgent",
+    },
+
+    // Warning Messages
+    dataOverrideWarning: "Data Override Warning",
+    overrideWarningObs:
+      "You have selected the same object storage as the source, which may cause data override. Please ensure the target path is different from the source path.",
+    overrideWarningNas:
+      "You have selected the same storage as the source, which may cause data override. Please ensure the target path is different from the source path.",
+
+    // Confirmation Actions
+    confirmConfigInfo: "Please confirm the above configuration information",
+    confirmConfigInfoDesc:
+      "After confirming, click the create task button to start creating the sync task",
+  },
+
+  // Target Selector Module
+  targetSelector: {
+    // Page Title
+    selectTargetStorage: "Select Target Storage",
+    selectTargetStorageDesc:
+      "Please select the target storage device to sync to",
+
+    // Storage Selection
+    targetStorage: "Target Storage",
+    selectTargetStoragePlaceholder: "Please select target storage",
+    nasStorage: "NAS Storage",
+    obsStorage: "OBS Storage",
+    mounted: "Mounted",
+    notMounted: "Not Mounted",
+
+    // Data Override Warning
+    dataOverrideWarning: "Data Override Warning",
+    overrideWarningObs:
+      "You have selected the same object storage as the source, which may cause data override. Please ensure the target path is different from the source path.",
+    overrideWarningNas:
+      "You have selected the same storage as the source, which may cause data override. Please ensure the target path is different from the source path.",
+
+    // Configure Target Location
+    configureTargetLocation: "Configure Target Location",
+    configureTargetLocationDesc:
+      "You can browse existing buckets or create new buckets as sync targets",
+    configureTargetLocationNasDesc:
+      "Please select the target directory path, you can view the directory structure through the browse function",
+
+    // OBS Configuration
+    operationMode: "Operation Mode",
+    browseExistingBucket: "Browse Existing Bucket",
+    createNewBucket: "Create New Bucket",
+    bucketName: "Bucket Name",
+    enterBucketName: "Please enter bucket name",
+    bucket: "Bucket",
+    selectBucket: "Please select bucket",
+    targetPath: "Target Path",
+    targetPathPlaceholder:
+      "Optional: Specify path within bucket, e.g. folder1/subfolder",
+    selectOrEnterTargetPath: "Please select or enter target path",
+    browse: "Browse",
+
+    // Path Selector
+    browseBucketContent: "Browse Bucket Content",
+    browseDirectoryStructure: "Browse Directory Structure",
+    refresh: "Refresh",
+    expandAll: "Expand All",
+    collapseAll: "Collapse All",
+    rootDirectory: "Root Directory",
+
+    // Status Information
+    totalObjects: "{count} objects total",
+    totalFilesFolders: "{count} files/folders total",
+    currentPath: "Current Path",
+    loadingObjectList: "Loading object list...",
+    loadingFileList: "Loading file list...",
+    currentDirectoryEmpty: "Current directory is empty",
+
+    // Table Columns
+    name: "Name",
+    size: "Size",
+    lastModified: "Last Modified",
+    actions: "Actions",
+    select: "Select",
+
+    // Messages
+    messages: {
+      getStorageListFailed: "Failed to get storage list",
+      getBucketListFailed: "Failed to get bucket list",
+      selectBucketFirst: "Please select bucket first",
+      getObjectListFailed: "Failed to get object list",
+      getFileListFailed: "Failed to get file list",
+    },
+  },
+
+  // Source Selector Module
+  sourceSelector: {
+    // Storage Selection
+    sourceStorage: "Source Storage",
+    selectSourceStorage: "Please select source storage",
+    nasStorage: "NAS Storage",
+    obsStorage: "OBS Storage",
+    mounted: "Mounted",
+    notMounted: "Not Mounted",
+
+    // Directory Tree
+    selectDirectoriesFiles: "Select directories or files to sync",
+    refresh: "Refresh",
+    expandAll: "Expand All",
+    collapseAll: "Collapse All",
+
+    // Selection Summary
+    selectedItems: "Selected {count} items",
+    original: "Original",
+    includeSubdirectories: "Include subdirectories",
+    showDetailed: "Show Detailed",
+    smartCompression: "Smart Compression",
+    clearSelection: "Clear Selection",
+
+    // Group Titles
+    recursiveDirectories: "Recursive Directories",
+    directories: "Directories",
+    files: "Files",
+
+    // Statistics
+    directories: "Directories",
+    files: "Files",
+    recursive: "Recursive",
+
+    // Messages
+    messages: {
+      getStorageListFailed: "Failed to get storage list",
+      getFileListFailed: "Failed to get file list",
+      getBucketListFailed: "Failed to get bucket list",
+      getObjectListFailed: "Failed to get object list",
+    },
+  },
+
+  // OBS to OBS Options Module
+  obsToObsOptions: {
+    // Transfer Configuration
+    rcloneArgs: "rclone Arguments",
+    rcloneArgsPlaceholder: "--exclude=*.tmp --include=*.jpg",
+    rcloneArgsTip:
+      "Custom rclone arguments, separate multiple arguments with spaces",
+    transferMode: "Transfer Mode",
+    directTransfer: "Direct Transfer",
+    localTransfer: "Local Transfer",
+    streamingTransfer: "Streaming Transfer",
+
+    // Performance Configuration
+    chunkSize: "Chunk Size (MB)",
+    chunkSizePlaceholder: "Chunk size",
+    chunkSizeTip: "Block size for large file chunked transfer",
+    transferConcurrency: "Transfer Concurrency",
+    transferConcurrencyPlaceholder: "Concurrency",
+    transferConcurrencyTip: "Number of files transferred simultaneously",
+
+    // Security Configuration
+    encryptTransfer: "Encrypt Transfer",
+    encryptTransferTip: "Use TLS to encrypt transfer data",
+    serverSideEncryption: "Server-side Encryption",
+    serverSideEncryptionTip: "Encrypt data on target object storage",
+
+    // Data Integrity
+    preserveMetadata: "Preserve Metadata",
+    preserveMetadataTip: "Preserve file metadata information",
+    checksumVerification: "Checksum Verification",
+    checksumVerificationTip: "Verify file integrity after transfer",
+
+    // Retry and Monitoring
+    retryStrategy: "Retry Strategy",
+    exponentialBackoff: "Exponential Backoff",
+    fixedInterval: "Fixed Interval",
+    immediateRetry: "Immediate Retry",
+    progressReporting: "Progress Reporting",
+    progressReportingTip: "Real-time transfer progress reporting",
+
+    // Temporary File Management
+    tempDirectory: "Temporary Directory",
+    tempDirectoryPlaceholder: "/tmp/obs_transfer",
+    tempDirectoryTip: "Temporary storage directory for local transfer",
+    cleanupTemp: "Cleanup Temporary Files",
+    cleanupTempTip: "Clean up temporary files after transfer",
+  },
+
+  // OBS to NAS Options Module
+  obsToNasOptions: {
+    // Download Configuration
+    rcloneArgs: "rclone Arguments",
+    rcloneArgsPlaceholder: "--exclude=*.tmp --include=*.jpg",
+    rcloneArgsTip:
+      "Custom rclone arguments, separate multiple arguments with spaces",
+    downloadMode: "Download Mode",
+    standardDownload: "Standard Download",
+    streamingDownload: "Streaming Download",
+    chunkedDownload: "Chunked Download",
+
+    // Performance Configuration
+    chunkSize: "Chunk Size (MB)",
+    chunkSizePlaceholder: "Chunk size",
+    chunkSizeTip: "Block size for large file chunked download",
+    downloadConcurrency: "Download Concurrency",
+    downloadConcurrencyPlaceholder: "Concurrency",
+    downloadConcurrencyTip: "Number of files downloaded simultaneously",
+
+    // Feature Configuration
+    resumeDownload: "Resume Download",
+    resumeDownloadTip: "Support resume download functionality",
+    checksumVerification: "Checksum Verification",
+    checksumVerificationTip: "Verify file integrity after download",
+    preserveMetadata: "Preserve Metadata",
+    preserveMetadataTip: "Preserve file metadata information",
+    progressReporting: "Progress Reporting",
+    progressReportingTip: "Real-time download progress reporting",
+
+    // Retry and Temporary Files
+    retryStrategy: "Retry Strategy",
+    exponentialBackoff: "Exponential Backoff",
+    fixedInterval: "Fixed Interval",
+    immediateRetry: "Immediate Retry",
+    tempDirectory: "Temporary Directory",
+    tempDirectoryPlaceholder: "/tmp/downloads",
+    tempDirectoryTip: "Temporary storage directory for downloaded files",
+  },
+
+  // NAS to OBS Options Module
+  nasToObsOptions: {
+    // Transfer Configuration
+    rcloneArgs: "rclone Arguments",
+    rcloneArgsPlaceholder: "--exclude=*.tmp --include=*.jpg",
+    rcloneArgsTip:
+      "Custom rclone arguments, separate multiple arguments with spaces",
+    transferMode: "Transfer Mode",
+    standardTransfer: "Standard Transfer",
+    streamingTransfer: "Streaming Transfer",
+    chunkedTransfer: "Chunked Transfer",
+
+    // Performance Configuration
+    chunkSize: "Chunk Size (MB)",
+    chunkSizePlaceholder: "Chunk size",
+    chunkSizeTip: "Block size for large file chunked transfer",
+    uploadConcurrency: "Upload Concurrency",
+    uploadConcurrencyPlaceholder: "Concurrency",
+    uploadConcurrencyTip: "Number of files uploaded simultaneously",
+
+    // Security Configuration
+    encryptTransfer: "Encrypt Transfer",
+    encryptTransferTip: "Use TLS to encrypt transfer data",
+    serverSideEncryption: "Server-side Encryption",
+    serverSideEncryptionTip: "Encrypt data on object storage",
+
+    // Data Integrity
+    preserveMetadata: "Preserve Metadata",
+    preserveMetadataTip: "Preserve file metadata information",
+    checksumVerification: "Checksum Verification",
+    checksumVerificationTip: "Verify file integrity after upload",
+
+    // Retry and Monitoring
+    retryStrategy: "Retry Strategy",
+    exponentialBackoff: "Exponential Backoff",
+    fixedInterval: "Fixed Interval",
+    immediateRetry: "Immediate Retry",
+    progressReporting: "Progress Reporting",
+    progressReportingTip: "Real-time transfer progress reporting",
+  },
+
+  // NAS to NAS Options Module
+  nasToNasOptions: {
+    // Sync Configuration
+    rsyncArgs: "rsync Arguments",
+    rsyncArgsPlaceholder: "--exclude=*.tmp --include=*.jpg",
+    rsyncArgsTip:
+      "Custom rsync arguments, separate multiple arguments with spaces",
+    syncMode: "Sync Mode",
+    incrementalSync: "Incremental Sync",
+    fullSync: "Full Sync",
+    mirrorSync: "Mirror Sync",
+
+    // File Attributes
+    preservePermissions: "Preserve Permissions",
+    preservePermissionsTip:
+      "Whether to preserve file permissions and owner information",
+    preserveTimestamps: "Preserve Timestamps",
+    preserveTimestampsTip: "Whether to preserve file modification time",
+
+    // Optimization Options
+    hardLinks: "Hard Links Optimization",
+    hardLinksTip: "Use hard links to optimize storage space",
+    sparseFiles: "Sparse Files",
+    sparseFilesTip: "Optimize sparse file transfer",
+
+    // Transfer Options
+    partialTransfer: "Partial Transfer",
+    partialTransferTip: "Support resume transfer",
+    progressDisplay: "Progress Display",
+    progressDisplayTip: "Show detailed transfer progress",
   },
 };

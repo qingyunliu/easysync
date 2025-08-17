@@ -3,21 +3,21 @@
     <el-form :model="form" label-width="120px">
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="rclone参数">
+          <el-form-item :label="$t('obsToObsOptions.rcloneArgs')">
             <el-input
               v-model="form.rclone_args"
-              placeholder="--exclude=*.tmp --include=*.jpg"
+              :placeholder="$t('obsToObsOptions.rcloneArgsPlaceholder')"
               @input="updateModelValue"
             />
-            <div class="form-tip">自定义rclone参数，多个参数用空格分隔</div>
+            <div class="form-tip">{{ $t('obsToObsOptions.rcloneArgsTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="传输模式">
+          <el-form-item :label="$t('obsToObsOptions.transferMode')">
             <el-select v-model="form.transfer_mode" style="width: 100%" @change="updateModelValue">
-              <el-option label="直接传输" value="direct" />
-              <el-option label="本地中转" value="local" />
-              <el-option label="流式传输" value="streaming" />
+              <el-option :label="$t('obsToObsOptions.directTransfer')" value="direct" />
+              <el-option :label="$t('obsToObsOptions.localTransfer')" value="local" />
+              <el-option :label="$t('obsToObsOptions.streamingTransfer')" value="streaming" />
             </el-select>
           </el-form-item>
         </el-col>
@@ -25,114 +25,114 @@
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="分块大小(MB)">
+          <el-form-item :label="$t('obsToObsOptions.chunkSize')">
             <el-input-number
               v-model="form.chunk_size"
               :min="1"
               :max="1000"
-              placeholder="分块大小"
+              :placeholder="$t('obsToObsOptions.chunkSizePlaceholder')"
               style="width: 100%"
               @change="updateModelValue"
             />
-            <div class="form-tip">大文件分块传输的块大小</div>
+            <div class="form-tip">{{ $t('obsToObsOptions.chunkSizeTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="并发传输数">
+          <el-form-item :label="$t('obsToObsOptions.transferConcurrency')">
             <el-input-number
               v-model="form.transfer_concurrency"
               :min="1"
               :max="20"
-              placeholder="并发数"
+              :placeholder="$t('obsToObsOptions.transferConcurrencyPlaceholder')"
               style="width: 100%"
               @change="updateModelValue"
             />
-            <div class="form-tip">同时传输的文件数量</div>
+            <div class="form-tip">{{ $t('obsToObsOptions.transferConcurrencyTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="加密传输">
+          <el-form-item :label="$t('obsToObsOptions.encryptTransfer')">
             <el-switch
               v-model="form.encrypt_transfer"
               @change="updateModelValue"
             />
-            <div class="form-tip">使用TLS加密传输数据</div>
+            <div class="form-tip">{{ $t('obsToObsOptions.encryptTransferTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="服务器端加密">
+          <el-form-item :label="$t('obsToObsOptions.serverSideEncryption')">
             <el-switch
               v-model="form.server_side_encryption"
               @change="updateModelValue"
             />
-            <div class="form-tip">在目标对象存储端加密数据</div>
+            <div class="form-tip">{{ $t('obsToObsOptions.serverSideEncryptionTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="保留元数据">
+          <el-form-item :label="$t('obsToObsOptions.preserveMetadata')">
             <el-switch
               v-model="form.preserve_metadata"
               @change="updateModelValue"
             />
-            <div class="form-tip">保留文件的元数据信息</div>
+            <div class="form-tip">{{ $t('obsToObsOptions.preserveMetadataTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="校验和验证">
+          <el-form-item :label="$t('obsToObsOptions.checksumVerification')">
             <el-switch
               v-model="form.checksum_verification"
               @change="updateModelValue"
             />
-            <div class="form-tip">传输后验证文件完整性</div>
+            <div class="form-tip">{{ $t('obsToObsOptions.checksumVerificationTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="重试策略">
+          <el-form-item :label="$t('obsToObsOptions.retryStrategy')">
             <el-select v-model="form.retry_strategy" style="width: 100%" @change="updateModelValue">
-              <el-option label="指数退避" value="exponential" />
-              <el-option label="固定间隔" value="fixed" />
-              <el-option label="立即重试" value="immediate" />
+              <el-option :label="$t('obsToObsOptions.exponentialBackoff')" value="exponential" />
+              <el-option :label="$t('obsToObsOptions.fixedInterval')" value="fixed" />
+              <el-option :label="$t('obsToObsOptions.immediateRetry')" value="immediate" />
             </el-select>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="进度报告">
+          <el-form-item :label="$t('obsToObsOptions.progressReporting')">
             <el-switch
               v-model="form.progress_reporting"
               @change="updateModelValue"
             />
-            <div class="form-tip">实时报告传输进度</div>
+            <div class="form-tip">{{ $t('obsToObsOptions.progressReportingTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
       
       <el-row :gutter="20">
         <el-col :span="12">
-          <el-form-item label="临时目录">
+          <el-form-item :label="$t('obsToObsOptions.tempDirectory')">
             <el-input
               v-model="form.temp_directory"
-              placeholder="/tmp/obs_transfer"
+              :placeholder="$t('obsToObsOptions.tempDirectoryPlaceholder')"
               @input="updateModelValue"
             />
-            <div class="form-tip">本地中转时的临时存储目录</div>
+            <div class="form-tip">{{ $t('obsToObsOptions.tempDirectoryTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
-          <el-form-item label="清理临时文件">
+          <el-form-item :label="$t('obsToObsOptions.cleanupTemp')">
             <el-switch
               v-model="form.cleanup_temp"
               @change="updateModelValue"
             />
-            <div class="form-tip">传输完成后清理临时文件</div>
+            <div class="form-tip">{{ $t('obsToObsOptions.cleanupTempTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
@@ -142,6 +142,9 @@
 
 <script setup>
 import { ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {

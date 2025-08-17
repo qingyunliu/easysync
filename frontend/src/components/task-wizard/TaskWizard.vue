@@ -15,8 +15,8 @@
           <el-icon><CopyDocument /></el-icon>
         </div>
         <div class="alert-content">
-          <h4>复制任务配置</h4>
-          <p>正在复制任务 "{{ copyFromTask.name }}" 的配置信息</p>
+          <h4>{{ $t('taskWizard.copyTaskConfig') }}</h4>
+          <p>{{ $t('taskWizard.copyingTaskConfig', { taskName: copyFromTask.name }) }}</p>
         </div>
         <div class="alert-decoration"></div>
       </div>
@@ -69,9 +69,9 @@
             <div class="step-header">
               <h3>
                 <el-icon class="header-icon"><FolderOpened /></el-icon>
-                选择源端存储和文件
+                {{ $t('taskWizard.selectSourceStorageAndFiles') }}
               </h3>
-              <p class="step-description">请选择要同步的源端存储，并勾选需要同步的目录或文件</p>
+              <p class="step-description">{{ $t('taskWizard.selectSourceStorageAndFilesDesc') }}</p>
             </div>
             <div class="header-decoration reverse">
               <div class="header-dot"></div>
@@ -198,7 +198,7 @@
             :disabled="loading"
           >
             <el-icon><ArrowLeft /></el-icon>
-            <span>上一步</span>
+            <span>{{ $t('taskWizard.previousStep') }}</span>
           </button>
           
           <button 
@@ -207,13 +207,13 @@
             :disabled="loading"
           >
             <el-icon><RefreshLeft /></el-icon>
-            <span>重置</span>
+            <span>{{ $t('taskWizard.reset') }}</span>
           </button>
         </div>
 
         <!-- 中间进度指示 -->
         <div class="progress-indicator">
-          <div class="progress-text">步骤 {{ currentStep + 1 }} / {{ steps.length }}</div>
+          <div class="progress-text">{{ $t('taskWizard.stepProgress', { current: currentStep + 1, total: steps.length }) }}</div>
           <div class="progress-bar">
             <div 
               class="progress-fill" 
@@ -238,7 +238,7 @@
             @click="nextStep" 
             :disabled="!canProceed || loading"
           >
-            <span>下一步</span>
+            <span>{{ $t('taskWizard.nextStep') }}</span>
             <el-icon><ArrowRight /></el-icon>
           </button>
           
@@ -250,7 +250,7 @@
           >
             <el-icon v-if="loading"><Loading /></el-icon>
             <el-icon v-else><Check /></el-icon>
-            <span>{{ copyFromTask ? '创建副本' : '创建任务' }}</span>
+            <span>{{ copyFromTask ? $t('taskWizard.createCopy') : $t('taskWizard.createTask') }}</span>
           </button>
         </div>
       </div>
@@ -260,6 +260,7 @@
 
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   FolderOpened, FolderAdd, Setting, Check,
@@ -271,6 +272,8 @@ import TargetSelector from './TargetSelector.vue'
 import TaskParameters from './TaskParameters.vue'
 import TaskConfirmation from './TaskConfirmation.vue'
 import axios from 'axios'
+
+const { t } = useI18n()
 
 const props = defineProps({
   visible: {
@@ -297,26 +300,26 @@ const extractedTargetConfig = ref(null)
 // 步骤配置
 const steps = ref([
   {
-    title: '选择源端',
-    description: '选择源端存储和文件',
+    title: t('taskWizard.steps.selectSource'),
+    description: t('taskWizard.steps.selectSourceDesc'),
     icon: FolderOpened,
     iconClass: 'step-icon-source'
   },
   {
-    title: '选择目标端', 
-    description: '选择目标端存储和路径',
+    title: t('taskWizard.steps.selectTarget'), 
+    description: t('taskWizard.steps.selectTargetDesc'),
     icon: FolderAdd,
     iconClass: 'step-icon-target'
   },
   {
-    title: '任务参数',
-    description: '配置同步参数',
+    title: t('taskWizard.steps.configureParameters'),
+    description: t('taskWizard.steps.configureParametersDesc'),
     icon: Setting,
     iconClass: 'step-icon-settings'
   },
   {
-    title: '确认配置',
-    description: '确认并创建任务',
+    title: t('taskWizard.steps.confirmConfig'),
+    description: t('taskWizard.steps.confirmConfigDesc'),
     icon: Check,
     iconClass: 'step-icon-confirm'
   }
@@ -611,7 +614,7 @@ const handleConfirm = () => {
 
 const createTask = async () => {
   if (!canCreate.value) {
-    ElMessage.warning('请完善所有必要的配置信息')
+    ElMessage.warning(t('taskWizard.messages.completeAllRequiredConfig'))
     return
   }
 
@@ -625,15 +628,15 @@ const createTask = async () => {
     const response = await axios.post('/api/tasks', taskData)
     
     if (response.data.status === 'success') {
-      ElMessage.success('任务创建成功')
+      ElMessage.success(t('taskWizard.messages.taskCreatedSuccess'))
       emit('created', response.data.data)
       resetWizard()
       emit('update:visible', false)
     } else {
-      ElMessage.error(response.data.message || '创建任务失败')
+      ElMessage.error(response.data.message || t('taskWizard.messages.createTaskFailed'))
     }
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '创建任务失败')
+    ElMessage.error(error.response?.data?.message || t('taskWizard.messages.createTaskFailed'))
   } finally {
     loading.value = false
   }

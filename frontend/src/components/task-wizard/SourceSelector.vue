@@ -3,14 +3,14 @@
     <!-- 存储选择 -->
     <div class="storage-selection">
       <el-form :model="form" label-width="120px">
-        <el-form-item label="源端存储" required>
+        <el-form-item :label="$t('sourceSelector.sourceStorage')" required>
           <el-select 
             v-model="form.selectedStorageId" 
-            placeholder="请选择源端存储" 
+            :placeholder="$t('sourceSelector.selectSourceStorage')" 
             style="width: 100%"
             @change="handleStorageChange"
           >
-            <el-option-group label="NAS 存储">
+            <el-option-group :label="$t('sourceSelector.nasStorage')">
               <el-option
                 v-for="storage in nasStorages"
                 :key="storage.id"
@@ -27,12 +27,12 @@
                     :type="storage.config.is_mounted ? 'success' : 'warning'" 
                     size="small"
                   >
-                    {{ storage.config.is_mounted ? '已挂载' : '未挂载' }}
+                    {{ storage.config.is_mounted ? $t('sourceSelector.mounted') : $t('sourceSelector.notMounted') }}
                   </el-tag>
                 </div>
               </el-option>
             </el-option-group>
-            <el-option-group label="OBS 存储">
+            <el-option-group :label="$t('sourceSelector.obsStorage')">
               <el-option
                 v-for="storage in obsStorages"
                 :key="storage.id"
@@ -59,19 +59,19 @@
     <!-- 目录树选择 -->
     <div v-if="selectedStorage" class="directory-tree">
       <div class="tree-header">
-        <h4>选择要同步的目录或文件</h4>
+        <h4>{{ $t('sourceSelector.selectDirectoriesFiles') }}</h4>
         <div class="tree-actions">
           <el-button @click="refreshTree" :loading="loading" size="small">
             <Icon icon="mdi:refresh" />
-            刷新
+            {{ $t('sourceSelector.refresh') }}
           </el-button>
           <el-button @click="expandAll" size="small">
             <Icon icon="mdi:arrow-expand-all" />
-            展开全部
+            {{ $t('sourceSelector.expandAll') }}
           </el-button>
           <el-button @click="collapseAll" size="small">
             <Icon icon="mdi:arrow-collapse-all" />
-            收起全部
+            {{ $t('sourceSelector.collapseAll') }}
           </el-button>
         </div>
       </div>
@@ -152,22 +152,22 @@
           <div class="summary-header">
             <div class="summary-info">
               <span class="count">
-                已选择 {{ showOptimizedView ? selectedItems.length : originalSelectedItems.length }} 项
+                {{ $t('sourceSelector.selectedItems', { count: showOptimizedView ? selectedItems.length : originalSelectedItems.length }) }}
                 <span v-if="showOptimizedView && originalSelectedItems.length > selectedItems.length" class="compression-info">
-                  (原始: {{ originalSelectedItems.length }})
+                  ({{ $t('sourceSelector.original') }}: {{ originalSelectedItems.length }})
                 </span>
               </span>
               <span v-if="hasRecursiveSelection" class="recursive-hint">
                 <el-icon><InfoFilled /></el-icon>
-                包含子目录
+                {{ $t('sourceSelector.includeSubdirectories') }}
               </span>
             </div>
             <div class="summary-actions">
               <el-button @click="toggleSelectionMode" size="small" type="primary" plain>
-                {{ showOptimizedView ? '显示详细' : '智能压缩' }}
+                {{ showOptimizedView ? $t('sourceSelector.showDetailed') : $t('sourceSelector.smartCompression') }}
               </el-button>
               <el-button @click="clearSelection" size="small" type="danger" plain>
-                清空选择
+                {{ $t('sourceSelector.clearSelection') }}
               </el-button>
             </div>
           </div>
@@ -180,7 +180,7 @@
               <el-icon>
                 <component :is="group.icon" />
               </el-icon>
-              <span>{{ group.title }}</span>
+              <span>{{ $t(group.titleKey) }}</span>
               <el-badge :value="group.items.length" class="group-badge" />
             </div>
             <div class="group-items">
@@ -227,22 +227,22 @@
         <div class="selection-stats">
           <el-row :gutter="16">
             <el-col :span="8">
-              <div class="stat-item">
-                <span class="stat-label">目录：</span>
-                <span class="stat-value">{{ directoryCount }}</span>
-              </div>
-            </el-col>
-            <el-col :span="8">
-              <div class="stat-item">
-                <span class="stat-label">文件：</span>
-                <span class="stat-value">{{ fileCount }}</span>
-              </div>
-            </el-col>
-            <el-col :span="8">
-              <div class="stat-item">
-                <span class="stat-label">递归：</span>
-                <span class="stat-value">{{ recursiveCount }}</span>
-              </div>
+                          <div class="stat-item">
+              <span class="stat-label">{{ $t('sourceSelector.directories') }}：</span>
+              <span class="stat-value">{{ directoryCount }}</span>
+            </div>
+          </el-col>
+          <el-col :span="8">
+            <div class="stat-item">
+              <span class="stat-label">{{ $t('sourceSelector.files') }}：</span>
+              <span class="stat-value">{{ fileCount }}</span>
+            </div>
+          </el-col>
+          <el-col :span="8">
+            <div class="stat-item">
+              <span class="stat-label">{{ $t('sourceSelector.recursive') }}：</span>
+              <span class="stat-value">{{ recursiveCount }}</span>
+            </div>
             </el-col>
           </el-row>
         </div>
@@ -253,10 +253,13 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Icon } from '@iconify/vue'
 import { InfoFilled, FolderOpened, Folder, Document } from '@element-plus/icons-vue'
 import axios from 'axios'
+
+const { t } = useI18n()
 
 const props = defineProps({
   modelValue: {
