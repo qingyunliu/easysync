@@ -36,20 +36,30 @@ export function setLocale(locale) {
   // 设置 HTML lang 属性
   document.documentElement.lang = locale;
 
-  // 设置 Element Plus 语言
+  // 更新Element Plus的locale
   if (locale === "zh-CN") {
     import("element-plus/dist/locale/zh-cn.mjs").then((module) => {
-      i18n.global.setLocaleMessage("zh-CN", {
-        ...i18n.global.getLocaleMessage("zh-CN"),
-        el: module.default,
-      });
+      // 更新全局配置
+      if (window.$ELEMENT) {
+        window.$ELEMENT.locale = module.default;
+      }
+      // 更新app实例的全局配置
+      const app = document.querySelector("#app").__vue_app__;
+      if (app && app.config.globalProperties.$ELEMENT) {
+        app.config.globalProperties.$ELEMENT.locale = module.default;
+      }
     });
   } else {
     import("element-plus/dist/locale/en.mjs").then((module) => {
-      i18n.global.setLocaleMessage("en-US", {
-        ...i18n.global.getLocaleMessage("en-US"),
-        el: module.default,
-      });
+      // 更新全局配置
+      if (window.$ELEMENT) {
+        window.$ELEMENT.locale = module.default;
+      }
+      // 更新app实例的全局配置
+      const app = document.querySelector("#app").__vue_app__;
+      if (app && app.config.globalProperties.$ELEMENT) {
+        app.config.globalProperties.$ELEMENT.locale = module.default;
+      }
     });
   }
 }

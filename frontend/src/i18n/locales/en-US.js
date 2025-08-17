@@ -1481,4 +1481,96 @@ export default {
     progressDisplay: "Progress Display",
     progressDisplayTip: "Show detailed transfer progress",
   },
+
+  // Notifications Management Module
+  notifications: {
+    // Page Title
+    pageTitle: "Notifications",
+    pageDescription:
+      "Manage and view system notification messages, control notification reception and display",
+
+    // Action Buttons
+    markAllAsRead: "Mark All as Read",
+    clearAllMessages: "Clear All Messages",
+    refresh: "Refresh",
+
+    // Statistics
+    totalMessages: "Total Messages",
+    unreadMessages: "Unread Messages",
+    infoType: "Info Type",
+    warningError: "Warning/Error",
+
+    // Filters
+    messageLevel: "Message Level",
+    readStatus: "Read Status",
+    messageType: "Message Type",
+    searchNotifications: "Search notifications",
+    createdTime: "Created Time",
+    notificationDetails: "Notification Details",
+    markAsRead: "Mark as Read",
+    markAsUnread: "Mark as Unread",
+    noNotifications: "No notification messages",
+    refreshPage: "Refresh Page",
+    all: "All",
+    info: "Info",
+    warning: "Warning",
+    error: "Error",
+    success: "Success",
+    unread: "Unread",
+    read: "Read",
+
+    // Message Types
+    types: {
+      system: "System Notification",
+      task: "Task Notification",
+      storage: "Storage Notification",
+      user: "User Notification",
+    },
+
+    // Message Types (for filters)
+    systemNotification: "System Notification",
+    taskNotification: "Task Notification",
+    storageNotification: "Storage Notification",
+    userNotification: "User Notification",
+
+    // Message Levels
+    levels: {
+      info: "Info",
+      success: "Success",
+      warning: "Warning",
+      error: "Error",
+      unknown: "Unknown",
+    },
+
+    // Time Format
+    time: {
+      justNow: "Just now",
+      minutesAgo: "{minutes} minutes ago",
+      hoursAgo: "{hours} hours ago",
+      daysAgo: "{days} days ago",
+    },
+
+    // Messages
+    messages: {
+      markedAsRead: "Marked as read",
+      markAsReadFailed: "Failed to mark as read",
+      noUnreadMessages: "No unread messages",
+      confirmMarkAllAsRead:
+        "Are you sure you want to mark all unread messages as read?",
+      markedMultipleAsRead: "Marked {count} messages as read",
+      markAllAsReadFailed: "Failed to mark all as read",
+      confirmClearAll:
+        "Are you sure you want to clear all notification messages? This action cannot be undone.",
+      confirmClear: "Confirm Clear",
+      confirmClearButton: "Confirm Clear",
+      clearedAllMessages: "All notification messages cleared",
+      clearAllFailed: "Failed to clear notifications",
+      confirmDelete: 'Are you sure you want to delete notification "{title}"?',
+      notificationDeleted: "Notification deleted",
+      deleteFailed: "Failed to delete notification",
+      markedAsUnread: "Marked as unread",
+      markAsUnreadFailed: "Failed to mark as unread",
+      getNotificationsFailed: "Failed to get notifications list",
+    },
+  },
 };

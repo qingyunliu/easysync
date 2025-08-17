@@ -922,7 +922,8 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - OBS 到 NAS 选项 (obsToNasOptions): 25+ 个键值对
 - NAS 到 OBS 选项 (nasToObsOptions): 25+ 个键值对
 - NAS 到 NAS 选项 (nasToNasOptions): 20+ 个键值对
-- **总计**: 700+ 个翻译键值对
+- 通知管理 (notifications): 55+ 个键值对
+- **总计**: 755+ 个翻译键值对
 
 **英文语言包 (en-US.js)**
 
@@ -942,7 +943,78 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - OBS 到 NAS 选项 (obsToNasOptions): 25+ 个键值对
 - NAS 到 OBS 选项 (nasToObsOptions): 25+ 个键值对
 - NAS 到 NAS 选项 (nasToNasOptions): 20+ 个键值对
-- **总计**: 700+ 个翻译键值对
+- 通知管理 (notifications): 55+ 个键值对
+- **总计**: 755+ 个翻译键值对
+
+### Notifications.vue 国际化完成度：100% ✅
+
+**已完成内容：**
+
+**1. 页面标题和描述**
+
+- ✅ 页面标题 (`notifications.pageTitle`)
+- ✅ 页面描述 (`notifications.pageDescription`)
+
+**2. 操作按钮**
+
+- ✅ 全部已读按钮 (`notifications.markAllAsRead`)
+- ✅ 清空消息按钮 (`notifications.clearAllMessages`)
+- ✅ 刷新按钮 (`notifications.refresh`)
+
+**3. 统计信息面板**
+
+- ✅ 总消息数 (`notifications.totalMessages`)
+- ✅ 未读消息 (`notifications.unreadMessages`)
+- ✅ 信息类型 (`notifications.infoType`)
+- ✅ 警告/错误 (`notifications.warningError`)
+
+**4. 过滤器**
+
+- ✅ 消息级别占位符 (`notifications.messageLevel`)
+- ✅ 阅读状态占位符 (`notifications.readStatus`)
+- ✅ 消息类型占位符 (`notifications.messageType`)
+- ✅ 搜索通知内容占位符 (`notifications.searchNotifications`)
+- ✅ 过滤器选项：全部、信息、警告、错误、成功、未读、已读 (`notifications.all`, `notifications.info`, `notifications.warning`, `notifications.error`, `notifications.success`, `notifications.unread`, `notifications.read`)
+- ✅ 消息类型过滤器选项：系统通知、任务通知、存储通知、用户通知 (`notifications.systemNotification`, `notifications.taskNotification`, `notifications.storageNotification`, `notifications.userNotification`)
+
+**5. 空状态和按钮**
+
+- ✅ 暂无通知消息 (`notifications.noNotifications`)
+- ✅ 刷新页面按钮 (`notifications.refreshPage`)
+
+**6. 下拉菜单项**
+
+- ✅ 标为未读 (`notifications.markAsUnread`)
+- ✅ 标为已读 (`notifications.markAsRead`)
+- ✅ 删除 (`common.delete`)
+
+**7. 详情弹窗**
+
+- ✅ 通知详情标题 (`notifications.notificationDetails`)
+- ✅ 创建时间标签 (`notifications.createdTime`)
+- ✅ 阅读状态标签 (`notifications.readStatus`)
+- ✅ 关闭按钮 (`common.close`)
+- ✅ 标记已读按钮 (`notifications.markAsRead`)
+
+**8. 消息提示**
+
+- ✅ 标记已读成功/失败 (`notifications.messages.markedAsRead`, `notifications.messages.markAsReadFailed`)
+- ✅ 批量标记已读确认/成功/失败 (`notifications.messages.confirmMarkAllAsRead`, `notifications.messages.markedMultipleAsRead`, `notifications.messages.markAllAsReadFailed`)
+- ✅ 清空消息确认/成功/失败 (`notifications.messages.confirmClearAll`, `notifications.messages.clearedAllMessages`, `notifications.messages.clearAllFailed`)
+- ✅ 删除通知确认/成功/失败 (`notifications.messages.confirmDelete`, `notifications.messages.notificationDeleted`, `notifications.messages.deleteFailed`)
+- ✅ 标记未读成功/失败 (`notifications.messages.markedAsUnread`, `notifications.messages.markAsUnreadFailed`)
+- ✅ 获取通知列表失败 (`notifications.messages.getNotificationsFailed`)
+
+**9. 函数文本**
+
+- ✅ 消息级别标签 (`notifications.levels.*`)
+- ✅ 消息类型标签 (`notifications.types.*`)
+- ✅ 时间格式 (`notifications.time.*`)
+
+**10. 分页组件国际化**
+
+- ✅ Element Plus locale 配置
+- ✅ 动态语言切换支持
 
 ## 下一步计划
 

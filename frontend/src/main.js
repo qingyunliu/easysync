@@ -3,6 +3,8 @@ import { createPinia } from "pinia";
 import ElementPlus from "element-plus";
 import { ElMessage, ElMessageBox } from "element-plus";
 import "element-plus/dist/index.css";
+import zhCn from "element-plus/dist/locale/zh-cn.mjs";
+import en from "element-plus/dist/locale/en.mjs";
 import App from "./App.vue";
 import router from "./router";
 import "./assets/theme.css";
@@ -140,6 +142,27 @@ registerErrorHandler(app);
 app.use(createPinia());
 app.use(router);
 app.use(i18n);
-app.use(ElementPlus);
+
+// 根据当前语言设置Element Plus的locale
+const currentLocale = localStorage.getItem("locale") || "zh-CN";
+const elementLocale = currentLocale === "zh-CN" ? zhCn : en;
+
+// 配置Element Plus
+app.use(ElementPlus, {
+  locale: elementLocale,
+});
+
+// 设置Element Plus的全局配置
+app.config.globalProperties.$ELEMENT = {
+  locale: elementLocale,
+};
+
+// 设置全局$ELEMENT配置
+window.$ELEMENT = {
+  locale: elementLocale,
+};
+
+// 提供Element Plus的locale配置给所有组件
+app.provide("elementLocale", elementLocale);
 
 app.mount("#app");

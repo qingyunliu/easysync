@@ -1445,4 +1445,93 @@ export default {
     progressDisplay: "进度显示",
     progressDisplayTip: "显示详细的传输进度",
   },
+
+  // 通知管理模块
+  notifications: {
+    // 页面标题
+    pageTitle: "消息通知",
+    pageDescription: "管理和查看系统通知消息，控制通知的接收和展示",
+
+    // 操作按钮
+    markAllAsRead: "全部已读",
+    clearAllMessages: "清空消息",
+    refresh: "刷新",
+
+    // 统计信息
+    totalMessages: "总消息数",
+    unreadMessages: "未读消息",
+    infoType: "信息类型",
+    warningError: "警告/错误",
+
+    // 过滤器
+    messageLevel: "消息级别",
+    readStatus: "阅读状态",
+    messageType: "消息类型",
+    searchNotifications: "搜索通知内容",
+    createdTime: "创建时间",
+    notificationDetails: "通知详情",
+    markAsRead: "标记已读",
+    markAsUnread: "标为未读",
+    noNotifications: "暂无通知消息",
+    refreshPage: "刷新页面",
+    all: "全部",
+    info: "信息",
+    warning: "警告",
+    error: "错误",
+    success: "成功",
+    unread: "未读",
+    read: "已读",
+
+    // 消息类型
+    types: {
+      system: "系统通知",
+      task: "任务通知",
+      storage: "存储通知",
+      user: "用户通知",
+    },
+
+    // 消息类型（用于过滤器）
+    systemNotification: "系统通知",
+    taskNotification: "任务通知",
+    storageNotification: "存储通知",
+    userNotification: "用户通知",
+
+    // 消息级别
+    levels: {
+      info: "信息",
+      success: "成功",
+      warning: "警告",
+      error: "错误",
+      unknown: "未知",
+    },
+
+    // 时间格式
+    time: {
+      justNow: "刚刚",
+      minutesAgo: "{minutes}分钟前",
+      hoursAgo: "{hours}小时前",
+      daysAgo: "{days}天前",
+    },
+
+    // 消息提示
+    messages: {
+      markedAsRead: "已标记为已读",
+      markAsReadFailed: "标记已读失败",
+      noUnreadMessages: "没有未读消息",
+      confirmMarkAllAsRead: "确定要将所有未读消息标记为已读吗？",
+      markedMultipleAsRead: "已将 {count} 条消息标记为已读",
+      markAllAsReadFailed: "批量标记已读失败",
+      confirmClearAll: "确定要清空所有通知消息吗？此操作不可恢复。",
+      confirmClear: "确认清空",
+      confirmClearButton: "确定清空",
+      clearedAllMessages: "已清空所有通知消息",
+      clearAllFailed: "清空通知失败",
+      confirmDelete: '确定要删除通知"{title}"吗？',
+      notificationDeleted: "通知已删除",
+      deleteFailed: "删除通知失败",
+      markedAsUnread: "已标记为未读",
+      markAsUnreadFailed: "标记未读失败",
+      getNotificationsFailed: "获取通知列表失败",
+    },
+  },
 };

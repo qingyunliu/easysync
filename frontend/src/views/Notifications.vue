@@ -3,17 +3,17 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h1>消息通知</h1>
-        <p class="page-description">管理和查看系统通知消息，控制通知的接收和展示</p>
+        <h1>{{ $t('notifications.pageTitle') }}</h1>
+        <p class="page-description">{{ $t('notifications.pageDescription') }}</p>
       </div>
       <div class="header-right">
         <el-button type="primary" @click="markAllAsRead" :disabled="!hasUnreadNotifications">
           <el-icon><Check /></el-icon>
-          全部已读
+          {{ $t('notifications.markAllAsRead') }}
         </el-button>
         <el-button @click="clearAllNotifications" :disabled="notifications.length === 0">
           <el-icon><Delete /></el-icon>
-          清空消息
+          {{ $t('notifications.clearAllMessages') }}
         </el-button>
       </div>
     </div>
@@ -28,7 +28,7 @@
             </div>
             <div>
               <div class="stat-number">{{ stats.total || 0 }}</div>
-              <div class="stat-label">总消息数</div>
+              <div class="stat-label">{{ $t('notifications.totalMessages') }}</div>
             </div>
           </div>
         </el-card>
@@ -41,7 +41,7 @@
             </div>
             <div>
               <div class="stat-number">{{ stats.unread || 0 }}</div>
-              <div class="stat-label">未读消息</div>
+              <div class="stat-label">{{ $t('notifications.unreadMessages') }}</div>
             </div>
           </div>
         </el-card>
@@ -54,7 +54,7 @@
             </div>
             <div>
               <div class="stat-number">{{ stats.info || 0 }}</div>
-              <div class="stat-label">信息类型</div>
+              <div class="stat-label">{{ $t('notifications.infoType') }}</div>
             </div>
           </div>
         </el-card>
@@ -67,7 +67,7 @@
             </div>
             <div>
               <div class="stat-number">{{ stats.warning || 0 }}</div>
-              <div class="stat-label">警告/错误</div>
+              <div class="stat-label">{{ $t('notifications.warningError') }}</div>
             </div>
           </div>
         </el-card>
@@ -78,33 +78,33 @@
     <el-card class="filter-card" shadow="never">
       <div class="filter-container">
         <div class="filter-left">
-          <el-select v-model="filters.level" placeholder="消息级别" style="width: 120px" @change="handleFilterChange">
-            <el-option label="全部" value="" />
-            <el-option label="信息" value="info" />
-            <el-option label="警告" value="warning" />
-            <el-option label="错误" value="error" />
-            <el-option label="成功" value="success" />
+          <el-select v-model="filters.level" :placeholder="$t('notifications.messageLevel')" style="width: 120px" @change="handleFilterChange">
+            <el-option :label="$t('notifications.all')" value="" />
+            <el-option :label="$t('notifications.info')" value="info" />
+            <el-option :label="$t('notifications.warning')" value="warning" />
+            <el-option :label="$t('notifications.error')" value="error" />
+            <el-option :label="$t('notifications.success')" value="success" />
           </el-select>
           
-          <el-select v-model="filters.status" placeholder="阅读状态" style="width: 120px" @change="handleFilterChange">
-            <el-option label="全部" value="" />
-            <el-option label="未读" value="unread" />
-            <el-option label="已读" value="read" />
+          <el-select v-model="filters.status" :placeholder="$t('notifications.readStatus')" style="width: 120px" @change="handleFilterChange">
+            <el-option :label="$t('notifications.all')" value="" />
+            <el-option :label="$t('notifications.unread')" value="unread" />
+            <el-option :label="$t('notifications.read')" value="read" />
           </el-select>
           
-          <el-select v-model="filters.type" placeholder="消息类型" style="width: 140px" @change="handleFilterChange">
-            <el-option label="全部" value="" />
-            <el-option label="系统通知" value="system" />
-            <el-option label="任务通知" value="task" />
-            <el-option label="存储通知" value="storage" />
-            <el-option label="用户通知" value="user" />
+          <el-select v-model="filters.type" :placeholder="$t('notifications.messageType')" style="width: 140px" @change="handleFilterChange">
+            <el-option :label="$t('notifications.all')" value="" />
+            <el-option :label="$t('notifications.systemNotification')" value="system" />
+            <el-option :label="$t('notifications.taskNotification')" value="task" />
+            <el-option :label="$t('notifications.storageNotification')" value="storage" />
+            <el-option :label="$t('notifications.userNotification')" value="user" />
           </el-select>
         </div>
         
         <div class="filter-right">
           <el-input
             v-model="filters.keyword"
-            placeholder="搜索通知内容"
+            :placeholder="$t('notifications.searchNotifications')"
             style="width: 250px"
             @input="handleSearch"
             clearable
@@ -115,7 +115,7 @@
           </el-input>
           <el-button @click="refreshNotifications" :loading="loading">
             <el-icon><Refresh /></el-icon>
-            刷新
+            {{ $t('notifications.refresh') }}
           </el-button>
         </div>
       </div>
@@ -125,8 +125,8 @@
     <el-card class="notifications-card">
       <div v-loading="loading" class="notifications-container">
         <div v-if="filteredNotifications.length === 0" class="empty-state">
-          <el-empty description="暂无通知消息">
-            <el-button type="primary" @click="refreshNotifications">刷新页面</el-button>
+          <el-empty :description="$t('notifications.noNotifications')">
+            <el-button type="primary" @click="refreshNotifications">{{ $t('notifications.refreshPage') }}</el-button>
           </el-empty>
         </div>
         
@@ -162,11 +162,11 @@
                       <el-dropdown-menu>
                         <el-dropdown-item :command="notification.is_read ? 'mark-unread' : 'mark-read'">
                           <el-icon><Check /></el-icon>
-                          {{ notification.is_read ? '标为未读' : '标为已读' }}
+                          {{ notification.is_read ? $t('notifications.markAsUnread') : $t('notifications.markAsRead') }}
                         </el-dropdown-item>
                         <el-dropdown-item command="delete" divided>
                           <el-icon><Delete /></el-icon>
-                          删除
+                          {{ $t('common.delete') }}
                         </el-dropdown-item>
                       </el-dropdown-menu>
                     </template>
@@ -191,6 +191,7 @@
             :page-sizes="[10, 20, 50, 100]"
             :total="filteredNotifications.length"
             layout="total, sizes, prev, pager, next"
+            :locale="elementLocale"
             @size-change="handlePageSizeChange"
             @current-change="handleCurrentChange"
           />
@@ -201,7 +202,7 @@
     <!-- 通知详情弹窗 -->
     <el-dialog 
       v-model="detailDialog.visible" 
-      :title="detailDialog.notification?.title || '通知详情'"
+      :title="detailDialog.notification?.title || $t('notifications.notificationDetails')"
       width="600px"
       @open="handleDetailDialogOpen"
     >
@@ -224,26 +225,26 @@
         
         <div class="detail-meta">
           <div class="meta-item">
-            <span class="meta-label">创建时间：</span>
+            <span class="meta-label">{{ $t('notifications.createdTime') }}：</span>
             <span>{{ formatTime(detailDialog.notification.created_at) }}</span>
           </div>
           <div class="meta-item">
-            <span class="meta-label">阅读状态：</span>
+            <span class="meta-label">{{ $t('notifications.readStatus') }}：</span>
             <el-tag :type="detailDialog.notification.is_read ? 'success' : 'warning'" size="small">
-              {{ detailDialog.notification.is_read ? '已读' : '未读' }}
+              {{ detailDialog.notification.is_read ? $t('notifications.read') : $t('notifications.unread') }}
             </el-tag>
           </div>
         </div>
       </div>
       
       <template #footer>
-        <el-button @click="detailDialog.visible = false">关闭</el-button>
+        <el-button @click="detailDialog.visible = false">{{ $t('common.close') }}</el-button>
         <el-button 
           v-if="!detailDialog.notification?.is_read" 
           type="primary" 
           @click="markAsReadFromDetail"
         >
-          标记已读
+          {{ $t('notifications.markAsRead') }}
         </el-button>
       </template>
     </el-dialog>
@@ -252,7 +253,10 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import zhCn from "element-plus/dist/locale/zh-cn.mjs";
+import en from "element-plus/dist/locale/en.mjs";
 import {
   Bell,
   Check,
@@ -268,6 +272,13 @@ import {
   QuestionFilled
 } from '@element-plus/icons-vue'
 import axios from 'axios'
+
+const { t, locale } = useI18n()
+
+// Element Plus的locale配置
+const elementLocale = computed(() => {
+  return locale.value === "zh-CN" ? zhCn : en;
+});
 
 // 响应式数据
 const loading = ref(false)
@@ -361,7 +372,7 @@ const fetchNotifications = async () => {
     )
   } catch (error) {
     console.error('获取通知列表失败:', error)
-    ElMessage.error('获取通知列表失败')
+    ElMessage.error(t('notifications.messages.getNotificationsFailed'))
   } finally {
     loading.value = false
   }
@@ -416,10 +427,10 @@ const markAsRead = async (notificationId) => {
       notification.is_read = true
     }
     
-    ElMessage.success('已标记为已读')
+    ElMessage.success(t('notifications.messages.markedAsRead'))
   } catch (error) {
     console.error('标记已读失败:', error)
-    ElMessage.error('标记已读失败')
+    ElMessage.error(t('notifications.messages.markAsReadFailed'))
   }
 }
 
@@ -428,11 +439,11 @@ const markAllAsRead = async () => {
     const unreadIds = notifications.value.filter(n => !n.is_read).map(n => n.id)
     
     if (unreadIds.length === 0) {
-      ElMessage.info('没有未读消息')
+      ElMessage.info(t('notifications.messages.noUnreadMessages'))
       return
     }
 
-    await ElMessageBox.confirm('确定要将所有未读消息标记为已读吗？', '确认操作', {
+    await ElMessageBox.confirm(t('notifications.messages.confirmMarkAllAsRead'), t('common.confirm'), {
       type: 'warning'
     })
 
@@ -445,32 +456,32 @@ const markAllAsRead = async () => {
       if (!n.is_read) n.is_read = true
     })
 
-    ElMessage.success(`已将 ${unreadIds.length} 条消息标记为已读`)
+    ElMessage.success(t('notifications.messages.markedMultipleAsRead', { count: unreadIds.length }))
   } catch (error) {
     if (error !== 'cancel') {
       console.error('批量标记已读失败:', error)
-      ElMessage.error('批量标记已读失败')
+      ElMessage.error(t('notifications.messages.markAllAsReadFailed'))
     }
   }
 }
 
 const clearAllNotifications = async () => {
   try {
-    await ElMessageBox.confirm('确定要清空所有通知消息吗？此操作不可恢复。', '确认清空', {
+    await ElMessageBox.confirm(t('notifications.messages.confirmClearAll'), t('notifications.messages.confirmClear'), {
       type: 'warning',
-      confirmButtonText: '确定清空',
-      cancelButtonText: '取消'
+      confirmButtonText: t('notifications.messages.confirmClearButton'),
+      cancelButtonText: t('common.cancel')
     })
 
     const promises = notifications.value.map(n => axios.delete(`/api/notifications/${n.id}`))
     await Promise.all(promises)
 
     notifications.value = []
-    ElMessage.success('已清空所有通知消息')
+    ElMessage.success(t('notifications.messages.clearedAllMessages'))
   } catch (error) {
     if (error !== 'cancel') {
       console.error('清空通知失败:', error)
-      ElMessage.error('清空通知失败')
+      ElMessage.error(t('notifications.messages.clearAllFailed'))
     }
   }
 }
@@ -499,16 +510,16 @@ const markAsUnread = async (notificationId) => {
       notification.is_read = false
     }
     
-    ElMessage.success('已标记为未读')
+    ElMessage.success(t('notifications.messages.markedAsUnread'))
   } catch (error) {
     console.error('标记未读失败:', error)
-    ElMessage.error('标记未读失败')
+    ElMessage.error(t('notifications.messages.markAsUnreadFailed'))
   }
 }
 
 const deleteNotification = async (notification) => {
   try {
-    await ElMessageBox.confirm(`确定要删除通知"${notification.title}"吗？`, '确认删除', {
+    await ElMessageBox.confirm(t('notifications.messages.confirmDelete', { title: notification.title }), t('common.confirmDelete'), {
       type: 'warning'
     })
 
@@ -520,11 +531,11 @@ const deleteNotification = async (notification) => {
       notifications.value.splice(index, 1)
     }
 
-    ElMessage.success('通知已删除')
+    ElMessage.success(t('notifications.messages.notificationDeleted'))
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除通知失败:', error)
-      ElMessage.error('删除通知失败')
+      ElMessage.error(t('notifications.messages.deleteFailed'))
     }
   }
 }
@@ -542,12 +553,12 @@ const getLevelIcon = (level) => {
 
 const getLevelLabel = (level) => {
   const labelMap = {
-    info: '信息',
-    success: '成功',
-    warning: '警告',
-    error: '错误'
+    info: t('notifications.levels.info'),
+    success: t('notifications.levels.success'),
+    warning: t('notifications.levels.warning'),
+    error: t('notifications.levels.error')
   }
-  return labelMap[level] || '未知'
+  return labelMap[level] || t('notifications.levels.unknown')
 }
 
 const getTypeTagType = (type) => {
@@ -562,10 +573,10 @@ const getTypeTagType = (type) => {
 
 const getTypeLabel = (type) => {
   const labelMap = {
-    system: '系统通知',
-    task: '任务通知',
-    storage: '存储通知',
-    user: '用户通知'
+    system: t('notifications.types.system'),
+    task: t('notifications.types.task'),
+    storage: t('notifications.types.storage'),
+    user: t('notifications.types.user')
   }
   return labelMap[type] || type
 }
@@ -582,15 +593,15 @@ const formatTime = (timeStr) => {
   const day = 24 * hour
   
   if (diff < minute) {
-    return '刚刚'
+    return t('notifications.time.justNow')
   } else if (diff < hour) {
-    return `${Math.floor(diff / minute)}分钟前`
+    return t('notifications.time.minutesAgo', { minutes: Math.floor(diff / minute) })
   } else if (diff < day) {
-    return `${Math.floor(diff / hour)}小时前`
+    return t('notifications.time.hoursAgo', { hours: Math.floor(diff / hour) })
   } else if (diff < 7 * day) {
-    return `${Math.floor(diff / day)}天前`
+    return t('notifications.time.daysAgo', { days: Math.floor(diff / day) })
   } else {
-    return date.toLocaleDateString('zh-CN')
+    return date.toLocaleDateString()
   }
 }
 </script>
