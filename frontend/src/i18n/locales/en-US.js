@@ -1573,4 +1573,101 @@ export default {
       getNotificationsFailed: "Failed to get notifications list",
     },
   },
+
+  // Events Management Module
+  events: {
+    // Page Title
+    pageTitle: "Event Management",
+    pageDescription: "View and manage system events, monitor alert triggers",
+
+    // Action Buttons
+    refreshData: "Refresh Data",
+    exportData: "Export Data",
+    cleanupEvents: "Cleanup Old Events",
+
+    // Statistics
+    totalEvents: "Total Events",
+    failedEvents: "Failed Events",
+    alertCount: "Alert Count",
+    todayEvents: "Today's Events",
+
+    // Filters
+    selectEventType: "Select Event Type",
+    selectEventAction: "Select Event Action",
+    selectEventResult: "Select Event Result",
+    allTypes: "All Types",
+    allActions: "All Actions",
+    allResults: "All Results",
+    storageEvent: "Storage Event",
+    clientEvent: "Client Event",
+    agentEvent: "Agent Event",
+    systemEvent: "System Event",
+    to: "to",
+    startTime: "Start Time",
+    endTime: "End Time",
+    resetFilters: "Reset Filters",
+    applyFilters: "Apply Filters",
+
+    // Event List
+    eventList: "Event List",
+    totalRecords: "Total {count} records",
+    eventId: "Event ID",
+    eventType: "Event Type",
+    eventAction: "Event Action",
+    eventResult: "Event Result",
+    eventMessage: "Event Message",
+    time: "Time",
+    actions: "Actions",
+    details: "Details",
+
+    // Event Details
+    eventDetails: "Event Details",
+    userId: "User ID",
+    clientId: "Client ID",
+    nodeId: "Node ID",
+    createTime: "Create Time",
+    eventTime: "Event Time",
+    detailedInfo: "Detailed Information",
+
+    // Cleanup Events
+    retentionDays: "Retention Days",
+    enterRetentionDays: "Please enter retention days",
+    cleanupTip: "Will delete event records older than specified days",
+    confirmCleanup: "Confirm Cleanup",
+
+    // Event Types
+    storage: "Storage",
+    client: "Client",
+    agent: "Agent",
+    system: "System",
+
+    // Event Actions
+    create: "Create",
+    update: "Update",
+    delete: "Delete",
+    connect: "Connect",
+    disconnect: "Disconnect",
+    testConnection: "Test Connection",
+    listBuckets: "List Buckets",
+    listObjects: "List Objects",
+    listFiles: "List Files",
+    download: "Download",
+    mountCheck: "Mount Check",
+
+    // Event Results
+    success: "Success",
+    failed: "Failed",
+    timeout: "Timeout",
+    error: "Error",
+    warning: "Warning",
+
+    // Messages
+    messages: {
+      exportSuccess: "Event data exported successfully",
+      exportFailed: "Export failed",
+      cleanupSuccess: "Successfully cleaned up {count} old event records",
+      cleanupFailed: "Cleanup failed",
+      getEventsFailed: "Failed to get events list",
+    },
+  },
 };

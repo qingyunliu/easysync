@@ -1534,4 +1534,101 @@ export default {
       getNotificationsFailed: "获取通知列表失败",
     },
   },
+
+  // 事件管理模块
+  events: {
+    // 页面标题
+    pageTitle: "事件管理",
+    pageDescription: "查看和管理系统事件，监控告警触发情况",
+
+    // 操作按钮
+    refreshData: "刷新数据",
+    exportData: "导出数据",
+    cleanupEvents: "清理旧事件",
+
+    // 统计信息
+    totalEvents: "总事件数",
+    failedEvents: "失败事件",
+    alertCount: "告警数量",
+    todayEvents: "今日事件",
+
+    // 过滤器
+    selectEventType: "选择事件类型",
+    selectEventAction: "选择事件动作",
+    selectEventResult: "选择事件结果",
+    allTypes: "全部类型",
+    allActions: "全部动作",
+    allResults: "全部结果",
+    storageEvent: "存储事件",
+    clientEvent: "客户端事件",
+    agentEvent: "代理事件",
+    systemEvent: "系统事件",
+    to: "至",
+    startTime: "开始时间",
+    endTime: "结束时间",
+    resetFilters: "重置筛选",
+    applyFilters: "应用筛选",
+
+    // 事件列表
+    eventList: "事件列表",
+    totalRecords: "共 {count} 条记录",
+    eventId: "事件ID",
+    eventType: "事件类型",
+    eventAction: "事件动作",
+    eventResult: "事件结果",
+    eventMessage: "事件消息",
+    time: "时间",
+    actions: "操作",
+    details: "详情",
+
+    // 事件详情
+    eventDetails: "事件详情",
+    userId: "用户ID",
+    clientId: "客户端ID",
+    nodeId: "节点ID",
+    createTime: "创建时间",
+    eventTime: "事件时间",
+    detailedInfo: "详细信息",
+
+    // 清理事件
+    retentionDays: "保留天数",
+    enterRetentionDays: "请输入保留天数",
+    cleanupTip: "将删除指定天数之前的事件记录",
+    confirmCleanup: "确认清理",
+
+    // 事件类型
+    storage: "存储",
+    client: "客户端",
+    agent: "代理",
+    system: "系统",
+
+    // 事件动作
+    create: "创建",
+    update: "更新",
+    delete: "删除",
+    connect: "连接",
+    disconnect: "断开",
+    testConnection: "测试连接",
+    listBuckets: "获取存储桶",
+    listObjects: "获取对象",
+    listFiles: "获取文件",
+    download: "下载",
+    mountCheck: "检查挂载",
+
+    // 事件结果
+    success: "成功",
+    failed: "失败",
+    timeout: "超时",
+    error: "错误",
+    warning: "警告",
+
+    // 消息提示
+    messages: {
+      exportSuccess: "事件数据导出成功",
+      exportFailed: "导出失败",
+      cleanupSuccess: "成功清理 {count} 条旧事件记录",
+      cleanupFailed: "清理失败",
+      getEventsFailed: "获取事件列表失败",
+    },
+  },
 };

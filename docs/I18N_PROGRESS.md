@@ -923,7 +923,8 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - NAS 到 OBS 选项 (nasToObsOptions): 25+ 个键值对
 - NAS 到 NAS 选项 (nasToNasOptions): 20+ 个键值对
 - 通知管理 (notifications): 55+ 个键值对
-- **总计**: 755+ 个翻译键值对
+- 事件管理 (events): 70+ 个键值对
+- **总计**: 825+ 个翻译键值对
 
 **英文语言包 (en-US.js)**
 
@@ -944,7 +945,8 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - NAS 到 OBS 选项 (nasToObsOptions): 25+ 个键值对
 - NAS 到 NAS 选项 (nasToNasOptions): 20+ 个键值对
 - 通知管理 (notifications): 55+ 个键值对
-- **总计**: 755+ 个翻译键值对
+- 事件管理 (events): 70+ 个键值对
+- **总计**: 825+ 个翻译键值对
 
 ### Notifications.vue 国际化完成度：100% ✅
 
@@ -1015,6 +1017,72 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 
 - ✅ Element Plus locale 配置
 - ✅ 动态语言切换支持
+
+### Events.vue 国际化完成度：100% ✅
+
+**已完成内容：**
+
+**1. 页面标题和描述**
+
+- ✅ 页面标题 (`events.pageTitle`)
+- ✅ 页面描述 (`events.pageDescription`)
+
+**2. 操作按钮**
+
+- ✅ 刷新数据按钮 (`events.refreshData`)
+- ✅ 导出数据按钮 (`events.exportData`)
+- ✅ 清理旧事件按钮 (`events.cleanupEvents`)
+
+**3. 统计信息面板**
+
+- ✅ 总事件数 (`events.totalEvents`)
+- ✅ 失败事件 (`events.failedEvents`)
+- ✅ 告警数量 (`events.alertCount`)
+- ✅ 今日事件 (`events.todayEvents`)
+
+**4. 过滤器**
+
+- ✅ 事件类型选择器 (`events.selectEventType`)
+- ✅ 事件动作选择器 (`events.selectEventAction`)
+- ✅ 事件结果选择器 (`events.selectEventResult`)
+- ✅ 时间范围选择器 (`events.to`, `events.startTime`, `events.endTime`)
+- ✅ 过滤器选项：全部类型、存储事件、客户端事件、代理事件、系统事件
+- ✅ 事件动作选项：创建、更新、删除、连接、断开
+- ✅ 事件结果选项：成功、失败、超时、错误、警告
+- ✅ 重置筛选和应用筛选按钮
+
+**5. 事件列表**
+
+- ✅ 事件列表标题 (`events.eventList`)
+- ✅ 总记录数显示 (`events.totalRecords`)
+- ✅ 表格列标题：事件 ID、事件类型、事件动作、事件结果、事件消息、时间、操作
+- ✅ 详情按钮 (`events.details`)
+
+**6. 事件详情对话框**
+
+- ✅ 事件详情标题 (`events.eventDetails`)
+- ✅ 详细信息标签：事件 ID、事件类型、事件动作、事件结果、用户 ID、客户端 ID、节点 ID、创建时间、事件时间、事件消息
+- ✅ 详细信息标题 (`events.detailedInfo`)
+
+**7. 清理事件对话框**
+
+- ✅ 清理旧事件标题 (`events.cleanupEvents`)
+- ✅ 保留天数字段 (`events.retentionDays`, `events.enterRetentionDays`)
+- ✅ 清理提示信息 (`events.cleanupTip`)
+- ✅ 确认清理按钮 (`events.confirmCleanup`)
+- ✅ 取消按钮 (`common.cancel`)
+
+**8. 工具函数**
+
+- ✅ 事件类型标签 (`events.storage`, `events.client`, `events.agent`, `events.system`)
+- ✅ 事件动作标签 (`events.create`, `events.update`, `events.delete`, `events.connect`, `events.disconnect`, `events.testConnection`, `events.listBuckets`, `events.listObjects`, `events.listFiles`, `events.download`, `events.mountCheck`)
+- ✅ 事件结果标签 (`events.success`, `events.failed`, `events.timeout`, `events.error`, `events.warning`)
+
+**9. 消息提示**
+
+- ✅ 导出成功/失败 (`events.messages.exportSuccess`, `events.messages.exportFailed`)
+- ✅ 清理成功/失败 (`events.messages.cleanupSuccess`, `events.messages.cleanupFailed`)
+- ✅ 获取事件列表失败 (`events.messages.getEventsFailed`)
 
 ## 下一步计划
 

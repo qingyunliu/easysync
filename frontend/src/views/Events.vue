@@ -3,21 +3,21 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h1>事件管理</h1>
-        <p class="page-description">查看和管理系统事件，监控告警触发情况</p>
+        <h1>{{ $t('events.pageTitle') }}</h1>
+        <p class="page-description">{{ $t('events.pageDescription') }}</p>
       </div>
       <div class="header-right">
         <el-button type="primary" @click="refreshEvents" :loading="loading">
           <el-icon><Refresh /></el-icon>
-          刷新数据
+          {{ $t('events.refreshData') }}
         </el-button>
         <el-button @click="exportEvents">
           <el-icon><Download /></el-icon>
-          导出数据
+          {{ $t('events.exportData') }}
         </el-button>
         <el-button @click="cleanupEvents">
           <el-icon><Delete /></el-icon>
-          清理旧事件
+          {{ $t('events.cleanupEvents') }}
         </el-button>
       </div>
     </div>
@@ -32,7 +32,7 @@
             </div>
             <div class="stats-info">
               <div class="stats-value">{{ statistics.total_events || 0 }}</div>
-              <div class="stats-label">总事件数</div>
+              <div class="stats-label">{{ $t('events.totalEvents') }}</div>
             </div>
           </div>
         </el-card>
@@ -46,7 +46,7 @@
             </div>
             <div class="stats-info">
               <div class="stats-value">{{ statistics.event_results?.failed || 0 }}</div>
-              <div class="stats-label">失败事件</div>
+              <div class="stats-label">{{ $t('events.failedEvents') }}</div>
             </div>
           </div>
         </el-card>
@@ -60,7 +60,7 @@
             </div>
             <div class="stats-info">
               <div class="stats-value">{{ alertStatistics.total_alerts || 0 }}</div>
-              <div class="stats-label">告警数量</div>
+              <div class="stats-label">{{ $t('events.alertCount') }}</div>
             </div>
           </div>
         </el-card>
@@ -74,7 +74,7 @@
             </div>
             <div class="stats-info">
               <div class="stats-value">{{ statistics.today_events || 0 }}</div>
-              <div class="stats-label">今日事件</div>
+              <div class="stats-label">{{ $t('events.todayEvents') }}</div>
             </div>
           </div>
         </el-card>
@@ -88,47 +88,47 @@
           <el-col :span="6">
             <el-select 
               v-model="filters.event_type" 
-              placeholder="选择事件类型" 
+              :placeholder="$t('events.selectEventType')" 
               clearable
               @change="handleFilterChange"
             >
-              <el-option label="全部类型" value="" />
-              <el-option label="存储事件" value="storage" />
-              <el-option label="客户端事件" value="client" />
-              <el-option label="代理事件" value="agent" />
-              <el-option label="系统事件" value="system" />
+              <el-option :label="$t('events.allTypes')" value="" />
+              <el-option :label="$t('events.storageEvent')" value="storage" />
+              <el-option :label="$t('events.clientEvent')" value="client" />
+              <el-option :label="$t('events.agentEvent')" value="agent" />
+              <el-option :label="$t('events.systemEvent')" value="system" />
             </el-select>
           </el-col>
           
           <el-col :span="6">
             <el-select 
               v-model="filters.event_action" 
-              placeholder="选择事件动作" 
+              :placeholder="$t('events.selectEventAction')" 
               clearable
               @change="handleFilterChange"
             >
-              <el-option label="全部动作" value="" />
-              <el-option label="创建" value="create" />
-              <el-option label="更新" value="update" />
-              <el-option label="删除" value="delete" />
-              <el-option label="连接" value="connect" />
-              <el-option label="断开" value="disconnect" />
+              <el-option :label="$t('events.allActions')" value="" />
+              <el-option :label="$t('events.create')" value="create" />
+              <el-option :label="$t('events.update')" value="update" />
+              <el-option :label="$t('events.delete')" value="delete" />
+              <el-option :label="$t('events.connect')" value="connect" />
+              <el-option :label="$t('events.disconnect')" value="disconnect" />
             </el-select>
           </el-col>
           
           <el-col :span="6">
             <el-select 
               v-model="filters.event_result" 
-              placeholder="选择事件结果" 
+              :placeholder="$t('events.selectEventResult')" 
               clearable
               @change="handleFilterChange"
             >
-              <el-option label="全部结果" value="" />
-              <el-option label="成功" value="success" />
-              <el-option label="失败" value="failed" />
-              <el-option label="超时" value="timeout" />
-              <el-option label="错误" value="error" />
-              <el-option label="警告" value="warning" />
+              <el-option :label="$t('events.allResults')" value="" />
+              <el-option :label="$t('events.success')" value="success" />
+              <el-option :label="$t('events.failed')" value="failed" />
+              <el-option :label="$t('events.timeout')" value="timeout" />
+              <el-option :label="$t('events.error')" value="error" />
+              <el-option :label="$t('events.warning')" value="warning" />
             </el-select>
           </el-col>
           
@@ -136,9 +136,9 @@
             <el-date-picker
               v-model="filters.time_range"
               type="datetimerange"
-              range-separator="至"
-              start-placeholder="开始时间"
-              end-placeholder="结束时间"
+              :range-separator="$t('events.to')"
+              :start-placeholder="$t('events.startTime')"
+              :end-placeholder="$t('events.endTime')"
               format="YYYY-MM-DD HH:mm:ss"
               value-format="YYYY-MM-DD HH:mm:ss"
               @change="handleFilterChange"
@@ -147,8 +147,8 @@
         </el-row>
         
         <div class="filter-actions">
-          <el-button @click="resetFilters">重置筛选</el-button>
-          <el-button type="primary" @click="loadEvents">应用筛选</el-button>
+          <el-button @click="resetFilters">{{ $t('events.resetFilters') }}</el-button>
+          <el-button type="primary" @click="loadEvents">{{ $t('events.applyFilters') }}</el-button>
         </div>
       </div>
     </el-card>
@@ -158,10 +158,10 @@
       <div class="card-header">
         <div class="card-title">
           <el-icon class="title-icon"><List /></el-icon>
-          <span>事件列表</span>
+          <span>{{ $t('events.eventList') }}</span>
         </div>
         <div class="card-stats">
-          <span class="stats-text">共 {{ pagination.total }} 条记录</span>
+          <span class="stats-text">{{ $t('events.totalRecords', { count: pagination.total }) }}</span>
         </div>
       </div>
 
@@ -173,7 +173,7 @@
           stripe
           v-loading="loading"
         >
-          <el-table-column prop="id" label="事件ID" width="280" align="center">
+          <el-table-column prop="id" :label="$t('events.eventId')" width="280" align="center">
             <template #default="scope">
               <el-tooltip :content="scope.row.id" placement="top">
                 <span class="event-id">{{ scope.row.id.substring(0, 8) }}...</span>
@@ -181,7 +181,7 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="event_type" label="事件类型" width="120" align="center">
+          <el-table-column prop="event_type" :label="$t('events.eventType')" width="120" align="center">
             <template #default="scope">
               <el-tag 
                 :type="getEventTypeColor(scope.row.event_type)"
@@ -193,7 +193,7 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="event_action" label="事件动作" width="120" align="center">
+          <el-table-column prop="event_action" :label="$t('events.eventAction')" width="120" align="center">
             <template #default="scope">
               <el-tag 
                 :type="getEventActionColor(scope.row.event_action)"
@@ -205,7 +205,7 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="event_result" label="事件结果" width="100" align="center">
+          <el-table-column prop="event_result" :label="$t('events.eventResult')" width="100" align="center">
             <template #default="scope">
               <el-tag 
                 :type="getEventResultColor(scope.row.event_result)"
@@ -217,7 +217,7 @@
             </template>
           </el-table-column>
           
-          <el-table-column prop="message" label="事件消息" min-width="200">
+          <el-table-column prop="message" :label="$t('events.eventMessage')" min-width="200">
             <template #default="scope">
               <div class="event-message">
                 <el-tooltip :content="scope.row.message" placement="top">
@@ -227,7 +227,7 @@
             </template>
           </el-table-column>
           
-          <el-table-column label="时间" width="180" align="center">
+          <el-table-column :label="$t('events.time')" width="180" align="center">
             <template #default="scope">
               <div class="time-info">
                 <el-icon class="time-icon"><Clock /></el-icon>
@@ -236,14 +236,14 @@
             </template>
           </el-table-column>
           
-          <el-table-column label="操作" width="120" align="center">
+          <el-table-column :label="$t('events.actions')" width="120" align="center">
             <template #default="scope">
               <el-button 
                 type="primary" 
                 size="small" 
                 @click="viewEventDetail(scope.row)"
               >
-                详情
+                {{ $t('events.details') }}
               </el-button>
             </template>
           </el-table-column>
@@ -267,38 +267,38 @@
     <!-- 事件详情对话框 -->
     <el-dialog
       v-model="eventDetailVisible"
-      title="事件详情"
+      :title="$t('events.eventDetails')"
       width="800px"
       :before-close="handleCloseEventDetail"
     >
       <div v-if="selectedEvent" class="event-detail">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="事件ID">{{ selectedEvent.id }}</el-descriptions-item>
-          <el-descriptions-item label="事件类型">
+          <el-descriptions-item :label="$t('events.eventId')">{{ selectedEvent.id }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('events.eventType')">
             <el-tag :type="getEventTypeColor(selectedEvent.event_type)">
               {{ getEventTypeLabel(selectedEvent.event_type) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="事件动作">
+          <el-descriptions-item :label="$t('events.eventAction')">
             <el-tag :type="getEventActionColor(selectedEvent.event_action)">
               {{ getEventActionLabel(selectedEvent.event_action) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="事件结果">
+          <el-descriptions-item :label="$t('events.eventResult')">
             <el-tag :type="getEventResultColor(selectedEvent.event_result)">
               {{ getEventResultLabel(selectedEvent.event_result) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="用户ID">{{ selectedEvent.user_id }}</el-descriptions-item>
-          <el-descriptions-item label="客户端ID">{{ selectedEvent.client_id || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="节点ID">{{ selectedEvent.node_id || '-' }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间">{{ formatTime(selectedEvent.created_at) }}</el-descriptions-item>
-          <el-descriptions-item label="事件时间" :span="2">{{ formatTime(selectedEvent.timestamp) }}</el-descriptions-item>
-          <el-descriptions-item label="事件消息" :span="2">{{ selectedEvent.message }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('events.userId')">{{ selectedEvent.user_id }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('events.clientId')">{{ selectedEvent.client_id || '-' }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('events.nodeId')">{{ selectedEvent.node_id || '-' }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('events.createTime')">{{ formatTime(selectedEvent.created_at) }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('events.eventTime')" :span="2">{{ formatTime(selectedEvent.timestamp) }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('events.eventMessage')" :span="2">{{ selectedEvent.message }}</el-descriptions-item>
         </el-descriptions>
         
         <div class="event-details-section">
-          <h4>详细信息</h4>
+          <h4>{{ $t('events.detailedInfo') }}</h4>
           <el-card class="details-card">
             <pre>{{ JSON.stringify(selectedEvent.details, null, 2) }}</pre>
           </el-card>
@@ -309,28 +309,28 @@
     <!-- 清理事件对话框 -->
     <el-dialog
       v-model="cleanupDialogVisible"
-      title="清理旧事件"
+      :title="$t('events.cleanupEvents')"
       width="500px"
     >
       <div class="cleanup-form">
         <el-form :model="cleanupForm" label-width="120px">
-          <el-form-item label="保留天数">
+          <el-form-item :label="$t('events.retentionDays')">
             <el-input-number 
               v-model="cleanupForm.days" 
               :min="1" 
               :max="365"
-              placeholder="请输入保留天数"
+              :placeholder="$t('events.enterRetentionDays')"
             />
-            <div class="form-tip">将删除指定天数之前的事件记录</div>
+            <div class="form-tip">{{ $t('events.cleanupTip') }}</div>
           </el-form-item>
         </el-form>
       </div>
       
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="cleanupDialogVisible = false">取消</el-button>
+          <el-button @click="cleanupDialogVisible = false">{{ $t('common.cancel') }}</el-button>
           <el-button type="primary" @click="confirmCleanup" :loading="cleanupLoading">
-            确认清理
+            {{ $t('events.confirmCleanup') }}
           </el-button>
         </span>
       </template>
@@ -340,6 +340,7 @@
 
 <script>
 import { ref, reactive, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { 
   Refresh, 
@@ -368,6 +369,8 @@ export default {
     Clock
   },
   setup() {
+    const { t } = useI18n()
+    
     // 响应式数据
     const loading = ref(false)
     const events = ref([])
@@ -418,7 +421,7 @@ export default {
           pagination.per_page = response.data.per_page
         }
       } catch (error) {
-        ElMessage.error('获取事件列表失败')
+        ElMessage.error(t('events.getEventsFailed'))
         console.error('Error loading events:', error)
       } finally {
         loading.value = false
@@ -522,9 +525,9 @@ export default {
         document.body.removeChild(link)
         window.URL.revokeObjectURL(url)
         
-        ElMessage.success('事件数据导出成功')
+        ElMessage.success(t('events.exportSuccess'))
       } catch (error) {
-        ElMessage.error('导出失败')
+        ElMessage.error(t('events.exportFailed'))
         console.error('Error exporting events:', error)
       }
     }
@@ -540,13 +543,13 @@ export default {
       try {
         const response = await axios.post('/api/events/cleanup', cleanupForm)
         if (response.data.status === 'success') {
-          ElMessage.success(`成功清理 ${response.data.data.deleted_count} 条旧事件记录`)
+          ElMessage.success(t('events.cleanupSuccess', { count: response.data.data.deleted_count }))
           cleanupDialogVisible.value = false
           loadEvents()
           loadStatistics()
         }
       } catch (error) {
-        ElMessage.error('清理失败')
+        ElMessage.error(t('events.cleanupFailed'))
         console.error('Error cleaning up events:', error)
       } finally {
         cleanupLoading.value = false
@@ -571,10 +574,10 @@ export default {
 
     const getEventTypeLabel = (type) => {
       const labels = {
-        storage: '存储',
-        client: '客户端',
-        agent: '代理',
-        system: '系统'
+        storage: t('events.storage'),
+        client: t('events.client'),
+        agent: t('events.agent'),
+        system: t('events.system')
       }
       return labels[type] || type
     }
@@ -593,17 +596,17 @@ export default {
 
     const getEventActionLabel = (action) => {
       const labels = {
-        create: '创建',
-        update: '更新',
-        delete: '删除',
-        connect: '连接',
-        disconnect: '断开',
-        test_connection: '测试连接',
-        list_buckets: '获取存储桶',
-        list_objects: '获取对象',
-        list_files: '获取文件',
-        download: '下载',
-        mount_check: '检查挂载'
+        create: t('events.create'),
+        update: t('events.update'),
+        delete: t('events.delete'),
+        connect: t('events.connect'),
+        disconnect: t('events.disconnect'),
+        test_connection: t('events.testConnection'),
+        list_buckets: t('events.listBuckets'),
+        list_objects: t('events.listObjects'),
+        list_files: t('events.listFiles'),
+        download: t('events.download'),
+        mount_check: t('events.mountCheck')
       }
       return labels[action] || action
     }
@@ -621,11 +624,11 @@ export default {
 
     const getEventResultLabel = (result) => {
       const labels = {
-        success: '成功',
-        failed: '失败',
-        timeout: '超时',
-        error: '错误',
-        warning: '警告'
+        success: t('events.success'),
+        failed: t('events.failed'),
+        timeout: t('events.timeout'),
+        error: t('events.error'),
+        warning: t('events.warning')
       }
       return labels[result] || result
     }
