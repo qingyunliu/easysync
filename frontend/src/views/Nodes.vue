@@ -4,25 +4,25 @@
   <div class="page-header">
     <div class="header-content">
       <div class="header-left">
-        <h1 class="page-title">同步代理节点管理</h1>
-        <p class="page-subtitle">管理您的EasySync-Proxy代理节点，用于执行数据同步任务</p>
+        <h1 class="page-title">{{ $t('nodes.pageTitle') }}</h1>
+        <p class="page-subtitle">{{ $t('nodes.pageSubtitle') }}</p>
       </div>
       <div class="header-actions">
         <el-button type="primary" @click="showAddDialog" class="action-btn">
           <el-icon><Plus /></el-icon>
-          添加代理节点
+          {{ $t('nodes.addProxyNode') }}
         </el-button>
         <el-button 
           type="info" 
           @click="toggleArchitecture"
           class="guide-btn"
-          :title="showArchitecture ? '隐藏流程引导' : '显示流程引导'"
+          :title="showArchitecture ? $t('nodes.hideProcessGuide') : $t('nodes.showProcessGuide')"
         >
           <el-icon>
             <View v-if="showArchitecture" />
             <Hide v-else />
           </el-icon>
-          流程引导
+          {{ $t('nodes.processGuide') }}
         </el-button>
       </div>
     </div>
@@ -35,8 +35,8 @@
         <template #header>
           <div class="card-header">
             <div class="header-left">
-              <h3>数据同步架构说明</h3>
-              <el-tag type="info">代理节点中枢式同步流程</el-tag>
+              <h3>{{ $t('nodes.architectureTitle') }}</h3>
+              <el-tag type="info">{{ $t('nodes.architectureSubtitle') }}</el-tag>
             </div>
           </div>
         </template>
@@ -46,7 +46,7 @@
               <div class="storage-icon">
                 <el-icon><FolderOpened /></el-icon>
               </div>
-              <div class="storage-label">存储资源A<br/>(NAS/OBS/NFS/本地)</div>
+              <div class="storage-label">{{ $t('nodes.storageResourceA') }}<br/>({{ $t('nodes.storageTypes') }})</div>
             </div>
             <div class="sync-arrows">
               <el-icon class="arrow-left"><ArrowLeft /></el-icon>
@@ -56,8 +56,8 @@
               <div class="proxy-icon">
                 <el-icon><Connection /></el-icon>
               </div>
-              <div class="proxy-label">同步代理节点<br/>(SyncProxy)</div>
-              <div class="proxy-desc">负责挂载两端存储，执行数据同步任务<br/>支持双向同步、任务分发、状态监控</div>
+              <div class="proxy-label">{{ $t('nodes.syncProxyNode') }}<br/>(SyncProxy)</div>
+              <div class="proxy-desc">{{ $t('nodes.proxyDescription') }}<br/>{{ $t('nodes.proxyFeatures') }}</div>
             </div>
             <div class="sync-arrows">
               <el-icon class="arrow-left"><ArrowLeft /></el-icon>
@@ -67,45 +67,45 @@
               <div class="storage-icon">
                 <el-icon><FolderOpened /></el-icon>
               </div>
-              <div class="storage-label">存储资源B<br/>(NAS/OBS/NFS/本地)</div>
+              <div class="storage-label">{{ $t('nodes.storageResourceB') }}<br/>({{ $t('nodes.storageTypes') }})</div>
             </div>
           </div>
           <div class="central-arch-notes">
             <el-alert type="info" show-icon :closable="false" style="margin-bottom: 18px;">
               <template #title>
-                <strong>说明：</strong> 同步代理节点作为中枢，挂载/连接两端存储资源，支持任意方向的数据同步与转发。任务可灵活分配到多台代理节点，实现高可用与负载均衡。
+                <strong>{{ $t('nodes.description') }}：</strong> {{ $t('nodes.architectureDescription') }}
               </template>
             </el-alert>
           </div>
           <div class="usage-guide">
-            <h4>使用指南</h4>
+            <h4>{{ $t('nodes.usageGuide') }}</h4>
             <div class="guide-steps">
               <div class="guide-step">
                 <div class="step-number">1</div>
                 <div class="step-content">
-                  <strong>添加代理节点</strong>
-                  <p>注册一台或多台服务器作为SyncProxy，作为同步中枢</p>
+                  <strong>{{ $t('nodes.step1Title') }}</strong>
+                  <p>{{ $t('nodes.step1Description') }}</p>
                 </div>
               </div>
               <div class="guide-step">
                 <div class="step-number">2</div>
                 <div class="step-content">
-                  <strong>挂载存储资源</strong>
-                  <p>确保代理节点能访问并挂载两端存储（如NAS、OBS、NFS等）</p>
+                  <strong>{{ $t('nodes.step2Title') }}</strong>
+                  <p>{{ $t('nodes.step2Description') }}</p>
                 </div>
               </div>
               <div class="guide-step">
                 <div class="step-number">3</div>
                 <div class="step-content">
-                  <strong>配置同步任务</strong>
-                  <p>选择任意两端存储和代理节点，系统自动分配任务，支持双向同步</p>
+                  <strong>{{ $t('nodes.step3Title') }}</strong>
+                  <p>{{ $t('nodes.step3Description') }}</p>
                 </div>
               </div>
               <div class="guide-step">
                 <div class="step-number">4</div>
                 <div class="step-content">
-                  <strong>执行与监控</strong>
-                  <p>代理节点负责数据搬运、同步、状态上报，支持多节点高可用</p>
+                  <strong>{{ $t('nodes.step4Title') }}</strong>
+                  <p>{{ $t('nodes.step4Description') }}</p>
                 </div>
               </div>
             </div>
@@ -124,7 +124,7 @@
         </div>
         <div class="stat-content">
           <div class="stat-value">{{ stats?.online || "0" }} </div>
-          <div class="stat-label">在线服务器</div>
+          <div class="stat-label">{{ $t('nodes.onlineServers') }}</div>
         </div>
       </div>
       <div class="stat-card">
@@ -133,7 +133,7 @@
         </div>
         <div class="stat-content">
           <div class="stat-value">{{ stats?.offline || "0" }} </div>
-          <div class="stat-label">离线服务器</div>
+          <div class="stat-label">{{ $t('nodes.offlineServers') }}</div>
         </div>
       </div>
       <div class="stat-card">
@@ -142,7 +142,7 @@
         </div>
         <div class="stat-content">
           <div class="stat-value">{{ stats?.running || "0" }} </div>
-          <div class="stat-label">运行中Agent</div>
+          <div class="stat-label">{{ $t('nodes.runningAgents') }}</div>
         </div>
       </div>
       <div class="stat-card">
@@ -151,7 +151,7 @@
         </div>
         <div class="stat-content">
           <div class="stat-value">{{ stats?.pending || "0" }} </div>
-          <div class="stat-label">待安装Agent</div>
+          <div class="stat-label">{{ $t('nodes.pendingAgents') }}</div>
         </div>
       </div>
     </div>
@@ -161,31 +161,31 @@
         <template #header>
           <div class="card-header">
             <div class="header-left">
-              <h3>节点列表</h3>
-              <el-tag type="info" size="small">{{ nodes.length }}台节点</el-tag>
+              <h3>{{ $t('nodes.nodeList') }}</h3>
+              <el-tag type="info" size="small">{{ nodes.length }}{{ $t('nodes.nodesCount') }}</el-tag>
             </div>
             <div class="header-right">
               <div class="header">
                 <div class="header-actions">
-                  <el-select v-model="selectedGroup" placeholder="分组筛选" clearable style="width: 120px">
+                  <el-select v-model="selectedGroup" :placeholder="$t('nodes.groupFilter')" clearable style="width: 120px">
                     <el-option v-for="group in groupList" :key="group" :label="group" :value="group" />
                   </el-select>
-                  <el-select v-model="selectedTag" placeholder="标签筛选" clearable style="width: 120px">
+                  <el-select v-model="selectedTag" :placeholder="$t('nodes.tagFilter')" clearable style="width: 120px">
                     <el-option v-for="tag in tagList" :key="tag" :label="tag" :value="tag" />
                   </el-select>
-                  <el-select v-model="statusFilter" placeholder="状态筛选" style="width: 120px" @change="handleSearch" class="filter-select">
-                    <el-option label="全部" value="all" />
-                    <el-option label="在线" value="online" />
-                    <el-option label="离线" value="offline" />
-                    <el-option label="已安装Agent" value="agent_installed" />
-                    <el-option label="未安装Agent" value="agent_not_installed" />
+                  <el-select v-model="statusFilter" :placeholder="$t('nodes.statusFilter')" style="width: 120px" @change="handleSearch" class="filter-select">
+                    <el-option :label="$t('nodes.all')" value="all" />
+                    <el-option :label="$t('nodes.online')" value="online" />
+                    <el-option :label="$t('nodes.offline')" value="offline" />
+                    <el-option :label="$t('nodes.agentInstalled')" value="agent_installed" />
+                    <el-option :label="$t('nodes.agentNotInstalled')" value="agent_not_installed" />
                   </el-select>
-                  <el-button type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">批量删除</el-button>
-                  <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchGroupDialog">批量分组</el-button>
-                  <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchTagDialog">批量打标签</el-button>
+                  <el-button type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">{{ $t('nodes.batchDelete') }}</el-button>
+                  <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchGroupDialog">{{ $t('nodes.batchGroup') }}</el-button>
+                  <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchTagDialog">{{ $t('nodes.batchTag') }}</el-button>
                 </div>
               </div>
-              <el-input v-model="searchQuery" placeholder="搜索名称/IP" class="search-input" clearable @input="handleSearch">
+              <el-input v-model="searchQuery" :placeholder="$t('nodes.searchNameIp')" class="search-input" clearable @input="handleSearch">
                 <template #prefix>
                   <el-icon><Search /></el-icon>
                 </template>
@@ -199,7 +199,7 @@
         <div class="table-container">
           <el-table :data="filteredNodes" v-loading="loading" @selection-change="handleSelectionChange" style="width: 100%" class="nodes-table">
             <el-table-column type="selection" width="55" />
-            <el-table-column prop="name" label="名称" min-width="120">
+            <el-table-column prop="name" :label="$t('nodes.name')" min-width="120">
         <template #default="{ row }">
                 <div class="server-info server-name-link" @click="handleNameClick(row)">
                   <el-icon class="server-link-icon"><Monitor /></el-icon>
@@ -207,36 +207,36 @@
                 </div>
         </template>
       </el-table-column>
-            <el-table-column prop="group" label="分组" width="100">
+            <el-table-column prop="group" :label="$t('nodes.group')" width="100">
         <template #default="{ row }">
                 <el-tag v-if="row.group">{{ row.group }}</el-tag>
         </template>
       </el-table-column>
-            <el-table-column prop="tags" label="标签" width="140">
+            <el-table-column prop="tags" :label="$t('nodes.tags')" width="140">
         <template #default="{ row }">
                 <el-tag v-for="tag in (row.tags ? row.tags.split(',') : [])" :key="tag" type="info" style="margin-right: 2px;">{{ tag }}</el-tag>
         </template>
       </el-table-column>
-            <el-table-column prop="ipaddress" label="IP地址" min-width="120" />
-            <el-table-column prop="username" label="用户名" min-width="120" />
-            <el-table-column prop="port" label="端口" min-width="80" />
-            <el-table-column prop="status" label="状态" min-width="100">
+            <el-table-column prop="ipaddress" :label="$t('nodes.ipAddress')" min-width="120" />
+            <el-table-column prop="username" :label="$t('nodes.username')" min-width="120" />
+            <el-table-column prop="port" :label="$t('nodes.port')" min-width="80" />
+            <el-table-column prop="status" :label="$t('nodes.status')" min-width="100">
               <template #default="{ row }">
                 <el-tag :type="getStatusType(row.status)">{{ getStatusText(row.status) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="agent_status" label="Agent状态" min-width="120">
+            <el-table-column prop="agent_status" :label="$t('nodes.agentStatus')" min-width="120">
               <template #default="{ row }">
                 <el-tag :type="getAgentStatusType(row.agent_status)">{{ getAgentStatusText(row.agent_status) }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="last_heartbeat" label="最后心跳" min-width="160">
+            <el-table-column prop="last_heartbeat" :label="$t('nodes.lastHeartbeat')" min-width="160">
         <template #default="{ row }">
           {{ formatDate(row.last_heartbeat) }}
         </template>
       </el-table-column>
-            <el-table-column prop="description" label="备注" min-width="120" />
-            <el-table-column label="操作" min-width="200" fixed="right">
+            <el-table-column prop="description" :label="$t('nodes.description')" min-width="120" />
+            <el-table-column :label="$t('nodes.actions')" min-width="200" fixed="right">
         <template #default="{ row }">
                 <div class="action-buttons">
                   <el-button 
@@ -246,31 +246,31 @@
                     class="detail-btn"
                   >
                     <el-icon><View /></el-icon>
-                    详情
+                    {{ $t('nodes.details') }}
             </el-button>
                   <el-dropdown trigger="click" @command="handleNodeCommand">
                     <el-button size="small">
-                      更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                      {{ $t('nodes.more') }}<el-icon class="el-icon--right"><ArrowDown /></el-icon>
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item :command="{ action: 'edit', row }">
-                    <el-icon><Edit /></el-icon>编辑
+                    <el-icon><Edit /></el-icon>{{ $t('nodes.edit') }}
                   </el-dropdown-item>
                   <el-dropdown-item :command="{ action: 'test', row }">
-                    <el-icon><Connection /></el-icon>测试连接
+                    <el-icon><Connection /></el-icon>{{ $t('nodes.testConnection') }}
                   </el-dropdown-item>
                     <el-dropdown-item :command="{ action: 'install', row }" :disabled="row.status==='offline'">
-                    <el-icon><Download /></el-icon>安装Agent
+                    <el-icon><Download /></el-icon>{{ $t('nodes.installAgent') }}
                   </el-dropdown-item>
                     <el-dropdown-item :command="{ action: 'uninstall', row }" :disabled="row.status==='offline'">
-                    <el-icon><Remove /></el-icon>卸载Agent
+                    <el-icon><Remove /></el-icon>{{ $t('nodes.uninstallAgent') }}
                   </el-dropdown-item>
                   <el-dropdown-item :command="{ action: 'info', row }" :disabled="row.status==='offline'">
-                    <el-icon><InfoFilled /></el-icon>获取信息
+                    <el-icon><InfoFilled /></el-icon>{{ $t('nodes.getInfo') }}
                   </el-dropdown-item>
                   <el-dropdown-item divided :command="{ action: 'delete', row }">
-                    <el-icon><Delete /></el-icon>删除
+                    <el-icon><Delete /></el-icon>{{ $t('nodes.delete') }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
@@ -282,99 +282,99 @@
         </div>
       </el-card>
       <!-- 节点添加/编辑弹窗 -->
-      <el-dialog :title="dialogType === 'add' ? '添加节点' : '编辑节点'" v-model="dialogVisible" width="500px">
+      <el-dialog :title="dialogType === 'add' ? $t('nodes.addNode') : $t('nodes.editNode')" v-model="dialogVisible" width="500px">
         <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-          <el-form-item label="名称" prop="name"><el-input v-model="form.name" placeholder="请输入节点名称" /></el-form-item>
-          <el-form-item label="IP地址" prop="ipaddress"><el-input v-model="form.ipaddress" placeholder="请输入IP地址" /></el-form-item>
-          <el-form-item label="用户名" prop="username"><el-input v-model="form.username" placeholder="请输入用户名" /></el-form-item>
-          <el-form-item label="端口" prop="port"><el-input-number v-model="form.port" :min="1" :max="65535" /></el-form-item>
-        <el-form-item label="认证方式" prop="auth_type">
+          <el-form-item :label="$t('nodes.name')" prop="name"><el-input v-model="form.name" :placeholder="$t('nodes.enterNodeName')" /></el-form-item>
+          <el-form-item :label="$t('nodes.ipAddress')" prop="ipaddress"><el-input v-model="form.ipaddress" :placeholder="$t('nodes.enterIpAddress')" /></el-form-item>
+          <el-form-item :label="$t('nodes.username')" prop="username"><el-input v-model="form.username" :placeholder="$t('nodes.enterUsername')" /></el-form-item>
+          <el-form-item :label="$t('nodes.port')" prop="port"><el-input-number v-model="form.port" :min="1" :max="65535" /></el-form-item>
+        <el-form-item :label="$t('nodes.authType')" prop="auth_type">
           <el-radio-group v-model="form.auth_type">
-            <el-radio :value="'password'">密码认证</el-radio>
-            <el-radio :value="'key'">密钥认证</el-radio>
+            <el-radio :value="'password'">{{ $t('nodes.passwordAuth') }}</el-radio>
+            <el-radio :value="'key'">{{ $t('nodes.keyAuth') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-          <el-form-item v-if="form.auth_type === 'password'" label="密码" prop="password"><el-input v-model="form.password" type="password" placeholder="请输入密码" show-password /></el-form-item>
-          <el-form-item v-if="form.auth_type === 'key'" label="SSH密钥" prop="ssh_key"><el-input v-model="form.ssh_key" type="textarea" :rows="4" placeholder="请输入SSH密钥" /></el-form-item>
-          <el-form-item label="备注"><el-input v-model="form.description" type="textarea" :rows="2" placeholder="请输入备注信息" /></el-form-item>
+          <el-form-item v-if="form.auth_type === 'password'" :label="$t('nodes.password')" prop="password"><el-input v-model="form.password" type="password" :placeholder="$t('nodes.enterPassword')" show-password /></el-form-item>
+          <el-form-item v-if="form.auth_type === 'key'" :label="$t('nodes.sshKey')" prop="ssh_key"><el-input v-model="form.ssh_key" type="textarea" :rows="4" :placeholder="$t('nodes.enterSshKey')" /></el-form-item>
+          <el-form-item :label="$t('nodes.description')"><el-input v-model="form.description" type="textarea" :rows="2" :placeholder="$t('nodes.enterDescription')" /></el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="handleSubmit">确定</el-button>
+          <el-button @click="dialogVisible = false">{{ $t('nodes.cancel') }}</el-button>
+          <el-button type="primary" @click="handleSubmit">{{ $t('nodes.confirm') }}</el-button>
         </span>
       </template>
     </el-dialog>
       <!-- 安装/卸载Agent弹窗 -->
-      <el-dialog title="安装/卸载Agent" v-model="installDialogVisible" width="500px">
+      <el-dialog :title="$t('nodes.installUninstallAgent')" v-model="installDialogVisible" width="500px">
       <el-form :model="installForm" label-width="120px">
-          <el-form-item label="安装路径"><el-input v-model="installForm.install_path" placeholder="/opt/easysync/proxy" /></el-form-item>
-          <el-form-item label="配置参数"><el-input v-model="installForm.config" type="textarea" :rows="4" placeholder="请输入JSON格式的配置参数" /></el-form-item>
+          <el-form-item :label="$t('nodes.installPath')"><el-input v-model="installForm.install_path" placeholder="/opt/easysync/proxy" /></el-form-item>
+          <el-form-item :label="$t('nodes.configParams')"><el-input v-model="installForm.config" type="textarea" :rows="4" :placeholder="$t('nodes.enterJsonConfig')" /></el-form-item>
       </el-form>
       <template #footer>
         <span class="dialog-footer">
-          <el-button @click="installDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="confirmInstall">开始安装</el-button>
+          <el-button @click="installDialogVisible = false">{{ $t('nodes.cancel') }}</el-button>
+          <el-button type="primary" @click="confirmInstall">{{ $t('nodes.startInstall') }}</el-button>
         </span>
       </template>
     </el-dialog>
     <!-- 节点详情抽屉 -->
     <el-drawer
       v-model="drawerVisible"
-      title="节点详情"
+      :title="$t('nodes.nodeDetails')"
       direction="rtl"
         size="70%"
       :before-close="handleDrawerClose"
         class="client-drawer"
     >
-        <div class="drawer-content">
-          <el-tabs v-model="activeTab" class="detail-tabs">
+    <div class="drawer-content">
+      <el-tabs v-model="activeTab" class="detail-tabs">
         <!-- 基本信息标签页 -->
-        <el-tab-pane label="基本信息" name="basic">
-              <div class="detail-content">
+        <el-tab-pane :label="$t('nodes.basicInfo')" name="basic">
+          <div class="detail-content">
             <!-- 基本信息卡片 -->
             <el-card class="info-card">
               <template #header>
                 <div class="card-header">
-                  <span>基本信息</span>
+                  <span>{{ $t('nodes.basicInfo') }}</span>
                 </div>
               </template>
               <el-descriptions :column="2" border>
-                <el-descriptions-item label="节点名称">
+                <el-descriptions-item :label="$t('nodes.nodeName')">
                   <el-tag type="info">{{ currentNode.name }}</el-tag>
                 </el-descriptions-item>
-                    <el-descriptions-item label="分组">
+                    <el-descriptions-item :label="$t('nodes.group')">
                       <el-tag v-if="currentNode.group">{{ currentNode.group }}</el-tag>
                     </el-descriptions-item>
-                    <el-descriptions-item label="标签">
+                    <el-descriptions-item :label="$t('nodes.tags')">
                       <el-tag v-for="tag in (currentNode.tags ? currentNode.tags.split(',') : [])" :key="tag" type="info" style="margin-right: 2px;">{{ tag }}</el-tag>
                     </el-descriptions-item>
-                <el-descriptions-item label="IP地址">
+                <el-descriptions-item :label="$t('nodes.ipAddress')">
                   <el-tag type="success">{{ currentNode.ipaddress }}</el-tag>
                 </el-descriptions-item>
-                <el-descriptions-item label="状态">
+                <el-descriptions-item :label="$t('nodes.status')">
                       <el-tag :type="getStatusType(currentNode.status)">{{ getStatusText(currentNode.status) }}</el-tag>
                     </el-descriptions-item>
-                    <el-descriptions-item label="Agent状态">
+                    <el-descriptions-item :label="$t('nodes.agentStatus')">
                       <el-tag :type="getAgentStatusType(currentNode.agent_status)">{{ getAgentStatusText(currentNode.agent_status) }}</el-tag>
                 </el-descriptions-item>
-                <el-descriptions-item label="操作系统">
+                <el-descriptions-item :label="$t('nodes.operatingSystem')">
                   <el-tag type="success">{{ nodeDetail.os_type }}</el-tag>
                 </el-descriptions-item>
-                    <el-descriptions-item label="备注">{{ currentNode.description }}</el-descriptions-item>
+                    <el-descriptions-item :label="$t('nodes.description')">{{ currentNode.description }}</el-descriptions-item>
               </el-descriptions>
             </el-card>
             <!-- CPU信息卡片 -->
             <el-card class="info-card">
               <template #header>
                 <div class="card-header">
-                  <span>CPU信息</span>
+                  <span>{{ $t('nodes.cpuInfo') }}</span>
                 </div>
               </template>
               <div class="cpu-info">
                 <div v-for="(cpu, index) in nodeDetail.cpu_info" :key="index" class="cpu-item">
                   <el-tag type="primary">{{ cpu.model }}</el-tag>
-                  <span class="cpu-cores">{{ cpu.cores }}核</span>
+                  <span class="cpu-cores">{{ cpu.cores }}{{ $t('nodes.cores') }}</span>
                 </div>
               </div>
             </el-card>
@@ -382,7 +382,7 @@
             <el-card class="info-card">
               <template #header>
                 <div class="card-header">
-                  <span>内存信息</span>
+                  <span>{{ $t('nodes.memoryInfo') }}</span>
                 </div>
               </template>
               <div class="memory-info">
@@ -391,9 +391,9 @@
                   :status="getUsageStatus((nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100))"
                 />
                 <div class="memory-details">
-                  <span>总内存: {{ formatSize(nodeDetail.memory_info.total) }}</span>
-                  <span>已使用: {{ formatSize(nodeDetail.memory_info.used) }}</span>
-                  <span>可用: {{ formatSize(nodeDetail.memory_info.total - nodeDetail.memory_info.used) }}</span>
+                  <span>{{ $t('nodes.totalMemory') }}: {{ formatSize(nodeDetail.memory_info.total) }}</span>
+                  <span>{{ $t('nodes.usedMemory') }}: {{ formatSize(nodeDetail.memory_info.used) }}</span>
+                  <span>{{ $t('nodes.availableMemory') }}: {{ formatSize(nodeDetail.memory_info.total - nodeDetail.memory_info.used) }}</span>
                 </div>
               </div>
             </el-card>
@@ -401,7 +401,7 @@
             <el-card class="info-card">
               <template #header>
                 <div class="card-header">
-                  <span>磁盘信息</span>
+                  <span>{{ $t('nodes.diskInfo') }}</span>
                 </div>
               </template>
               <div class="disk-info">
@@ -415,9 +415,9 @@
                     :status="getUsageStatus(disk.usage)"
                   />
                   <div class="disk-details">
-                    <span>总容量: {{ formatSize(disk.total) }}</span>
-                    <span>已使用: {{ formatSize(disk.used) }}</span>
-                    <span>可用: {{ formatSize(disk.total - disk.used) }}</span>
+                    <span>{{ $t('nodes.totalCapacity') }}: {{ formatSize(disk.total) }}</span>
+                    <span>{{ $t('nodes.usedCapacity') }}: {{ formatSize(disk.used) }}</span>
+                    <span>{{ $t('nodes.availableCapacity') }}: {{ formatSize(disk.total - disk.used) }}</span>
                   </div>
                 </div>
               </div>
@@ -426,7 +426,7 @@
             <el-card class="info-card">
               <template #header>
                 <div class="card-header">
-                  <span>网卡信息</span>
+                  <span>{{ $t('nodes.networkInfo') }}</span>
                 </div>
               </template>
               <div class="network-info">
@@ -444,32 +444,32 @@
         </el-tab-pane>
 
         <!-- 监控数据标签页 -->
-        <el-tab-pane label="监控数据" name="monitor">
+        <el-tab-pane :label="$t('nodes.monitorData')" name="monitor">
               <div class="monitor-content">
                 <!-- 监控控制面板、图表等，参考Clients.vue -->
             <div class="monitor-control-panel">
               <div class="panel-section time-range-selector">
-                <span class="section-label">时间范围</span>
+                <span class="section-label">{{ $t('nodes.timeRange') }}</span>
                 <el-select 
                   v-model="timeRange" 
-                  placeholder="选择时间范围" 
+                  :placeholder="$t('nodes.selectTimeRange')" 
                   @change="handleTimeRangeChange"
                   size="default"
                   class="time-select"
                 >
-                  <el-option label="近10分钟" value="10m" />
-                  <el-option label="近15分钟" value="15m" />
-                  <el-option label="近1小时" value="1h" />
-                  <el-option label="近2小时" value="2h" />
-                  <el-option label="自定义" value="custom" />
+                  <el-option :label="$t('nodes.last10Minutes')" value="10m" />
+                  <el-option :label="$t('nodes.last15Minutes')" value="15m" />
+                  <el-option :label="$t('nodes.last1Hour')" value="1h" />
+                  <el-option :label="$t('nodes.last2Hours')" value="2h" />
+                  <el-option :label="$t('nodes.custom')" value="custom" />
                 </el-select>
                 <el-date-picker
                   v-if="timeRange === 'custom'"
                   v-model="customTimeRange"
                   type="datetimerange"
-                  range-separator="至"
-                  start-placeholder="开始时间"
-                  end-placeholder="结束时间"
+                  :range-separator="$t('nodes.to')"
+                  :start-placeholder="$t('nodes.startTime')"
+                  :end-placeholder="$t('nodes.endTime')"
                   size="default"
                   class="date-picker"
                   :default-time="[
@@ -480,7 +480,7 @@
                 />
               </div>
               <div class="panel-section refresh-controls">
-                <span class="section-label">刷新设置</span>
+                <span class="section-label">{{ $t('nodes.refreshSettings') }}</span>
                 <div class="refresh-group">
                   <el-button 
                     type="primary" 
@@ -490,13 +490,13 @@
                     class="refresh-button"
                   >
                     <el-icon><Refresh /></el-icon>
-                    <span>刷新</span>
+                    <span>{{ $t('nodes.refresh') }}</span>
                   </el-button>
 
                   <div class="auto-refresh-control">
                     <el-switch
                       v-model="autoRefresh"
-                      active-text="自动刷新"
+                      :active-text="$t('nodes.autoRefresh')"
                       inactive-text=""
                       class="refresh-switch"
                       @change="handleAutoRefreshChange"
@@ -504,17 +504,17 @@
                     <el-select
                       v-if="autoRefresh"
                       v-model="refreshInterval"
-                      placeholder="刷新间隔"
+                      :placeholder="$t('nodes.refreshInterval')"
                       @change="handleRefreshIntervalChange"
                       size="default"
                       class="interval-select"
                     >
-                      <el-option label="3秒" value="3" />
-                      <el-option label="5秒" value="5" />
-                      <el-option label="10秒" value="10" />
-                      <el-option label="30秒" value="30" />
-                      <el-option label="1分钟" value="60" />
-                      <el-option label="5分钟" value="300" />
+                      <el-option :label="$t('nodes.3Seconds')" value="3" />
+                      <el-option :label="$t('nodes.5Seconds')" value="5" />
+                      <el-option :label="$t('nodes.10Seconds')" value="10" />
+                      <el-option :label="$t('nodes.30Seconds')" value="30" />
+                      <el-option :label="$t('nodes.1Minute')" value="60" />
+                      <el-option :label="$t('nodes.5Minutes')" value="300" />
                     </el-select>
                   </div>
                 </div>
@@ -523,57 +523,57 @@
             <!-- CPU使用情况图表 -->
             <div class="chart-container">
               <div class="chart-header">
-                <h3>CPU 使用情况</h3>
+                <h3>{{ $t('nodes.cpuUsage') }}</h3>
               </div>
               <div class="chart" ref="cpuChart"></div>
             </div>
             <!-- 内存使用情况图表 -->
             <div class="chart-container">
               <div class="chart-header">
-                <h3>内存使用情况</h3>
+                <h3>{{ $t('nodes.memoryUsage') }}</h3>
               </div>
               <div class="chart" ref="memoryChart"></div>
             </div>
             <!-- 磁盘使用率图表 -->
             <div class="chart-container">
               <div class="chart-header">
-                <h3>磁盘使用情况</h3>
+                <h3>{{ $t('nodes.diskUsage') }}</h3>
               </div>
               <div class="chart" ref="diskChart"></div>
             </div>
             <!-- 网络流量监控图表 -->
             <div class="chart-container">
               <div class="chart-header">
-                <h3>网络流量监控</h3>
+                <h3>{{ $t('nodes.networkTrafficMonitor') }}</h3>
               </div>
               <div class="chart" ref="networkChart"></div>
             </div>
             <!-- 进程列表 -->
             <div class="chart-container">
               <div class="chart-header">
-                <h3>进程列表</h3>
-                <el-button type="primary" size="small" @click="refreshProcessList">刷新</el-button>
+                <h3>{{ $t('nodes.processList') }}</h3>
+                <el-button type="primary" size="small" @click="refreshProcessList">{{ $t('nodes.refresh') }}</el-button>
               </div>
               <el-table :data="nodeDetail.process_list" style="width: 100%" :max-height="300">
                 <el-table-column prop="pid" label="PID" width="80" />
-                <el-table-column prop="user" label="用户" width="100" />
+                <el-table-column prop="user" :label="$t('nodes.user')" width="100" />
                 <el-table-column prop="cpu_percent" label="CPU%" width="100" />
-                <el-table-column prop="memory_percent" label="内存%" width="100" />
-                <el-table-column prop="command" label="命令" show-overflow-tooltip />
+                <el-table-column prop="memory_percent" :label="$t('nodes.memoryPercent')" width="100" />
+                <el-table-column prop="command" :label="$t('nodes.command')" show-overflow-tooltip />
               </el-table>
             </div>
           </div>
         </el-tab-pane>
 
         <!-- 系统日志标签页 -->
-        <el-tab-pane label="系统日志" name="logs">
-              <div class="logs-content">
+        <el-tab-pane :label="$t('nodes.systemLogs')" name="logs">
+          <div class="logs-content">
             <!-- 日志控制面板 -->
             <div class="logs-control-panel">
               <div class="panel-section search-controls">
                 <el-input
                   v-model="logSearchQuery"
-                  placeholder="搜索日志"
+                  :placeholder="$t('nodes.searchLogs')"
                   clearable
                   @clear="handleLogSearch"
                   @input="handleLogSearch"
@@ -585,12 +585,12 @@
                 </el-input>
                 <el-select
                   v-model="logLevelFilter"
-                  placeholder="日志级别"
+                  :placeholder="$t('nodes.logLevel')"
                   clearable
                   @change="handleLogSearch"
                   class="level-select"
                 >
-                  <el-option label="全部" value="" />
+                  <el-option :label="$t('nodes.all')" value="" />
                   <el-option label="DEBUG" value="DEBUG" />
                   <el-option label="INFO" value="INFO" />
                   <el-option label="WARNING" value="WARNING" />
@@ -604,11 +604,11 @@
                   class="refresh-button"
                 >
                   <el-icon><Refresh /></el-icon>
-                  <span>刷新</span>
+                  <span>{{ $t('nodes.refresh') }}</span>
                 </el-button>
                 <el-switch
                   v-model="autoRefreshLogs"
-                  active-text="自动刷新"
+                  :active-text="$t('nodes.autoRefresh')"
                   inactive-text=""
                   class="refresh-switch"
                   @change="handleAutoLogRefreshChange"
@@ -616,14 +616,14 @@
                 <el-select
                   v-if="autoRefreshLogs"
                   v-model="logRefreshInterval"
-                  placeholder="刷新间隔"
+                  :placeholder="$t('nodes.refreshInterval')"
                   @change="handleLogRefreshIntervalChange"
                   class="interval-select"
                 >
-                  <el-option label="3秒" value="3" />
-                  <el-option label="5秒" value="5" />
-                  <el-option label="10秒" value="10" />
-                  <el-option label="30秒" value="30" />
+                  <el-option :label="$t('nodes.3Seconds')" value="3" />
+                  <el-option :label="$t('nodes.5Seconds')" value="5" />
+                  <el-option :label="$t('nodes.10Seconds')" value="10" />
+                  <el-option :label="$t('nodes.30Seconds')" value="30" />
                 </el-select>
               </div>
             </div>
@@ -636,53 +636,54 @@
                 height="calc(100vh - 300px)"
                 v-loading="loadingLogs"
               >
-                <el-table-column prop="timestamp" label="时间" width="180">
+                <el-table-column prop="timestamp" :label="$t('nodes.timestamp')" width="180">
                   <template #default="{ row }">
                     {{ row.timestamp }}
                   </template>
                 </el-table-column>
-                <el-table-column prop="level" label="级别" width="100">
+                <el-table-column prop="level" :label="$t('nodes.level')" width="100">
                   <template #default="{ row }">
                     <el-tag :type="getLogLevelType(row.level)">
                       {{ row.level }}
                     </el-tag>
                   </template>
                 </el-table-column>
-                <el-table-column prop="module" label="模块" width="150" />
-                <el-table-column prop="message" label="消息" show-overflow-tooltip />
+                <el-table-column prop="module" :label="$t('nodes.module')" width="150" />
+                <el-table-column prop="message" :label="$t('nodes.message')" show-overflow-tooltip />
               </el-table>
             </div>
           </div>
-            </el-tab-pane>
-          </el-tabs>
-            </div>
+        </el-tab-pane>
+      </el-tabs>
+      </div>
       </el-drawer>
       <!-- 批量分组弹窗 -->
-      <el-dialog title="批量分组" v-model="batchGroupDialogVisible" width="400px">
-        <el-input v-model="batchGroupName" placeholder="请输入新的分组名称（留空则清空分组）" />
+      <el-dialog :title="$t('nodes.batchGroup')" v-model="batchGroupDialogVisible" width="400px">
+        <el-input v-model="batchGroupName" :placeholder="$t('nodes.enterNewGroupName')" />
         <template #footer>
           <span class="dialog-footer">
-            <el-button @click="batchGroupDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="confirmBatchGroup">确定</el-button>
+            <el-button @click="batchGroupDialogVisible = false">{{ $t('nodes.cancel') }}</el-button>
+            <el-button type="primary" @click="confirmBatchGroup">{{ $t('nodes.confirm') }}</el-button>
           </span>
                   </template>
       </el-dialog>
       <!-- 批量打标签弹窗 -->
-      <el-dialog title="批量打标签" v-model="batchTagDialogVisible" width="400px">
-        <el-input v-model="batchTags" placeholder="请输入新标签，多个用逗号分隔（留空则清空标签）" />
+      <el-dialog :title="$t('nodes.batchTag')" v-model="batchTagDialogVisible" width="400px">
+        <el-input v-model="batchTags" :placeholder="$t('nodes.enterNewTags')" />
         <template #footer>
           <span class="dialog-footer">
-            <el-button @click="batchTagDialogVisible = false">取消</el-button>
-            <el-button type="primary" @click="confirmBatchTag">确定</el-button>
+            <el-button @click="batchTagDialogVisible = false">{{ $t('nodes.cancel') }}</el-button>
+            <el-button type="primary" @click="confirmBatchTag">{{ $t('nodes.confirm') }}</el-button>
           </span>
-                  </template>
+        </template>
       </el-dialog>
-            </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, nextTick, watch, onUnmounted, computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { 
   ArrowDown,
@@ -706,6 +707,8 @@ import {
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import axios from 'axios'
+
+const { t } = useI18n()
 
 // ECharts 错误过滤已在全局错误处理器中处理
 
@@ -742,23 +745,23 @@ const installForm = ref({
 
 const rules = {
   name: [
-    { required: true, message: '请输入名称', trigger: 'blur' }
+    { required: true, message: t('nodes.validation.enterName'), trigger: 'blur' }
   ],
   ipaddress: [
-    { required: true, message: '请输入IP地址', trigger: 'blur' }
+    { required: true, message: t('nodes.validation.enterIpAddress'), trigger: 'blur' }
   ],
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' }
+    { required: true, message: t('nodes.validation.enterUsername'), trigger: 'blur' }
   ],
   port: [
-    { required: true, message: '请输入端口', trigger: 'blur' },
-    { type: 'number', min: 1, max: 65535, message: '端口号必须在1-65535之间', trigger: 'blur' }
+    { required: true, message: t('nodes.validation.enterPort'), trigger: 'blur' },
+    { type: 'number', min: 1, max: 65535, message: t('nodes.validation.portRange'), trigger: 'blur' }
   ],
   auth_type: [
-    { required: true, message: '请选择认证方式', trigger: 'change' }
+    { required: true, message: t('nodes.validation.selectAuthType'), trigger: 'change' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
+    { required: true, message: t('nodes.validation.enterPassword'), trigger: 'blur' },
     { validator: (rule, value, callback) => {
       if (form.value.auth_type === 'password' && !value) {
         callback(new Error('密码不能为空'))
@@ -908,7 +911,7 @@ const batchTags = ref('')
 // 批量分组对话框
 const showBatchGroupDialog = async () => {
   if (!multipleSelection.value.length) {
-    ElMessage.warning('请选择要分组的节点')
+    ElMessage.warning(t('nodes.pleaseSelectNodesToGroup'))
     return
   }
   // 统计当前选中节点的分组分布
@@ -933,12 +936,12 @@ const showBatchGroupDialog = async () => {
     )
     const nodeIds = multipleSelection.value.map(item => item.id)
     await axios.post('/api/nodes/batch_group', { node_ids: nodeIds, group: groupName || '' })
-    ElMessage.success('批量分组成功')
+          ElMessage.success(t('nodes.batchGroupSuccess'))
     fetchNodes()
     fetchGroups()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('批量分组失败')
+      ElMessage.error(t('nodes.batchGroupFailed'))
     }
   }
 }
@@ -946,7 +949,7 @@ const showBatchGroupDialog = async () => {
 // 批量打标签对话框
 const showBatchTagDialog = async () => {
   if (!multipleSelection.value.length) {
-    ElMessage.warning('请选择要打标签的节点')
+    ElMessage.warning(t('nodes.pleaseSelectNodesToTag'))
     return
   }
   // 统计当前选中节点的标签分布
@@ -978,12 +981,12 @@ const showBatchTagDialog = async () => {
     )
     const nodeIds = multipleSelection.value.map(item => item.id)
     await axios.post('/api/nodes/batch_tags', { node_ids: nodeIds, tags: tags || '' })
-    ElMessage.success('批量打标签成功')
+          ElMessage.success(t('nodes.batchTagSuccess'))
     fetchNodes()
     fetchTags()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('批量打标签失败')
+      ElMessage.error(t('nodes.batchTagFailed'))
     }
   }
 }
@@ -991,24 +994,24 @@ const showBatchTagDialog = async () => {
 // 批量删除
 const handleBatchDelete = async () => {
   if (!multipleSelection.value.length) {
-    ElMessage.warning('请选择要删除的服务器')
+    ElMessage.warning(t('nodes.pleaseSelectNodesToDelete'))
       return
     }
   
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 台节点吗？`, '批量删除', {
+    await ElMessageBox.confirm(t('nodes.confirmBatchDelete', { count: multipleSelection.value.length }), t('nodes.batchDelete'), {
       type: 'warning'
     })
     
     const nodeIds = multipleSelection.value.map(item => item.id)
     await axios.post('/api/nodes/batch_delete', { node_ids: nodeIds })
     
-    ElMessage.success('批量删除成功')
+          ElMessage.success(t('nodes.batchDeleteSuccess'))
     fetchNodes()
     multipleSelection.value = []
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('批量删除失败')
+      ElMessage.error(t('nodes.batchDeleteFailed'))
     }
   }
 }
@@ -1072,13 +1075,13 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   switch (status) {
     case 'online':
-      return '在线'
+      return t('nodes.online')
     case 'offline':
-      return '离线'
+      return t('nodes.offline')
     case 'error':
-      return '错误'
+      return t('nodes.error')
     default:
-      return '未知'
+      return t('nodes.unknown')
   }
 }
 
@@ -1108,21 +1111,21 @@ const getAgentStatusType = (status) => {
 const getAgentStatusText = (status) => {
   switch (status) {
     case 'running':
-      return '运行中'
+      return t('nodes.running')
     case 'installing':
-      return '安装中'
+      return t('nodes.installing')
     case 'not_installed':
-      return '未安装'
+      return t('nodes.notInstalled')
     case 'uninstall_error':
-      return '卸载失败'
+      return t('nodes.uninstallError')
     case 'install_error':
-      return '安装失败'
+      return t('nodes.installError')
     case 'online':
-      return '在线'
+      return t('nodes.online')
     case 'offline':
-      return '离线'
+      return t('nodes.offline')
     default:
-      return '未知'
+      return t('nodes.unknown')
   }
 }
 
@@ -1155,10 +1158,10 @@ const handleSubmit = async () => {
     await formRef.value.validate()
     if (dialogType.value === 'add') {
       await axios.post('/api/nodes', form.value)
-      ElMessage.success('添加成功')
+      ElMessage.success(t('nodes.addSuccess'))
     } else {
       await axios.put(`/api/nodes/${form.value.id}`, form.value)
-      ElMessage.success('更新成功')
+      ElMessage.success(t('nodes.updateSuccess'))
     }
     dialogVisible.value = false
     fetchNodes()
@@ -1187,11 +1190,11 @@ const installAgent = (row) => {
 const confirmInstall = async () => {
   try {
     if (!currentNode.value) {
-      ElMessage.error('未选择节点')
+      ElMessage.error(t('nodes.noNodeSelected'))
       return
     }
     await axios.post(`/api/nodes/${currentNode.value.id}/install`, installForm.value)
-    ElMessage.success('开始安装Agent')
+    ElMessage.success(t('nodes.startInstallAgent'))
     installDialogVisible.value = false
     fetchNodes()
   } catch (error) {
@@ -1202,11 +1205,11 @@ const confirmInstall = async () => {
 // 卸载Agent
 const uninstallAgent = async (row) => {
   try {
-    await ElMessageBox.confirm('确定要卸载Agent吗？', '提示', {
+    await ElMessageBox.confirm(t('nodes.confirmUninstallAgent'), t('nodes.tip'), {
       type: 'warning'
     })
     await axios.post(`/api/nodes/${row.id}/uninstall`)
-    ElMessage.success('开始卸载Agent')
+    ElMessage.success(t('nodes.startUninstallAgent'))
     fetchNodes()
   } catch (error) {
     if (error !== 'cancel') {
@@ -1218,11 +1221,11 @@ const uninstallAgent = async (row) => {
 // 删除节点
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm('确定要删除该节点吗？', '提示', {
+    await ElMessageBox.confirm(t('nodes.confirmDeleteNode'), t('nodes.tip'), {
       type: 'warning'
     })
     await axios.delete(`/api/nodes/${row.id}`)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('nodes.deleteSuccess'))
     fetchNodes()
   } catch (error) {
     if (error !== 'cancel') {
@@ -1237,7 +1240,7 @@ const testConnection = async (row) => {
     row.testing = true
     const response = await axios.post(`/api/nodes/${row.id}/test-connection`)
     if (response.data.status === 'success') {
-      ElMessage.success('连接测试成功')
+      ElMessage.success(t('nodes.connectionTestSuccess'))
       // 更新本地状态
       row.status = 'online'
       fetchNodes()  // 刷新列表以更新状态
@@ -1255,11 +1258,11 @@ const getNodeInfo = async (row) => {
     row.fetching = true
     const response = await axios.post(`/api/nodes/${row.id}/status`)
     if (response.data.status === 'success') {
-      ElMessage.success('获取信息成功')
+      ElMessage.success(t('nodes.getInfoSuccess'))
       fetchNodes()  // 刷新列表以更新信息
     }
   } catch (error) {
-    ElMessage.error('获取信息失败')
+    ElMessage.error(t('nodes.getInfoFailed'))
   } finally {
     row.fetching = false
   }
@@ -1278,7 +1281,7 @@ const handleNameClick = async (node) => {
     await nextTick()
     await initCharts()
   } catch (error) {
-    ElMessage.error('加载节点详情失败')
+    ElMessage.error(t('nodes.loadNodeDetailsFailed'))
   }
 }
 
@@ -1314,7 +1317,7 @@ const fetchNodeDetail = async (nodeId) => {
     nodeDetail.value = response.data.data
     nodeDetail.value.os_type = response.data.data.os_type
   } catch (error) {
-    ElMessage.error('获取节点详情失败')
+    ElMessage.error(t('nodes.getNodeDetailsFailed'))
   }
 }
 
@@ -1410,7 +1413,7 @@ const initCharts = async () => {
     if (cpuChart.value) {
       const cpuOption = {
         title: {
-          text: 'CPU 使用情况',
+          text: t('nodes.cpuUsage'),
           left: 'center',
           top: 10,
           textStyle: {
@@ -1436,7 +1439,7 @@ const initCharts = async () => {
           }
         },
         legend: {
-          data: ['CPU使用率', '1分钟负载', '5分钟负载', '15分钟负载'],
+          data: [t('nodes.cpuUsage'), t('nodes.load1Minute'), t('nodes.load5Minutes'), t('nodes.load15Minutes')],
           top: 40,
           textStyle: {
             fontSize: 12
@@ -1477,7 +1480,7 @@ const initCharts = async () => {
         yAxis: [
           {
             type: 'value',
-            name: '使用率(%)',
+            name: t('nodes.cpuUsage'),
             min: 0,
             max: 100,
             position: 'left',
@@ -1497,7 +1500,7 @@ const initCharts = async () => {
           },
           {
             type: 'value',
-            name: '负载',
+            name: t('nodes.load1Minute'),
             position: 'right',
             axisLine: { show: false },
             axisTick: { show: false },
@@ -1509,7 +1512,7 @@ const initCharts = async () => {
         ],
         series: [
           {
-            name: 'CPU使用率',
+            name: t('nodes.cpuUsage'),
             type: 'line',
             yAxisIndex: 0,
             smooth: true,
@@ -1538,7 +1541,7 @@ const initCharts = async () => {
             data: ensureData(monitorData.value.cpu, 50)
           },
           {
-            name: '1分钟负载',
+            name: t('nodes.load1Minute'),
             type: 'line',
             yAxisIndex: 1,
             smooth: true,
@@ -1555,7 +1558,7 @@ const initCharts = async () => {
             data: ensureData(monitorData.value.load1, 1.5)
           },
           {
-            name: '5分钟负载',
+            name: t('nodes.load5Minutes'),
             type: 'line',
             yAxisIndex: 1,
             smooth: true,
@@ -1572,7 +1575,7 @@ const initCharts = async () => {
             data: ensureData(monitorData.value.load5, 1.2)
           },
           {
-            name: '15分钟负载',
+            name: t('nodes.load15Minutes'),
             type: 'line',
             yAxisIndex: 1,
             smooth: true,
@@ -1597,7 +1600,7 @@ const initCharts = async () => {
     if (memoryChart.value) {
       const memoryOption = {
         title: {
-          text: '内存使用情况',
+          text: t('nodes.memoryUsage'),
           left: 'center',
           top: 10,
           textStyle: {
@@ -1623,7 +1626,7 @@ const initCharts = async () => {
           }
         },
         legend: {
-          data: ['内存使用率', '已用内存', '可用内存'],
+          data: [t('nodes.memoryUsage'), t('nodes.usedMemory'), t('nodes.availableMemory')],
           top: 40,
           textStyle: {
             fontSize: 12
@@ -1664,7 +1667,7 @@ const initCharts = async () => {
         yAxis: [
           {
             type: 'value',
-            name: '使用率(%)',
+            name: t('nodes.memoryUsage'),
             min: 0,
             max: 100,
             position: 'left',
@@ -1684,7 +1687,7 @@ const initCharts = async () => {
           },
           {
             type: 'value',
-            name: '内存(GB)',
+            name: t('nodes.usedMemory'),
             position: 'right',
             axisLine: { show: false },
             axisTick: { show: false },
@@ -1697,7 +1700,7 @@ const initCharts = async () => {
         ],
         series: [
           {
-            name: '内存使用率',
+            name: t('nodes.memoryUsage'),
             type: 'line',
             yAxisIndex: 0,
             smooth: true,
@@ -1726,7 +1729,7 @@ const initCharts = async () => {
             data: ensureData(monitorData.value.memory, 60)
           },
           {
-            name: '已用内存',
+            name: t('nodes.usedMemory'),
             type: 'line',
             yAxisIndex: 1,
             smooth: true,
@@ -1743,7 +1746,7 @@ const initCharts = async () => {
             data: ensureData(monitorData.value.memoryUsed, 8 * 1024 * 1024 * 1024) // 8GB
           },
           {
-            name: '可用内存',
+            name: t('nodes.availableMemory'),
             type: 'line',
             yAxisIndex: 1,
             smooth: true,
@@ -1768,7 +1771,7 @@ const initCharts = async () => {
     if (diskChart.value) {
       const diskOption = {
         title: {
-          text: '磁盘使用情况',
+          text: t('nodes.diskUsage'),
           left: 'center',
           top: 10,
           textStyle: {
@@ -1794,7 +1797,7 @@ const initCharts = async () => {
           }
         },
         legend: {
-          data: ['磁盘使用率', '已用空间', '可用空间'],
+          data: [t('nodes.diskUsage'), t('nodes.usedCapacity'), t('nodes.availableCapacity')],
           top: 40,
           textStyle: {
             fontSize: 12
@@ -1835,7 +1838,7 @@ const initCharts = async () => {
         yAxis: [
           {
             type: 'value',
-            name: '使用率(%)',
+            name: t('nodes.diskUsage'),
             min: 0,
             max: 100,
             position: 'left',
@@ -1855,7 +1858,7 @@ const initCharts = async () => {
           },
           {
             type: 'value',
-            name: '空间(GB)',
+            name: t('nodes.usedCapacity'),
             position: 'right',
             axisLine: { show: false },
             axisTick: { show: false },
@@ -1868,7 +1871,7 @@ const initCharts = async () => {
         ],
         series: [
           {
-            name: '磁盘使用率',
+            name: t('nodes.diskUsage'),
             type: 'line',
             yAxisIndex: 0,
             smooth: true,
@@ -1897,7 +1900,7 @@ const initCharts = async () => {
             data: ensureData(monitorData.value.disk, 70)
           },
           {
-            name: '已用空间',
+            name: t('nodes.usedCapacity'),
             type: 'line',
             yAxisIndex: 1,
             smooth: true,
@@ -1914,7 +1917,7 @@ const initCharts = async () => {
             data: ensureData(monitorData.value.diskUsed, 500 * 1024 * 1024 * 1024) // 500GB
           },
           {
-            name: '可用空间',
+            name: t('nodes.availableCapacity'),
             type: 'line',
             yAxisIndex: 1,
             smooth: true,
@@ -1939,7 +1942,7 @@ const initCharts = async () => {
     if (networkChart.value) {
       const networkOption = {
         title: {
-          text: '网络流量监控',
+          text: t('nodes.networkTraffic'),
           left: 'center',
           top: 10,
           textStyle: {
@@ -1965,7 +1968,7 @@ const initCharts = async () => {
           }
         },
         legend: {
-          data: ['接收流量', '发送流量', '丢包数'],
+          data: [t('nodes.receivedTraffic'), t('nodes.sentTraffic'), t('nodes.droppedPackets')],
           top: 40,
           textStyle: {
             fontSize: 12
@@ -2006,7 +2009,7 @@ const initCharts = async () => {
         yAxis: [
           {
             type: 'value',
-            name: '流量',
+            name: t('nodes.networkTraffic'),
             position: 'left',
             axisLine: { show: false },
             axisTick: { show: false },
@@ -2024,7 +2027,7 @@ const initCharts = async () => {
           },
           {
             type: 'value',
-            name: '丢包数',
+            name: t('nodes.droppedPackets'),
             position: 'right',
             axisLine: { show: false },
             axisTick: { show: false },
@@ -2036,7 +2039,7 @@ const initCharts = async () => {
         ],
         series: [
           {
-            name: '接收流量',
+            name: t('nodes.receivedTraffic'),
             type: 'line',
             yAxisIndex: 0,
             smooth: true,
@@ -2065,7 +2068,7 @@ const initCharts = async () => {
             data: ensureData(monitorData.value.network.recv, 100 * 1024 * 1024) // 100MB
           },
           {
-            name: '发送流量',
+            name: t('nodes.sentTraffic'),
             type: 'line',
             yAxisIndex: 0,
             smooth: true,
@@ -2094,7 +2097,7 @@ const initCharts = async () => {
             data: ensureData(monitorData.value.network.sent, 50 * 1024 * 1024) // 50MB
           },
           {
-            name: '丢包数',
+            name: t('nodes.droppedPackets'),
             type: 'line',
             yAxisIndex: 1,
             smooth: true,
@@ -2237,7 +2240,7 @@ const loadHistoryData = async () => {
       updateCharts()
     }
   } catch (error) {
-    ElMessage.error('加载历史数据失败，请稍后重试')
+    ElMessage.error(t('nodes.loadHistoryDataFailed'))
   }
 }
 
@@ -2293,10 +2296,10 @@ const updateCharts = () => {
         if (cpuChartInstance.value) {
           cpuChartInstance.value.setOption({
             series: [
-              createSeriesConfig('CPU使用率', monitorData.value.cpu, '#409EFF', {}, true),
-              createSeriesConfig('1分钟负载', monitorData.value.load1, '#E6A23C', { type: 'dashed' }),
-              createSeriesConfig('5分钟负载', monitorData.value.load5, '#F56C6C', { type: 'dashed' }),
-              createSeriesConfig('15分钟负载', monitorData.value.load15, '#909399', { type: 'dashed' })
+              createSeriesConfig(t('nodes.cpuUsage'), monitorData.value.cpu, '#409EFF', {}, true),
+              createSeriesConfig(t('nodes.load1Minute'), monitorData.value.load1, '#E6A23C', { type: 'dashed' }),
+              createSeriesConfig(t('nodes.load5Minutes'), monitorData.value.load5, '#F56C6C', { type: 'dashed' }),
+              createSeriesConfig(t('nodes.load15Minutes'), monitorData.value.load15, '#909399', { type: 'dashed' })
             ]
           }, false)
         }
@@ -2304,9 +2307,9 @@ const updateCharts = () => {
         if (memoryChartInstance.value) {
           memoryChartInstance.value.setOption({
             series: [
-              createSeriesConfig('内存使用率', monitorData.value.memory, '#409EFF', {}, true),
-              createSeriesConfig('已用内存', monitorData.value.memoryUsed, '#E6A23C', { type: 'dashed' }),
-              createSeriesConfig('可用内存', monitorData.value.memoryAvailable, '#F56C6C', { type: 'dashed' })
+              createSeriesConfig(t('nodes.memoryUsage'), monitorData.value.memory, '#409EFF', {}, true),
+              createSeriesConfig(t('nodes.usedMemory'), monitorData.value.memoryUsed, '#E6A23C', { type: 'dashed' }),
+              createSeriesConfig(t('nodes.availableMemory'), monitorData.value.memoryAvailable, '#F56C6C', { type: 'dashed' })
             ]
           }, false)
         }
@@ -2314,7 +2317,7 @@ const updateCharts = () => {
         if (diskChartInstance.value) {
           diskChartInstance.value.setOption({
             series: [
-              createSeriesConfig('磁盘使用率', monitorData.value.disk, '#409EFF', {}, true),
+              createSeriesConfig(t('nodes.diskUsage'), monitorData.value.disk, '#409EFF', {}, true),
               createSeriesConfig('已用空间', monitorData.value.diskUsed, '#E6A23C', { type: 'dashed' }),
               createSeriesConfig('可用空间', monitorData.value.diskFree, '#F56C6C', { type: 'dashed' })
             ]
@@ -2541,7 +2544,7 @@ const refreshProcessList = async () => {
       nodeDetail.value.process_list = response.data.data
     }
   } catch (error) {
-    ElMessage.error('获取进程列表失败')
+    ElMessage.error(t('nodes.getProcessListFailed'))
   }
 }
 
@@ -2659,7 +2662,7 @@ const fetchLogs = async () => {
       logs.value = logEntries
     }
   } catch (error) {
-    ElMessage.error('获取日志失败')
+    ElMessage.error(t('nodes.getLogsFailed'))
   } finally {
     loadingLogs.value = false
   }

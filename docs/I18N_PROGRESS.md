@@ -952,7 +952,8 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - 系统监控 (monitoring): 49+ 个键值对
 - 个人信息 (profile): 35+ 个键值对
 - 系统设置 (settings): 105+ 个键值对
-- **总计**: 1119+ 个翻译键值对
+- 节点管理 (nodes): 150+ 个键值对
+- **总计**: 1269+ 个翻译键值对
 
 ### Notifications.vue 国际化完成度：100% ✅
 
@@ -1419,6 +1420,168 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 
 - ✅ 确认/取消按钮 (`settings.confirm`, `settings.cancel`)
 - ✅ 继续编辑按钮 (`settings.continueEdit`)
+
+### Nodes.vue 国际化完成度：100% ✅
+
+**已完成内容：**
+
+**1. 页面标题和描述**
+
+- ✅ 页面标题 (`nodes.pageTitle`)
+- ✅ 页面描述 (`nodes.pageSubtitle`)
+
+**2. 操作按钮**
+
+- ✅ 添加代理节点按钮 (`nodes.addProxyNode`)
+- ✅ 流程引导按钮 (`nodes.processGuide`)
+- ✅ 流程引导提示 (`nodes.hideProcessGuide`, `nodes.showProcessGuide`)
+
+**3. 架构说明部分**
+
+- ✅ 架构说明标题 (`nodes.architectureTitle`)
+- ✅ 架构说明副标题 (`nodes.architectureSubtitle`)
+- ✅ 存储资源标签 (`nodes.storageResourceA`, `nodes.storageResourceB`)
+- ✅ 存储类型说明 (`nodes.storageTypes`)
+- ✅ 同步代理节点标签 (`nodes.syncProxyNode`)
+- ✅ 代理节点描述 (`nodes.proxyDescription`, `nodes.proxyFeatures`)
+- ✅ 架构说明文本 (`nodes.architectureDescription`)
+
+**4. 使用指南**
+
+- ✅ 使用指南标题 (`nodes.usageGuide`)
+- ✅ 步骤标题和描述 (`nodes.step1Title`, `nodes.step1Description`, `nodes.step2Title`, `nodes.step2Description`, `nodes.step3Title`, `nodes.step3Description`, `nodes.step4Title`, `nodes.step4Description`)
+
+**5. 统计卡片**
+
+- ✅ 在线服务器 (`nodes.onlineServers`)
+- ✅ 离线服务器 (`nodes.offlineServers`)
+- ✅ 运行中 Agent (`nodes.runningAgents`)
+- ✅ 待安装 Agent (`nodes.pendingAgents`)
+
+**6. 节点列表**
+
+- ✅ 节点列表标题 (`nodes.nodeList`)
+- ✅ 节点数量标签 (`nodes.nodesCount`)
+- ✅ 筛选器占位符 (`nodes.groupFilter`, `nodes.tagFilter`, `nodes.statusFilter`)
+- ✅ 筛选选项 (`nodes.all`, `nodes.online`, `nodes.offline`, `nodes.agentInstalled`, `nodes.agentNotInstalled`)
+- ✅ 批量操作按钮 (`nodes.batchDelete`, `nodes.batchGroup`, `nodes.batchTag`)
+- ✅ 搜索占位符 (`nodes.searchNameIp`)
+
+**7. 表格列标题**
+
+- ✅ 名称列 (`nodes.name`)
+- ✅ 分组列 (`nodes.group`)
+- ✅ 标签列 (`nodes.tags`)
+- ✅ IP 地址列 (`nodes.ipAddress`)
+- ✅ 用户名列 (`nodes.username`)
+- ✅ 端口列 (`nodes.port`)
+- ✅ 状态列 (`nodes.status`)
+- ✅ Agent 状态列 (`nodes.agentStatus`)
+- ✅ 最后心跳列 (`nodes.lastHeartbeat`)
+- ✅ 备注列 (`nodes.description`)
+- ✅ 操作列 (`nodes.actions`)
+
+**8. 操作按钮**
+
+- ✅ 详情按钮 (`nodes.details`)
+- ✅ 更多按钮 (`nodes.more`)
+- ✅ 编辑按钮 (`nodes.edit`)
+- ✅ 测试连接按钮 (`nodes.testConnection`)
+- ✅ 安装 Agent 按钮 (`nodes.installAgent`)
+- ✅ 卸载 Agent 按钮 (`nodes.uninstallAgent`)
+- ✅ 获取信息按钮 (`nodes.getInfo`)
+- ✅ 删除按钮 (`nodes.delete`)
+
+**9. 弹窗和对话框**
+
+- ✅ 添加/编辑节点弹窗标题 (`nodes.addNode`, `nodes.editNode`)
+- ✅ 表单字段标签和占位符 (`nodes.enterNodeName`, `nodes.enterIpAddress`, `nodes.enterUsername`, `nodes.enterPassword`, `nodes.enterSshKey`, `nodes.enterDescription`)
+- ✅ 认证方式选项 (`nodes.authType`, `nodes.passwordAuth`, `nodes.keyAuth`)
+- ✅ 弹窗按钮 (`nodes.cancel`, `nodes.confirm`)
+
+**10. 安装 Agent 弹窗**
+
+- ✅ 弹窗标题 (`nodes.installUninstallAgent`)
+- ✅ 表单字段 (`nodes.installPath`, `nodes.configParams`, `nodes.enterJsonConfig`)
+- ✅ 操作按钮 (`nodes.startInstall`)
+
+**11. 节点详情抽屉**
+
+- ✅ 抽屉标题 (`nodes.nodeDetails`)
+- ✅ 标签页标题 (`nodes.basicInfo`, `nodes.monitorData`)
+- ✅ 基本信息卡片标题 (`nodes.basicInfo`)
+- ✅ 描述项标签 (`nodes.nodeName`, `nodes.operatingSystem`)
+- ✅ CPU 信息卡片 (`nodes.cpuInfo`, `nodes.cores`)
+- ✅ 内存信息卡片 (`nodes.memoryInfo`, `nodes.totalMemory`, `nodes.usedMemory`, `nodes.availableMemory`)
+- ✅ 磁盘信息卡片 (`nodes.diskInfo`, `nodes.totalCapacity`, `nodes.usedCapacity`, `nodes.availableCapacity`)
+- ✅ 网卡信息卡片 (`nodes.networkInfo`)
+
+**12. 状态文本函数**
+
+- ✅ 节点状态文本 (`nodes.online`, `nodes.offline`, `nodes.error`, `nodes.unknown`)
+- ✅ Agent 状态文本 (`nodes.running`, `nodes.installing`, `nodes.notInstalled`, `nodes.uninstallError`, `nodes.installError`)
+
+**13. 消息提示**
+
+- ✅ 成功消息 (`nodes.addSuccess`, `nodes.updateSuccess`, `nodes.deleteSuccess`, `nodes.startInstallAgent`, `nodes.startUninstallAgent`)
+- ✅ 错误消息 (`nodes.noNodeSelected`)
+- ✅ 确认对话框 (`nodes.confirmUninstallAgent`, `nodes.confirmDeleteNode`, `nodes.tip`)
+
+**14. 监控数据部分**
+
+- ✅ 时间范围选择器 (`nodes.timeRange`, `nodes.selectTimeRange`)
+- ✅ 时间范围选项 (`nodes.last10Minutes`, `nodes.last15Minutes`, `nodes.last1Hour`, `nodes.last2Hours`, `nodes.custom`)
+- ✅ 日期选择器 (`nodes.to`, `nodes.startTime`, `nodes.endTime`)
+- ✅ 刷新设置 (`nodes.refreshSettings`, `nodes.refresh`, `nodes.autoRefresh`)
+- ✅ 刷新间隔选项 (`nodes.refreshInterval`, `nodes.3Seconds`, `nodes.5Seconds`, `nodes.10Seconds`, `nodes.30Seconds`, `nodes.1Minute`, `nodes.5Minutes`)
+
+**15. 图表标题**
+
+- ✅ CPU 使用情况 (`nodes.cpuUsage`)
+- ✅ 内存使用情况 (`nodes.memoryUsage`)
+- ✅ 磁盘使用情况 (`nodes.diskUsage`)
+- ✅ 网络流量监控 (`nodes.networkTrafficMonitor`)
+
+**16. 进程列表**
+
+- ✅ 进程列表标题 (`nodes.processList`)
+- ✅ 表格列标题 (`nodes.user`, `nodes.command`)
+
+**17. 系统日志**
+
+- ✅ 系统日志标签页 (`nodes.systemLogs`)
+- ✅ 日志搜索 (`nodes.searchLogs`)
+- ✅ 日志级别 (`nodes.logLevel`)
+- ✅ 日志刷新控制 (`nodes.refresh`, `nodes.autoRefresh`, `nodes.refreshInterval`)
+
+**18. 批量操作消息**
+
+- ✅ 批量分组消息 (`nodes.pleaseSelectNodesToGroup`, `nodes.batchGroupSuccess`, `nodes.batchGroupFailed`)
+- ✅ 批量打标签消息 (`nodes.pleaseSelectNodesToTag`, `nodes.batchTagSuccess`, `nodes.batchTagFailed`)
+- ✅ 批量删除消息 (`nodes.pleaseSelectNodesToDelete`, `nodes.batchDeleteSuccess`, `nodes.batchDeleteFailed`)
+
+**19. 操作结果消息**
+
+- ✅ 连接测试消息 (`nodes.connectionTestSuccess`)
+- ✅ 获取信息消息 (`nodes.getInfoSuccess`, `nodes.getInfoFailed`)
+- ✅ 节点详情消息 (`nodes.loadNodeDetailsFailed`, `nodes.getNodeDetailsFailed`)
+- ✅ 监控数据消息 (`nodes.loadHistoryDataFailed`)
+- ✅ 进程列表消息 (`nodes.getProcessListFailed`)
+- ✅ 日志获取消息 (`nodes.getLogsFailed`)
+
+**20. 图表系列名称**
+
+- ✅ CPU 图表系列 (`nodes.load1Minute`, `nodes.load5Minutes`, `nodes.load15Minutes`)
+- ✅ 网络图表系列 (`nodes.receivedTraffic`, `nodes.sentTraffic`, `nodes.droppedPackets`)
+
+**21. 遗漏内容（需要补充）**
+
+- ✅ 日志表格列标题 (`nodes.timestamp`, `nodes.level`, `nodes.module`, `nodes.message`)
+- ✅ 表单验证消息（请输入名称、请输入 IP 地址、请输入用户名、请输入端口、端口号必须在 1-65535 之间、请选择认证方式、请输入密码、请输入 SSH 密钥）
+- ✅ 批量删除确认消息（确定要删除选中的 X 台节点吗？）
+- ✅ 进程表格列标题（内存%）
+- ✅ 批量操作弹窗标题和占位符
+- ✅ 批量操作弹窗按钮
 
 ## 下一步计划
 
