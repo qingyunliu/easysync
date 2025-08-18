@@ -7,20 +7,24 @@
         <p class="page-description">{{ $t('tasks.description') }}</p>
       </div>
       <div class="header-right">
-      <el-button type="primary" @click="showCreateDialog">
-          <el-icon><Plus /></el-icon>
-        {{ $t('tasks.createTask') }}
-      </el-button>
+        <el-button type="primary" @click="showCreateDialog">
+          <el-icon>
+            <Plus />
+          </el-icon>
+          {{ $t('tasks.createTask') }}
+        </el-button>
       </div>
     </div>
-    
+
     <!-- 统计面板 -->
     <el-row :gutter="20" style="margin-bottom: 20px;">
       <el-col :span="4">
         <el-card class="stat-card">
           <div class="stat-content stat-flex">
             <div class="stat-icon total">
-              <el-icon><Document /></el-icon>
+              <el-icon>
+                <Document />
+              </el-icon>
             </div>
             <div>
               <div class="stat-number">{{ taskStats.total || 0 }}</div>
@@ -33,7 +37,9 @@
         <el-card class="stat-card running">
           <div class="stat-content stat-flex">
             <div class="stat-icon running">
-              <el-icon><Loading /></el-icon>
+              <el-icon>
+                <Loading />
+              </el-icon>
             </div>
             <div>
               <div class="stat-number">{{ taskStats.running || 0 }}</div>
@@ -46,7 +52,9 @@
         <el-card class="stat-card pending">
           <div class="stat-content stat-flex">
             <div class="stat-icon pending">
-              <el-icon><Clock /></el-icon>
+              <el-icon>
+                <Clock />
+              </el-icon>
             </div>
             <div>
               <div class="stat-number">{{ taskStats.pending || 0 }}</div>
@@ -59,7 +67,9 @@
         <el-card class="stat-card completed">
           <div class="stat-content stat-flex">
             <div class="stat-icon completed">
-              <el-icon><CircleCheck /></el-icon>
+              <el-icon>
+                <CircleCheck />
+              </el-icon>
             </div>
             <div>
               <div class="stat-number">{{ taskStats.completed || 0 }}</div>
@@ -72,7 +82,9 @@
         <el-card class="stat-card failed">
           <div class="stat-content stat-flex">
             <div class="stat-icon failed">
-              <el-icon><CircleClose /></el-icon>
+              <el-icon>
+                <CircleClose />
+              </el-icon>
             </div>
             <div>
               <div class="stat-number">{{ taskStats.failed || 0 }}</div>
@@ -85,7 +97,9 @@
         <el-card class="stat-card online-node">
           <div class="stat-content stat-flex">
             <div class="stat-icon online">
-              <el-icon><Connection /></el-icon>
+              <el-icon>
+                <Connection />
+              </el-icon>
             </div>
             <div>
               <div class="stat-number">{{ OnlineNodeStats || 0 }}</div>
@@ -99,25 +113,17 @@
     <!-- 操作栏 -->
     <div class="toolbar">
       <div class="toolbar-left">
-        <el-input
-          v-model="searchQuery"
-          :placeholder="$t('tasks.searchPlaceholder')"
-          style="width: 300px"
-          clearable
-          @input="handleSearch"
-        >
+        <el-input v-model="searchQuery" :placeholder="$t('tasks.searchPlaceholder')" style="width: 300px" clearable
+          @input="handleSearch">
           <template #prefix>
-            <el-icon><Search /></el-icon>
+            <el-icon>
+              <Search />
+            </el-icon>
           </template>
         </el-input>
-        
-        <el-select
-          v-model="statusFilter"
-          :placeholder="$t('tasks.statusFilter')"
-          style="width: 150px; margin-left: 10px"
-          clearable
-          @change="handleFilter"
-        >
+
+        <el-select v-model="statusFilter" :placeholder="$t('tasks.statusFilter')"
+          style="width: 150px; margin-left: 10px" clearable @change="handleFilter">
           <el-option :label="$t('tasks.all')" value="" />
           <el-option :label="$t('tasks.statuses.pending')" value="pending" />
           <el-option :label="$t('tasks.statuses.assigned')" value="assigned" />
@@ -127,27 +133,19 @@
           <el-option :label="$t('tasks.statuses.cancelled')" value="cancelled" />
         </el-select>
 
-        <el-select
-          v-model="typeFilter"
-          :placeholder="$t('tasks.typeFilter')"
-          style="width: 150px; margin-left: 10px"
-          clearable
-          @change="handleFilter"
-        >
+        <el-select v-model="typeFilter" :placeholder="$t('tasks.typeFilter')" style="width: 150px; margin-left: 10px"
+          clearable @change="handleFilter">
           <el-option :label="$t('tasks.all')" value="" />
           <el-option :label="$t('tasks.types.sync')" value="sync" />
           <el-option :label="$t('tasks.types.copy')" value="copy" />
           <el-option :label="$t('tasks.types.mountCheck')" value="mount-check" />
         </el-select>
       </div>
-      
+
       <div class="toolbar-right">
         <el-button-group>
-          <el-button
-            :type="autoRefresh ? 'primary' : 'default'"
-            @click="toggleAutoRefresh"
-            :icon="autoRefresh ? VideoPause : Refresh"
-          >
+          <el-button :type="autoRefresh ? 'primary' : 'default'" @click="toggleAutoRefresh"
+            :icon="autoRefresh ? VideoPause : Refresh">
             {{ autoRefresh ? $t('tasks.pauseRefresh') : $t('tasks.enableRefresh') }}
           </el-button>
           <el-button @click="fetchTasks" :icon="Refresh">
@@ -171,17 +169,12 @@
 
     <!-- 任务列表 -->
     <div class="table-container">
-      <el-table
-        :data="filteredTasks"
-        v-loading="loading"
-        @selection-change="handleSelectionChange"
-        :default-sort="{ prop: 'created_at', order: 'descending' }"
-        style="width: 100%"
-      >
+      <el-table :data="filteredTasks" v-loading="loading" @selection-change="handleSelectionChange"
+        :default-sort="{ prop: 'created_at', order: 'descending' }" style="width: 100%">
         <el-table-column type="selection" width="55" />
-        
+
         <el-table-column prop="name" :label="$t('tasks.taskName')" min-width="320" show-overflow-tooltip>
-        <template #default="{ row }">
+          <template #default="{ row }">
             <div class="task-name">
               <el-link type="primary" @click="handleViewDetail(row)">
                 {{ row.name }}
@@ -191,7 +184,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="description" :label="$t('tasks.taskDescription')" min-width="380"/>
+        <el-table-column prop="description" :label="$t('tasks.taskDescription')" min-width="380" />
 
         <el-table-column prop="type" :label="$t('tasks.type')" width="100">
           <template #default="{ row }">
@@ -207,25 +200,17 @@
               <el-icon style="vertical-align: middle; margin-right: 4px;">
                 <component :is="getStatusIcon(row.status)" />
               </el-icon>
-            {{ getStatusText(row.status) }}
-          </el-tag>
-        </template>
-      </el-table-column>
+              {{ getStatusText(row.status) }}
+            </el-tag>
+          </template>
+        </el-table-column>
 
         <el-table-column prop="progress" :label="$t('tasks.progress')" width="180">
-        <template #default="{ row }">
-            <el-tooltip
-              :content="getProgressTooltip(row)"
-              placement="top"
-              :disabled="!getProgressTooltip(row)"
-            >
+          <template #default="{ row }">
+            <el-tooltip :content="getProgressTooltip(row)" placement="top" :disabled="!getProgressTooltip(row)">
               <div class="progress-container">
-                <el-progress
-                  :percentage="row.progress || 0"
-                  :status="getProgressStatus(row.status)"
-                  :stroke-width="6"
-                  :show-text="false"
-                />
+                <el-progress :percentage="row.progress || 0" :status="getProgressStatus(row.status)" :stroke-width="6"
+                  :show-text="false" />
                 <span class="progress-text">{{ row.progress || 0 }}%</span>
               </div>
             </el-tooltip>
@@ -259,60 +244,35 @@
           <template #default="{ row }">
             <el-button-group size="small">
               <!-- 启动/停止按钮 -->
-                          <el-button
-                v-if="['pending', 'failed'].includes(row.status)"
-                type="success"
-                @click="handleStartTask(row)"
-                :icon="VideoPlay"
-                :loading="loadingTasks.has(row.id)"
-              >
+              <el-button v-if="['pending', 'failed'].includes(row.status)" type="success" @click="handleStartTask(row)"
+                :icon="VideoPlay" :loading="loadingTasks.has(row.id)">
                 {{ $t('tasks.actions.start') }}
-            </el-button>
-              
+              </el-button>
+
               <!-- 暂停/恢复按钮 -->
-                          <el-button
-                v-if="row.status === 'running'"
-                type="warning"
-                @click="handlePauseTask(row)"
-                :icon="VideoPause"
-                :loading="loadingTasks.has(row.id)"
-              >
+              <el-button v-if="row.status === 'running'" type="warning" @click="handlePauseTask(row)" :icon="VideoPause"
+                :loading="loadingTasks.has(row.id)">
                 {{ $t('tasks.actions.pause') }}
-            </el-button>
-              
-            <el-button
-                v-if="row.status === 'paused'"
-                type="success"
-                @click="handleResumeTask(row)"
-                :icon="VideoPlay"
-                :loading="loadingTasks.has(row.id)"
-              >
+              </el-button>
+
+              <el-button v-if="row.status === 'paused'" type="success" @click="handleResumeTask(row)" :icon="VideoPlay"
+                :loading="loadingTasks.has(row.id)">
                 {{ $t('tasks.actions.resume') }}
-            </el-button>
-              
+              </el-button>
+
               <!-- 取消按钮 -->
-                          <el-button
-                v-if="['running', 'assigned', 'paused'].includes(row.status)"
-              type="danger"
-                @click="handleCancelTask(row)"
-                :icon="Close"
-                :loading="loadingTasks.has(row.id)"
-              >
+              <el-button v-if="['running', 'assigned', 'paused'].includes(row.status)" type="danger"
+                @click="handleCancelTask(row)" :icon="Close" :loading="loadingTasks.has(row.id)">
                 {{ $t('tasks.actions.cancel') }}
               </el-button>
-              
+
               <!-- 重试按钮 -->
-              <el-button
-                v-if="row.status === 'failed'"
-                type="warning"
-                @click="handleRetryTask(row)"
-                :icon="RefreshRight"
-                :loading="loadingTasks.has(row.id)"
-              >
+              <el-button v-if="row.status === 'failed'" type="warning" @click="handleRetryTask(row)"
+                :icon="RefreshRight" :loading="loadingTasks.has(row.id)">
                 {{ $t('tasks.actions.retry') }}
-            </el-button>
-          </el-button-group>
-            
+              </el-button>
+            </el-button-group>
+
             <!-- 更多操作下拉菜单 -->
             <el-dropdown @command="(command) => handleDropdownCommand(command, row)" style="margin-left: 8px;">
               <el-button type="primary" :icon="More" size="small">
@@ -321,69 +281,51 @@
               <template #dropdown>
                 <el-dropdown-menu>
                   <el-dropdown-item command="logs">
-                    <el-icon><Document /></el-icon>{{ $t('tasks.actions.viewLogs') }}
+                    <el-icon>
+                      <Document />
+                    </el-icon>{{ $t('tasks.actions.viewLogs') }}
                   </el-dropdown-item>
                   <el-dropdown-item command="detail">
-                    <el-icon><InfoFilled /></el-icon>{{ $t('tasks.actions.detail') }}
+                    <el-icon>
+                      <InfoFilled />
+                    </el-icon>{{ $t('tasks.actions.detail') }}
                   </el-dropdown-item>
                   <el-dropdown-item command="duplicate">
-                    <el-icon><CopyDocument /></el-icon>{{ $t('tasks.actions.duplicate') }}
+                    <el-icon>
+                      <CopyDocument />
+                    </el-icon>{{ $t('tasks.actions.duplicate') }}
                   </el-dropdown-item>
-                  <el-dropdown-item 
-                    command="delete" 
-                    :disabled="['running', 'assigned'].includes(row.status)"
-                    style="color: #f56c6c;"
-                  >
-                    <el-icon><Delete /></el-icon>{{ $t('tasks.actions.delete') }}
+                  <el-dropdown-item command="delete" :disabled="['running', 'assigned'].includes(row.status)"
+                    style="color: #f56c6c;">
+                    <el-icon>
+                      <Delete />
+                    </el-icon>{{ $t('tasks.actions.delete') }}
                   </el-dropdown-item>
                 </el-dropdown-menu>
               </template>
             </el-dropdown>
-        </template>
-      </el-table-column>
-    </el-table>
+          </template>
+        </el-table-column>
+      </el-table>
 
       <!-- 分页 -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="totalTasks"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-          style="margin-top: 20px; text-align: right;"
-        />
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]"
+          :total="totalTasks" layout="total, sizes, prev, pager, next, jumper" @size-change="handleSizeChange"
+          @current-change="handleCurrentChange" style="margin-top: 20px; text-align: right;" />
       </div>
     </div>
-    
+
     <!-- 任务创建向导对话框 -->
-    <el-dialog
-      :title="copyFromTask ? $t('tasks.copyTask') : $t('tasks.createTask')"
-      v-model="taskWizardVisible"
-      width="60vw"
-      :before-close="handleWizardClose"
-      :close-on-click-modal="false"
-      :close-on-press-escape="false"
-    >
-      <TaskWizard 
-        v-model:visible="taskWizardVisible"
-        :copy-from-task="copyFromTask"
-        @created="handleTaskCreated"
-      />
+    <el-dialog :title="copyFromTask ? $t('tasks.copyTask') : $t('tasks.createTask')" v-model="taskWizardVisible"
+      width="60vw" :before-close="handleWizardClose" :close-on-click-modal="false" :close-on-press-escape="false">
+      <TaskWizard v-model:visible="taskWizardVisible" :copy-from-task="copyFromTask" @created="handleTaskCreated" />
     </el-dialog>
 
     <!-- 任务详情对话框 -->
-    <el-drawer
-      v-model="detailDialogVisible"
-      :title="$t('tasks.taskDetail')"
-      direction="rtl"
-      :size="isFullscreen ? '80vw' : '45vw'"
-      :with-header="false"
-      custom-class="task-detail-drawer"
-      :close-on-click-modal="false"
-    >
+    <el-drawer v-model="detailDialogVisible" :title="$t('tasks.taskDetail')" direction="rtl"
+      :size="isFullscreen ? '80vw' : '45vw'" :with-header="false" custom-class="task-detail-drawer"
+      :close-on-click-modal="false">
       <div class="drawer-header">
         <span>{{ $t('tasks.taskDetailTitle') }}</span>
         <div>
@@ -392,53 +334,33 @@
         </div>
       </div>
       <div class="task-detail-content">
-        <TaskDetail 
-          :task="selectedTask"
-          :nodes="nodes"
-        />
+        <TaskDetail :task="selectedTask" :nodes="nodes" />
       </div>
     </el-drawer>
-    
+
     <!-- 任务日志对话框 -->
     <el-dialog
       :title="`${$t('tasks.taskLogs')}${logsAutoRefresh ? ` (${$t('tasks.autoRefresh')}: ${logsRefreshCountdown}s)` : ''}`"
-      v-model="logsDialogVisible"
-      width="1000px"
-      :before-close="handleLogsDialogClose"
-    >
+      v-model="logsDialogVisible" width="1000px" :before-close="handleLogsDialogClose">
       <div class="logs-container">
         <div class="logs-toolbar">
           <div class="logs-toolbar-left">
             <el-button-group>
-              <el-button
-                :type="logLevel === 'all' ? 'primary' : 'default'"
-                @click="logLevel = 'all'"
-              >
+              <el-button :type="logLevel === 'all' ? 'primary' : 'default'" @click="logLevel = 'all'">
                 {{ $t('tasks.logLevels.all') }}
               </el-button>
-              <el-button
-                :type="logLevel === 'error' ? 'danger' : 'default'"
-                @click="logLevel = 'error'"
-              >
+              <el-button :type="logLevel === 'error' ? 'danger' : 'default'" @click="logLevel = 'error'">
                 {{ $t('tasks.logLevels.error') }}
               </el-button>
-              <el-button
-                :type="logLevel === 'progress' ? 'success' : 'default'"
-                @click="logLevel = 'progress'"
-              >
+              <el-button :type="logLevel === 'progress' ? 'success' : 'default'" @click="logLevel = 'progress'">
                 {{ $t('tasks.logLevels.progress') }}
               </el-button>
             </el-button-group>
-            
+
             <!-- 刷新配置 -->
             <div class="refresh-config">
-              <el-select 
-                v-model="logsRefreshInterval" 
-                :placeholder="$t('tasks.refreshInterval')" 
-                size="small"
-                style="width: 120px; margin-left: 10px;"
-                @change="handleLogsRefreshIntervalChange"
-              >
+              <el-select v-model="logsRefreshInterval" :placeholder="$t('tasks.refreshInterval')" size="small"
+                style="width: 120px; margin-left: 10px;" @change="handleLogsRefreshIntervalChange">
                 <el-option :label="$t('tasks.closeRefresh')" :value="0" />
                 <el-option :label="`3${$t('tasks.seconds')}`" :value="3000" />
                 <el-option :label="`5${$t('tasks.seconds')}`" :value="5000" />
@@ -446,20 +368,14 @@
                 <el-option :label="`1${$t('tasks.minutes')}`" :value="60000" />
                 <el-option :label="`5${$t('tasks.minutes')}`" :value="300000" />
               </el-select>
-              
-              <el-button 
-                :type="logsAutoRefresh ? 'success' : 'default'"
-                :icon="logsAutoRefresh ? Loading : Refresh"
-                size="small"
-                style="margin-left: 5px;"
-                @click="toggleLogsAutoRefresh"
-                :loading="logsAutoRefresh"
-              >
+
+              <el-button :type="logsAutoRefresh ? 'success' : 'default'" :icon="logsAutoRefresh ? Loading : Refresh"
+                size="small" style="margin-left: 5px;" @click="toggleLogsAutoRefresh" :loading="logsAutoRefresh">
                 {{ logsAutoRefresh ? `${logsRefreshCountdown}s` : $t('tasks.manualRefresh') }}
               </el-button>
             </div>
           </div>
-          
+
           <div class="logs-toolbar-right">
             <el-button @click="fetchTaskLogs" :icon="Refresh">{{ $t('tasks.refresh') }}</el-button>
             <el-button @click="cleanupLogs('duplicate')" :icon="Delete" style="margin-left: 10px;">
@@ -470,15 +386,9 @@
             </el-button>
           </div>
         </div>
-        
-        <el-table
-          :data="filteredLogs"
-          v-loading="logsLoading"
-          height="400"
-          style="width: 100%"
-          :default-sort="{ prop: 'created_at', order: 'descending' }"
-          :row-key="(row) => row.id"
-        >
+
+        <el-table :data="filteredLogs" v-loading="logsLoading" height="400" style="width: 100%"
+          :default-sort="{ prop: 'created_at', order: 'descending' }" :row-key="(row) => row.id">
           <el-table-column prop="created_at" :label="$t('common.time')" width="180" sortable>
             <template #default="{ row }">
               {{ formatDateTime(row.created_at) }}
@@ -486,9 +396,9 @@
           </el-table-column>
           <el-table-column prop="status" :label="$t('tasks.status')" width="100">
             <template #default="{ row }">
-                              <el-tag :type="getLogStatusType(row.status, row.message)" size="small">
-                  {{ row.message && row.message.includes('同步进度') ? $t('tasks.logLevels.progress') : row.status }}
-                </el-tag>
+              <el-tag :type="getLogStatusType(row.status, row.message)" size="small">
+                {{ row.message && row.message.includes('同步进度') ? $t('tasks.logLevels.progress') : row.status }}
+              </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="message" :label="$t('common.message')" show-overflow-tooltip>
@@ -497,18 +407,13 @@
             </template>
           </el-table-column>
         </el-table>
-        
+
         <!-- 分页 -->
         <div class="logs-pagination" v-if="logsPagination.total > logsPagination.per_page">
-          <el-pagination
-            v-model:current-page="logsPagination.page"
-            v-model:page-size="logsPagination.per_page"
-            :page-sizes="[20, 50, 100, 200]"
-            :total="logsPagination.total"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="handleLogsSizeChange"
-            @current-change="handleLogsCurrentChange"
-          />
+          <el-pagination v-model:current-page="logsPagination.page" v-model:page-size="logsPagination.per_page"
+            :page-sizes="[20, 50, 100, 200]" :total="logsPagination.total"
+            layout="total, sizes, prev, pager, next, jumper" @size-change="handleLogsSizeChange"
+            @current-change="handleLogsCurrentChange" />
         </div>
       </div>
     </el-dialog>
@@ -590,24 +495,24 @@ const logsRefreshTimer = ref(null)
 // 计算属性
 const filteredTasks = computed(() => {
   let filtered = tasks.value
-  
+
   // 搜索筛选
   if (searchQuery.value) {
-    filtered = filtered.filter(task => 
+    filtered = filtered.filter(task =>
       task.name.toLowerCase().includes(searchQuery.value.toLowerCase())
     )
   }
-  
+
   // 状态筛选
   if (statusFilter.value) {
     filtered = filtered.filter(task => task.status === statusFilter.value)
   }
-  
+
   // 类型筛选
   if (typeFilter.value) {
     filtered = filtered.filter(task => task.type === typeFilter.value)
   }
-  
+
   return filtered
 })
 
@@ -633,7 +538,7 @@ const fetchStatistics = async () => {
   try {
     const response = await axios.get('/api/tasks/statistics')
     taskStats.value = response.data.data
-    
+
     // 获取在线节点数
     const nodesResponse = await axios.get('/api/nodes')
     OnlineNodeStats.value = nodesResponse.data.data.filter(node => node.status === 'online').length
@@ -647,11 +552,11 @@ const startAutoRefresh = () => {
   if (refreshInterval.value) {
     clearInterval(refreshInterval.value)
   }
-  
+
   refreshCountdown.value = 30
   refreshInterval.value = setInterval(() => {
     refreshCountdown.value--
-    
+
     if (refreshCountdown.value <= 0) {
       fetchTasks()
       refreshCountdown.value = 30
@@ -675,7 +580,7 @@ const fetchTasks = async () => {
         page_size: pageSize.value
       }
     })
-    if (response.data.status === 'success') { 
+    if (response.data.status === 'success') {
       tasks.value = response.data.data || []
       totalTasks.value = response.data.total || 0
     }
@@ -722,7 +627,7 @@ const fetchStorages = async () => {
 
 const fetchTaskLogs = async () => {
   if (!currentTaskId.value || logsLoading.value) return
-  
+
   logsLoading.value = true
   try {
     const response = await axios.get(`/api/tasks/${currentTaskId.value}/logs`, {
@@ -733,21 +638,21 @@ const fetchTaskLogs = async () => {
     })
     if (response.data.status === 'success') {
       const allLogs = response.data.data || []
-      
+
       // 优化日志显示：对于进度日志，只保留最新的一条
       const progressLogs = allLogs.filter(log => log.message && log.message.includes('同步进度'))
       const otherLogs = allLogs.filter(log => !log.message || !log.message.includes('同步进度'))
-      
+
       // 如果有进度日志，只取最新的一条
-      const latestProgressLog = progressLogs.length > 0 
+      const latestProgressLog = progressLogs.length > 0
         ? progressLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
         : null
-      
+
       // 合并日志，进度日志放在最前面
-      taskLogs.value = latestProgressLog 
+      taskLogs.value = latestProgressLog
         ? [latestProgressLog, ...otherLogs]
         : otherLogs
-      
+
       logsPagination.value.total = response.data.total || 0
       logsPagination.value.page = response.data.page || 1
       logsPagination.value.per_page = response.data.per_page || 20
@@ -766,7 +671,7 @@ const cleanupLogs = async (type = 'duplicate') => {
       type: type,
       days: 7
     })
-    
+
     if (response.data.status === 'success') {
       ElMessage.success(response.data.message)
       // 重新获取日志
@@ -795,7 +700,7 @@ const handleLogsCurrentChange = (page) => {
 const handleLogsRefreshIntervalChange = (interval) => {
   // 保存到本地存储
   localStorage.setItem('logsRefreshInterval', interval.toString())
-  
+
   stopLogsAutoRefresh()
   if (interval > 0) {
     startLogsAutoRefresh(interval)
@@ -805,16 +710,16 @@ const handleLogsRefreshIntervalChange = (interval) => {
 const startLogsAutoRefresh = (interval = null) => {
   const refreshInterval = interval || logsRefreshInterval.value
   if (refreshInterval <= 0) return
-  
+
   stopLogsAutoRefresh()
-  
+
   logsAutoRefresh.value = true
   logsRefreshInterval.value = refreshInterval
   logsRefreshCountdown.value = Math.floor(refreshInterval / 1000)
-  
+
   logsRefreshTimer.value = setInterval(() => {
     logsRefreshCountdown.value--
-    
+
     if (logsRefreshCountdown.value <= 0) {
       // 执行刷新
       fetchTaskLogs()
@@ -875,7 +780,7 @@ const handleViewLogs = (task) => {
   currentTaskId.value = task.id
   logsDialogVisible.value = true
   fetchTaskLogs()
-  
+
   // 如果之前设置了自动刷新，则启动
   if (logsRefreshInterval.value > 0) {
     startLogsAutoRefresh()
@@ -895,7 +800,7 @@ const handleLogsDialogClose = () => {
 
 const handleTaskCreated = (task) => {
   ElMessage.success(copyFromTask.value ? '任务复制成功' : '任务创建成功')
-  copyFromTask.value = null 
+  copyFromTask.value = null
   fetchTasks()
 }
 
@@ -904,10 +809,10 @@ const handleTaskCreated = (task) => {
 // 新增任务管理方法
 const handleStartTask = async (task) => {
   if (loadingTasks.value.has(task.id)) return
-  
+
   loadingTasks.value.add(task.id)
   try {
-      await axios.post(`/api/tasks/${task.id}/start`)
+    await axios.post(`/api/tasks/${task.id}/start`)
     ElMessage.success('任务启动成功')
     fetchTasks()
   } catch (error) {
@@ -919,7 +824,7 @@ const handleStartTask = async (task) => {
 
 const handlePauseTask = async (task) => {
   if (loadingTasks.value.has(task.id)) return
-  
+
   loadingTasks.value.add(task.id)
   try {
     await axios.post(`/api/tasks/${task.id}/pause`)
@@ -934,7 +839,7 @@ const handlePauseTask = async (task) => {
 
 const handleResumeTask = async (task) => {
   if (loadingTasks.value.has(task.id)) return
-  
+
   loadingTasks.value.add(task.id)
   try {
     await axios.post(`/api/tasks/${task.id}/resume`)
@@ -949,15 +854,15 @@ const handleResumeTask = async (task) => {
 
 const handleCancelTask = async (task) => {
   if (loadingTasks.value.has(task.id)) return
-  
+
   try {
     await ElMessageBox.confirm('确定要取消此任务吗？', '提示', {
       type: 'warning'
     })
-    
+
     loadingTasks.value.add(task.id)
     const response = await axios.post(`/api/tasks/${task.id}/cancel`)
-    
+
     if (response.data.status === 'success') {
       // 根据任务状态显示不同的消息
       if (task.status === 'running' || task.status === 'assigned') {
@@ -968,7 +873,7 @@ const handleCancelTask = async (task) => {
         ElMessage.success('任务已取消')
       }
     }
-    
+
     fetchTasks()
   } catch (error) {
     if (error !== 'cancel') {
@@ -987,7 +892,7 @@ const startCancelStatusPolling = (taskId) => {
   if (cancelPollingTimers.value.has(taskId)) {
     clearInterval(cancelPollingTimers.value.get(taskId))
   }
-  
+
   // 启动新的轮询
   const timer = setInterval(async () => {
     try {
@@ -1013,9 +918,9 @@ const startCancelStatusPolling = (taskId) => {
       console.error('轮询任务状态失败:', error)
     }
   }, 2000) // 每2秒检查一次
-  
+
   cancelPollingTimers.value.set(taskId, timer)
-  
+
   // 30秒后自动停止轮询
   setTimeout(() => {
     if (cancelPollingTimers.value.has(taskId)) {
@@ -1033,7 +938,7 @@ const handleDeleteTask = async (task) => {
       confirmButtonText: '确定删除',
       cancelButtonText: '取消'
     })
-    
+
     const force = ['running', 'assigned'].includes(task.status)
     await axios.delete(`/api/tasks/${task.id}${force ? '?force=true' : ''}`)
     ElMessage.success('删除任务成功')
@@ -1056,7 +961,7 @@ const handleDuplicateTask = async (task) => {
         ElMessage.warning('该任务配置不完整，无法复制')
         return
       }
-      
+
       // 先显示对话框
       taskWizardVisible.value = true
       // 等待对话框挂载完成
@@ -1077,33 +982,33 @@ const getProgressTooltip = (task) => {
   if (task.status !== 'running' && task.status !== 'assigned') {
     return null
   }
-  
+
   const details = []
-  
+
   // 添加进度信息
   if (task.progress !== undefined && task.progress !== null) {
     details.push(`同步进度: ${task.progress.toFixed(1)}%`)
   }
-  
+
   // 添加传输大小信息
   if (task.details && task.details.transferred_size && task.details.total_size) {
     const transferred = formatBytes(task.details.transferred_size)
     const total = formatBytes(task.details.total_size)
     details.push(`(${transferred}/${total})`)
   }
-  
+
   // 添加传输速率
   if (task.details && task.details.transfer_speed) {
     const transfer_speed = task.details.transfer_speed
     details.push(`速率: ${transfer_speed}`)
   }
-  
+
   // 添加剩余时间信息
   if (task.details && task.details.eta) {
     const eta = task.details.eta
     details.push(`剩余时间: ${eta}`)
   }
-  
+
   return details.length > 0 ? details.join(' ') : null
 }
 
@@ -1184,12 +1089,12 @@ const handleRetryTask = async (task) => {
 // 批量操作
 const batchCancel = async () => {
   if (selectedTasks.value.length === 0) return
-  
+
   try {
     await ElMessageBox.confirm(`确定要取消选中的 ${selectedTasks.value.length} 个任务吗？`, '提示', {
       type: 'warning'
     })
-    
+
     const taskIds = selectedTasks.value.map(task => task.id)
     await axios.put('/api/tasks/batch/cancel', { task_ids: taskIds })
     ElMessage.success('批量取消成功')
@@ -1203,12 +1108,12 @@ const batchCancel = async () => {
 
 const batchRetry = async () => {
   if (selectedTasks.value.length === 0) return
-  
+
   try {
     await ElMessageBox.confirm(`确定要重试选中的 ${selectedTasks.value.length} 个任务吗？`, '提示', {
       type: 'warning'
     })
-    
+
     const taskIds = selectedTasks.value.map(task => task.id)
     await axios.put('/api/tasks/batch/retry', { task_ids: taskIds })
     ElMessage.success('批量重试成功')
@@ -1222,12 +1127,12 @@ const batchRetry = async () => {
 
 const batchDelete = async () => {
   if (selectedTasks.value.length === 0) return
-  
+
   try {
     await ElMessageBox.confirm(`确定要删除选中的 ${selectedTasks.value.length} 个任务吗？`, '提示', {
       type: 'warning'
     })
-    
+
     const taskIds = selectedTasks.value.map(task => task.id)
     await axios.delete('/api/tasks/batch/delete', { data: { task_ids: taskIds } })
     ElMessage.success('批量删除成功')
@@ -1347,7 +1252,7 @@ const getLogStatusType = (status, message) => {
   if (message && message.includes('同步进度')) {
     return 'success'
   }
-  
+
   const types = {
     error: 'danger',
     progress: 'success',
@@ -1421,7 +1326,7 @@ onMounted(() => {
 onUnmounted(() => {
   stopAutoRefresh()
   stopLogsAutoRefresh()
-  
+
   // 清理取消状态轮询定时器
   cancelPollingTimers.value.forEach((timer) => {
     clearInterval(timer)
@@ -1670,7 +1575,8 @@ onUnmounted(() => {
 .task-detail-drawer :deep(.el-drawer__body) {
   padding: 0;
   overflow-y: auto;
-  max-height: calc(100vh - 200px); /* Adjust for header and footer */
+  max-height: calc(100vh - 200px);
+  /* Adjust for header and footer */
 }
 
 .task-detail-drawer :deep(.el-drawer__footer) {
@@ -1709,6 +1615,7 @@ onUnmounted(() => {
   white-space: nowrap;
   vertical-align: bottom;
 }
+
 .drawer-header {
   display: flex;
   justify-content: space-between;
@@ -1726,28 +1633,31 @@ onUnmounted(() => {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .header-right {
     margin-top: 15px;
   }
-  
+
   .toolbar {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .toolbar-right {
     margin-top: 15px;
   }
 }
+
 .mb-16 {
   margin-bottom: 16px;
 }
+
 .stat-flex {
   display: flex;
   align-items: center;
   justify-content: space-between;
 }
+
 .stat-icon {
   width: 55px;
   height: 55px;
@@ -1759,26 +1669,32 @@ onUnmounted(() => {
   margin-right: 14px;
   background: var(--bg-color);
 }
+
 .stat-icon.total {
   color: #409EFF;
   background: #e8f3ff;
 }
+
 .stat-icon.running {
   color: #67C23A;
   background: #f0f9eb;
 }
+
 .stat-icon.pending {
   color: #E6A23C;
   background: #fdf6ec;
 }
+
 .stat-icon.completed {
   color: #409EFF;
   background: #e8f3ff;
 }
+
 .stat-icon.failed {
   color: #F56C6C;
   background: #fef0f0;
 }
+
 .stat-icon.online {
   color: var(--text-secondary);
   background: #f0f9eb;
@@ -1795,4 +1711,4 @@ onUnmounted(() => {
   padding: 2px 4px;
   margin: 0 -4px;
 }
-</style> 
+</style>

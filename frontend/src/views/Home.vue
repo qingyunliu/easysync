@@ -9,21 +9,15 @@
           <component :is="isCollapsed ? Expand : Fold" />
         </el-icon>
       </div>
-      <el-menu
-        default-active="1"
-        class="el-menu-vertical"
-        background-color="transparent"
-        text-color="#fff"
-        active-text-color="#00f2fe"
-        router
-        :collapse="isCollapsed"
-        :collapse-transition="true"
-      >
+      <el-menu default-active="1" class="el-menu-vertical" background-color="transparent" text-color="#fff"
+        active-text-color="#00f2fe" router :collapse="isCollapsed" :collapse-transition="true">
         <!-- 控制台 -->
         <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.dashboard') }}</div>
         <el-tooltip :content="$t('nav.dashboard')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/dashboard">
-            <el-icon><Histogram /></el-icon>
+            <el-icon>
+              <Histogram />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.dashboard') }}</span>
           </el-menu-item>
         </el-tooltip>
@@ -32,25 +26,33 @@
         <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.resourceManagement') }}</div>
         <el-tooltip :content="$t('nav.clients')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/clients">
-            <el-icon><Monitor /></el-icon>
+            <el-icon>
+              <Monitor />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.clients') }}</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip :content="$t('nav.nodes')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/nodes">
-            <el-icon><Connection /></el-icon>
+            <el-icon>
+              <Connection />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.nodes') }}</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip :content="$t('nav.storage')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/storages">
-            <el-icon><Files /></el-icon>
+            <el-icon>
+              <Files />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.storage') }}</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip :content="$t('nav.tasks')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/tasks">
-            <el-icon><Clock /></el-icon>
+            <el-icon>
+              <Clock />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.tasks') }}</span>
           </el-menu-item>
         </el-tooltip>
@@ -59,13 +61,17 @@
         <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.operationsManagement') }}</div>
         <el-tooltip :content="$t('nav.auditLogs')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/audit-logs">
-            <el-icon><Notebook /></el-icon>
+            <el-icon>
+              <Notebook />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.auditLogs') }}</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip :content="$t('nav.events')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/events">
-            <el-icon><List /></el-icon>
+            <el-icon>
+              <List />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.events') }}</span>
           </el-menu-item>
         </el-tooltip>
@@ -74,37 +80,49 @@
         <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.monitoring') }}</div>
         <el-tooltip :content="$t('nav.systemMonitoring')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/monitoring">
-            <el-icon><DataAnalysis /></el-icon>
+            <el-icon>
+              <DataAnalysis />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.systemMonitoring') }}</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip :content="$t('nav.alertPolicies')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/alert-policies">
-            <el-icon><Warning /></el-icon>
+            <el-icon>
+              <Warning />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.alertPolicies') }}</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip :content="$t('nav.alertTemplates')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/alert-templates">
-            <el-icon><Document /></el-icon>
+            <el-icon>
+              <Document />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.alertTemplates') }}</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip :content="$t('nav.notificationChannels')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/notification-channels">
-            <el-icon><Message /></el-icon>
+            <el-icon>
+              <Message />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.notificationChannels') }}</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip :content="$t('nav.notificationTargets')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/notification-targets">
-            <el-icon><User /></el-icon>
+            <el-icon>
+              <User />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.notificationTargets') }}</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip :content="$t('nav.notifications')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/notifications">
-            <el-icon><Bell /></el-icon>
+            <el-icon>
+              <Bell />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.notifications') }}</span>
           </el-menu-item>
         </el-tooltip>
@@ -113,13 +131,17 @@
         <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.systemManagement') }}</div>
         <el-tooltip :content="$t('nav.logs')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/logs">
-            <el-icon><Document /></el-icon>
+            <el-icon>
+              <Document />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.logs') }}</span>
           </el-menu-item>
         </el-tooltip>
         <el-tooltip :content="$t('nav.settings')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/settings">
-            <el-icon><Setting /></el-icon>
+            <el-icon>
+              <Setting />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.settings') }}</span>
           </el-menu-item>
         </el-tooltip>
@@ -128,13 +150,15 @@
         <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.personalCenter') }}</div>
         <el-tooltip :content="$t('nav.profile')" placement="right" :disabled="!isCollapsed">
           <el-menu-item index="/profile">
-            <el-icon><User /></el-icon>
+            <el-icon>
+              <User />
+            </el-icon>
             <span v-if="!isCollapsed">{{ $t('nav.profile') }}</span>
           </el-menu-item>
         </el-tooltip>
       </el-menu>
     </div>
-    
+
     <div class="main-content">
       <div class="header">
         <div class="header-right">
@@ -142,12 +166,9 @@
           <ThemeToggle />
           <el-dropdown @command="handleCommand" trigger="click">
             <div class="user-info">
-              <el-avatar 
-                :size="32" 
-                :src="avatarUrl"
+              <el-avatar :size="32" :src="avatarUrl"
                 :style="{ backgroundColor: userStore.user?.avatar ? 'transparent' : '#1890ff' }"
-                @error="handleAvatarError"
-              >
+                @error="handleAvatarError">
                 {{ userStore.user?.username?.charAt(0)?.toUpperCase() }}
               </el-avatar>
               <span class="username">
@@ -158,16 +179,22 @@
                   {{ $t('common.loading') }}
                 </template>
               </span>
-              <el-icon class="arrow-down"><ArrowDown /></el-icon>
+              <el-icon class="arrow-down">
+                <ArrowDown />
+              </el-icon>
             </div>
             <template #dropdown>
               <el-dropdown-menu>
                 <el-dropdown-item command="profile">
-                  <el-icon><User /></el-icon>
+                  <el-icon>
+                    <User />
+                  </el-icon>
                   <span>{{ $t('nav.profile') }}</span>
                 </el-dropdown-item>
                 <el-dropdown-item command="logout" divided>
-                  <el-icon><SwitchButton /></el-icon>
+                  <el-icon>
+                    <SwitchButton />
+                  </el-icon>
                   <span>{{ $t('auth.logout') }}</span>
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -175,7 +202,7 @@
           </el-dropdown>
         </div>
       </div>
-      
+
       <div class="content">
         <router-view></router-view>
       </div>
@@ -190,13 +217,13 @@ import { useI18n } from 'vue-i18n'
 import { ElNotification } from 'element-plus'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import LanguageSwitch from '@/components/LanguageSwitch.vue'
-import { 
-  Histogram, 
+import {
+  Histogram,
   DataAnalysis,
-  Document, 
+  Document,
   Monitor,
   Connection,
-  Setting, 
+  Setting,
   ArrowDown,
   User,
   SwitchButton,
@@ -308,7 +335,7 @@ const handleCommand = async (command) => {
     } catch (error) {
       console.warn('退出登录审计记录失败:', error)
     }
-    
+
     // 清除本地存储
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
@@ -344,10 +371,11 @@ const handleAvatarError = () => {
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border-color);
   box-shadow: 2px 0 16px 0 rgba(24, 144, 255, 0.06);
-  transition: width 0.3s cubic-bezier(.4,0,.2,1), background 0.3s;
+  transition: width 0.3s cubic-bezier(.4, 0, .2, 1), background 0.3s;
   position: relative;
   backdrop-filter: blur(8px);
 }
+
 .sidebar.collapsed {
   width: 60px;
 }
@@ -372,17 +400,21 @@ const handleAvatarError = () => {
   transition: background 0.2s;
   margin-bottom: 2px;
 }
+
 .collapse-btn:hover {
   background: var(--bg-secondary);
 }
+
 .el-menu {
   background: transparent;
   border-right: none;
   padding: 18px 0;
 }
+
 .sidebar.collapsed .el-menu {
   padding: 8px 0;
 }
+
 .el-menu-item {
   height: 45px;
   font-weight: 500;
@@ -397,20 +429,24 @@ const handleAvatarError = () => {
   border: 2px solid transparent;
   position: relative;
 }
+
 .el-menu-item span {
   transition: opacity 0.2s;
 }
+
 .sidebar.collapsed .el-menu-item span {
   opacity: 0;
   width: 0;
   display: inline-block;
 }
+
 .el-menu-item:hover {
   background: var(--bg-secondary);
   color: var(--sidebar-active);
   box-shadow: 0 2px 8px 0 rgba(64, 158, 255, 0.10);
   border: 1px solid var(--border-color);
 }
+
 .el-menu-item.is-active {
   background: var(--bg-secondary);
   color: var(--sidebar-active) !important;
@@ -572,4 +608,4 @@ const handleAvatarError = () => {
   font-weight: 500;
   user-select: none;
 }
-</style> 
+</style>

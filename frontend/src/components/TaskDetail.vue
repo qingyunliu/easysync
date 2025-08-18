@@ -28,9 +28,12 @@
         <el-descriptions-item :label="$t('taskDetail.executionNode')">
           {{ task.node_id ? getNodeName(task.node_id) : $t('taskDetail.unassigned') }}
         </el-descriptions-item>
-        <el-descriptions-item :label="$t('taskDetail.createTime')">{{ formatDateTime(task.created_at) }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('taskDetail.startTime')">{{ task.started_at ? formatDateTime(task.started_at) : $t('taskDetail.notStarted') }}</el-descriptions-item>
-        <el-descriptions-item :label="$t('taskDetail.completeTime')">{{ task.completed_at ? formatDateTime(task.completed_at) : $t('taskDetail.notCompleted') }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('taskDetail.createTime')">{{ formatDateTime(task.created_at)
+          }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('taskDetail.startTime')">{{ task.started_at ? formatDateTime(task.started_at) :
+          $t('taskDetail.notStarted') }}</el-descriptions-item>
+        <el-descriptions-item :label="$t('taskDetail.completeTime')">{{ task.completed_at ?
+          formatDateTime(task.completed_at) : $t('taskDetail.notCompleted') }}</el-descriptions-item>
       </el-descriptions>
     </el-card>
 
@@ -38,7 +41,8 @@
     <el-card class="detail-card" :header="$t('taskDetail.sourceInfo')">
       <template v-if="task.source_type === 'storage' && task.source_storage_config">
         <el-descriptions :column="2" border>
-          <el-descriptions-item :label="$t('taskDetail.storageName')">{{ task.source_storage_config.name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.storageName')">{{ task.source_storage_config.name
+            }}</el-descriptions-item>
           <el-descriptions-item :label="$t('taskDetail.storageType')">
             <el-tag :type="getStorageTypeColor(task.source_storage_config.type)">
               {{ getStorageTypeText(task.source_storage_config.type) }}
@@ -54,14 +58,16 @@
       </template>
       <template v-else-if="task.source_type === 'client' && task.source_client_config">
         <el-descriptions :column="2" border>
-          <el-descriptions-item :label="$t('taskDetail.clientName')">{{ task.source_client_config.name }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('taskDetail.ipAddress')">{{ task.source_client_config.ip_address }}</el-descriptions-item>
-                      <el-descriptions-item :label="$t('taskDetail.status')">
-              <el-tag :type="getStatusType(task.source_client_config.status)">
-                {{ getStatusText(task.source_client_config.status) }}
-              </el-tag>
-            </el-descriptions-item>
-            <el-descriptions-item :label="$t('taskDetail.sourcePath')">{{ task.source_path }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.clientName')">{{ task.source_client_config.name
+            }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.ipAddress')">{{ task.source_client_config.ip_address
+            }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.status')">
+            <el-tag :type="getStatusType(task.source_client_config.status)">
+              {{ getStatusText(task.source_client_config.status) }}
+            </el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.sourcePath')">{{ task.source_path }}</el-descriptions-item>
         </el-descriptions>
       </template>
       <template v-else>
@@ -73,7 +79,8 @@
     <el-card class="detail-card" :header="$t('taskDetail.targetInfo')">
       <template v-if="task.target_storage_config">
         <el-descriptions :column="2" border>
-          <el-descriptions-item :label="$t('taskDetail.storageName')">{{ task.target_storage_config.name }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.storageName')">{{ task.target_storage_config.name
+            }}</el-descriptions-item>
           <el-descriptions-item :label="$t('taskDetail.storageType')">
             <el-tag :type="getStorageTypeColor(task.target_storage_config.type)">
               {{ getStorageTypeText(task.target_storage_config.type) }}
@@ -97,23 +104,26 @@
       <template v-if="task.options">
         <el-descriptions :column="3" border>
           <el-descriptions-item :label="$t('taskDetail.deleteExtraFiles')">
-            <el-tag :type="task.options.delete ? 'success' : 'info'">{{ task.options.delete ? $t('common.yes') : $t('common.no') }}</el-tag>
+            <el-tag :type="task.options.delete ? 'success' : 'info'">{{ task.options.delete ? $t('common.yes') :
+              $t('common.no') }}</el-tag>
           </el-descriptions-item>
-                      <el-descriptions-item :label="$t('taskDetail.checksumCheck')">
-              <el-tag :type="task.options.checksum ? 'success' : 'info'">{{ task.options.checksum ? $t('common.yes') : $t('common.no') }}</el-tag>
-            </el-descriptions-item>
-                      <el-descriptions-item :label="$t('taskDetail.compressTransfer')">
-              <el-tag :type="task.options.compress ? 'success' : 'info'">{{ task.options.compress ? $t('common.yes') : $t('common.no') }}</el-tag>
-            </el-descriptions-item>
-                      <el-descriptions-item :label="$t('taskDetail.bandwidthLimit')">
-              {{ task.options.bandwidth_limit ? `${task.options.bandwidth_limit} KB/s` : $t('taskDetail.noLimit') }}
-            </el-descriptions-item>
-                      <el-descriptions-item :label="$t('taskDetail.maxConnections')">
-              {{ task.options.max_connections || $t('taskDetail.default') }}
-            </el-descriptions-item>
-                      <el-descriptions-item :label="$t('taskDetail.retryCount')">
-              {{ task.options.retry_options?.max_retries || $t('taskDetail.default') }}
-            </el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.checksumCheck')">
+            <el-tag :type="task.options.checksum ? 'success' : 'info'">{{ task.options.checksum ? $t('common.yes') :
+              $t('common.no') }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.compressTransfer')">
+            <el-tag :type="task.options.compress ? 'success' : 'info'">{{ task.options.compress ? $t('common.yes') :
+              $t('common.no') }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.bandwidthLimit')">
+            {{ task.options.bandwidth_limit ? `${task.options.bandwidth_limit} KB/s` : $t('taskDetail.noLimit') }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.maxConnections')">
+            {{ task.options.max_connections || $t('taskDetail.default') }}
+          </el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.retryCount')">
+            {{ task.options.retry_options?.max_retries || $t('taskDetail.default') }}
+          </el-descriptions-item>
         </el-descriptions>
       </template>
       <template v-else>
@@ -122,12 +132,15 @@
     </el-card>
 
     <!-- 传输统计信息 -->
-    <el-card class="detail-card" :header="$t('taskDetail.transferStatistics')" v-if="task.details && hasTransferStats(task.details)">
+    <el-card class="detail-card" :header="$t('taskDetail.transferStatistics')"
+      v-if="task.details && hasTransferStats(task.details)">
       <el-row :gutter="20">
         <el-col :span="6">
           <div class="stat-item">
             <div class="stat-icon">
-              <el-icon><Document /></el-icon>
+              <el-icon>
+                <Document />
+              </el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ task.details.transferred_files || 0 }}</div>
@@ -138,7 +151,9 @@
         <el-col :span="6">
           <div class="stat-item">
             <div class="stat-icon">
-              <el-icon><Document /></el-icon>
+              <el-icon>
+                <Document />
+              </el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ task.details.total_files || 0 }}</div>
@@ -149,7 +164,9 @@
         <el-col :span="6">
           <div class="stat-item">
             <div class="stat-icon">
-              <el-icon><Connection /></el-icon>
+              <el-icon>
+                <Connection />
+              </el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ formatFileSize(task.details.transferred_size || 0) }}</div>
@@ -160,7 +177,9 @@
         <el-col :span="6">
           <div class="stat-item">
             <div class="stat-icon">
-              <el-icon><Connection /></el-icon>
+              <el-icon>
+                <Connection />
+              </el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ formatFileSize(task.details.total_size || 0) }}</div>
@@ -169,13 +188,15 @@
           </div>
         </el-col>
       </el-row>
-      
+
       <!-- 传输速度和ETA -->
       <el-row :gutter="20" style="margin-top: 20px;">
         <el-col :span="8">
           <div class="stat-item">
             <div class="stat-icon speed">
-              <el-icon><Loading /></el-icon>
+              <el-icon>
+                <Loading />
+              </el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ task.details.transfer_speed || '0 B/s' }}</div>
@@ -186,7 +207,9 @@
         <el-col :span="8">
           <div class="stat-item">
             <div class="stat-icon eta">
-              <el-icon><Clock /></el-icon>
+              <el-icon>
+                <Clock />
+              </el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ task.details.eta || '--:--' }}</div>
@@ -197,7 +220,9 @@
         <el-col :span="8">
           <div class="stat-item">
             <div class="stat-icon progress">
-              <el-icon><CircleCheck /></el-icon>
+              <el-icon>
+                <CircleCheck />
+              </el-icon>
             </div>
             <div class="stat-content">
               <div class="stat-number">{{ task.details.progress || 0 }}%</div>
@@ -206,31 +231,41 @@
           </div>
         </el-col>
       </el-row>
-      
+
       <!-- 当前阶段 -->
       <div v-if="task.details.current_phase" style="margin-top: 20px;">
         <el-divider content-position="left">{{ $t('taskDetail.currentPhase') }}</el-divider>
         <el-descriptions :column="2" border>
-                      <el-descriptions-item :label="$t('taskDetail.phase')">{{ getPhaseText(task.details.current_phase) }}</el-descriptions-item>
-            <el-descriptions-item :label="$t('taskDetail.progress')">{{ task.details.progress || 0 }}%</el-descriptions-item>
-            <el-descriptions-item v-if="task.details.transferred_files !== undefined" :label="$t('taskDetail.processedFiles')">{{ task.details.transferred_files }}/{{ task.details.total_files }}</el-descriptions-item>
-            <el-descriptions-item v-if="task.details.transfer_speed" :label="$t('taskDetail.transferSpeed')">{{ task.details.transfer_speed }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.phase')">{{ getPhaseText(task.details.current_phase)
+            }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.progress')">{{ task.details.progress || 0
+            }}%</el-descriptions-item>
+          <el-descriptions-item v-if="task.details.transferred_files !== undefined"
+            :label="$t('taskDetail.processedFiles')">{{ task.details.transferred_files }}/{{ task.details.total_files
+            }}</el-descriptions-item>
+          <el-descriptions-item v-if="task.details.transfer_speed" :label="$t('taskDetail.transferSpeed')">{{
+            task.details.transfer_speed }}</el-descriptions-item>
         </el-descriptions>
       </div>
-      
+
       <!-- 当前传输文件 -->
       <div v-if="task.details.current_file" style="margin-top: 20px;">
         <el-divider content-position="left">{{ $t('taskDetail.currentTransferFile') }}</el-divider>
         <el-descriptions :column="2" border>
-                      <el-descriptions-item :label="$t('taskDetail.filePath')">{{ task.details.current_file.path }}</el-descriptions-item>
-            <el-descriptions-item :label="$t('taskDetail.fileSize')">{{ formatFileSize(task.details.current_file.size) }}</el-descriptions-item>
-            <el-descriptions-item :label="$t('taskDetail.transferred')">{{ formatFileSize(task.details.current_file.transferred) }}</el-descriptions-item>
-            <el-descriptions-item :label="$t('taskDetail.transferSpeed')">{{ task.details.current_file.speed }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.filePath')">{{ task.details.current_file.path
+            }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.fileSize')">{{ formatFileSize(task.details.current_file.size)
+            }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.transferred')">{{
+            formatFileSize(task.details.current_file.transferred) }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('taskDetail.transferSpeed')">{{ task.details.current_file.speed
+            }}</el-descriptions-item>
         </el-descriptions>
       </div>
-      
+
       <!-- 最后更新时间 -->
-      <div v-if="task.details.last_update" style="margin-top: 15px; text-align: right; color: var(--text-secondary); font-size: 12px;">
+      <div v-if="task.details.last_update"
+        style="margin-top: 15px; text-align: right; color: var(--text-secondary); font-size: 12px;">
         {{ $t('taskDetail.lastUpdate') }}: {{ formatDateTime(task.details.last_update) }}
       </div>
     </el-card>
@@ -267,12 +302,7 @@
 
     <!-- 错误信息 -->
     <el-card v-if="task.error_message" class="detail-card" :header="$t('taskDetail.errorInfo')">
-      <el-alert
-        :title="task.error_message"
-        type="error"
-        show-icon
-        :closable="false"
-      />
+      <el-alert :title="task.error_message" type="error" show-icon :closable="false" />
     </el-card>
   </div>
 </template>
@@ -456,13 +486,13 @@ const formatFileSize = (bytes) => {
 
 const hasTransferStats = (details) => {
   return details && (
-    details.transferred_files > 0 || 
-    details.total_files > 0 || 
-    details.transferred_size > 0 || 
-    details.total_size > 0 || 
-    details.transfer_speed || 
-    details.eta || 
-    details.progress > 0 || 
+    details.transferred_files > 0 ||
+    details.total_files > 0 ||
+    details.transferred_size > 0 ||
+    details.total_size > 0 ||
+    details.transfer_speed ||
+    details.eta ||
+    details.progress > 0 ||
     details.current_file
   )
 }
@@ -556,4 +586,4 @@ const hasTransferStats = (details) => {
 :deep(.el-descriptions__label) {
   font-weight: 500;
 }
-</style> 
+</style>

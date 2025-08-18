@@ -1,10 +1,6 @@
 <template>
   <div v-if="error" class="error-boundary">
-    <el-result
-      icon="error"
-      title="组件渲染错误"
-      :sub-title="error.message"
-    >
+    <el-result icon="error" title="组件渲染错误" :sub-title="error.message">
       <template #extra>
         <el-button type="primary" @click="handleReset">重试</el-button>
         <el-button @click="handleReport">报告问题</el-button>
@@ -38,7 +34,7 @@ const handleReport = () => {
     component: error.value.componentName,
     timestamp: new Date().toISOString()
   }
-  
+
   // 这里可以添加错误上报逻辑
   console.error('错误详情:', errorInfo)
   ElMessage.success('错误已记录，我们会尽快处理')
@@ -52,4 +48,4 @@ const handleReport = () => {
   border-radius: 4px;
   box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
-</style> 
+</style>

@@ -1,162 +1,184 @@
 <template>
   <div class="nodes-page">
-  <!-- 页面头部 -->
-  <div class="page-header">
-    <div class="header-content">
-      <div class="header-left">
-        <h1 class="page-title">{{ $t('nodes.pageTitle') }}</h1>
-        <p class="page-subtitle">{{ $t('nodes.pageSubtitle') }}</p>
-      </div>
-      <div class="header-actions">
-        <el-button type="primary" @click="showAddDialog" class="action-btn">
-          <el-icon><Plus /></el-icon>
-          {{ $t('nodes.addProxyNode') }}
-        </el-button>
-        <el-button 
-          type="info" 
-          @click="toggleArchitecture"
-          class="guide-btn"
-          :title="showArchitecture ? $t('nodes.hideProcessGuide') : $t('nodes.showProcessGuide')"
-        >
-          <el-icon>
-            <View v-if="showArchitecture" />
-            <Hide v-else />
-          </el-icon>
-          {{ $t('nodes.processGuide') }}
-        </el-button>
+    <!-- 页面头部 -->
+    <div class="page-header">
+      <div class="header-content">
+        <div class="header-left">
+          <h1 class="page-title">{{ $t('nodes.pageTitle') }}</h1>
+          <p class="page-subtitle">{{ $t('nodes.pageSubtitle') }}</p>
+        </div>
+        <div class="header-actions">
+          <el-button type="primary" @click="showAddDialog" class="action-btn">
+            <el-icon>
+              <Plus />
+            </el-icon>
+            {{ $t('nodes.addProxyNode') }}
+          </el-button>
+          <el-button type="info" @click="toggleArchitecture" class="guide-btn"
+            :title="showArchitecture ? $t('nodes.hideProcessGuide') : $t('nodes.showProcessGuide')">
+            <el-icon>
+              <View v-if="showArchitecture" />
+              <Hide v-else />
+            </el-icon>
+            {{ $t('nodes.processGuide') }}
+          </el-button>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- 架构说明卡片 -->
-  <transition name="fade-arch">
-    <div class="architecture-section" v-show="showArchitecture">
-      <el-card class="architecture-card" shadow="never">
-        <template #header>
-          <div class="card-header">
-            <div class="header-left">
-              <h3>{{ $t('nodes.architectureTitle') }}</h3>
-              <el-tag type="info">{{ $t('nodes.architectureSubtitle') }}</el-tag>
-            </div>
-          </div>
-        </template>
-        <div class="architecture-content">
-          <div class="architecture-central-diagram">
-            <div class="storage-side">
-              <div class="storage-icon">
-                <el-icon><FolderOpened /></el-icon>
+    <!-- 架构说明卡片 -->
+    <transition name="fade-arch">
+      <div class="architecture-section" v-show="showArchitecture">
+        <el-card class="architecture-card" shadow="never">
+          <template #header>
+            <div class="card-header">
+              <div class="header-left">
+                <h3>{{ $t('nodes.architectureTitle') }}</h3>
+                <el-tag type="info">{{ $t('nodes.architectureSubtitle') }}</el-tag>
               </div>
-              <div class="storage-label">{{ $t('nodes.storageResourceA') }}<br/>({{ $t('nodes.storageTypes') }})</div>
             </div>
-            <div class="sync-arrows">
-              <el-icon class="arrow-left"><ArrowLeft /></el-icon>
-              <el-icon class="arrow-right"><ArrowRight /></el-icon>
-            </div>
-            <div class="proxy-center">
-              <div class="proxy-icon">
-                <el-icon><Connection /></el-icon>
-              </div>
-              <div class="proxy-label">{{ $t('nodes.syncProxyNode') }}<br/>(SyncProxy)</div>
-              <div class="proxy-desc">{{ $t('nodes.proxyDescription') }}<br/>{{ $t('nodes.proxyFeatures') }}</div>
-            </div>
-            <div class="sync-arrows">
-              <el-icon class="arrow-left"><ArrowLeft /></el-icon>
-              <el-icon class="arrow-right"><ArrowRight /></el-icon>
-            </div>
-            <div class="storage-side">
-              <div class="storage-icon">
-                <el-icon><FolderOpened /></el-icon>
-              </div>
-              <div class="storage-label">{{ $t('nodes.storageResourceB') }}<br/>({{ $t('nodes.storageTypes') }})</div>
-            </div>
-          </div>
-          <div class="central-arch-notes">
-            <el-alert type="info" show-icon :closable="false" style="margin-bottom: 18px;">
-              <template #title>
-                <strong>{{ $t('nodes.description') }}：</strong> {{ $t('nodes.architectureDescription') }}
-              </template>
-            </el-alert>
-          </div>
-          <div class="usage-guide">
-            <h4>{{ $t('nodes.usageGuide') }}</h4>
-            <div class="guide-steps">
-              <div class="guide-step">
-                <div class="step-number">1</div>
-                <div class="step-content">
-                  <strong>{{ $t('nodes.step1Title') }}</strong>
-                  <p>{{ $t('nodes.step1Description') }}</p>
+          </template>
+          <div class="architecture-content">
+            <div class="architecture-central-diagram">
+              <div class="storage-side">
+                <div class="storage-icon">
+                  <el-icon>
+                    <FolderOpened />
+                  </el-icon>
+                </div>
+                <div class="storage-label">{{ $t('nodes.storageResourceA') }}<br />({{ $t('nodes.storageTypes') }})
                 </div>
               </div>
-              <div class="guide-step">
-                <div class="step-number">2</div>
-                <div class="step-content">
-                  <strong>{{ $t('nodes.step2Title') }}</strong>
-                  <p>{{ $t('nodes.step2Description') }}</p>
-                </div>
+              <div class="sync-arrows">
+                <el-icon class="arrow-left">
+                  <ArrowLeft />
+                </el-icon>
+                <el-icon class="arrow-right">
+                  <ArrowRight />
+                </el-icon>
               </div>
-              <div class="guide-step">
-                <div class="step-number">3</div>
-                <div class="step-content">
-                  <strong>{{ $t('nodes.step3Title') }}</strong>
-                  <p>{{ $t('nodes.step3Description') }}</p>
+              <div class="proxy-center">
+                <div class="proxy-icon">
+                  <el-icon>
+                    <Connection />
+                  </el-icon>
                 </div>
+                <div class="proxy-label">{{ $t('nodes.syncProxyNode') }}<br />(SyncProxy)</div>
+                <div class="proxy-desc">{{ $t('nodes.proxyDescription') }}<br />{{ $t('nodes.proxyFeatures') }}</div>
               </div>
-              <div class="guide-step">
-                <div class="step-number">4</div>
-                <div class="step-content">
-                  <strong>{{ $t('nodes.step4Title') }}</strong>
-                  <p>{{ $t('nodes.step4Description') }}</p>
+              <div class="sync-arrows">
+                <el-icon class="arrow-left">
+                  <ArrowLeft />
+                </el-icon>
+                <el-icon class="arrow-right">
+                  <ArrowRight />
+                </el-icon>
+              </div>
+              <div class="storage-side">
+                <div class="storage-icon">
+                  <el-icon>
+                    <FolderOpened />
+                  </el-icon>
+                </div>
+                <div class="storage-label">{{ $t('nodes.storageResourceB') }}<br />({{ $t('nodes.storageTypes') }})
                 </div>
               </div>
             </div>
+            <div class="central-arch-notes">
+              <el-alert type="info" show-icon :closable="false" style="margin-bottom: 18px;">
+                <template #title>
+                  <strong>{{ $t('nodes.description') }}：</strong> {{ $t('nodes.architectureDescription') }}
+                </template>
+              </el-alert>
+            </div>
+            <div class="usage-guide">
+              <h4>{{ $t('nodes.usageGuide') }}</h4>
+              <div class="guide-steps">
+                <div class="guide-step">
+                  <div class="step-number">1</div>
+                  <div class="step-content">
+                    <strong>{{ $t('nodes.step1Title') }}</strong>
+                    <p>{{ $t('nodes.step1Description') }}</p>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div class="step-number">2</div>
+                  <div class="step-content">
+                    <strong>{{ $t('nodes.step2Title') }}</strong>
+                    <p>{{ $t('nodes.step2Description') }}</p>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div class="step-number">3</div>
+                  <div class="step-content">
+                    <strong>{{ $t('nodes.step3Title') }}</strong>
+                    <p>{{ $t('nodes.step3Description') }}</p>
+                  </div>
+                </div>
+                <div class="guide-step">
+                  <div class="step-number">4</div>
+                  <div class="step-content">
+                    <strong>{{ $t('nodes.step4Title') }}</strong>
+                    <p>{{ $t('nodes.step4Description') }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
-      </el-card>
-    </div>
-  </transition>
+        </el-card>
+      </div>
+    </transition>
 
-  <!-- 统计卡片 -->
-  <div class="stats-section">
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-icon online">
-          <el-icon><Monitor /></el-icon>
+    <!-- 统计卡片 -->
+    <div class="stats-section">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-icon online">
+            <el-icon>
+              <Monitor />
+            </el-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats?.online || "0" }} </div>
+            <div class="stat-label">{{ $t('nodes.onlineServers') }}</div>
+          </div>
         </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats?.online || "0" }} </div>
-          <div class="stat-label">{{ $t('nodes.onlineServers') }}</div>
+        <div class="stat-card">
+          <div class="stat-icon offline">
+            <el-icon>
+              <CircleClose />
+            </el-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats?.offline || "0" }} </div>
+            <div class="stat-label">{{ $t('nodes.offlineServers') }}</div>
+          </div>
         </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon offline">
-          <el-icon><CircleClose /></el-icon>
+        <div class="stat-card">
+          <div class="stat-icon running">
+            <el-icon>
+              <Connection />
+            </el-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats?.running || "0" }} </div>
+            <div class="stat-label">{{ $t('nodes.runningAgents') }}</div>
+          </div>
         </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats?.offline || "0" }} </div>
-          <div class="stat-label">{{ $t('nodes.offlineServers') }}</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon running">
-          <el-icon><Connection /></el-icon>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats?.running || "0" }} </div>
-          <div class="stat-label">{{ $t('nodes.runningAgents') }}</div>
-        </div>
-      </div>
-      <div class="stat-card">
-        <div class="stat-icon pending">
-          <el-icon><Clock /></el-icon>
-        </div>
-        <div class="stat-content">
-          <div class="stat-value">{{ stats?.pending || "0" }} </div>
-          <div class="stat-label">{{ $t('nodes.pendingAgents') }}</div>
+        <div class="stat-card">
+          <div class="stat-icon pending">
+            <el-icon>
+              <Clock />
+            </el-icon>
+          </div>
+          <div class="stat-content">
+            <div class="stat-value">{{ stats?.pending || "0" }} </div>
+            <div class="stat-label">{{ $t('nodes.pendingAgents') }}</div>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-  <div class="nodes-container">
+    <div class="nodes-container">
       <el-card class="nodes-card" shadow="never">
         <template #header>
           <div class="card-header">
@@ -167,56 +189,70 @@
             <div class="header-right">
               <div class="header">
                 <div class="header-actions">
-                  <el-select v-model="selectedGroup" :placeholder="$t('nodes.groupFilter')" clearable style="width: 120px">
+                  <el-select v-model="selectedGroup" :placeholder="$t('nodes.groupFilter')" clearable
+                    style="width: 120px">
                     <el-option v-for="group in groupList" :key="group" :label="group" :value="group" />
                   </el-select>
                   <el-select v-model="selectedTag" :placeholder="$t('nodes.tagFilter')" clearable style="width: 120px">
                     <el-option v-for="tag in tagList" :key="tag" :label="tag" :value="tag" />
                   </el-select>
-                  <el-select v-model="statusFilter" :placeholder="$t('nodes.statusFilter')" style="width: 120px" @change="handleSearch" class="filter-select">
+                  <el-select v-model="statusFilter" :placeholder="$t('nodes.statusFilter')" style="width: 120px"
+                    @change="handleSearch" class="filter-select">
                     <el-option :label="$t('nodes.all')" value="all" />
                     <el-option :label="$t('nodes.online')" value="online" />
                     <el-option :label="$t('nodes.offline')" value="offline" />
                     <el-option :label="$t('nodes.agentInstalled')" value="agent_installed" />
                     <el-option :label="$t('nodes.agentNotInstalled')" value="agent_not_installed" />
                   </el-select>
-                  <el-button type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">{{ $t('nodes.batchDelete') }}</el-button>
-                  <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchGroupDialog">{{ $t('nodes.batchGroup') }}</el-button>
-                  <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchTagDialog">{{ $t('nodes.batchTag') }}</el-button>
+                  <el-button type="danger" :disabled="!multipleSelection.length" @click="handleBatchDelete">{{
+                    $t('nodes.batchDelete') }}</el-button>
+                  <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchGroupDialog">{{
+                    $t('nodes.batchGroup') }}</el-button>
+                  <el-button type="primary" :disabled="!multipleSelection.length" @click="showBatchTagDialog">{{
+                    $t('nodes.batchTag') }}</el-button>
                 </div>
               </div>
-              <el-input v-model="searchQuery" :placeholder="$t('nodes.searchNameIp')" class="search-input" clearable @input="handleSearch">
+              <el-input v-model="searchQuery" :placeholder="$t('nodes.searchNameIp')" class="search-input" clearable
+                @input="handleSearch">
                 <template #prefix>
-                  <el-icon><Search /></el-icon>
+                  <el-icon>
+                    <Search />
+                  </el-icon>
                 </template>
               </el-input>
               <el-button @click="fetchNodes" class="refresh-btn">
-                <el-icon><Refresh /></el-icon>
+                <el-icon>
+                  <Refresh />
+                </el-icon>
               </el-button>
             </div>
           </div>
         </template>
         <div class="table-container">
-          <el-table :data="filteredNodes" v-loading="loading" @selection-change="handleSelectionChange" style="width: 100%" class="nodes-table">
+          <el-table :data="filteredNodes" v-loading="loading" @selection-change="handleSelectionChange"
+            style="width: 100%" class="nodes-table">
             <el-table-column type="selection" width="55" />
             <el-table-column prop="name" :label="$t('nodes.name')" min-width="120">
-        <template #default="{ row }">
+              <template #default="{ row }">
                 <div class="server-info server-name-link" @click="handleNameClick(row)">
-                  <el-icon class="server-link-icon"><Monitor /></el-icon>
+                  <el-icon class="server-link-icon">
+                    <Monitor />
+                  </el-icon>
                   <span>{{ row.name }}</span>
                 </div>
-        </template>
-      </el-table-column>
+              </template>
+            </el-table-column>
             <el-table-column prop="group" :label="$t('nodes.group')" width="100">
-        <template #default="{ row }">
+              <template #default="{ row }">
                 <el-tag v-if="row.group">{{ row.group }}</el-tag>
-        </template>
-      </el-table-column>
+              </template>
+            </el-table-column>
             <el-table-column prop="tags" :label="$t('nodes.tags')" width="140">
-        <template #default="{ row }">
-                <el-tag v-for="tag in (row.tags ? row.tags.split(',') : [])" :key="tag" type="info" style="margin-right: 2px;">{{ tag }}</el-tag>
-        </template>
-      </el-table-column>
+              <template #default="{ row }">
+                <el-tag v-for="tag in (row.tags ? row.tags.split(',') : [])" :key="tag" type="info"
+                  style="margin-right: 2px;">{{ tag }}</el-tag>
+              </template>
+            </el-table-column>
             <el-table-column prop="ipaddress" :label="$t('nodes.ipAddress')" min-width="120" />
             <el-table-column prop="username" :label="$t('nodes.username')" min-width="120" />
             <el-table-column prop="port" :label="$t('nodes.port')" min-width="80" />
@@ -231,431 +267,397 @@
               </template>
             </el-table-column>
             <el-table-column prop="last_heartbeat" :label="$t('nodes.lastHeartbeat')" min-width="160">
-        <template #default="{ row }">
-          {{ formatDate(row.last_heartbeat) }}
-        </template>
-      </el-table-column>
+              <template #default="{ row }">
+                {{ formatDate(row.last_heartbeat) }}
+              </template>
+            </el-table-column>
             <el-table-column prop="description" :label="$t('nodes.description')" min-width="120" />
             <el-table-column :label="$t('nodes.actions')" min-width="200" fixed="right">
-        <template #default="{ row }">
+              <template #default="{ row }">
                 <div class="action-buttons">
-                  <el-button 
-                    type="primary" 
-                    size="small" 
-                    @click.stop="handleNameClick(row)"
-                    class="detail-btn"
-                  >
-                    <el-icon><View /></el-icon>
+                  <el-button type="primary" size="small" @click.stop="handleNameClick(row)" class="detail-btn">
+                    <el-icon>
+                      <View />
+                    </el-icon>
                     {{ $t('nodes.details') }}
-            </el-button>
+                  </el-button>
                   <el-dropdown trigger="click" @command="handleNodeCommand">
                     <el-button size="small">
-                      {{ $t('nodes.more') }}<el-icon class="el-icon--right"><ArrowDown /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item :command="{ action: 'edit', row }">
-                    <el-icon><Edit /></el-icon>{{ $t('nodes.edit') }}
-                  </el-dropdown-item>
-                  <el-dropdown-item :command="{ action: 'test', row }">
-                    <el-icon><Connection /></el-icon>{{ $t('nodes.testConnection') }}
-                  </el-dropdown-item>
-                    <el-dropdown-item :command="{ action: 'install', row }" :disabled="row.status==='offline'">
-                    <el-icon><Download /></el-icon>{{ $t('nodes.installAgent') }}
-                  </el-dropdown-item>
-                    <el-dropdown-item :command="{ action: 'uninstall', row }" :disabled="row.status==='offline'">
-                    <el-icon><Remove /></el-icon>{{ $t('nodes.uninstallAgent') }}
-                  </el-dropdown-item>
-                  <el-dropdown-item :command="{ action: 'info', row }" :disabled="row.status==='offline'">
-                    <el-icon><InfoFilled /></el-icon>{{ $t('nodes.getInfo') }}
-                  </el-dropdown-item>
-                  <el-dropdown-item divided :command="{ action: 'delete', row }">
-                    <el-icon><Delete /></el-icon>{{ $t('nodes.delete') }}
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
+                      {{ $t('nodes.more') }}<el-icon class="el-icon--right">
+                        <ArrowDown />
+                      </el-icon>
+                    </el-button>
+                    <template #dropdown>
+                      <el-dropdown-menu>
+                        <el-dropdown-item :command="{ action: 'edit', row }">
+                          <el-icon>
+                            <Edit />
+                          </el-icon>{{ $t('nodes.edit') }}
+                        </el-dropdown-item>
+                        <el-dropdown-item :command="{ action: 'test', row }">
+                          <el-icon>
+                            <Connection />
+                          </el-icon>{{ $t('nodes.testConnection') }}
+                        </el-dropdown-item>
+                        <el-dropdown-item :command="{ action: 'install', row }" :disabled="row.status === 'offline'">
+                          <el-icon>
+                            <Download />
+                          </el-icon>{{ $t('nodes.installAgent') }}
+                        </el-dropdown-item>
+                        <el-dropdown-item :command="{ action: 'uninstall', row }" :disabled="row.status === 'offline'">
+                          <el-icon>
+                            <Remove />
+                          </el-icon>{{ $t('nodes.uninstallAgent') }}
+                        </el-dropdown-item>
+                        <el-dropdown-item :command="{ action: 'info', row }" :disabled="row.status === 'offline'">
+                          <el-icon>
+                            <InfoFilled />
+                          </el-icon>{{ $t('nodes.getInfo') }}
+                        </el-dropdown-item>
+                        <el-dropdown-item divided :command="{ action: 'delete', row }">
+                          <el-icon>
+                            <Delete />
+                          </el-icon>{{ $t('nodes.delete') }}
+                        </el-dropdown-item>
+                      </el-dropdown-menu>
+                    </template>
+                  </el-dropdown>
                 </div>
-        </template>
-      </el-table-column>
-    </el-table>
+              </template>
+            </el-table-column>
+          </el-table>
         </div>
       </el-card>
       <!-- 节点添加/编辑弹窗 -->
-      <el-dialog :title="dialogType === 'add' ? $t('nodes.addNode') : $t('nodes.editNode')" v-model="dialogVisible" width="500px">
+      <el-dialog :title="dialogType === 'add' ? $t('nodes.addNode') : $t('nodes.editNode')" v-model="dialogVisible"
+        width="500px">
         <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
-          <el-form-item :label="$t('nodes.name')" prop="name"><el-input v-model="form.name" :placeholder="$t('nodes.enterNodeName')" /></el-form-item>
-          <el-form-item :label="$t('nodes.ipAddress')" prop="ipaddress"><el-input v-model="form.ipaddress" :placeholder="$t('nodes.enterIpAddress')" /></el-form-item>
-          <el-form-item :label="$t('nodes.username')" prop="username"><el-input v-model="form.username" :placeholder="$t('nodes.enterUsername')" /></el-form-item>
-          <el-form-item :label="$t('nodes.port')" prop="port"><el-input-number v-model="form.port" :min="1" :max="65535" /></el-form-item>
-        <el-form-item :label="$t('nodes.authType')" prop="auth_type">
-          <el-radio-group v-model="form.auth_type">
-            <el-radio :value="'password'">{{ $t('nodes.passwordAuth') }}</el-radio>
-            <el-radio :value="'key'">{{ $t('nodes.keyAuth') }}</el-radio>
-          </el-radio-group>
-        </el-form-item>
-          <el-form-item v-if="form.auth_type === 'password'" :label="$t('nodes.password')" prop="password"><el-input v-model="form.password" type="password" :placeholder="$t('nodes.enterPassword')" show-password /></el-form-item>
-          <el-form-item v-if="form.auth_type === 'key'" :label="$t('nodes.sshKey')" prop="ssh_key"><el-input v-model="form.ssh_key" type="textarea" :rows="4" :placeholder="$t('nodes.enterSshKey')" /></el-form-item>
-          <el-form-item :label="$t('nodes.description')"><el-input v-model="form.description" type="textarea" :rows="2" :placeholder="$t('nodes.enterDescription')" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="dialogVisible = false">{{ $t('nodes.cancel') }}</el-button>
-          <el-button type="primary" @click="handleSubmit">{{ $t('nodes.confirm') }}</el-button>
-        </span>
-      </template>
-    </el-dialog>
+          <el-form-item :label="$t('nodes.name')" prop="name"><el-input v-model="form.name"
+              :placeholder="$t('nodes.enterNodeName')" /></el-form-item>
+          <el-form-item :label="$t('nodes.ipAddress')" prop="ipaddress"><el-input v-model="form.ipaddress"
+              :placeholder="$t('nodes.enterIpAddress')" /></el-form-item>
+          <el-form-item :label="$t('nodes.username')" prop="username"><el-input v-model="form.username"
+              :placeholder="$t('nodes.enterUsername')" /></el-form-item>
+          <el-form-item :label="$t('nodes.port')" prop="port"><el-input-number v-model="form.port" :min="1"
+              :max="65535" /></el-form-item>
+          <el-form-item :label="$t('nodes.authType')" prop="auth_type">
+            <el-radio-group v-model="form.auth_type">
+              <el-radio :value="'password'">{{ $t('nodes.passwordAuth') }}</el-radio>
+              <el-radio :value="'key'">{{ $t('nodes.keyAuth') }}</el-radio>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item v-if="form.auth_type === 'password'" :label="$t('nodes.password')" prop="password"><el-input
+              v-model="form.password" type="password" :placeholder="$t('nodes.enterPassword')"
+              show-password /></el-form-item>
+          <el-form-item v-if="form.auth_type === 'key'" :label="$t('nodes.sshKey')" prop="ssh_key"><el-input
+              v-model="form.ssh_key" type="textarea" :rows="4" :placeholder="$t('nodes.enterSshKey')" /></el-form-item>
+          <el-form-item :label="$t('nodes.description')"><el-input v-model="form.description" type="textarea" :rows="2"
+              :placeholder="$t('nodes.enterDescription')" /></el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="dialogVisible = false">{{ $t('nodes.cancel') }}</el-button>
+            <el-button type="primary" @click="handleSubmit">{{ $t('nodes.confirm') }}</el-button>
+          </span>
+        </template>
+      </el-dialog>
       <!-- 安装/卸载Agent弹窗 -->
       <el-dialog :title="$t('nodes.installUninstallAgent')" v-model="installDialogVisible" width="500px">
-      <el-form :model="installForm" label-width="120px">
-          <el-form-item :label="$t('nodes.installPath')"><el-input v-model="installForm.install_path" placeholder="/opt/easysync/proxy" /></el-form-item>
-          <el-form-item :label="$t('nodes.configParams')"><el-input v-model="installForm.config" type="textarea" :rows="4" :placeholder="$t('nodes.enterJsonConfig')" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="installDialogVisible = false">{{ $t('nodes.cancel') }}</el-button>
-          <el-button type="primary" @click="confirmInstall">{{ $t('nodes.startInstall') }}</el-button>
-        </span>
-      </template>
-    </el-dialog>
-    <!-- 节点详情抽屉 -->
-    <el-drawer
-      v-model="drawerVisible"
-      :title="$t('nodes.nodeDetails')"
-      direction="rtl"
-        size="70%"
-      :before-close="handleDrawerClose"
-        class="client-drawer"
-    >
-    <div class="drawer-content">
-      <el-tabs v-model="activeTab" class="detail-tabs">
-        <!-- 基本信息标签页 -->
-        <el-tab-pane :label="$t('nodes.basicInfo')" name="basic">
-          <div class="detail-content">
-            <!-- 基本信息卡片 -->
-            <el-card class="info-card">
-              <template #header>
-                <div class="card-header">
-                  <span>{{ $t('nodes.basicInfo') }}</span>
-                </div>
-              </template>
-              <el-descriptions :column="2" border>
-                <el-descriptions-item :label="$t('nodes.nodeName')">
-                  <el-tag type="info">{{ currentNode.name }}</el-tag>
-                </el-descriptions-item>
+        <el-form :model="installForm" label-width="120px">
+          <el-form-item :label="$t('nodes.installPath')"><el-input v-model="installForm.install_path"
+              placeholder="/opt/easysync/proxy" /></el-form-item>
+          <el-form-item :label="$t('nodes.configParams')"><el-input v-model="installForm.config" type="textarea"
+              :rows="4" :placeholder="$t('nodes.enterJsonConfig')" /></el-form-item>
+        </el-form>
+        <template #footer>
+          <span class="dialog-footer">
+            <el-button @click="installDialogVisible = false">{{ $t('nodes.cancel') }}</el-button>
+            <el-button type="primary" @click="confirmInstall">{{ $t('nodes.startInstall') }}</el-button>
+          </span>
+        </template>
+      </el-dialog>
+      <!-- 节点详情抽屉 -->
+      <el-drawer v-model="drawerVisible" :title="$t('nodes.nodeDetails')" direction="rtl" size="70%"
+        :before-close="handleDrawerClose" class="client-drawer">
+        <div class="drawer-content">
+          <el-tabs v-model="activeTab" class="detail-tabs">
+            <!-- 基本信息标签页 -->
+            <el-tab-pane :label="$t('nodes.basicInfo')" name="basic">
+              <div class="detail-content">
+                <!-- 基本信息卡片 -->
+                <el-card class="info-card">
+                  <template #header>
+                    <div class="card-header">
+                      <span>{{ $t('nodes.basicInfo') }}</span>
+                    </div>
+                  </template>
+                  <el-descriptions :column="2" border>
+                    <el-descriptions-item :label="$t('nodes.nodeName')">
+                      <el-tag type="info">{{ currentNode.name }}</el-tag>
+                    </el-descriptions-item>
                     <el-descriptions-item :label="$t('nodes.group')">
                       <el-tag v-if="currentNode.group">{{ currentNode.group }}</el-tag>
                     </el-descriptions-item>
                     <el-descriptions-item :label="$t('nodes.tags')">
-                      <el-tag v-for="tag in (currentNode.tags ? currentNode.tags.split(',') : [])" :key="tag" type="info" style="margin-right: 2px;">{{ tag }}</el-tag>
+                      <el-tag v-for="tag in (currentNode.tags ? currentNode.tags.split(',') : [])" :key="tag"
+                        type="info" style="margin-right: 2px;">{{ tag }}</el-tag>
                     </el-descriptions-item>
-                <el-descriptions-item :label="$t('nodes.ipAddress')">
-                  <el-tag type="success">{{ currentNode.ipaddress }}</el-tag>
-                </el-descriptions-item>
-                <el-descriptions-item :label="$t('nodes.status')">
+                    <el-descriptions-item :label="$t('nodes.ipAddress')">
+                      <el-tag type="success">{{ currentNode.ipaddress }}</el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item :label="$t('nodes.status')">
                       <el-tag :type="getStatusType(currentNode.status)">{{ getStatusText(currentNode.status) }}</el-tag>
                     </el-descriptions-item>
                     <el-descriptions-item :label="$t('nodes.agentStatus')">
-                      <el-tag :type="getAgentStatusType(currentNode.agent_status)">{{ getAgentStatusText(currentNode.agent_status) }}</el-tag>
-                </el-descriptions-item>
-                <el-descriptions-item :label="$t('nodes.operatingSystem')">
-                  <el-tag type="success">{{ nodeDetail.os_type }}</el-tag>
-                </el-descriptions-item>
-                    <el-descriptions-item :label="$t('nodes.description')">{{ currentNode.description }}</el-descriptions-item>
-              </el-descriptions>
-            </el-card>
-            <!-- CPU信息卡片 -->
-            <el-card class="info-card">
-              <template #header>
-                <div class="card-header">
-                  <span>{{ $t('nodes.cpuInfo') }}</span>
-                </div>
-              </template>
-              <div class="cpu-info">
-                <div v-for="(cpu, index) in nodeDetail.cpu_info" :key="index" class="cpu-item">
-                  <el-tag type="primary">{{ cpu.model }}</el-tag>
-                  <span class="cpu-cores">{{ cpu.cores }}{{ $t('nodes.cores') }}</span>
-                </div>
-              </div>
-            </el-card>
-            <!-- 内存信息卡片 -->
-            <el-card class="info-card">
-              <template #header>
-                <div class="card-header">
-                  <span>{{ $t('nodes.memoryInfo') }}</span>
-                </div>
-              </template>
-              <div class="memory-info">
-                <el-progress 
-                  :percentage="Number((nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100).toFixed(1))"
-                  :status="getUsageStatus((nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100))"
-                />
-                <div class="memory-details">
-                  <span>{{ $t('nodes.totalMemory') }}: {{ formatSize(nodeDetail.memory_info.total) }}</span>
-                  <span>{{ $t('nodes.usedMemory') }}: {{ formatSize(nodeDetail.memory_info.used) }}</span>
-                  <span>{{ $t('nodes.availableMemory') }}: {{ formatSize(nodeDetail.memory_info.total - nodeDetail.memory_info.used) }}</span>
-                </div>
-              </div>
-            </el-card>
-            <!-- 磁盘信息卡片 -->
-            <el-card class="info-card">
-              <template #header>
-                <div class="card-header">
-                  <span>{{ $t('nodes.diskInfo') }}</span>
-                </div>
-              </template>
-              <div class="disk-info">
-                <div v-for="(disk, index) in nodeDetail.disk_info" :key="index" class="disk-item">
-                  <div class="disk-header">
-                    <el-tag type="info">{{ disk.device }}</el-tag>
-                    <span class="disk-mount">{{ disk.mount }}</span>
+                      <el-tag :type="getAgentStatusType(currentNode.agent_status)">{{
+                        getAgentStatusText(currentNode.agent_status) }}</el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item :label="$t('nodes.operatingSystem')">
+                      <el-tag type="success">{{ nodeDetail.os_type }}</el-tag>
+                    </el-descriptions-item>
+                    <el-descriptions-item :label="$t('nodes.description')">{{ currentNode.description
+                      }}</el-descriptions-item>
+                  </el-descriptions>
+                </el-card>
+                <!-- CPU信息卡片 -->
+                <el-card class="info-card">
+                  <template #header>
+                    <div class="card-header">
+                      <span>{{ $t('nodes.cpuInfo') }}</span>
+                    </div>
+                  </template>
+                  <div class="cpu-info">
+                    <div v-for="(cpu, index) in nodeDetail.cpu_info" :key="index" class="cpu-item">
+                      <el-tag type="primary">{{ cpu.model }}</el-tag>
+                      <span class="cpu-cores">{{ cpu.cores }}{{ $t('nodes.cores') }}</span>
+                    </div>
                   </div>
-                  <el-progress 
-                    :percentage="Number(disk.usage)"
-                    :status="getUsageStatus(disk.usage)"
-                  />
-                  <div class="disk-details">
-                    <span>{{ $t('nodes.totalCapacity') }}: {{ formatSize(disk.total) }}</span>
-                    <span>{{ $t('nodes.usedCapacity') }}: {{ formatSize(disk.used) }}</span>
-                    <span>{{ $t('nodes.availableCapacity') }}: {{ formatSize(disk.total - disk.used) }}</span>
+                </el-card>
+                <!-- 内存信息卡片 -->
+                <el-card class="info-card">
+                  <template #header>
+                    <div class="card-header">
+                      <span>{{ $t('nodes.memoryInfo') }}</span>
+                    </div>
+                  </template>
+                  <div class="memory-info">
+                    <el-progress
+                      :percentage="Number((nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100).toFixed(1))"
+                      :status="getUsageStatus((nodeDetail.memory_info.used / nodeDetail.memory_info.total * 100))" />
+                    <div class="memory-details">
+                      <span>{{ $t('nodes.totalMemory') }}: {{ formatSize(nodeDetail.memory_info.total) }}</span>
+                      <span>{{ $t('nodes.usedMemory') }}: {{ formatSize(nodeDetail.memory_info.used) }}</span>
+                      <span>{{ $t('nodes.availableMemory') }}: {{ formatSize(nodeDetail.memory_info.total -
+                        nodeDetail.memory_info.used) }}</span>
+                    </div>
                   </div>
-                </div>
+                </el-card>
+                <!-- 磁盘信息卡片 -->
+                <el-card class="info-card">
+                  <template #header>
+                    <div class="card-header">
+                      <span>{{ $t('nodes.diskInfo') }}</span>
+                    </div>
+                  </template>
+                  <div class="disk-info">
+                    <div v-for="(disk, index) in nodeDetail.disk_info" :key="index" class="disk-item">
+                      <div class="disk-header">
+                        <el-tag type="info">{{ disk.device }}</el-tag>
+                        <span class="disk-mount">{{ disk.mount }}</span>
+                      </div>
+                      <el-progress :percentage="Number(disk.usage)" :status="getUsageStatus(disk.usage)" />
+                      <div class="disk-details">
+                        <span>{{ $t('nodes.totalCapacity') }}: {{ formatSize(disk.total) }}</span>
+                        <span>{{ $t('nodes.usedCapacity') }}: {{ formatSize(disk.used) }}</span>
+                        <span>{{ $t('nodes.availableCapacity') }}: {{ formatSize(disk.total - disk.used) }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </el-card>
+                <!-- 网卡信息卡片 -->
+                <el-card class="info-card">
+                  <template #header>
+                    <div class="card-header">
+                      <span>{{ $t('nodes.networkInfo') }}</span>
+                    </div>
+                  </template>
+                  <div class="network-info">
+                    <div v-for="(nic, index) in nodeDetail.network_info" :key="index" class="nic-item">
+                      <el-tag type="success">{{ nic.name }}</el-tag>
+                      <span class="nic-ip">{{ nic.ip }}</span>
+                      <span class="nic-ip6">{{ nic.ip6 }}</span>
+                      <span class="nic-mac">{{ nic.mac }}</span>
+                      <span class="nic-mtu">{{ nic.mtu }}</span>
+                      <span class="nic-status">{{ nic.status }}</span>
+                    </div>
+                  </div>
+                </el-card>
               </div>
-            </el-card>
-            <!-- 网卡信息卡片 -->
-            <el-card class="info-card">
-              <template #header>
-                <div class="card-header">
-                  <span>{{ $t('nodes.networkInfo') }}</span>
-                </div>
-              </template>
-              <div class="network-info">
-                <div v-for="(nic, index) in nodeDetail.network_info" :key="index" class="nic-item">
-                  <el-tag type="success">{{ nic.name }}</el-tag>
-                  <span class="nic-ip">{{ nic.ip }}</span>
-                  <span class="nic-ip6">{{ nic.ip6 }}</span>
-                  <span class="nic-mac">{{ nic.mac }}</span>
-                  <span class="nic-mtu">{{ nic.mtu }}</span>
-                  <span class="nic-status">{{ nic.status }}</span>
-                </div>
-              </div>
-            </el-card>
-          </div>
-        </el-tab-pane>
+            </el-tab-pane>
 
-        <!-- 监控数据标签页 -->
-        <el-tab-pane :label="$t('nodes.monitorData')" name="monitor">
+            <!-- 监控数据标签页 -->
+            <el-tab-pane :label="$t('nodes.monitorData')" name="monitor">
               <div class="monitor-content">
                 <!-- 监控控制面板、图表等，参考Clients.vue -->
-            <div class="monitor-control-panel">
-              <div class="panel-section time-range-selector">
-                <span class="section-label">{{ $t('nodes.timeRange') }}</span>
-                <el-select 
-                  v-model="timeRange" 
-                  :placeholder="$t('nodes.selectTimeRange')" 
-                  @change="handleTimeRangeChange"
-                  size="default"
-                  class="time-select"
-                >
-                  <el-option :label="$t('nodes.last10Minutes')" value="10m" />
-                  <el-option :label="$t('nodes.last15Minutes')" value="15m" />
-                  <el-option :label="$t('nodes.last1Hour')" value="1h" />
-                  <el-option :label="$t('nodes.last2Hours')" value="2h" />
-                  <el-option :label="$t('nodes.custom')" value="custom" />
-                </el-select>
-                <el-date-picker
-                  v-if="timeRange === 'custom'"
-                  v-model="customTimeRange"
-                  type="datetimerange"
-                  :range-separator="$t('nodes.to')"
-                  :start-placeholder="$t('nodes.startTime')"
-                  :end-placeholder="$t('nodes.endTime')"
-                  size="default"
-                  class="date-picker"
-                  :default-time="[
-                    new Date(2000, 1, 1, 0, 0, 0),
-                    new Date(2000, 1, 1, 23, 59, 59),
-                  ]"
-                  @change="handleCustomTimeRangeChange"
-                />
-              </div>
-              <div class="panel-section refresh-controls">
-                <span class="section-label">{{ $t('nodes.refreshSettings') }}</span>
-                <div class="refresh-group">
-                  <el-button 
-                    type="primary" 
-                    :loading="refreshing" 
-                    @click="handleManualRefresh"
-                    size="default"
-                    class="refresh-button"
-                  >
-                    <el-icon><Refresh /></el-icon>
-                    <span>{{ $t('nodes.refresh') }}</span>
-                  </el-button>
+                <div class="monitor-control-panel">
+                  <div class="panel-section time-range-selector">
+                    <span class="section-label">{{ $t('nodes.timeRange') }}</span>
+                    <el-select v-model="timeRange" :placeholder="$t('nodes.selectTimeRange')"
+                      @change="handleTimeRangeChange" size="default" class="time-select">
+                      <el-option :label="$t('nodes.last10Minutes')" value="10m" />
+                      <el-option :label="$t('nodes.last15Minutes')" value="15m" />
+                      <el-option :label="$t('nodes.last1Hour')" value="1h" />
+                      <el-option :label="$t('nodes.last2Hours')" value="2h" />
+                      <el-option :label="$t('nodes.custom')" value="custom" />
+                    </el-select>
+                    <el-date-picker v-if="timeRange === 'custom'" v-model="customTimeRange" type="datetimerange"
+                      :range-separator="$t('nodes.to')" :start-placeholder="$t('nodes.startTime')"
+                      :end-placeholder="$t('nodes.endTime')" size="default" class="date-picker" :default-time="[
+                        new Date(2000, 1, 1, 0, 0, 0),
+                        new Date(2000, 1, 1, 23, 59, 59),
+                      ]" @change="handleCustomTimeRangeChange" />
+                  </div>
+                  <div class="panel-section refresh-controls">
+                    <span class="section-label">{{ $t('nodes.refreshSettings') }}</span>
+                    <div class="refresh-group">
+                      <el-button type="primary" :loading="refreshing" @click="handleManualRefresh" size="default"
+                        class="refresh-button">
+                        <el-icon>
+                          <Refresh />
+                        </el-icon>
+                        <span>{{ $t('nodes.refresh') }}</span>
+                      </el-button>
 
-                  <div class="auto-refresh-control">
-                    <el-switch
-                      v-model="autoRefresh"
-                      :active-text="$t('nodes.autoRefresh')"
-                      inactive-text=""
-                      class="refresh-switch"
-                      @change="handleAutoRefreshChange"
-                    />
-                    <el-select
-                      v-if="autoRefresh"
-                      v-model="refreshInterval"
-                      :placeholder="$t('nodes.refreshInterval')"
-                      @change="handleRefreshIntervalChange"
-                      size="default"
-                      class="interval-select"
-                    >
+                      <div class="auto-refresh-control">
+                        <el-switch v-model="autoRefresh" :active-text="$t('nodes.autoRefresh')" inactive-text=""
+                          class="refresh-switch" @change="handleAutoRefreshChange" />
+                        <el-select v-if="autoRefresh" v-model="refreshInterval"
+                          :placeholder="$t('nodes.refreshInterval')" @change="handleRefreshIntervalChange"
+                          size="default" class="interval-select">
+                          <el-option :label="$t('nodes.3Seconds')" value="3" />
+                          <el-option :label="$t('nodes.5Seconds')" value="5" />
+                          <el-option :label="$t('nodes.10Seconds')" value="10" />
+                          <el-option :label="$t('nodes.30Seconds')" value="30" />
+                          <el-option :label="$t('nodes.1Minute')" value="60" />
+                          <el-option :label="$t('nodes.5Minutes')" value="300" />
+                        </el-select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- CPU使用情况图表 -->
+                <div class="chart-container">
+                  <div class="chart-header">
+                    <h3>{{ $t('nodes.cpuUsage') }}</h3>
+                  </div>
+                  <div class="chart" ref="cpuChart"></div>
+                </div>
+                <!-- 内存使用情况图表 -->
+                <div class="chart-container">
+                  <div class="chart-header">
+                    <h3>{{ $t('nodes.memoryUsage') }}</h3>
+                  </div>
+                  <div class="chart" ref="memoryChart"></div>
+                </div>
+                <!-- 磁盘使用率图表 -->
+                <div class="chart-container">
+                  <div class="chart-header">
+                    <h3>{{ $t('nodes.diskUsage') }}</h3>
+                  </div>
+                  <div class="chart" ref="diskChart"></div>
+                </div>
+                <!-- 网络流量监控图表 -->
+                <div class="chart-container">
+                  <div class="chart-header">
+                    <h3>{{ $t('nodes.networkTrafficMonitor') }}</h3>
+                  </div>
+                  <div class="chart" ref="networkChart"></div>
+                </div>
+                <!-- 进程列表 -->
+                <div class="chart-container">
+                  <div class="chart-header">
+                    <h3>{{ $t('nodes.processList') }}</h3>
+                    <el-button type="primary" size="small" @click="refreshProcessList">{{ $t('nodes.refresh')
+                      }}</el-button>
+                  </div>
+                  <el-table :data="nodeDetail.process_list" style="width: 100%" :max-height="300">
+                    <el-table-column prop="pid" label="PID" width="80" />
+                    <el-table-column prop="user" :label="$t('nodes.user')" width="100" />
+                    <el-table-column prop="cpu_percent" label="CPU%" width="100" />
+                    <el-table-column prop="memory_percent" :label="$t('nodes.memoryPercent')" width="100" />
+                    <el-table-column prop="command" :label="$t('nodes.command')" show-overflow-tooltip />
+                  </el-table>
+                </div>
+              </div>
+            </el-tab-pane>
+
+            <!-- 系统日志标签页 -->
+            <el-tab-pane :label="$t('nodes.systemLogs')" name="logs">
+              <div class="logs-content">
+                <!-- 日志控制面板 -->
+                <div class="logs-control-panel">
+                  <div class="panel-section search-controls">
+                    <el-input v-model="logSearchQuery" :placeholder="$t('nodes.searchLogs')" clearable
+                      @clear="handleLogSearch" @input="handleLogSearch" class="search-input">
+                      <template #prefix>
+                        <el-icon>
+                          <Search />
+                        </el-icon>
+                      </template>
+                    </el-input>
+                    <el-select v-model="logLevelFilter" :placeholder="$t('nodes.logLevel')" clearable
+                      @change="handleLogSearch" class="level-select">
+                      <el-option :label="$t('nodes.all')" value="" />
+                      <el-option label="DEBUG" value="DEBUG" />
+                      <el-option label="INFO" value="INFO" />
+                      <el-option label="WARNING" value="WARNING" />
+                      <el-option label="ERROR" value="ERROR" />
+                      <el-option label="CRITICAL" value="CRITICAL" />
+                    </el-select>
+                    <el-button type="primary" :loading="refreshingLogs" @click="handleManualLogRefresh"
+                      class="refresh-button">
+                      <el-icon>
+                        <Refresh />
+                      </el-icon>
+                      <span>{{ $t('nodes.refresh') }}</span>
+                    </el-button>
+                    <el-switch v-model="autoRefreshLogs" :active-text="$t('nodes.autoRefresh')" inactive-text=""
+                      class="refresh-switch" @change="handleAutoLogRefreshChange" />
+                    <el-select v-if="autoRefreshLogs" v-model="logRefreshInterval"
+                      :placeholder="$t('nodes.refreshInterval')" @change="handleLogRefreshIntervalChange"
+                      class="interval-select">
                       <el-option :label="$t('nodes.3Seconds')" value="3" />
                       <el-option :label="$t('nodes.5Seconds')" value="5" />
                       <el-option :label="$t('nodes.10Seconds')" value="10" />
                       <el-option :label="$t('nodes.30Seconds')" value="30" />
-                      <el-option :label="$t('nodes.1Minute')" value="60" />
-                      <el-option :label="$t('nodes.5Minutes')" value="300" />
                     </el-select>
                   </div>
                 </div>
-              </div>
-            </div>
-            <!-- CPU使用情况图表 -->
-            <div class="chart-container">
-              <div class="chart-header">
-                <h3>{{ $t('nodes.cpuUsage') }}</h3>
-              </div>
-              <div class="chart" ref="cpuChart"></div>
-            </div>
-            <!-- 内存使用情况图表 -->
-            <div class="chart-container">
-              <div class="chart-header">
-                <h3>{{ $t('nodes.memoryUsage') }}</h3>
-              </div>
-              <div class="chart" ref="memoryChart"></div>
-            </div>
-            <!-- 磁盘使用率图表 -->
-            <div class="chart-container">
-              <div class="chart-header">
-                <h3>{{ $t('nodes.diskUsage') }}</h3>
-              </div>
-              <div class="chart" ref="diskChart"></div>
-            </div>
-            <!-- 网络流量监控图表 -->
-            <div class="chart-container">
-              <div class="chart-header">
-                <h3>{{ $t('nodes.networkTrafficMonitor') }}</h3>
-              </div>
-              <div class="chart" ref="networkChart"></div>
-            </div>
-            <!-- 进程列表 -->
-            <div class="chart-container">
-              <div class="chart-header">
-                <h3>{{ $t('nodes.processList') }}</h3>
-                <el-button type="primary" size="small" @click="refreshProcessList">{{ $t('nodes.refresh') }}</el-button>
-              </div>
-              <el-table :data="nodeDetail.process_list" style="width: 100%" :max-height="300">
-                <el-table-column prop="pid" label="PID" width="80" />
-                <el-table-column prop="user" :label="$t('nodes.user')" width="100" />
-                <el-table-column prop="cpu_percent" label="CPU%" width="100" />
-                <el-table-column prop="memory_percent" :label="$t('nodes.memoryPercent')" width="100" />
-                <el-table-column prop="command" :label="$t('nodes.command')" show-overflow-tooltip />
-              </el-table>
-            </div>
-          </div>
-        </el-tab-pane>
 
-        <!-- 系统日志标签页 -->
-        <el-tab-pane :label="$t('nodes.systemLogs')" name="logs">
-          <div class="logs-content">
-            <!-- 日志控制面板 -->
-            <div class="logs-control-panel">
-              <div class="panel-section search-controls">
-                <el-input
-                  v-model="logSearchQuery"
-                  :placeholder="$t('nodes.searchLogs')"
-                  clearable
-                  @clear="handleLogSearch"
-                  @input="handleLogSearch"
-                  class="search-input"
-                >
-                  <template #prefix>
-                    <el-icon><Search /></el-icon>
-                  </template>
-                </el-input>
-                <el-select
-                  v-model="logLevelFilter"
-                  :placeholder="$t('nodes.logLevel')"
-                  clearable
-                  @change="handleLogSearch"
-                  class="level-select"
-                >
-                  <el-option :label="$t('nodes.all')" value="" />
-                  <el-option label="DEBUG" value="DEBUG" />
-                  <el-option label="INFO" value="INFO" />
-                  <el-option label="WARNING" value="WARNING" />
-                  <el-option label="ERROR" value="ERROR" />
-                  <el-option label="CRITICAL" value="CRITICAL" />
-                </el-select>
-                <el-button
-                  type="primary"
-                  :loading="refreshingLogs"
-                  @click="handleManualLogRefresh"
-                  class="refresh-button"
-                >
-                  <el-icon><Refresh /></el-icon>
-                  <span>{{ $t('nodes.refresh') }}</span>
-                </el-button>
-                <el-switch
-                  v-model="autoRefreshLogs"
-                  :active-text="$t('nodes.autoRefresh')"
-                  inactive-text=""
-                  class="refresh-switch"
-                  @change="handleAutoLogRefreshChange"
-                />
-                <el-select
-                  v-if="autoRefreshLogs"
-                  v-model="logRefreshInterval"
-                  :placeholder="$t('nodes.refreshInterval')"
-                  @change="handleLogRefreshIntervalChange"
-                  class="interval-select"
-                >
-                  <el-option :label="$t('nodes.3Seconds')" value="3" />
-                  <el-option :label="$t('nodes.5Seconds')" value="5" />
-                  <el-option :label="$t('nodes.10Seconds')" value="10" />
-                  <el-option :label="$t('nodes.30Seconds')" value="30" />
-                </el-select>
+                <!-- 日志列表 -->
+                <div class="logs-list">
+                  <el-table :data="filteredLogs" style="width: 100%" height="calc(100vh - 300px)"
+                    v-loading="loadingLogs">
+                    <el-table-column prop="timestamp" :label="$t('nodes.timestamp')" width="180">
+                      <template #default="{ row }">
+                        {{ row.timestamp }}
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="level" :label="$t('nodes.level')" width="100">
+                      <template #default="{ row }">
+                        <el-tag :type="getLogLevelType(row.level)">
+                          {{ row.level }}
+                        </el-tag>
+                      </template>
+                    </el-table-column>
+                    <el-table-column prop="module" :label="$t('nodes.module')" width="150" />
+                    <el-table-column prop="message" :label="$t('nodes.message')" show-overflow-tooltip />
+                  </el-table>
+                </div>
               </div>
-            </div>
-
-            <!-- 日志列表 -->
-            <div class="logs-list">
-              <el-table
-                :data="filteredLogs"
-                style="width: 100%"
-                height="calc(100vh - 300px)"
-                v-loading="loadingLogs"
-              >
-                <el-table-column prop="timestamp" :label="$t('nodes.timestamp')" width="180">
-                  <template #default="{ row }">
-                    {{ row.timestamp }}
-                  </template>
-                </el-table-column>
-                <el-table-column prop="level" :label="$t('nodes.level')" width="100">
-                  <template #default="{ row }">
-                    <el-tag :type="getLogLevelType(row.level)">
-                      {{ row.level }}
-                    </el-tag>
-                  </template>
-                </el-table-column>
-                <el-table-column prop="module" :label="$t('nodes.module')" width="150" />
-                <el-table-column prop="message" :label="$t('nodes.message')" show-overflow-tooltip />
-              </el-table>
-            </div>
-          </div>
-        </el-tab-pane>
-      </el-tabs>
-      </div>
+            </el-tab-pane>
+          </el-tabs>
+        </div>
       </el-drawer>
       <!-- 批量分组弹窗 -->
       <el-dialog :title="$t('nodes.batchGroup')" v-model="batchGroupDialogVisible" width="400px">
@@ -665,7 +667,7 @@
             <el-button @click="batchGroupDialogVisible = false">{{ $t('nodes.cancel') }}</el-button>
             <el-button type="primary" @click="confirmBatchGroup">{{ $t('nodes.confirm') }}</el-button>
           </span>
-                  </template>
+        </template>
       </el-dialog>
       <!-- 批量打标签弹窗 -->
       <el-dialog :title="$t('nodes.batchTag')" v-model="batchTagDialogVisible" width="400px">
@@ -685,7 +687,7 @@
 import { ref, onMounted, nextTick, watch, onUnmounted, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { 
+import {
   ArrowDown,
   Edit,
   Delete,
@@ -734,7 +736,7 @@ const stats = computed(() => {
   const offline = nodes.value.filter(c => c.status === 'offline').length
   const running = nodes.value.filter(c => c.agent_status === 'running').length
   const pending = nodes.value.filter(c => c.agent_status === 'not_installed').length
-  
+
   return { online, offline, running, pending }
 })
 
@@ -762,23 +764,27 @@ const rules = {
   ],
   password: [
     { required: true, message: t('nodes.validation.enterPassword'), trigger: 'blur' },
-    { validator: (rule, value, callback) => {
-      if (form.value.auth_type === 'password' && !value) {
-        callback(new Error('密码不能为空'))
-      } else {
-        callback()
-      }
-    }, trigger: 'blur' }
+    {
+      validator: (rule, value, callback) => {
+        if (form.value.auth_type === 'password' && !value) {
+          callback(new Error('密码不能为空'))
+        } else {
+          callback()
+        }
+      }, trigger: 'blur'
+    }
   ],
   ssh_key: [
     { required: true, message: '请输入SSH密钥', trigger: 'blur' },
-    { validator: (rule, value, callback) => {
-      if (form.value.auth_type === 'key' && !value) {
-        callback(new Error('SSH密钥不能为空'))
-      } else {
-        callback()
-      }
-    }, trigger: 'blur' }
+    {
+      validator: (rule, value, callback) => {
+        if (form.value.auth_type === 'key' && !value) {
+          callback(new Error('SSH密钥不能为空'))
+        } else {
+          callback()
+        }
+      }, trigger: 'blur'
+    }
   ]
 }
 
@@ -879,7 +885,7 @@ const filteredNodes = computed(() => {
   if (selectedGroup.value) {
     result = result.filter(node => node.group === selectedGroup.value)
   }
-  
+
   // 标签过滤
   if (selectedTag.value) {
     result = result.filter(node => {
@@ -901,7 +907,7 @@ const filteredNodes = computed(() => {
   return result
 })
 
-const handleSearch = () => {}
+const handleSearch = () => { }
 const handleSelectionChange = (val) => { multipleSelection.value = val }
 const batchGroupDialogVisible = ref(false)
 const batchTagDialogVisible = ref(false)
@@ -936,7 +942,7 @@ const showBatchGroupDialog = async () => {
     )
     const nodeIds = multipleSelection.value.map(item => item.id)
     await axios.post('/api/nodes/batch_group', { node_ids: nodeIds, group: groupName || '' })
-          ElMessage.success(t('nodes.batchGroupSuccess'))
+    ElMessage.success(t('nodes.batchGroupSuccess'))
     fetchNodes()
     fetchGroups()
   } catch (error) {
@@ -981,7 +987,7 @@ const showBatchTagDialog = async () => {
     )
     const nodeIds = multipleSelection.value.map(item => item.id)
     await axios.post('/api/nodes/batch_tags', { node_ids: nodeIds, tags: tags || '' })
-          ElMessage.success(t('nodes.batchTagSuccess'))
+    ElMessage.success(t('nodes.batchTagSuccess'))
     fetchNodes()
     fetchTags()
   } catch (error) {
@@ -995,18 +1001,18 @@ const showBatchTagDialog = async () => {
 const handleBatchDelete = async () => {
   if (!multipleSelection.value.length) {
     ElMessage.warning(t('nodes.pleaseSelectNodesToDelete'))
-      return
-    }
-  
+    return
+  }
+
   try {
     await ElMessageBox.confirm(t('nodes.confirmBatchDelete', { count: multipleSelection.value.length }), t('nodes.batchDelete'), {
       type: 'warning'
     })
-    
+
     const nodeIds = multipleSelection.value.map(item => item.id)
     await axios.post('/api/nodes/batch_delete', { node_ids: nodeIds })
-    
-          ElMessage.success(t('nodes.batchDeleteSuccess'))
+
+    ElMessage.success(t('nodes.batchDeleteSuccess'))
     fetchNodes()
     multipleSelection.value = []
   } catch (error) {
@@ -1273,7 +1279,7 @@ const handleNameClick = async (node) => {
   try {
     currentNode.value = node
     drawerVisible.value = true
-    
+
     // 先获取节点详情
     await fetchNodeDetail(node.id)
 
@@ -1287,7 +1293,7 @@ const handleNameClick = async (node) => {
 
 const handleNodeCommand = async (command) => {
   const { action, row } = command
-  
+
   switch (action) {
     case 'edit':
       showEditDialog(row)
@@ -1329,19 +1335,19 @@ function safeInitChart(refDom, instanceRef, option) {
     setTimeout(() => safeInitChart(refDom, instanceRef, option), 120)
     return
   }
-  
+
   try {
     // 销毁现有实例
     if (instanceRef.value) {
       instanceRef.value.dispose()
     }
-    
+
     // 创建新实例
     instanceRef.value = echarts.init(refDom.value, null, {
       renderer: 'canvas',
       useDirtyRect: true
     })
-    
+
     // 验证数据格式并确保所有必要属性存在
     if (option.series) {
       option.series.forEach((series, index) => {
@@ -1355,21 +1361,21 @@ function safeInitChart(refDom, instanceRef, option) {
         if (!Array.isArray(series.data)) {
           series.data = []
         }
-        
+
         // 确保其他必要属性存在
         if (!series.smooth) series.smooth = true
         if (!series.symbol) series.symbol = 'circle'
         if (!series.showSymbol) series.showSymbol = false
         if (!series.symbolSize) series.symbolSize = 6
         if (!series.sampling) series.sampling = 'average'
-        
+
         // 确保样式属性存在
         if (!series.itemStyle) {
           series.itemStyle = {
             color: '#409EFF'
           }
         }
-        
+
         // 确保 emphasis 属性存在
         if (!series.emphasis) {
           series.emphasis = {
@@ -1382,10 +1388,10 @@ function safeInitChart(refDom, instanceRef, option) {
         }
       })
     }
-    
+
     // 设置配置
     instanceRef.value.setOption(option, true)
-    
+
   } catch (error) {
     // 静默处理错误
   }
@@ -1399,7 +1405,7 @@ const initCharts = async () => {
   try {
     disposeCharts()
     await nextTick()
-    
+
     // 确保数据存在，如果为空则添加默认数据
     const ensureData = (dataArray, defaultValue = 0) => {
       if (!Array.isArray(dataArray) || dataArray.length === 0) {
@@ -1408,7 +1414,7 @@ const initCharts = async () => {
       }
       return dataArray
     }
-    
+
     // CPU 图表 - 包含使用率和负载
     if (cpuChart.value) {
       const cpuOption = {
@@ -1455,11 +1461,11 @@ const initCharts = async () => {
         xAxis: {
           type: 'time',
           boundaryGap: false,
-          axisLine: { 
+          axisLine: {
             show: true,
             lineStyle: { color: '#e4e7ed' }
           },
-          axisTick: { 
+          axisTick: {
             show: true,
             lineStyle: { color: '#e4e7ed' }
           },
@@ -1595,7 +1601,7 @@ const initCharts = async () => {
       }
       safeInitChart(cpuChart, cpuChartInstance, cpuOption)
     }
-    
+
     // 内存图表 - 包含使用率和详细信息
     if (memoryChart.value) {
       const memoryOption = {
@@ -1642,11 +1648,11 @@ const initCharts = async () => {
         xAxis: {
           type: 'time',
           boundaryGap: false,
-          axisLine: { 
+          axisLine: {
             show: true,
             lineStyle: { color: '#e4e7ed' }
           },
-          axisTick: { 
+          axisTick: {
             show: true,
             lineStyle: { color: '#e4e7ed' }
           },
@@ -1766,7 +1772,7 @@ const initCharts = async () => {
       }
       safeInitChart(memoryChart, memoryChartInstance, memoryOption)
     }
-    
+
     // 磁盘图表 - 新增磁盘使用情况
     if (diskChart.value) {
       const diskOption = {
@@ -1813,11 +1819,11 @@ const initCharts = async () => {
         xAxis: {
           type: 'time',
           boundaryGap: false,
-          axisLine: { 
+          axisLine: {
             show: true,
             lineStyle: { color: '#e4e7ed' }
           },
-          axisTick: { 
+          axisTick: {
             show: true,
             lineStyle: { color: '#e4e7ed' }
           },
@@ -1937,7 +1943,7 @@ const initCharts = async () => {
       }
       safeInitChart(diskChart, diskChartInstance, diskOption)
     }
-    
+
     // 网络图表 - 优化网络流量展示
     if (networkChart.value) {
       const networkOption = {
@@ -1984,11 +1990,11 @@ const initCharts = async () => {
         xAxis: {
           type: 'time',
           boundaryGap: false,
-          axisLine: { 
+          axisLine: {
             show: true,
             lineStyle: { color: '#e4e7ed' }
           },
-          axisTick: { 
+          axisTick: {
             show: true,
             lineStyle: { color: '#e4e7ed' }
           },
@@ -2117,9 +2123,9 @@ const initCharts = async () => {
       }
       safeInitChart(networkChart, networkChartInstance, networkOption)
     }
-    
 
-    
+
+
   } catch (e) {
     // 静默处理错误
   }
@@ -2140,14 +2146,14 @@ const loadHistoryData = async () => {
       const value = timeRange.value
       const unit = value.slice(-1)
       const amount = parseInt(value.slice(0, -1))
-      
+
       if (unit === 'm') {
         start.setMinutes(start.getMinutes() - amount)
       } else if (unit === 'h') {
         start.setHours(start.getHours() - amount)
       }
     }
-    
+
     const response = await axios.get(`/api/monitor/${nodeId}/history`, {
       params: {
         start: start.toISOString(),
@@ -2156,7 +2162,7 @@ const loadHistoryData = async () => {
     })
 
     if (response.data.status === 'success' && response.data.data) {
-      const historyData = response.data.data.sort((a, b) => 
+      const historyData = response.data.data.sort((a, b) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
       )
 
@@ -2184,56 +2190,56 @@ const loadHistoryData = async () => {
         try {
           // 使用数据记录的时间戳
           const timestamp = new Date(item.timestamp).getTime()
-          
+
           // CPU数据
           const cpuUsage = parseFloat(item.data.cpu?.percent || 0)
           if (!isNaN(cpuUsage)) {
             monitorData.value.cpu.push([timestamp, cpuUsage])
           }
-          
+
           // CPU负载数据
           const loadAvg = item.data.cpu?.load_avg || [0, 0, 0]
           const load1 = parseFloat(loadAvg[0] || 0)
           const load5 = parseFloat(loadAvg[1] || 0)
           const load15 = parseFloat(loadAvg[2] || 0)
-          
+
           if (!isNaN(load1)) monitorData.value.load1.push([timestamp, load1])
           if (!isNaN(load5)) monitorData.value.load5.push([timestamp, load5])
           if (!isNaN(load15)) monitorData.value.load15.push([timestamp, load15])
-          
+
           // 内存数据
           const memoryUsage = parseFloat(item.data.memory?.percent || 0)
           const memoryUsed = parseFloat(item.data.memory?.used || 0)
           const memoryAvailable = parseFloat(item.data.memory?.available || 0)
-          
+
           if (!isNaN(memoryUsage)) monitorData.value.memory.push([timestamp, memoryUsage])
           if (!isNaN(memoryUsed)) monitorData.value.memoryUsed.push([timestamp, memoryUsed])
           if (!isNaN(memoryAvailable)) monitorData.value.memoryAvailable.push([timestamp, memoryAvailable])
-          
+
           // 磁盘数据
           const diskUsage = parseFloat(item.data.disk?.percent || 0)
           const diskUsed = parseFloat(item.data.disk?.used || 0)
           const diskFree = parseFloat(item.data.disk?.free || 0)
-          
+
           if (!isNaN(diskUsage)) monitorData.value.disk.push([timestamp, diskUsage])
           if (!isNaN(diskUsed)) monitorData.value.diskUsed.push([timestamp, diskUsed])
           if (!isNaN(diskFree)) monitorData.value.diskFree.push([timestamp, diskFree])
-          
+
           // 网络数据
           const recv = parseFloat(item.data.network?.bytes_recv || 0)
           const sent = parseFloat(item.data.network?.bytes_sent || 0)
           const dropped = parseFloat(item.data.network?.packets_dropped || 0)
-          
+
           if (!isNaN(recv)) monitorData.value.network.recv.push([timestamp, recv])
           if (!isNaN(sent)) monitorData.value.network.sent.push([timestamp, sent])
           if (!isNaN(dropped)) monitorData.value.network.dropped.push([timestamp, dropped])
-          
+
         } catch (error) {
           // 静默处理错误
         }
       })
-      
-      
+
+
 
 
       // 更新图表数据
@@ -2270,7 +2276,7 @@ const updateCharts = () => {
               }
             }
           }
-          
+
           // 为第一个系列添加区域样式
           if (hasArea) {
             // 将十六进制颜色转换为rgba格式
@@ -2280,7 +2286,7 @@ const updateCharts = () => {
               const b = parseInt(hex.slice(5, 7), 16)
               return `rgba(${r}, ${g}, ${b}, ${alpha})`
             }
-            
+
             config.areaStyle = {
               color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
                 { offset: 0, color: hexToRgba(color, 0.4) },
@@ -2288,7 +2294,7 @@ const updateCharts = () => {
               ])
             }
           }
-          
+
           return config
         }
 
@@ -2303,7 +2309,7 @@ const updateCharts = () => {
             ]
           }, false)
         }
-        
+
         if (memoryChartInstance.value) {
           memoryChartInstance.value.setOption({
             series: [
@@ -2313,7 +2319,7 @@ const updateCharts = () => {
             ]
           }, false)
         }
-        
+
         if (diskChartInstance.value) {
           diskChartInstance.value.setOption({
             series: [
@@ -2323,7 +2329,7 @@ const updateCharts = () => {
             ]
           }, false)
         }
-        
+
         if (networkChartInstance.value) {
           networkChartInstance.value.setOption({
             series: [
@@ -2426,7 +2432,7 @@ watch([cpuTimeRange, memoryTimeRange, diskTimeRange, networkTimeRange], () => {
 // 处理窗口大小变化
 const handleResize = () => {
   if (!drawerVisible.value) return
-  
+
   nextTick(() => {
     try {
       if (cpuChartInstance.value) {
@@ -2462,7 +2468,7 @@ const handleResize = () => {
         })
       }
     } catch (error) {
-    // 静默处理错误
+      // 静默处理错误
     }
   })
 }
@@ -2571,9 +2577,9 @@ const filteredLogs = computed(() => {
     return []
   }
   return logs.value.filter(log => {
-    const matchesSearch = !logSearchQuery.value || 
+    const matchesSearch = !logSearchQuery.value ||
       log.message.toLowerCase().includes(logSearchQuery.value.toLowerCase())
-    const matchesLevel = !logLevelFilter.value || 
+    const matchesLevel = !logLevelFilter.value ||
       log.level === logLevelFilter.value
     return matchesSearch && matchesLevel
   })
@@ -2631,7 +2637,7 @@ const stopAutoLogRefresh = () => {
 // 获取日志数据
 const fetchLogs = async () => {
   if (!currentNode.value?.id) return
-  
+
   try {
     loadingLogs.value = true
     const response = await axios.get(`/api/nodes/${currentNode.value.id}/logs`, {
@@ -2658,7 +2664,7 @@ const fetchLogs = async () => {
           return null
         })
         .filter(entry => entry !== null) // 过滤掉解析失败的行
-      
+
       logs.value = logEntries
     }
   } catch (error) {
@@ -2787,8 +2793,15 @@ onMounted(() => {
 }
 
 @keyframes pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 .proxy-center {
@@ -3089,16 +3102,19 @@ onMounted(() => {
   padding: 2px 6px;
   transition: background 0.2s, color 0.2s;
 }
+
 .server-name-link:hover {
   background: #e6f0fa;
   color: #1769aa;
   text-decoration: underline;
 }
+
 .server-link-icon {
   font-size: 16px;
   color: #409eff;
   transition: color 0.2s;
 }
+
 .server-name-link:hover .server-link-icon {
   color: #1769aa;
 }
@@ -3192,7 +3208,11 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.nic-ip, .nic-ip6, .nic-mac, .nic-mtu, .nic-status {
+.nic-ip,
+.nic-ip6,
+.nic-mac,
+.nic-mtu,
+.nic-status {
   color: var(--text-secondary);
   font-size: 14px;
   margin-right: 8px;
@@ -3220,11 +3240,13 @@ onMounted(() => {
     padding: 10px;
   }
 
-  .cpu-item, .nic-item {
+  .cpu-item,
+  .nic-item {
     min-width: 100%;
   }
 
-  .memory-details, .disk-details {
+  .memory-details,
+  .disk-details {
     flex-direction: column;
     gap: 8px;
   }
@@ -3491,15 +3513,18 @@ onMounted(() => {
   .nodes-container {
     padding: 10px;
   }
+
   .card-header {
     flex-direction: column;
     gap: 10px;
     align-items: flex-start;
   }
+
   .header-right {
     width: 100%;
     justify-content: flex-start;
   }
+
   .search-input {
     width: 100%;
   }
@@ -3514,6 +3539,7 @@ onMounted(() => {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -3540,13 +3566,18 @@ onMounted(() => {
 }
 
 /* 在style中添加动画 */
-.fade-arch-enter-active, .fade-arch-leave-active {
+.fade-arch-enter-active,
+.fade-arch-leave-active {
   transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.fade-arch-enter-from, .fade-arch-leave-to {
+
+.fade-arch-enter-from,
+.fade-arch-leave-to {
   opacity: 0;
 }
-.fade-arch-enter-to, .fade-arch-leave-from {
+
+.fade-arch-enter-to,
+.fade-arch-leave-from {
   opacity: 1;
 }
 
@@ -3555,4 +3586,4 @@ onMounted(() => {
   height: 300px;
   min-height: 200px;
 }
-</style> 
+</style>

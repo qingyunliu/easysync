@@ -4,11 +4,8 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('obsToNasOptions.rcloneArgs')">
-            <el-input
-              v-model="form.rclone_args"
-              :placeholder="$t('obsToNasOptions.rcloneArgsPlaceholder')"
-              @input="updateModelValue"
-            />
+            <el-input v-model="form.rclone_args" :placeholder="$t('obsToNasOptions.rcloneArgsPlaceholder')"
+              @input="updateModelValue" />
             <div class="form-tip">{{ $t('obsToNasOptions.rcloneArgsTip') }}</div>
           </el-form-item>
         </el-col>
@@ -22,78 +19,56 @@
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('obsToNasOptions.chunkSize')">
-            <el-input-number
-              v-model="form.chunk_size"
-              :min="1"
-              :max="1000"
-              :placeholder="$t('obsToNasOptions.chunkSizePlaceholder')"
-              style="width: 100%"
-              @change="updateModelValue"
-            />
+            <el-input-number v-model="form.chunk_size" :min="1" :max="1000"
+              :placeholder="$t('obsToNasOptions.chunkSizePlaceholder')" style="width: 100%"
+              @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToNasOptions.chunkSizeTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('obsToNasOptions.downloadConcurrency')">
-            <el-input-number
-              v-model="form.download_concurrency"
-              :min="1"
-              :max="20"
-              :placeholder="$t('obsToNasOptions.downloadConcurrencyPlaceholder')"
-              style="width: 100%"
-              @change="updateModelValue"
-            />
+            <el-input-number v-model="form.download_concurrency" :min="1" :max="20"
+              :placeholder="$t('obsToNasOptions.downloadConcurrencyPlaceholder')" style="width: 100%"
+              @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToNasOptions.downloadConcurrencyTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('obsToNasOptions.resumeDownload')">
-            <el-switch
-              v-model="form.resume_download"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.resume_download" @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToNasOptions.resumeDownloadTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('obsToNasOptions.checksumVerification')">
-            <el-switch
-              v-model="form.checksum_verification"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.checksum_verification" @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToNasOptions.checksumVerificationTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('obsToNasOptions.preserveMetadata')">
-            <el-switch
-              v-model="form.preserve_metadata"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.preserve_metadata" @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToNasOptions.preserveMetadataTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('obsToNasOptions.progressReporting')">
-            <el-switch
-              v-model="form.progress_reporting"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.progress_reporting" @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToNasOptions.progressReportingTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('obsToNasOptions.retryStrategy')">
@@ -106,11 +81,8 @@
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('obsToNasOptions.tempDirectory')">
-            <el-input
-              v-model="form.temp_directory"
-              :placeholder="$t('obsToNasOptions.tempDirectoryPlaceholder')"
-              @input="updateModelValue"
-            />
+            <el-input v-model="form.temp_directory" :placeholder="$t('obsToNasOptions.tempDirectoryPlaceholder')"
+              @input="updateModelValue" />
             <div class="form-tip">{{ $t('obsToNasOptions.tempDirectoryTip') }}</div>
           </el-form-item>
         </el-col>
@@ -216,4 +188,4 @@ watch(() => props.modelValue, (newValue) => {
 :deep(.el-form-item__label) {
   font-weight: 500;
 }
-</style> 
+</style>

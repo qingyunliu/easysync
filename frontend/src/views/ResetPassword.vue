@@ -18,12 +18,7 @@
               <el-input v-model="form.confirmPassword" type="password" placeholder="确认新密码" show-password />
             </el-form-item>
             <el-form-item>
-              <el-button 
-                type="primary" 
-                native-type="submit"
-                :loading="loading" 
-                class="reset-btn"
-              >
+              <el-button type="primary" native-type="submit" :loading="loading" class="reset-btn">
                 重置密码
               </el-button>
             </el-form-item>
@@ -107,6 +102,7 @@ const handleSubmit = async () => {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   overflow: hidden;
 }
+
 .reset-background {
   position: relative;
   width: 100%;
@@ -115,6 +111,7 @@ const handleSubmit = async () => {
   justify-content: center;
   align-items: center;
 }
+
 .reset-background::before {
   content: '';
   position: absolute;
@@ -126,6 +123,7 @@ const handleSubmit = async () => {
   opacity: 0.1;
   z-index: 0;
 }
+
 .reset-content {
   position: relative;
   z-index: 1;
@@ -136,6 +134,7 @@ const handleSubmit = async () => {
   flex-direction: column;
   align-items: center;
 }
+
 .reset-header {
   width: 100%;
   text-align: center;
@@ -143,17 +142,21 @@ const handleSubmit = async () => {
   color: white;
   animation: fadeInDown 1s ease;
 }
+
 .reset-logo {
   width: 80%;
   margin: 0 auto;
 }
+
 .reset-logo img {
   width: 280px;
 }
+
 .reset-logo p {
   font-size: 18px;
   opacity: 0.9;
 }
+
 .reset-card {
   width: 100%;
   border-radius: 10px;
@@ -163,49 +166,58 @@ const handleSubmit = async () => {
   text-align: center;
   padding: 40px 20px 32px 20px;
 }
+
 .reset-card h2 {
   margin: 16px 0 12px 0;
   color: #409EFF;
 }
+
 .reset-btn {
   width: 100%;
   height: 44px;
   font-size: 16px;
   border-radius: 8px;
 }
+
 .login-link {
   text-align: center;
   margin-top: 20px;
   color: #666;
 }
+
 .login-link a {
   color: #409EFF;
   text-decoration: none;
   font-weight: 500;
   transition: all 0.3s ease;
 }
+
 .login-link a:hover {
   color: #66b1ff;
   text-decoration: underline;
 }
+
 @keyframes fadeInDown {
   from {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-</style> 
+</style>

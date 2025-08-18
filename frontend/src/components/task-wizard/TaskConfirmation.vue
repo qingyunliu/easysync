@@ -14,7 +14,7 @@
           <Icon icon="mdi:source" class="section-icon" />
           <h4>{{ $t('taskConfirmation.sourceConfig') }}</h4>
         </div>
-        
+
         <div class="section-content">
           <div class="info-grid">
             <div class="info-item">
@@ -29,10 +29,11 @@
             </div>
             <div class="info-item">
               <span class="info-label">{{ $t('taskConfirmation.selectedItems') }}</span>
-              <span class="info-value">{{ wizardData.source.selectedPaths.length }} {{ $t('taskConfirmation.items') }}</span>
+              <span class="info-value">{{ wizardData.source.selectedPaths.length }} {{ $t('taskConfirmation.items')
+              }}</span>
             </div>
           </div>
-          
+
           <!-- 选中的文件/目录列表 -->
           <div v-if="wizardData.source.selectedPaths.length > 0" class="selected-items">
             <div class="items-header">
@@ -40,16 +41,9 @@
               <span>{{ $t('taskConfirmation.selectedFilesDirectories') }}</span>
             </div>
             <div class="items-list">
-              <el-tag
-                v-for="item in wizardData.source.selectedPaths"
-                :key="item.path"
-                class="selected-item"
-                size="small"
-              >
-                <Icon 
-                  :icon="item.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
-                  class="item-icon"
-                />
+              <el-tag v-for="item in wizardData.source.selectedPaths" :key="item.path" class="selected-item"
+                size="small">
+                <Icon :icon="item.type === 'directory' ? 'mdi:folder' : 'mdi:file'" class="item-icon" />
                 {{ item.name }}
               </el-tag>
             </div>
@@ -63,7 +57,7 @@
           <Icon icon="mdi:target" class="section-icon" />
           <h4>{{ $t('taskConfirmation.targetConfig') }}</h4>
         </div>
-        
+
         <div class="section-content">
           <div class="info-grid">
             <div class="info-item">
@@ -81,16 +75,11 @@
               <span class="info-value path-value">{{ wizardData.target.targetPath }}</span>
             </div>
           </div>
-          
+
           <!-- 数据覆盖警告 -->
           <div v-if="showOverrideWarning" class="override-warning">
-            <el-alert
-              :title="$t('taskConfirmation.dataOverrideWarning')"
-              type="warning"
-              :description="overrideWarningText"
-              show-icon
-              :closable="false"
-            />
+            <el-alert :title="$t('taskConfirmation.dataOverrideWarning')" type="warning"
+              :description="overrideWarningText" show-icon :closable="false" />
           </div>
         </div>
       </div>
@@ -101,7 +90,7 @@
           <Icon icon="mdi:cog" class="section-icon" />
           <h4>{{ $t('taskConfirmation.taskParameters') }}</h4>
         </div>
-        
+
         <div class="section-content">
           <div class="info-grid">
             <div class="info-item">
@@ -116,10 +105,11 @@
             </div>
             <div class="info-item full-width">
               <span class="info-label">{{ $t('taskConfirmation.taskDescription') }}</span>
-              <span class="info-value">{{ wizardData.parameters.description || $t('taskConfirmation.noDescription') }}</span>
+              <span class="info-value">{{ wizardData.parameters.description || $t('taskConfirmation.noDescription')
+              }}</span>
             </div>
           </div>
-          
+
           <!-- 同步选项 -->
           <div class="options-section">
             <div class="options-header">
@@ -164,7 +154,7 @@
               </div>
             </div>
           </div>
-          
+
           <!-- 传输策略 -->
           <div class="options-section">
             <div class="options-header">
@@ -188,7 +178,7 @@
               </div>
             </div>
           </div>
-          
+
           <!-- 高级参数 -->
           <div class="options-section">
             <div class="options-header">
@@ -228,7 +218,7 @@
           <Icon icon="mdi:chart-line" class="section-icon" />
           <h4>{{ $t('taskConfirmation.estimatedInfo') }}</h4>
         </div>
-        
+
         <div class="section-content">
           <div class="info-grid">
             <div class="info-item">
@@ -254,13 +244,8 @@
 
     <!-- 确认操作 -->
     <div class="confirmation-actions">
-      <el-alert
-        :title="$t('taskConfirmation.confirmConfigInfo')"
-        type="info"
-        :description="$t('taskConfirmation.confirmConfigInfoDesc')"
-        show-icon
-        :closable="false"
-      />
+      <el-alert :title="$t('taskConfirmation.confirmConfigInfo')" type="info"
+        :description="$t('taskConfirmation.confirmConfigInfoDesc')" show-icon :closable="false" />
     </div>
   </div>
 </template>
@@ -283,9 +268,9 @@ const emit = defineEmits(['confirm'])
 
 // 计算属性
 const showOverrideWarning = computed(() => {
-  return props.wizardData.source.storageId && 
-         props.wizardData.target.storageId && 
-         props.wizardData.source.storageId === props.wizardData.target.storageId
+  return props.wizardData.source.storageId &&
+    props.wizardData.target.storageId &&
+    props.wizardData.source.storageId === props.wizardData.target.storageId
 })
 
 const overrideWarningText = computed(() => {
@@ -304,18 +289,18 @@ const estimatedTotalSize = computed(() => {
   const totalSize = props.wizardData.source.selectedPaths.reduce((sum, item) => {
     return sum + (item.size || 0)
   }, 0)
-  
+
   if (totalSize === 0) return t('taskConfirmation.unknown')
-  
+
   const units = ['B', 'KB', 'MB', 'GB', 'TB']
   let size = totalSize
   let unitIndex = 0
-  
+
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024
     unitIndex++
   }
-  
+
   return `${size.toFixed(1)} ${units[unitIndex]}`
 })
 
@@ -323,12 +308,12 @@ const estimatedTransferTime = computed(() => {
   const totalSize = props.wizardData.source.selectedPaths.reduce((sum, item) => {
     return sum + (item.size || 0)
   }, 0)
-  
+
   if (totalSize === 0) return t('taskConfirmation.unknown')
-  
+
   const bandwidth = props.wizardData.parameters.syncOptions.bandwidth_limit || 10 // MB/s
   const timeInSeconds = totalSize / (1024 * 1024) / bandwidth
-  
+
   if (timeInSeconds < 60) {
     return `${Math.ceil(timeInSeconds)} ${t('common.seconds')}`
   } else if (timeInSeconds < 3600) {
@@ -585,4 +570,4 @@ const getPriorityText = (priority) => {
   border-radius: 4px;
   font-weight: 500;
 }
-</style> 
+</style>

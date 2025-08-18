@@ -12,7 +12,9 @@
     <div v-if="copyFromTask" class="copy-notice">
       <div class="cyber-alert">
         <div class="alert-icon">
-          <el-icon><CopyDocument /></el-icon>
+          <el-icon>
+            <CopyDocument />
+          </el-icon>
         </div>
         <div class="alert-content">
           <h4>{{ $t('taskWizard.copyTaskConfig') }}</h4>
@@ -25,20 +27,16 @@
     <!-- 科技感步骤指示器 -->
     <div class="cyber-steps">
       <div class="steps-container">
-        <div 
-          v-for="(step, index) in steps" 
-          :key="index"
-          class="step-item"
-          :class="{ 
-            'active': currentStep === index, 
-            'completed': currentStep > index,
-            'upcoming': currentStep < index 
-          }"
-          @click="canGoToStep(index) && goToStep(index)"
-        >
+        <div v-for="(step, index) in steps" :key="index" class="step-item" :class="{
+          'active': currentStep === index,
+          'completed': currentStep > index,
+          'upcoming': currentStep < index
+        }" @click="canGoToStep(index) && goToStep(index)">
           <div class="step-circle">
             <div class="step-inner">
-              <el-icon v-if="currentStep > index" class="step-check"><Check /></el-icon>
+              <el-icon v-if="currentStep > index" class="step-check">
+                <Check />
+              </el-icon>
               <el-icon v-else :class="step.iconClass">
                 <component :is="step.icon" />
               </el-icon>
@@ -68,7 +66,9 @@
             </div>
             <div class="step-header">
               <h3>
-                <el-icon class="header-icon"><FolderOpened /></el-icon>
+                <el-icon class="header-icon">
+                  <FolderOpened />
+                </el-icon>
                 {{ $t('taskWizard.selectSourceStorageAndFiles') }}
               </h3>
               <p class="step-description">{{ $t('taskWizard.selectSourceStorageAndFilesDesc') }}</p>
@@ -78,13 +78,9 @@
               <div class="header-line"></div>
             </div>
           </div>
-          
+
           <div class="panel-content">
-            <SourceSelector 
-              ref="sourceSelectorRef"
-              v-model="wizardData.source"
-              @change="handleSourceChange"
-            />
+            <SourceSelector ref="sourceSelectorRef" v-model="wizardData.source" @change="handleSourceChange" />
           </div>
         </div>
       </Transition>
@@ -99,7 +95,9 @@
             </div>
             <div class="step-header">
               <h3>
-                <el-icon class="header-icon"><FolderAdd /></el-icon>
+                <el-icon class="header-icon">
+                  <FolderAdd />
+                </el-icon>
                 选择目标端存储和路径
               </h3>
               <p class="step-description">请选择目标端存储，并指定同步的目标路径</p>
@@ -109,14 +107,10 @@
               <div class="header-line"></div>
             </div>
           </div>
-          
+
           <div class="panel-content">
-            <TargetSelector 
-              ref="targetSelectorRef"
-              v-model="wizardData.target"
-              :source-storage="wizardData.source"
-              @change="handleTargetChange"
-            />
+            <TargetSelector ref="targetSelectorRef" v-model="wizardData.target" :source-storage="wizardData.source"
+              @change="handleTargetChange" />
           </div>
         </div>
       </Transition>
@@ -131,7 +125,9 @@
             </div>
             <div class="step-header">
               <h3>
-                <el-icon class="header-icon"><Setting /></el-icon>
+                <el-icon class="header-icon">
+                  <Setting />
+                </el-icon>
                 配置任务参数
               </h3>
               <p class="step-description">根据源端和目标端类型配置相应的同步参数</p>
@@ -141,14 +137,10 @@
               <div class="header-line"></div>
             </div>
           </div>
-          
+
           <div class="panel-content">
-            <TaskParameters 
-              v-model="wizardData.parameters"
-              :source-storage="wizardData.source"
-              :target-storage="wizardData.target"
-              @change="handleParametersChange"
-            />
+            <TaskParameters v-model="wizardData.parameters" :source-storage="wizardData.source"
+              :target-storage="wizardData.target" @change="handleParametersChange" />
           </div>
         </div>
       </Transition>
@@ -163,7 +155,9 @@
             </div>
             <div class="step-header">
               <h3>
-                <el-icon class="header-icon"><Check /></el-icon>
+                <el-icon class="header-icon">
+                  <Check />
+                </el-icon>
                 确认任务配置
               </h3>
               <p class="step-description">请确认以下配置信息，确认无误后点击创建任务</p>
@@ -173,12 +167,9 @@
               <div class="header-line"></div>
             </div>
           </div>
-          
+
           <div class="panel-content">
-            <TaskConfirmation 
-              :wizard-data="wizardData"
-              @confirm="handleConfirm"
-            />
+            <TaskConfirmation :wizard-data="wizardData" @confirm="handleConfirm" />
           </div>
         </div>
       </Transition>
@@ -187,69 +178,55 @@
     <!-- 科技感导航栏 -->
     <div class="cyber-footer">
       <div class="footer-bg"></div>
-      
+
       <div class="footer-content">
         <!-- 左侧按钮组 -->
         <div class="footer-actions">
-          <button 
-            v-if="currentStep > 0" 
-            class="cyber-btn secondary" 
-            @click="prevStep" 
-            :disabled="loading"
-          >
-            <el-icon><ArrowLeft /></el-icon>
+          <button v-if="currentStep > 0" class="cyber-btn secondary" @click="prevStep" :disabled="loading">
+            <el-icon>
+              <ArrowLeft />
+            </el-icon>
             <span>{{ $t('taskWizard.previousStep') }}</span>
           </button>
-          
-          <button 
-            class="cyber-btn reset" 
-            @click="resetWizard"
-            :disabled="loading"
-          >
-            <el-icon><RefreshLeft /></el-icon>
+
+          <button class="cyber-btn reset" @click="resetWizard" :disabled="loading">
+            <el-icon>
+              <RefreshLeft />
+            </el-icon>
             <span>{{ $t('taskWizard.reset') }}</span>
           </button>
         </div>
 
         <!-- 中间进度指示 -->
         <div class="progress-indicator">
-          <div class="progress-text">{{ $t('taskWizard.stepProgress', { current: currentStep + 1, total: steps.length }) }}</div>
+          <div class="progress-text">{{ $t('taskWizard.stepProgress', { current: currentStep + 1, total: steps.length })
+            }}</div>
           <div class="progress-bar">
-            <div 
-              class="progress-fill" 
-              :style="{ width: `${((currentStep + 1) / steps.length) * 100}%` }"
-            ></div>
+            <div class="progress-fill" :style="{ width: `${((currentStep + 1) / steps.length) * 100}%` }"></div>
           </div>
           <div class="progress-dots">
-            <div 
-              v-for="i in steps.length" 
-              :key="i"
-              class="progress-dot"
-              :class="{ active: i <= currentStep + 1 }"
-            ></div>
+            <div v-for="i in steps.length" :key="i" class="progress-dot" :class="{ active: i <= currentStep + 1 }">
+            </div>
           </div>
         </div>
 
         <!-- 右侧主要按钮 -->
         <div class="footer-primary">
-          <button 
-            v-if="currentStep < 3" 
-            class="cyber-btn primary" 
-            @click="nextStep" 
-            :disabled="!canProceed || loading"
-          >
+          <button v-if="currentStep < 3" class="cyber-btn primary" @click="nextStep" :disabled="!canProceed || loading">
             <span>{{ $t('taskWizard.nextStep') }}</span>
-            <el-icon><ArrowRight /></el-icon>
+            <el-icon>
+              <ArrowRight />
+            </el-icon>
           </button>
-          
-          <button 
-            v-if="currentStep === 3" 
-            class="cyber-btn success" 
-            @click="createTask" 
-            :disabled="!canCreate || loading"
-          >
-            <el-icon v-if="loading"><Loading /></el-icon>
-            <el-icon v-else><Check /></el-icon>
+
+          <button v-if="currentStep === 3" class="cyber-btn success" @click="createTask"
+            :disabled="!canCreate || loading">
+            <el-icon v-if="loading">
+              <Loading />
+            </el-icon>
+            <el-icon v-else>
+              <Check />
+            </el-icon>
             <span>{{ copyFromTask ? $t('taskWizard.createCopy') : $t('taskWizard.createTask') }}</span>
           </button>
         </div>
@@ -306,7 +283,7 @@ const steps = ref([
     iconClass: 'step-icon-source'
   },
   {
-    title: t('taskWizard.steps.selectTarget'), 
+    title: t('taskWizard.steps.selectTarget'),
     description: t('taskWizard.steps.selectTargetDesc'),
     icon: FolderAdd,
     iconClass: 'step-icon-target'
@@ -376,15 +353,15 @@ const wizardData = ref({
 const initializeChildComponents = async () => {
   // 延迟执行，确保子组件已经挂载
   await nextTick()
-  
+
   // 多次尝试初始化，直到子组件可用
   let retryCount = 0
   const maxRetries = 10
-  
+
   while (retryCount < maxRetries) {
     // 等待子组件加载完成
     await new Promise(resolve => setTimeout(resolve, 200))
-    
+
     // 如果有源端配置，初始化源端选择器
     if (extractedSourceConfig.value?.storageId && sourceSelectorRef.value) {
       try {
@@ -399,10 +376,10 @@ const initializeChildComponents = async () => {
         sourceSelectorRef: !!sourceSelectorRef.value
       })
     }
-    
+
     retryCount++
   }
-  
+
   if (retryCount >= maxRetries) {
     console.warn('源端选择器初始化超时，可能需要手动配置')
     ElMessage.warning('复制任务配置可能不完整，请检查源端配置')
@@ -418,11 +395,11 @@ const extractConfigFromTask = (task) => {
     if (task.source_type === 'storage' && task.source_storage_id) {
       // 处理源端路径 - 检查多个可能的字段
       let selectedPaths = []
-      
+
       // 检查source_path字段
       if (task.source_path) {
         if (typeof task.source_path === 'string') {
-          selectedPaths = task.source_path.split(',').map(path => ({ 
+          selectedPaths = task.source_path.split(',').map(path => ({
             path: path.trim(),
             name: path.trim().split('/').pop() || path.trim()
           }))
@@ -433,7 +410,7 @@ const extractConfigFromTask = (task) => {
           }))
         }
       }
-      
+
       // 检查source_paths字段（如果存在）
       if (!selectedPaths.length && task.source_paths) {
         if (Array.isArray(task.source_paths)) {
@@ -443,7 +420,7 @@ const extractConfigFromTask = (task) => {
           }))
         }
       }
-      
+
       // 检查source_storage_paths字段（如果存在）
       if (!selectedPaths.length && task.source_storage_paths) {
         if (Array.isArray(task.source_storage_paths)) {
@@ -453,7 +430,7 @@ const extractConfigFromTask = (task) => {
           }))
         }
       }
-      
+
       // 在复制任务时，不直接设置wizardData，避免触发props变化监听器
       const sourceConfig = {
         storageId: task.source_storage_id,
@@ -461,13 +438,13 @@ const extractConfigFromTask = (task) => {
         storageType: task.source_storage_type || task.source_storage_config?.type || '',
         selectedPaths: selectedPaths
       }
-      
+
       // 保存配置，但不立即设置到wizardData
       extractedSourceConfig.value = sourceConfig
-      
+
       // 在复制任务时，也设置wizardData以便子组件能正确接收
       wizardData.value.source = sourceConfig
-      
+
     } else {
       console.warn('任务源端配置不完整，无法复制')
       ElMessage.warning('任务源端配置不完整，请手动配置源端')
@@ -481,13 +458,13 @@ const extractConfigFromTask = (task) => {
         storageType: task.target_storage_type || task.target_storage_config?.type || '',
         targetPath: task.target_path || ''
       }
-      
+
       // 保存配置，但不立即设置到wizardData
       extractedTargetConfig.value = targetConfig
-      
+
       // 在复制任务时，也设置wizardData以便子组件能正确接收
       wizardData.value.target = targetConfig
-      
+
     } else {
       console.warn('任务目标端配置不完整，无法复制')
       ElMessage.warning('任务目标端配置不完整，请手动配置目标端')
@@ -544,11 +521,11 @@ const goToStep = (stepIndex) => {
 const canProceed = computed(() => {
   switch (currentStep.value) {
     case 0:
-      return wizardData.value.source.storageId && 
-             wizardData.value.source.selectedPaths.length > 0
+      return wizardData.value.source.storageId &&
+        wizardData.value.source.selectedPaths.length > 0
     case 1:
-      return wizardData.value.target.storageId && 
-             wizardData.value.target.targetPath
+      return wizardData.value.target.storageId &&
+        wizardData.value.target.targetPath
     case 2:
       return wizardData.value.parameters.taskName.trim()
     default:
@@ -558,10 +535,10 @@ const canProceed = computed(() => {
 
 const canCreate = computed(() => {
   return wizardData.value.source.storageId &&
-         wizardData.value.source.selectedPaths.length > 0 &&
-         wizardData.value.target.storageId &&
-         wizardData.value.target.targetPath &&
-         wizardData.value.parameters.taskName.trim()
+    wizardData.value.source.selectedPaths.length > 0 &&
+    wizardData.value.target.storageId &&
+    wizardData.value.target.targetPath &&
+    wizardData.value.parameters.taskName.trim()
 })
 
 // 方法
@@ -591,10 +568,10 @@ const handleSourceChange = (source) => {
 const handleTargetChange = (target) => {
   if (props.copyFromTask) {
     const currentTarget = wizardData.value.target
-    if (currentTarget.storageId !== target.storageId || 
-        currentTarget.targetPath !== target.targetPath ||
-        currentTarget.storageName !== target.storageName ||
-        currentTarget.storageType !== target.storageType) {
+    if (currentTarget.storageId !== target.storageId ||
+      currentTarget.targetPath !== target.targetPath ||
+      currentTarget.storageName !== target.storageName ||
+      currentTarget.storageType !== target.storageType) {
       wizardData.value.target = {
         ...target,
         targetPath: target.targetPath || wizardData.value.target.targetPath
@@ -623,10 +600,10 @@ const createTask = async () => {
 
     // 构建任务数据
     const taskData = buildTaskData()
-    
+
     // 调用API创建任务
     const response = await axios.post('/api/tasks', taskData)
-    
+
     if (response.data.status === 'success') {
       ElMessage.success(t('taskWizard.messages.taskCreatedSuccess'))
       emit('created', response.data.data)
@@ -705,7 +682,7 @@ const resetWizard = () => {
       scenarioOptions: {}
     }
   }
-  
+
   // 清理步骤缓存
   stepCache.value = {
     step0: null,
@@ -724,7 +701,7 @@ watch(() => props.visible, (visible) => {
       // 清理复制的任务配置
       extractedSourceConfig.value = null
       extractedTargetConfig.value = null
-      
+
       // 延迟清理子组件状态
       nextTick(() => {
         if (sourceSelectorRef.value) {
@@ -739,7 +716,7 @@ watch(() => props.visible, (visible) => {
       resetWizard()
       currentStep.value = 0
     }
-    
+
     // 如果有要复制的任务，则提取配置
     if (props.copyFromTask) {
       // 延迟执行，确保组件完全挂载
@@ -770,9 +747,9 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
       }
     })
   }
-}, { 
+}, {
   immediate: false, // 不立即执行，避免重复调用
-  deep: true 
+  deep: true
 })
 </script>
 
@@ -804,7 +781,7 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: 
+  background:
     linear-gradient(rgba(64, 158, 255, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(64, 158, 255, 0.03) 1px, transparent 1px);
   background-size: 50px 50px;
@@ -839,8 +816,13 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 }
 
 @keyframes gridMove {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(50px, 50px); }
+  0% {
+    transform: translate(0, 0);
+  }
+
+  100% {
+    transform: translate(50px, 50px);
+  }
 }
 
 @keyframes float {
@@ -848,8 +830,15 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
     transform: translateY(100vh) rotate(0deg);
     opacity: 0;
   }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
+
+  10% {
+    opacity: 1;
+  }
+
+  90% {
+    opacity: 1;
+  }
+
   100% {
     transform: translateY(-100px) rotate(360deg);
     opacity: 0;
@@ -857,16 +846,55 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 }
 
 /* 生成随机粒子位置 */
-.particle:nth-child(1) { left: 5%; animation-duration: 6s; }
-.particle:nth-child(2) { left: 15%; animation-duration: 8s; }
-.particle:nth-child(3) { left: 25%; animation-duration: 7s; }
-.particle:nth-child(4) { left: 35%; animation-duration: 9s; }
-.particle:nth-child(5) { left: 45%; animation-duration: 6s; }
-.particle:nth-child(6) { left: 55%; animation-duration: 8s; }
-.particle:nth-child(7) { left: 65%; animation-duration: 7s; }
-.particle:nth-child(8) { left: 75%; animation-duration: 9s; }
-.particle:nth-child(9) { left: 85%; animation-duration: 6s; }
-.particle:nth-child(10) { left: 95%; animation-duration: 8s; }
+.particle:nth-child(1) {
+  left: 5%;
+  animation-duration: 6s;
+}
+
+.particle:nth-child(2) {
+  left: 15%;
+  animation-duration: 8s;
+}
+
+.particle:nth-child(3) {
+  left: 25%;
+  animation-duration: 7s;
+}
+
+.particle:nth-child(4) {
+  left: 35%;
+  animation-duration: 9s;
+}
+
+.particle:nth-child(5) {
+  left: 45%;
+  animation-duration: 6s;
+}
+
+.particle:nth-child(6) {
+  left: 55%;
+  animation-duration: 8s;
+}
+
+.particle:nth-child(7) {
+  left: 65%;
+  animation-duration: 7s;
+}
+
+.particle:nth-child(8) {
+  left: 75%;
+  animation-duration: 9s;
+}
+
+.particle:nth-child(9) {
+  left: 85%;
+  animation-duration: 6s;
+}
+
+.particle:nth-child(10) {
+  left: 95%;
+  animation-duration: 8s;
+}
 
 /* 复制任务提示 */
 .copy-notice {
@@ -899,8 +927,13 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 }
 
 @keyframes scanLine {
-  0% { left: -100%; }
-  100% { left: 100%; }
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 100%;
+  }
 }
 
 .alert-icon {
@@ -956,7 +989,7 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
   border: 1px solid var(--cyber-glass-border);
   border-radius: 16px;
   backdrop-filter: blur(10px);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 var(--cyber-glass-border);
 }
@@ -1030,8 +1063,13 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 }
 
 @keyframes glow {
-  from { transform: scale(1); }
-  to { transform: scale(1.1); }
+  from {
+    transform: scale(1);
+  }
+
+  to {
+    transform: scale(1.1);
+  }
 }
 
 .step-info {
@@ -1100,8 +1138,13 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 }
 
 @keyframes flow {
-  0% { left: -100%; }
-  100% { left: 100%; }
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 100%;
+  }
 }
 
 /* 步骤内容面板 */
@@ -1117,7 +1160,7 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
   border: 1px solid var(--cyber-panel-border);
   border-radius: 16px;
   backdrop-filter: blur(20px);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 var(--cyber-panel-border);
   overflow: hidden;
@@ -1171,8 +1214,17 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.2); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
 }
 
 .step-header {
@@ -1226,7 +1278,7 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
   border: 1px solid var(--border-color);
   border-radius: 16px;
   backdrop-filter: blur(20px);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
@@ -1382,8 +1434,13 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 }
 
 @keyframes progress-flow {
-  0% { left: -100%; }
-  100% { left: 100%; }
+  0% {
+    left: -100%;
+  }
+
+  100% {
+    left: 100%;
+  }
 }
 
 .progress-dots {
@@ -1425,17 +1482,17 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
   .task-wizard {
     padding: 20px;
   }
-  
+
   .steps-container {
     padding: 20px;
   }
-  
+
   .step-inner {
     width: 50px;
     height: 50px;
     font-size: 20px;
   }
-  
+
   .step-info {
     max-width: 100px;
   }
@@ -1445,44 +1502,44 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
   .task-wizard {
     padding: 15px;
   }
-  
+
   .steps-container {
     flex-direction: column;
     gap: 20px;
     padding: 24px 20px;
   }
-  
+
   .step-item {
     flex-direction: row;
     justify-content: flex-start;
     width: 100%;
   }
-  
+
   .step-circle {
     margin-bottom: 0;
     margin-right: 16px;
   }
-  
+
   .step-connector {
     display: none;
   }
-  
+
   .footer-content {
     flex-direction: column;
     gap: 20px;
   }
-  
+
   .footer-actions,
   .footer-primary {
     width: 100%;
     justify-content: center;
   }
-  
+
   .cyber-btn {
     flex: 1;
     justify-content: center;
   }
-  
+
   .progress-indicator {
     order: -1;
   }
@@ -1491,21 +1548,21 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 /* 深色主题优化 */
 [data-theme="dark"] .cyber-panel {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 [data-theme="dark"] .cyber-footer .footer-bg {
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-  box-shadow: 
+  box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 [data-theme="dark"] .grid-pattern {
-  background: 
+  background:
     linear-gradient(rgba(64, 158, 255, 0.02) 1px, transparent 1px),
     linear-gradient(90deg, rgba(64, 158, 255, 0.02) 1px, transparent 1px);
 }
-</style> 
+</style>

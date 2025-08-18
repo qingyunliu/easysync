@@ -7,12 +7,7 @@
       </div>
       <div class="header-right">
         <div class="header-actions">
-          <el-input
-            v-model="searchQuery"
-            :placeholder="$t('storage.searchStorage')"
-            clearable
-            class="search-input"
-          >
+          <el-input v-model="searchQuery" :placeholder="$t('storage.searchStorage')" clearable class="search-input">
             <template #prefix>
               <Icon icon="mdi:magnify" />
             </template>
@@ -32,7 +27,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- NAS存储部分 -->
     <el-collapse v-model="activeCollapse" class="storage-sections">
       <el-collapse-item name="nas">
@@ -43,14 +38,9 @@
             <el-tag type="warning" class="count-tag">{{ nasStorages.length }}</el-tag>
           </div>
         </template>
-        
-        <el-table
-          :data="filteredNasStorages"
-          style="width: 100%"
-          v-loading="loading"
-          :fit="false"
-          :empty-text="$t('storage.noNasStorages')"
-        >
+
+        <el-table :data="filteredNasStorages" style="width: 100%" v-loading="loading" :fit="false"
+          :empty-text="$t('storage.noNasStorages')">
           <el-table-column prop="name" :label="$t('storage.name')" min-width="180" :resizable="true">
             <template #default="{ row }">
               <div class="storage-name-cell">
@@ -60,18 +50,21 @@
                 </el-link>
               </div>
             </template>
-      </el-table-column>
+          </el-table-column>
           <el-table-column prop="config.protocol" :label="$t('storage.protocolType')">
             <template #default="{ row }">
-              <el-tag>{{ row.config.protocol === 'nfs' ? $t('storage.protocols.nfs') : $t('storage.protocols.cifs') }}</el-tag>
+              <el-tag>{{ row.config.protocol === 'nfs' ? $t('storage.protocols.nfs') : $t('storage.protocols.cifs')
+                }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="config.server" :label="$t('storage.server')" min-width="160" :resizable="true" />
-          <el-table-column prop="config.path" :label="$t('storage.sharedDirectory')" min-width="180" :resizable="true" />
-          <el-table-column prop="config.is_mounted" :label="$t('storage.mountStatus')" min-width="100" :resizable="true">
+          <el-table-column prop="config.path" :label="$t('storage.sharedDirectory')" min-width="180"
+            :resizable="true" />
+          <el-table-column prop="config.is_mounted" :label="$t('storage.mountStatus')" min-width="100"
+            :resizable="true">
             <template #default="{ row }">
-                  <el-tag :type="row.config.is_mounted ? 'success' : 'info'">
-                    {{ row.config.is_mounted ? $t('storage.mounted') : $t('storage.unmounted') }}
+              <el-tag :type="row.config.is_mounted ? 'success' : 'info'">
+                {{ row.config.is_mounted ? $t('storage.mounted') : $t('storage.unmounted') }}
               </el-tag>
             </template>
           </el-table-column>
@@ -100,13 +93,8 @@
           </div>
         </template>
 
-        <el-table
-          :data="filteredS3Storages"
-          style="width: 100%"
-          v-loading="loading"
-          :fit="false"
-          :empty-text="$t('storage.noS3Storages')"
-        >
+        <el-table :data="filteredS3Storages" style="width: 100%" v-loading="loading" :fit="false"
+          :empty-text="$t('storage.noS3Storages')">
           <el-table-column prop="name" :label="$t('storage.name')" min-width="180" :resizable="true">
             <template #default="{ row }">
               <div class="storage-name-cell">
@@ -124,7 +112,8 @@
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="config.access_key" :label="$t('storage.accessKeyId')" min-width="200" :resizable="true" />
+          <el-table-column prop="config.access_key" :label="$t('storage.accessKeyId')" min-width="200"
+            :resizable="true" />
           <el-table-column prop="config.endpoint" :label="$t('storage.endpoint')" min-width="200" :resizable="true" />
           <el-table-column prop="config.region" :label="$t('storage.region')" min-width="120" :resizable="true" />
           <el-table-column prop="created_at" :label="$t('storage.createTime')" min-width="160" :resizable="true" />
@@ -144,15 +133,9 @@
     </el-collapse>
 
     <!-- 存储详情抽屉 -->
-    <el-drawer
-      v-model="drawerVisible"
-      :title="$t('storage.storageDetails')"
-      direction="rtl"
-      size="60%"
-      :before-close="handleDrawerClose"
-      v-loading="isDrawerLoading"
-      :element-loading-text="$t('storage.loadingStorageDetails')"
-    >
+    <el-drawer v-model="drawerVisible" :title="$t('storage.storageDetails')" direction="rtl" size="60%"
+      :before-close="handleDrawerClose" v-loading="isDrawerLoading"
+      :element-loading-text="$t('storage.loadingStorageDetails')">
       <el-tabs v-model="activeTab" class="fixed-tabs">
         <!-- 基本信息标签页 -->
         <el-tab-pane :label="$t('storage.basicInfo')" name="basic">
@@ -175,9 +158,10 @@
                 </el-descriptions-item>
                 <template v-if="currentStorage.type === 'nas'">
                   <el-descriptions-item :label="$t('storage.protocolType')">
-                                    <el-tag :type="currentStorage.config.protocol === 'nfs' ? 'success' : 'warning'">
-                  {{ currentStorage.config.protocol === 'nfs' ? $t('storage.protocols.nfs') : $t('storage.protocols.cifs') }}
-                </el-tag>
+                    <el-tag :type="currentStorage.config.protocol === 'nfs' ? 'success' : 'warning'">
+                      {{ currentStorage.config.protocol === 'nfs' ? $t('storage.protocols.nfs') :
+                        $t('storage.protocols.cifs') }}
+                    </el-tag>
                   </el-descriptions-item>
                   <el-descriptions-item :label="$t('storage.server')">
                     {{ currentStorage.config.server }}
@@ -231,17 +215,13 @@
                 <template #header>
                   <div class="card-header">
                     <span>{{ $t('storage.storageUsage') }}</span>
-                    <el-button 
-                      type="primary" 
-                      link 
-                      @click="refreshNASStats"
-                      :loading="refreshingStats"
-                    >
+                    <el-button type="primary" link @click="refreshNASStats" :loading="refreshingStats">
                       <Icon icon="mdi:refresh" :class="{ 'rotating': refreshingStats }" />{{ $t('storage.refresh') }}
                     </el-button>
                   </div>
                 </template>
-                <div class="stats-grid" v-loading="refreshingStats || loadingNASStats" :element-loading-text="$t('storage.loadingStorageStats')">
+                <div class="stats-grid" v-loading="refreshingStats || loadingNASStats"
+                  :element-loading-text="$t('storage.loadingStorageStats')">
                   <div class="stat-item">
                     <div class="stat-icon">
                       <Icon icon="mdi:harddisk" :width="24" />
@@ -287,13 +267,8 @@
                 <template #header>
                   <div class="card-header">
                     <span>{{ $t('storage.statistics') }}</span>
-                    <el-button 
-                      type="primary" 
-                      link 
-                      @click="refreshStats"
-                      :loading="refreshingStats"
-                      :disabled="refreshingStats"
-                    >
+                    <el-button type="primary" link @click="refreshStats" :loading="refreshingStats"
+                      :disabled="refreshingStats">
                       <Icon icon="mdi:refresh" :class="{ 'rotating': refreshingStats }" />{{ $t('storage.refresh') }}
                     </el-button>
                   </div>
@@ -377,58 +352,39 @@
             <!-- 面包屑导航 -->
             <div class="breadcrumb">
               <el-breadcrumb separator="/">
-                <el-breadcrumb-item
-                  :class="{ 'is-disabled': !currentPath }"
+                <el-breadcrumb-item :class="{ 'is-disabled': !currentPath }"
                   @click="!currentPath && $event.preventDefault(); handleNASBreadcrumbClick('')"
-                  style="cursor: pointer;"
-                >
+                  style="cursor: pointer;">
                   {{ $t('storage.rootDirectory') }}
                 </el-breadcrumb-item>
-                <el-breadcrumb-item 
-                  v-for="(path, index) in currentPath.split('/').filter(Boolean)" 
-                  :key="index"
-                  @click="handleNASBreadcrumbClick(
-                    currentPath.split('/').filter(Boolean).slice(0, index + 1).join('/') + '/'
-                  )"
-                  style="cursor: pointer;"
-                  :title="path"
-                >
-                  <el-tooltip 
-                    :content="path" 
-                    placement="top" 
-                    :show-after="500"
-                    :disabled="path.length <= 20"
-                  >
+                <el-breadcrumb-item v-for="(path, index) in currentPath.split('/').filter(Boolean)" :key="index" @click="handleNASBreadcrumbClick(
+                  currentPath.split('/').filter(Boolean).slice(0, index + 1).join('/') + '/'
+                )" style="cursor: pointer;" :title="path">
+                  <el-tooltip :content="path" placement="top" :show-after="500" :disabled="path.length <= 20">
                     <span class="breadcrumb-path">{{ path.length > 20 ? path.slice(0, 20) + '...' : path }}</span>
                   </el-tooltip>
                 </el-breadcrumb-item>
               </el-breadcrumb>
             </div>
-            
+
             <!-- 文件状态信息 -->
             <div class="file-status" v-if="!loadingFiles && total > 0">
               <el-tag type="info" size="small">
                 {{ $t('storage.fileCount', { count: total }) }}
               </el-tag>
-                              <el-tag type="success" size="small" v-if="currentPath">
-                  <el-tooltip 
-                    :content="$t('storage.currentPathLabel', { path: currentPath })" 
-                    placement="top" 
-                    :show-after="300"
-                    :disabled="currentPath.length <= 40"
-                  >
-                    <span>{{ $t('storage.currentPathLabel', { path: pathExpanded ? currentPath : truncatePath(currentPath, 40) }) }}</span>
-                  </el-tooltip>
-                  <el-button 
-                    v-if="currentPath.length > 40"
-                    type="text" 
-                    size="small" 
-                    @click="togglePathExpanded"
-                    class="path-expand-button"
-                  >
-                    <Icon :icon="pathExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'" :width="12" />
-                  </el-button>
-                </el-tag>
+              <el-tag type="success" size="small" v-if="currentPath">
+                <el-tooltip :content="$t('storage.currentPathLabel', { path: currentPath })" placement="top"
+                  :show-after="300" :disabled="currentPath.length <= 40">
+                  <span>{{ $t('storage.currentPathLabel', {
+                    path: pathExpanded ? currentPath : truncatePath(currentPath,
+                    40)
+                    }) }}</span>
+                </el-tooltip>
+                <el-button v-if="currentPath.length > 40" type="text" size="small" @click="togglePathExpanded"
+                  class="path-expand-button">
+                  <Icon :icon="pathExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'" :width="12" />
+                </el-button>
+              </el-tag>
             </div>
             <!-- 加载状态信息 -->
             <div class="file-status" v-if="loadingFiles">
@@ -445,13 +401,8 @@
             </div>
 
             <!-- 文件列表 -->
-            <el-table
-              :data="files"
-              style="width: 100%"
-              v-loading="loadingFiles"
-              @row-click="handleFileClick"
-              :empty-text="loadingFiles ? $t('storage.loadingFiles') : $t('storage.emptyDirectory')"
-            >
+            <el-table :data="files" style="width: 100%" v-loading="loadingFiles" @row-click="handleFileClick"
+              :empty-text="loadingFiles ? $t('storage.loadingFiles') : $t('storage.emptyDirectory')">
               <el-table-column :label="$t('storage.name')" min-width="300">
                 <template #default="{ row }">
                   <div class="file-name">
@@ -472,12 +423,8 @@
               </el-table-column>
               <el-table-column :label="$t('storage.actions')" width="120" fixed="right">
                 <template #default="{ row }">
-                  <el-button 
-                    v-if="row.type !== 'directory'"
-                    type="primary" 
-                    size="small"
-                    @click.stop="handleFileDownload(row)"
-                  >
+                  <el-button v-if="row.type !== 'directory'" type="primary" size="small"
+                    @click.stop="handleFileDownload(row)">
                     <Icon icon="mdi:download" />
                     {{ $t('storage.download') }}
                   </el-button>
@@ -487,15 +434,9 @@
 
             <!-- 分页 -->
             <div class="pagination" v-if="total > 0">
-              <el-pagination
-                v-model:current-page="currentPage"
-                v-model:page-size="pageSize"
-                :page-sizes="[10, 20, 50, 100]"
-                :total="total"
-                layout="total, sizes, prev, pager, next"
-                @size-change="handleSizeChange"
-                @current-change="handleCurrentChange"
-              />
+              <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
+                :page-sizes="[10, 20, 50, 100]" :total="total" layout="total, sizes, prev, pager, next"
+                @size-change="handleSizeChange" @current-change="handleCurrentChange" />
             </div>
           </div>
         </el-tab-pane>
@@ -503,19 +444,14 @@
         <!-- 存储桶列表标签页 -->
         <el-tab-pane v-if="currentStorage.type === 's3'" :label="$t('storage.buckets')" name="buckets">
           <div class="buckets-content scrollable-content">
-            <el-table
-              :data="buckets"
-              style="width: 100%"
-              v-loading="loadingBuckets"
-              @row-click="handleBucketClick"
-            >
+            <el-table :data="buckets" style="width: 100%" v-loading="loadingBuckets" @row-click="handleBucketClick">
               <el-table-column prop="name" :label="$t('storage.bucketName')" min-width="200">
                 <template #default="{ row }">
                   <div class="bucket-name">
                     <Icon icon="mdi:bucket" :width="20" />
                     <span>{{ row.name }}</span>
                   </div>
-                  </template>
+                </template>
               </el-table-column>
               <el-table-column prop="creationDate" :label="$t('storage.createTime')" min-width="180">
                 <template #default="{ row }">
@@ -525,15 +461,9 @@
               <el-table-column prop="region" :label="$t('storage.region')" min-width="120" />
             </el-table>
             <div class="pagination">
-              <el-pagination
-                v-model:current-page="bucketPage"
-                v-model:page-size="bucketPageSize"
-                :page-sizes="[10, 20, 50, 100]"
-                :total="bucketTotal"
-                layout="total, sizes, prev, pager, next"
-                @size-change="handleBucketPageSizeChange"
-                @current-change="handleBucketPageChange"
-              />
+              <el-pagination v-model:current-page="bucketPage" v-model:page-size="bucketPageSize"
+                :page-sizes="[10, 20, 50, 100]" :total="bucketTotal" layout="total, sizes, prev, pager, next"
+                @size-change="handleBucketPageSizeChange" @current-change="handleBucketPageChange" />
             </div>
           </div>
         </el-tab-pane>
@@ -545,55 +475,35 @@
             <template v-if="currentBucket">
               <div class="breadcrumb">
                 <el-breadcrumb separator="/">
-                  <el-breadcrumb-item
-                    :class="{ 'is-disabled': !currentPath }"
+                  <el-breadcrumb-item :class="{ 'is-disabled': !currentPath }"
                     @click="!currentPath && $event.preventDefault(); handleS3BreadcrumbClick('')"
-                    style="cursor: pointer;"
-                  >
+                    style="cursor: pointer;">
                     {{ currentBucket }}
                   </el-breadcrumb-item>
-                  <el-breadcrumb-item 
-                    v-for="(path, index) in currentPath.split('/').filter(Boolean)" 
-                    :key="index"
+                  <el-breadcrumb-item v-for="(path, index) in currentPath.split('/').filter(Boolean)" :key="index"
                     @click="handleS3BreadcrumbClick(
                       currentPath.split('/').filter(Boolean).slice(0, index + 1).join('/') + '/'
-                    )"
-                    style="cursor: pointer;"
-                    :title="path"
-                  >
-                    <el-tooltip 
-                      :content="path" 
-                      placement="top" 
-                      :show-after="500"
-                      :disabled="path.length <= 20"
-                    >
+                    )" style="cursor: pointer;" :title="path">
+                    <el-tooltip :content="path" placement="top" :show-after="500" :disabled="path.length <= 20">
                       <span class="breadcrumb-path">{{ path.length > 20 ? path.slice(0, 20) + '...' : path }}</span>
                     </el-tooltip>
                   </el-breadcrumb-item>
                 </el-breadcrumb>
               </div>
-              
+
               <!-- 对象状态信息 -->
               <div class="object-status" v-if="!loadingObjects && total > 0">
                 <el-tag type="info" size="small">
                   共 {{ total }} 个对象
                 </el-tag>
                 <el-tag type="success" size="small" v-if="currentPath">
-                  <el-tooltip 
-                    :content="`当前路径: ${currentPath}`" 
-                    placement="top" 
-                    :show-after="300"
-                    :disabled="currentPath.length <= 40"
-                  >
-                    <span>{{ $t('storage.currentPath') }}: {{ pathExpanded ? currentPath : truncatePath(currentPath, 40) }}</span>
+                  <el-tooltip :content="`当前路径: ${currentPath}`" placement="top" :show-after="300"
+                    :disabled="currentPath.length <= 40">
+                    <span>{{ $t('storage.currentPath') }}: {{ pathExpanded ? currentPath : truncatePath(currentPath, 40)
+                      }}</span>
                   </el-tooltip>
-                  <el-button 
-                    v-if="currentPath.length > 40"
-                    type="text" 
-                    size="small" 
-                    @click="togglePathExpanded"
-                    class="path-expand-button"
-                  >
+                  <el-button v-if="currentPath.length > 40" type="text" size="small" @click="togglePathExpanded"
+                    class="path-expand-button">
                     <Icon :icon="pathExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'" :width="12" />
                   </el-button>
                 </el-tag>
@@ -616,13 +526,8 @@
               </div>
 
               <!-- 对象列表 -->
-              <el-table
-                :data="objects"
-                style="width: 100%"
-                v-loading="loadingObjects"
-                @row-click="handleObjectClick"
-                :empty-text="loadingObjects ? $t('storage.loadingObjects') : $t('storage.emptyDirectory')"
-              >
+              <el-table :data="objects" style="width: 100%" v-loading="loadingObjects" @row-click="handleObjectClick"
+                :empty-text="loadingObjects ? $t('storage.loadingObjects') : $t('storage.emptyDirectory')">
                 <el-table-column :label="$t('storage.name')" min-width="300">
                   <template #default="{ row }">
                     <div class="object-name">
@@ -643,30 +548,20 @@
                 </el-table-column>
                 <el-table-column :label="$t('storage.actions')" width="120" fixed="right">
                   <template #default="{ row }">
-                      <el-button 
-                      v-if="row.type !== 'directory'"
-                        type="primary" 
-                        size="small"
-                      @click.stop="handleS3Download(row)"
-                      >
+                    <el-button v-if="row.type !== 'directory'" type="primary" size="small"
+                      @click.stop="handleS3Download(row)">
                       <Icon icon="mdi:download" />
                       {{ $t('storage.download') }}
-                      </el-button>
+                    </el-button>
                   </template>
                 </el-table-column>
               </el-table>
 
               <!-- 分页 -->
               <div class="pagination" v-if="total > 0">
-                <el-pagination
-                  v-model:current-page="currentPage"
-                  v-model:page-size="pageSize"
-                  :page-sizes="[10, 20, 50, 100]"
-                  :total="total"
-                  layout="total, sizes, prev, pager, next"
-                  @size-change="handleSizeChange"
-                  @current-change="handleCurrentChange"
-                />
+                <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize"
+                  :page-sizes="[10, 20, 50, 100]" :total="total" layout="total, sizes, prev, pager, next"
+                  @size-change="handleSizeChange" @current-change="handleCurrentChange" />
               </div>
             </template>
             <template v-else>
@@ -689,12 +584,8 @@
     </el-drawer>
 
     <!-- 存储编辑对话框 -->
-    <el-dialog
-      :title="dialogType === 'add' ? $t('storage.addStorage') : $t('storage.editStorage')"
-      v-model="dialogVisible"
-      width="600px"
-      :before-close="handleDialogClose"
-    >
+    <el-dialog :title="dialogType === 'add' ? $t('storage.addStorage') : $t('storage.editStorage')"
+      v-model="dialogVisible" width="600px" :before-close="handleDialogClose">
       <el-form :model="form" :rules="formRules" ref="formRef" label-width="120px" class="storage-form">
         <el-form-item :label="$t('storage.storageName')" prop="name">
           <el-input v-model="form.name" :placeholder="$t('storage.enterStorageName')" />
@@ -758,11 +649,15 @@
                 <el-form-item :label="$t('storage.mountOptions')" prop="config.options">
                   <el-input v-model="form.config.options" :placeholder="$t('storage.mountOptionsExample')" />
                   <div class="storage-form-tip">
-                    <el-icon><InfoFilled /></el-icon>
+                    <el-icon>
+                      <InfoFilled />
+                    </el-icon>
                     <span>{{ $t('storage.nfsExample') }}</span>
                   </div>
                   <div class="storage-form-tip">
-                    <el-icon><InfoFilled /></el-icon>
+                    <el-icon>
+                      <InfoFilled />
+                    </el-icon>
                     <span>{{ $t('storage.cifsExample') }}</span>
                   </div>
                 </el-form-item>
@@ -788,7 +683,7 @@
             <el-input v-model="form.config.access_key" :placeholder="$t('storage.enterAccessKey')" />
           </el-form-item>
           <el-form-item :label="$t('storage.secretKeyId')" prop="config.secret_key">
-            <el-input v-model="form.config.secret_key" type="password" :placeholder="$t('storage.enterSecretKey')"/>
+            <el-input v-model="form.config.secret_key" type="password" :placeholder="$t('storage.enterSecretKey')" />
           </el-form-item>
           <el-form-item :label="$t('storage.endpoint')" prop="config.endpoint">
             <el-input v-model="form.config.endpoint" :placeholder="$t('storage.enterEndpoint')" />
@@ -809,31 +704,24 @@
         <el-form-item :label="$t('storage.testNode')" prop="test_node_id" style="margin-top: 10px;">
           <div style="display: flex; gap: 8px; align-items: center; flex:0.8;">
             <el-select v-model="testNodeId" :placeholder="$t('storage.selectNode')" style="flex: 1;">
-              <el-option 
-                v-for="node in availableNodes" 
-                :key="node.id" 
-                :label="node.name + ' (' + node.ipaddress + ')'" 
-                :value="node.id"
-              >
+              <el-option v-for="node in availableNodes" :key="node.id" :label="node.name + ' (' + node.ipaddress + ')'"
+                :value="node.id">
                 <div style="display: flex; align-items: center; justify-content: space-between;">
                   <span>{{ node.name }} ({{ node.ipaddress }})</span>
                   <div style="display: flex; align-items: center; gap: 8px;">
-                    <el-tag size="small" type="success" v-if="node.status === 'online'">{{ $t('storage.online') }}</el-tag>
+                    <el-tag size="small" type="success" v-if="node.status === 'online'">{{ $t('storage.online')
+                      }}</el-tag>
                     <el-tag size="small" type="warning" v-else>{{ $t('storage.offline') }}</el-tag>
-                    <el-tag size="small" type="primary" v-if="node.agent_status === 'running'">{{ $t('storage.agentRunning') }}</el-tag>
+                    <el-tag size="small" type="primary" v-if="node.agent_status === 'running'">{{
+                      $t('storage.agentRunning')
+                      }}</el-tag>
                     <el-tag size="small" type="danger" v-else>{{ $t('storage.agentNotRunning') }}</el-tag>
                   </div>
                 </div>
               </el-option>
             </el-select>
-            <el-button 
-              type="primary" 
-              :icon="Refresh" 
-              circle 
-              size="small" 
-              @click="fetchAvailableNodes"
-              :title="$t('storage.refreshNodeList')"
-            />
+            <el-button type="primary" :icon="Refresh" circle size="small" @click="fetchAvailableNodes"
+              :title="$t('storage.refreshNodeList')" />
           </div>
           <div style="font-size: 12px; color: #909399; margin-left: 8px;">
             <span v-if="availableNodes.length === 0">{{ $t('storage.noAvailableTestNodes') }}</span>
@@ -949,11 +837,11 @@ const renameFormRef = ref(null)
 // 添加存储类型相关的响应式变量
 const activeCollapse = ref(['nas', 's3']) // 默认展开所有部分
 
-const nasStorages = computed(() => 
+const nasStorages = computed(() =>
   storages.value.filter(storage => storage.type === 'nas')
 )
 
-const s3Storages = computed(() => 
+const s3Storages = computed(() =>
   storages.value.filter(storage => storage.type === 's3')
 )
 
@@ -961,7 +849,7 @@ const s3Storages = computed(() =>
 const filteredNasStorages = computed(() => {
   if (!searchQuery.value) return nasStorages.value
   const query = searchQuery.value.toLowerCase()
-  return nasStorages.value.filter(storage => 
+  return nasStorages.value.filter(storage =>
     storage.name.toLowerCase().includes(query) ||
     storage.config.server.toLowerCase().includes(query) ||
     storage.config.path.toLowerCase().includes(query)
@@ -971,7 +859,7 @@ const filteredNasStorages = computed(() => {
 const filteredS3Storages = computed(() => {
   if (!searchQuery.value) return s3Storages.value
   const query = searchQuery.value.toLowerCase()
-  return s3Storages.value.filter(storage => 
+  return s3Storages.value.filter(storage =>
     storage.name.toLowerCase().includes(query) ||
     storage.config.endpoint.toLowerCase().includes(query) ||
     storage.config.bucket.toLowerCase().includes(query)
@@ -1017,36 +905,36 @@ const truncatePath = (path, maxLength = 50) => {
   if (!path || path.length <= maxLength) {
     return path
   }
-  
+
   // 如果路径以 / 开头，保留开头的 /
   const hasLeadingSlash = path.startsWith('/')
   const cleanPath = hasLeadingSlash ? path.slice(1) : path
-  
+
   // 分割路径
   const parts = cleanPath.split('/')
-  
+
   if (parts.length <= 2) {
     // 如果只有1-2个部分，直接截断
     return (hasLeadingSlash ? '/' : '') + cleanPath.slice(0, maxLength - 3) + '...'
   }
-  
+
   // 保留开头和结尾的部分
   const firstPart = parts[0]
   const lastPart = parts[parts.length - 1]
   const middleParts = parts.slice(1, -1)
-  
+
   // 计算可用长度
   const availableLength = maxLength - firstPart.length - lastPart.length - 6 // '...' + '/' + '...'
-  
+
   if (availableLength <= 0) {
     // 如果空间不够，只显示开头和结尾
     return (hasLeadingSlash ? '/' : '') + firstPart + '/.../' + lastPart
   }
-  
+
   // 尝试保留一些中间部分
   let result = (hasLeadingSlash ? '/' : '') + firstPart + '/...'
   let currentLength = firstPart.length + 4
-  
+
   for (const part of middleParts) {
     if (currentLength + part.length + 1 <= availableLength) {
       result += '/' + part
@@ -1055,7 +943,7 @@ const truncatePath = (path, maxLength = 50) => {
       break
     }
   }
-  
+
   result += '/.../' + lastPart
   return result
 }
@@ -1073,9 +961,9 @@ const fetchStorages = async () => {
   try {
     loading.value = true
     const response = await axios.get('/api/storages');
-      storages.value = response.data.storages
+    storages.value = response.data.storages
   } catch (error) {
-            ElMessage.error(t('storage.getStorageListFailed'))
+    ElMessage.error(t('storage.getStorageListFailed'))
   } finally {
     loading.value = false
   }
@@ -1200,9 +1088,9 @@ const getStorageInfo = async (row) => {
     row.fetching = true
     const response = await axios.get(`/api/storages/${row.id}/info`)
     storageStats.value = response.data.data
-            ElMessage.success(t('storage.getInfoSuccess'))
+    ElMessage.success(t('storage.getInfoSuccess'))
   } catch (error) {
-          ElMessage.error(t('storage.getInfoFailed'))
+    ElMessage.error(t('storage.getInfoFailed'))
   } finally {
     row.fetching = false
   }
@@ -1213,27 +1101,27 @@ const handleNameClick = async (row) => {
   try {
     // 检查存储是否有绑定的节点
     if (!row.node_id) {
-              ElMessage.warning(t('storage.noBoundNodeForDetails'))
+      ElMessage.warning(t('storage.noBoundNodeForDetails'))
       return
     }
-    
+
     // 检查绑定的节点是否在线
     const nodesResponse = await axios.get('/api/nodes')
     const boundNode = nodesResponse.data.data.find(node => node.id === row.node_id)
-    
+
     if (!boundNode) {
-              ElMessage.error(t('storage.boundNodeNotExists'))
+      ElMessage.error(t('storage.boundNodeNotExists'))
       return
     }
-    
+
     if (boundNode.status !== 'online') {
-              ElMessage.warning(t('storage.boundNodeOffline', { nodeName: boundNode.name }))
+      ElMessage.warning(t('storage.boundNodeOffline', { nodeName: boundNode.name }))
     }
-    
+
     if (boundNode.agent_status !== 'running') {
-              ElMessage.warning(t('storage.boundNodeAgentNotRunning', { nodeName: boundNode.name }))
+      ElMessage.warning(t('storage.boundNodeAgentNotRunning', { nodeName: boundNode.name }))
     }
-    
+
     currentStorage.value = row
     drawerVisible.value = true
     activeTab.value = 'basic'
@@ -1249,7 +1137,7 @@ const handleNameClick = async (row) => {
       files.value = []
       loadingFiles.value = true  // 设置为 true 以显示加载状态
       loadingNASStats.value = true  // 设置为 true 以显示统计信息加载状态
-      
+
       // 获取存储统计信息
       await fetchNASDetails()
       // 获取根目录文件列表
@@ -1263,7 +1151,7 @@ const handleNameClick = async (row) => {
       total.value = 0
       objects.value = []
       loadingObjects.value = false
-      
+
       await fetchBuckets()
     }
   } catch (error) {
@@ -1290,10 +1178,10 @@ const fetchNASDetails = async () => {
       ElMessage.error(t('storage.noBoundNodeForStats'))
       return
     }
-    
+
     loadingNASStats.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
-    
+
     if (response.data.status === 'task_created') {
       ElMessage.info(t('storage.statsTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
@@ -1317,10 +1205,10 @@ const refreshNASStats = async () => {
       ElMessage.error(t('storage.noBoundNodeForRefreshStats'))
       return
     }
-    
+
     refreshingStats.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
-    
+
     if (response.data.status === 'task_created') {
       ElMessage.info(t('storage.statsTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
@@ -1345,16 +1233,16 @@ const handleFileDownload = async (file) => {
       ElMessage.error(t('storage.noBoundNodeForDownload'))
       return
     }
-    
+
     const response = await axios.post(`/api/storages/${currentStorage.value.id}/download`, {
-      params: { 
+      params: {
         node_id: currentStorage.value.node_id,
         path: file.path,
         bucket: currentBucket.value,
       },
       responseType: 'blob'
     })
-    
+
     if (response.data.status === 'task_created') {
       ElMessage.info(t('storage.downloadTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
@@ -1383,7 +1271,7 @@ const fetchFiles = async () => {
       ElMessage.error(t('storage.noBoundNodeForFileList'))
       return
     }
-    
+
     loadingFiles.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/files`, {
       params: {
@@ -1393,12 +1281,12 @@ const fetchFiles = async () => {
         page_size: pageSize.value
       }
     })
-    
+
     if (response.data.status === 'task_created') {
       ElMessage.info(t('storage.fileListTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
       const responseData = response.data.data
-      
+
       // 处理分页数据结构，与 fetchBuckets 保持一致
       if (responseData.objects && Array.isArray(responseData.objects)) {
         files.value = responseData.objects
@@ -1431,7 +1319,7 @@ const fetchBuckets = async () => {
       ElMessage.error(t('storage.noBoundNodeForBucketList'))
       return
     }
-    
+
     loadingBuckets.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/buckets`, {
       params: {
@@ -1439,12 +1327,12 @@ const fetchBuckets = async () => {
         page_size: bucketPageSize.value
       }
     })
-    
+
     if (response.data.status === 'task_created') {
       ElMessage.info(t('storage.bucketListTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
       const responseData = response.data.data
-      
+
       // 处理分页数据结构
       if (responseData.buckets && Array.isArray(responseData.buckets)) {
         buckets.value = responseData.buckets
@@ -1496,7 +1384,7 @@ const fetchObjects = async () => {
       ElMessage.error(t('storage.noBoundNodeForObjectList'))
       return
     }
-    
+
     loadingObjects.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/objects`, {
       params: {
@@ -1507,12 +1395,12 @@ const fetchObjects = async () => {
         page_size: pageSize.value
       }
     })
-    
+
     if (response.data.status === 'task_created') {
       ElMessage.info(t('storage.objectListTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
       const responseData = response.data.data
-      
+
       // 处理分页数据结构，与 fetchFiles 保持一致
       if (responseData.objects && Array.isArray(responseData.objects)) {
         objects.value = responseData.objects
@@ -1559,7 +1447,7 @@ const handleObjectClick = (row) => {
 
 // 处理面包屑点击
 const handleS3BreadcrumbClick = (path) => {
-  if (!currentBucket.value) return 
+  if (!currentBucket.value) return
   currentPath.value = path
   currentPage.value = 1  // 重置到第一页
   total.value = 0  // 重置总数
@@ -1702,40 +1590,40 @@ const handleAddStorage = (type) => {
 // 表单验证规则
 const formRules = computed(() => {
   const rules = {
-  name: [
-    { required: true, message: t('storage.validation.enterStorageName'), trigger: 'blur' }
+    name: [
+      { required: true, message: t('storage.validation.enterStorageName'), trigger: 'blur' }
     ]
   }
-  
+
   if (form.value.type === 's3') {
     rules['config.provider'] = [
-    { required: true, message: t('storage.validation.selectProvider'), trigger: 'change' }
+      { required: true, message: t('storage.validation.selectProvider'), trigger: 'change' }
     ]
     rules['config.access_key'] = [
-    { required: true, message: t('storage.validation.enterAccessKey'), trigger: 'blur' }
+      { required: true, message: t('storage.validation.enterAccessKey'), trigger: 'blur' }
     ]
     rules['config.secret_key'] = [
-    { required: true, message: t('storage.validation.enterSecretKey'), trigger: 'blur' }
+      { required: true, message: t('storage.validation.enterSecretKey'), trigger: 'blur' }
     ]
     rules['config.endpoint'] = [
-    { required: true, message: t('storage.validation.enterEndpoint'), trigger: 'blur' }
+      { required: true, message: t('storage.validation.enterEndpoint'), trigger: 'blur' }
     ]
     rules['config.region'] = [
-    { 
-      required: true, 
-      message: t('storage.validation.enterRegion'), 
-      trigger: 'blur',
-      validator: (rule, value, callback) => {
-        if (form.value.config.provider === 'minio') {
-          callback()
-        } else if (!value) {
-          callback(new Error(t('storage.validation.enterRegion')))
-        } else {
-          callback()
+      {
+        required: true,
+        message: t('storage.validation.enterRegion'),
+        trigger: 'blur',
+        validator: (rule, value, callback) => {
+          if (form.value.config.provider === 'minio') {
+            callback()
+          } else if (!value) {
+            callback(new Error(t('storage.validation.enterRegion')))
+          } else {
+            callback()
+          }
         }
       }
-    }
-  ]
+    ]
     rules['config.bucket'] = [
       { required: true, message: t('storage.validation.enterBucketName'), trigger: 'blur' }
     ]
@@ -1756,7 +1644,7 @@ const formRules = computed(() => {
       { required: true, message: t('storage.validation.selectProtocolVersion'), trigger: 'change' }
     ]
   }
-  
+
   return rules
 })
 
@@ -1796,13 +1684,13 @@ const handleDialogClose = () => {
 const handleSubmit = async () => {
   try {
     await formRef.value.validate()
-    
+
     // 检查是否选择了节点（仅在创建时强制要求）
     if (dialogType.value === 'add' && !testNodeId.value) {
       ElMessage.warning(t('storage.selectNodeToBindStorage'))
       return
     }
-    
+
     // 根据存储类型构建配置对象
     let config = {}
     if (form.value.type === 's3') {
@@ -1837,7 +1725,7 @@ const handleSubmit = async () => {
       config: config,
       node_id: testNodeId.value // 添加节点ID绑定
     }
-    
+
     if (dialogType.value === 'add') {
       const response = await axios.post('/api/storages', submitData)
       ElMessage.success(t('storage.addStorageSuccess'))
@@ -1863,19 +1751,19 @@ const fetchAvailableNodes = async () => {
   try {
     const response = await axios.get('/api/nodes')
     const allNodes = response.data.data || []
-    
+
     // 过滤出在线且Agent已安装的节点
     const filteredNodes = allNodes.filter(
       node => node.status === 'online' && node.agent_status === 'running'
     )
-    
+
     availableNodes.value = filteredNodes
-    
+
     // 如果没有可用节点，给出提示
     if (filteredNodes.length === 0 && allNodes.length > 0) {
       console.warn(t('storage.noAvailableTestNodes'))
     }
-    
+
   } catch (error) {
     console.error('获取节点列表失败:', error)
     ElMessage.error(t('storage.getNodeListFailed'))
@@ -1892,35 +1780,35 @@ watch(dialogVisible, (val) => {
 const handleTestConnect = async () => {
   try {
     await formRef.value.validate()
-    
+
     // 检查是否选择了测试节点
     if (!testNodeId.value) {
       ElMessage.warning(t('storage.selectTestNodeFirst'))
       return
     }
-    
+
     // 重新获取最新的节点状态
     await fetchAvailableNodes()
-    
+
     // 检查选中的节点是否在线
     const selectedNode = availableNodes.value.find(node => node.id === testNodeId.value)
     if (!selectedNode) {
       ElMessage.error(t('storage.testNodeNotExists'))
       return
     }
-    
+
     // 检查节点状态
     if (selectedNode.status !== 'online') {
       ElMessage.error(t('storage.testNodeOffline', { nodeName: selectedNode.name }))
       return
     }
-    
+
     // 检查 Agent 状态
     if (selectedNode.agent_status !== 'running') {
       ElMessage.error(t('storage.testNodeAgentNotRunning', { nodeName: selectedNode.name }))
       return
     }
-    
+
     // 根据存储类型构建配置对象
     let config = {}
     if (form.value.type === 's3') {
@@ -1952,21 +1840,21 @@ const handleTestConnect = async () => {
       config: config,
       node_id: testNodeId.value
     }
-    
+
     // 显示加载状态
     ElMessage.info(t('storage.creatingConnectionTestTask', { nodeName: selectedNode.name, ipAddress: selectedNode.ipaddress }))
-    
+
     const response = await axios.post('/api/storages/test-connection', submitData)
-    if (response.data.status == "success") { 
+    if (response.data.status == "success") {
       const taskData = response.data.data
       ElMessage.success(t('storage.connectionTestTaskCreated', { taskId: taskData.task_id }))
-      
+
       // 可选：自动跳转到任务页面
       // router.push(`/tasks?task_id=${taskData.task_id}`)
     } else {
       ElMessage.error(response.data.message || t('storage.testConnectionFailed'))
     }
-    } catch (error) {
+  } catch (error) {
     if (error.response) {
       ElMessage.error(error.response.data.message || t('storage.operationFailed'))
     } else if (error.message) {
@@ -1994,7 +1882,7 @@ const handleUploadSuccess = (response) => {
     ElMessage.success(t('storage.uploadSuccess'))
     fetchObjects(currentStorage.value.id)
   } else {
-          ElMessage.error(response.message || t('storage.uploadFailed'))
+    ElMessage.error(response.message || t('storage.uploadFailed'))
   }
 }
 
@@ -2010,16 +1898,16 @@ const refreshStats = async () => {
       ElMessage.error('该存储未绑定任何节点，无法刷新统计信息')
       return
     }
-    
+
     await ElMessageBox.confirm(t('storage.refreshStatsConfirm'), t('common.tip'), {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
     })
-    
+
     refreshingStats.value = true
     const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
-    
+
     if (response.data.status === 'task_created') {
       ElMessage.info(t('storage.statsTaskCreated', { taskId: response.data.task_id }))
     } else if (response.data.status === 'success') {
@@ -2379,6 +2267,7 @@ onUnmounted(() => {
   from {
     transform: rotate(0deg);
   }
+
   to {
     transform: rotate(360deg);
   }
@@ -2540,4 +2429,4 @@ onUnmounted(() => {
   color: var(--el-color-info);
   margin-top: 2px;
 }
-</style> 
+</style>

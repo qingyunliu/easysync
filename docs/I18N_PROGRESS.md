@@ -926,7 +926,9 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - 事件管理 (events): 70+ 个键值对
 - 告警策略管理 (alertPolicies): 85+ 个键值对
 - 系统监控 (monitoring): 45+ 个键值对
-- **总计**: 955+ 个翻译键值对
+- 节点管理 (nodes): 150+ 个键值对
+- 源端服务器管理 (clients): 150+ 个键值对
+- **总计**: 1419+ 个翻译键值对
 
 **英文语言包 (en-US.js)**
 
@@ -952,7 +954,6 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - 系统监控 (monitoring): 49+ 个键值对
 - 个人信息 (profile): 35+ 个键值对
 - 系统设置 (settings): 105+ 个键值对
-- 节点管理 (nodes): 150+ 个键值对
 - **总计**: 1269+ 个翻译键值对
 
 ### Notifications.vue 国际化完成度：100% ✅
@@ -1582,6 +1583,40 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - ✅ 进程表格列标题（内存%）
 - ✅ 批量操作弹窗标题和占位符
 - ✅ 批量操作弹窗按钮
+
+### Clients.vue 国际化完成度：10% ✅
+
+**已完成内容：**
+
+**1. 语言包准备**
+
+- ✅ 中文语言包 (clients): 150+ 个键值对
+- ✅ 英文语言包 (clients): 150+ 个键值对
+- ✅ useI18n 导入和 t 函数设置
+
+**2. 页面标题和描述**
+
+- ✅ 页面标题 (`clients.pageTitle`)
+- ✅ 页面描述 (`clients.pageSubtitle`)
+
+**待完成内容：**
+
+- ❌ 操作按钮
+- ❌ 架构说明部分
+- ❌ 统计卡片
+- ❌ 服务器列表
+- ❌ 表格列标题
+- ❌ 操作按钮
+- ❌ 弹窗和对话框
+- ❌ 状态文本函数
+- ❌ 消息提示
+- ❌ 监控数据界面
+- ❌ 图表标题和系列名称
+- ❌ 进程列表
+- ❌ 系统日志
+- ❌ 批量操作消息
+- ❌ 操作结果消息
+- ❌ 表单验证消息
 
 ## 下一步计划
 

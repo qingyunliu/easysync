@@ -10,12 +10,8 @@
         <el-tab-pane label="登录审计" name="login">
           <div class="tab-header">
             <div class="header-actions">
-              <el-select 
-                v-model="loginActionFilter" 
-                placeholder="选择操作类型" 
-                class="filter-select"
-                @change="handleLoginFilterChange"
-              >
+              <el-select v-model="loginActionFilter" placeholder="选择操作类型" class="filter-select"
+                @change="handleLoginFilterChange">
                 <el-option label="全部操作" value="all" />
                 <el-option label="登录记录" value="login" />
                 <el-option label="退出记录" value="logout" />
@@ -26,7 +22,9 @@
           <div class="data-card">
             <div class="card-header">
               <div class="card-title">
-                <el-icon class="title-icon"><DataAnalysis /></el-icon>
+                <el-icon class="title-icon">
+                  <DataAnalysis />
+                </el-icon>
                 <span>登录/登出审计日志</span>
               </div>
               <div class="card-stats">
@@ -35,14 +33,10 @@
             </div>
 
             <div class="table-container">
-              <el-table 
-                :data="loginLogs" 
-                class="audit-table"
-                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--text-color)' }"
-                stripe
-                @row-click="handleLoginRowClick"
-              >
-                <el-table-column prop="id" label="ID" width="330" align="center"/>
+              <el-table :data="loginLogs" class="audit-table"
+                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--text-color)' }" stripe
+                @row-click="handleLoginRowClick">
+                <el-table-column prop="id" label="ID" width="330" align="center" />
                 <el-table-column prop="username" label="用户" width="160" align="center">
                   <template #default="scope">
                     <div class="user-info">
@@ -53,23 +47,22 @@
                     </div>
                   </template>
                 </el-table-column>
-                
+
                 <el-table-column prop="action" label="操作类型" width="120" align="center">
                   <template #default="scope">
-                    <el-tag 
-                      :type="scope.row.action === 'login' ? 'success' : 'warning'"
-                      :icon="scope.row.action === 'login' ? 'CircleCheck' : 'CircleClose'"
-                      effect="light"
-                    >
+                    <el-tag :type="scope.row.action === 'login' ? 'success' : 'warning'"
+                      :icon="scope.row.action === 'login' ? 'CircleCheck' : 'CircleClose'" effect="light">
                       {{ scope.row.action === 'login' ? '登录' : '退出' }}
                     </el-tag>
                   </template>
                 </el-table-column>
-                
+
                 <el-table-column label="操作时间" width="220" align="center">
                   <template #default="scope">
                     <div class="time-info">
-                      <el-icon class="time-icon"><Clock /></el-icon>
+                      <el-icon class="time-icon">
+                        <Clock />
+                      </el-icon>
                       <span>{{ formatTime(scope.row.details.login_time || scope.row.details.logout_time) }}</span>
                     </div>
                   </template>
@@ -77,16 +70,12 @@
 
                 <el-table-column prop="result" label="结果" width="100" align="center">
                   <template #default="scope">
-                    <el-tag 
-                      :type="scope.row.result === 'success' ? 'success' : 'danger'"
-                      effect="light"
-                      size="small"
-                    >
+                    <el-tag :type="scope.row.result === 'success' ? 'success' : 'danger'" effect="light" size="small">
                       {{ scope.row.result === 'success' ? '成功' : '失败' }}
                     </el-tag>
                   </template>
                 </el-table-column>
-                
+
                 <el-table-column prop="details.ip" label="IP地址" width="180" align="center">
                   <template #default="scope">
                     <el-tag type="info" effect="plain" size="small">
@@ -94,7 +83,7 @@
                     </el-tag>
                   </template>
                 </el-table-column>
-                
+
                 <el-table-column prop="details.user_agent" label="客户端信息" min-width="200">
                   <template #default="scope">
                     <div class="user-agent-info">
@@ -107,16 +96,9 @@
               </el-table>
 
               <div class="pagination-wrapper">
-                <el-pagination
-                  v-model:current-page="loginPage"
-                  :page-size="loginPerPage"
-                  :total="loginTotal"
-                  layout="total, sizes, prev, pager, next, jumper"
-                  :page-sizes="[10, 20, 50, 100]"
-                  @current-change="handleLoginPageChange"
-                  @size-change="handleLoginSizeChange"
-                  background
-                />
+                <el-pagination v-model:current-page="loginPage" :page-size="loginPerPage" :total="loginTotal"
+                  layout="total, sizes, prev, pager, next, jumper" :page-sizes="[10, 20, 50, 100]"
+                  @current-change="handleLoginPageChange" @size-change="handleLoginSizeChange" background />
               </div>
             </div>
           </div>
@@ -126,24 +108,16 @@
         <el-tab-pane label="操作审计" name="operation">
           <div class="tab-header">
             <div class="header-actions">
-              <el-select 
-                v-model="operationActionFilter" 
-                placeholder="选择操作类型" 
-                class="filter-select"
-                @change="handleOperationFilterChange"
-              >
+              <el-select v-model="operationActionFilter" placeholder="选择操作类型" class="filter-select"
+                @change="handleOperationFilterChange">
                 <el-option label="全部操作" value="all" />
                 <el-option label="创建" value="create" />
                 <el-option label="更新" value="update" />
                 <el-option label="删除" value="delete" />
                 <el-option label="查询" value="read" />
               </el-select>
-              <el-select 
-                v-model="resourceTypeFilter" 
-                placeholder="选择资源类型" 
-                class="filter-select"
-                @change="handleOperationFilterChange"
-              >
+              <el-select v-model="resourceTypeFilter" placeholder="选择资源类型" class="filter-select"
+                @change="handleOperationFilterChange">
                 <el-option label="全部资源" value="all" />
                 <el-option label="用户" value="user" />
                 <el-option label="节点" value="node" />
@@ -157,7 +131,9 @@
           <div class="data-card">
             <div class="card-header">
               <div class="card-title">
-                <el-icon class="title-icon"><Operation /></el-icon>
+                <el-icon class="title-icon">
+                  <Operation />
+                </el-icon>
                 <span>操作审计日志</span>
               </div>
               <div class="card-stats">
@@ -166,15 +142,11 @@
             </div>
 
             <div class="table-container">
-              <el-table 
-                :data="operationLogs" 
-                class="audit-table"
-                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--text-color)' }"
-                stripe
-                @row-click="handleOperationRowClick"
-              >
-                <el-table-column prop="id" label="ID" width="330" align="center"/>
-                
+              <el-table :data="operationLogs" class="audit-table"
+                :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--text-color)' }" stripe
+                @row-click="handleOperationRowClick">
+                <el-table-column prop="id" label="ID" width="330" align="center" />
+
                 <el-table-column prop="username" label="用户" width="120" align="center">
                   <template #default="scope">
                     <div class="user-info">
@@ -185,58 +157,48 @@
                     </div>
                   </template>
                 </el-table-column>
-                
+
                 <el-table-column prop="resource_name" label="资源名称" width="150" align="center">
                   <template #default="scope">
                     <span>{{ scope.row.resource_name || '-' }}</span>
                   </template>
                 </el-table-column>
-                
+
                 <el-table-column prop="resource_type" label="资源类型" width="100" align="center">
                   <template #default="scope">
-                    <el-tag 
-                      :type="getResourceTypeColor(scope.row.resource_type)"
-                      effect="light"
-                      size="small"
-                    >
+                    <el-tag :type="getResourceTypeColor(scope.row.resource_type)" effect="light" size="small">
                       {{ getResourceTypeLabel(scope.row.resource_type) }}
                     </el-tag>
                   </template>
                 </el-table-column>
-                
+
                 <el-table-column prop="action" label="操作类型" width="180" align="center">
                   <template #default="scope">
-                    <el-tag 
-                      :type="getActionTypeColor(scope.row.action)"
-                      effect="light"
-                      size="small"
-                    >
+                    <el-tag :type="getActionTypeColor(scope.row.action)" effect="light" size="small">
                       {{ getActionLabel(scope.row.action) }}
                     </el-tag>
                   </template>
                 </el-table-column>
-                
+
                 <el-table-column label="操作时间" width="180" align="center">
                   <template #default="scope">
                     <div class="time-info">
-                      <el-icon class="time-icon"><Clock /></el-icon>
+                      <el-icon class="time-icon">
+                        <Clock />
+                      </el-icon>
                       <span>{{ formatTime(scope.row.created_at) }}</span>
                     </div>
                   </template>
                 </el-table-column>
-                
+
                 <el-table-column prop="result" label="结果" width="100" align="center">
                   <template #default="scope">
-                    <el-tag 
-                      :type="scope.row.result === 'success' ? 'success' : 'danger'"
-                      effect="light"
-                      size="small"
-                    >
+                    <el-tag :type="scope.row.result === 'success' ? 'success' : 'danger'" effect="light" size="small">
                       {{ scope.row.result === 'success' ? '成功' : '失败' }}
                     </el-tag>
                   </template>
                 </el-table-column>
-                
+
                 <el-table-column prop="details" label="详细信息" min-width="200">
                   <template #default="scope">
                     <div class="details-info">
@@ -249,16 +211,10 @@
               </el-table>
 
               <div class="pagination-wrapper">
-                <el-pagination
-                  v-model:current-page="operationPage"
-                  :page-size="operationPerPage"
-                  :total="operationTotal"
-                  layout="total, sizes, prev, pager, next, jumper"
-                  :page-sizes="[10, 20, 50, 100]"
-                  @current-change="handleOperationPageChange"
-                  @size-change="handleOperationSizeChange"
-                  background
-                />
+                <el-pagination v-model:current-page="operationPage" :page-size="operationPerPage"
+                  :total="operationTotal" layout="total, sizes, prev, pager, next, jumper"
+                  :page-sizes="[10, 20, 50, 100]" @current-change="handleOperationPageChange"
+                  @size-change="handleOperationSizeChange" background />
               </div>
             </div>
           </div>
@@ -267,14 +223,8 @@
     </div>
 
     <!-- 审计日志详情抽屉 -->
-    <el-drawer
-      v-model="drawerVisible"
-      title="审计日志详情"
-      direction="rtl"
-      size="60%"
-      :before-close="handleDrawerClose"
-      class="audit-drawer"
-    >
+    <el-drawer v-model="drawerVisible" title="审计日志详情" direction="rtl" size="60%" :before-close="handleDrawerClose"
+      class="audit-drawer">
       <div class="detail-content">
 
         <!-- 基本信息卡片 -->
@@ -297,33 +247,25 @@
               </div>
             </el-descriptions-item>
             <el-descriptions-item label="操作类型">
-              <el-tag 
-                :type="currentLog.action === 'login' ? 'success' : 
-                       currentLog.action === 'logout' ? 'warning' : 
-                       getActionTypeColor(currentLog.action)"
-                effect="light"
-              >
-                {{ currentLog.action === 'login' ? '登录' : 
-                   currentLog.action === 'logout' ? '退出' : 
-                   getActionLabel(currentLog.action) }}
+              <el-tag :type="currentLog.action === 'login' ? 'success' :
+                currentLog.action === 'logout' ? 'warning' :
+                  getActionTypeColor(currentLog.action)" effect="light">
+                {{ currentLog.action === 'login' ? '登录' :
+                  currentLog.action === 'logout' ? '退出' :
+                    getActionLabel(currentLog.action) }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="操作结果">
-              <el-tag 
-                :type="currentLog.result === 'success' ? 'success' : 'danger'"
-                effect="light"
-              >
+              <el-tag :type="currentLog.result === 'success' ? 'success' : 'danger'" effect="light">
                 {{ currentLog.result === 'success' ? '成功' : '失败' }}
               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item label="操作时间">
-              {{ formatTime(currentLog.created_at || currentLog.details?.login_time || currentLog.details?.logout_time) }}
+              {{ formatTime(currentLog.created_at || currentLog.details?.login_time || currentLog.details?.logout_time)
+              }}
             </el-descriptions-item>
             <el-descriptions-item v-if="currentLog.resource_type" label="资源类型">
-              <el-tag 
-                :type="getResourceTypeColor(currentLog.resource_type)"
-                effect="light"
-              >
+              <el-tag :type="getResourceTypeColor(currentLog.resource_type)" effect="light">
                 {{ getResourceTypeLabel(currentLog.resource_type) }}
               </el-tag>
             </el-descriptions-item>
@@ -359,10 +301,9 @@
               <el-tag type="info" effect="plain">{{ currentLog.details.method }}</el-tag>
             </el-descriptions-item>
             <el-descriptions-item v-if="currentLog.details.status_code" label="状态码">
-              <el-tag 
+              <el-tag
                 :type="currentLog.details.status_code >= 200 && currentLog.details.status_code < 300 ? 'success' : 'danger'"
-                effect="light"
-              >
+                effect="light">
                 {{ currentLog.details.status_code }}
               </el-tag>
             </el-descriptions-item>
@@ -382,10 +323,7 @@
               <span>{{ currentLog.details.ip_address }}</span>
             </el-descriptions-item>
             <el-descriptions-item v-if="currentLog.details.status" label="状态">
-              <el-tag 
-                :type="currentLog.details.status === 'success' ? 'success' : 'danger'"
-                effect="light"
-              >
+              <el-tag :type="currentLog.details.status === 'success' ? 'success' : 'danger'" effect="light">
                 {{ currentLog.details.status }}
               </el-tag>
             </el-descriptions-item>
@@ -402,12 +340,7 @@
           <template #header>
             <div class="card-header">
               <span>操作详情</span>
-              <el-button 
-                type="primary" 
-                link 
-                @click="toggleDetailsExpanded"
-                size="small"
-              >
+              <el-button type="primary" link @click="toggleDetailsExpanded" size="small">
                 {{ detailsExpanded ? '收起' : '展开' }}
                 <el-icon style="margin-left: 4px;">
                   <ArrowDown v-if="!detailsExpanded" />
@@ -416,7 +349,7 @@
               </el-button>
             </div>
           </template>
-          
+
           <!-- 简化的详细信息 -->
           <div v-if="!detailsExpanded" class="details-summary">
             <div class="summary-item" v-if="currentLog.details.params">
@@ -435,7 +368,9 @@
               <span class="summary-label">错误信息:</span>
               <span class="summary-value error-text">{{ currentLog.details.error }}</span>
             </div>
-            <div v-if="!currentLog.details.params && !currentLog.details.headers && !currentLog.details.response && !currentLog.details.error" class="summary-item">
+            <div
+              v-if="!currentLog.details.params && !currentLog.details.headers && !currentLog.details.response && !currentLog.details.error"
+              class="summary-item">
               <span class="summary-label">详细信息:</span>
               <span class="summary-value">{{ getSummaryText(currentLog.details) }}</span>
             </div>
@@ -449,26 +384,28 @@
                   <pre>{{ formatJSON(currentLog.details.params) }}</pre>
                 </div>
               </el-collapse-item>
-              
+
               <el-collapse-item v-if="currentLog.details.headers" title="请求头" name="headers">
                 <div class="json-detail">
                   <pre>{{ formatJSON(currentLog.details.headers) }}</pre>
                 </div>
               </el-collapse-item>
-              
+
               <el-collapse-item v-if="currentLog.details.response" title="响应数据" name="response">
                 <div class="json-detail">
                   <pre>{{ formatJSON(currentLog.details.response) }}</pre>
                 </div>
               </el-collapse-item>
-              
+
               <el-collapse-item v-if="currentLog.details.error" title="错误信息" name="error">
                 <div class="error-detail">
                   <el-tag type="danger" effect="light">{{ currentLog.details.error }}</el-tag>
                 </div>
               </el-collapse-item>
-              
-              <el-collapse-item v-if="!currentLog.details.params && !currentLog.details.headers && !currentLog.details.response && !currentLog.details.error" title="完整详细信息" name="full">
+
+              <el-collapse-item
+                v-if="!currentLog.details.params && !currentLog.details.headers && !currentLog.details.response && !currentLog.details.error"
+                title="完整详细信息" name="full">
                 <div class="json-detail">
                   <pre>{{ formatJSON(currentLog.details) }}</pre>
                 </div>
@@ -478,7 +415,8 @@
         </el-card>
 
         <!-- 环境信息卡片 -->
-        <el-card class="info-card" v-if="currentLog.details && (currentLog.details.user_agent || currentLog.details.ip)">
+        <el-card class="info-card"
+          v-if="currentLog.details && (currentLog.details.user_agent || currentLog.details.ip)">
           <template #header>
             <div class="card-header">
               <span>环境信息</span>
@@ -557,8 +495,8 @@ const activeDetailsCollapse = ref(['params']) // 默认展开第一个
 const fetchLoginLogs = async () => {
   try {
     const res = await axios.get('/api/auth/audit-logs', {
-      params: { 
-        page: loginPage.value, 
+      params: {
+        page: loginPage.value,
         per_page: loginPerPage.value,
         action: loginActionFilter.value
       }
@@ -574,8 +512,8 @@ const fetchLoginLogs = async () => {
 const fetchOperationLogs = async () => {
   try {
     const res = await axios.get('/api/auth/operation-logs', {
-      params: { 
-        page: operationPage.value, 
+      params: {
+        page: operationPage.value,
         per_page: operationPerPage.value,
         action: operationActionFilter.value,
         resource_type: resourceTypeFilter.value
@@ -784,25 +722,25 @@ const getSummaryText = (json) => {
 // 判断详细信息是否有实际内容
 const hasDetailsContent = (details) => {
   if (!details) return false
-  
+
   // 检查是否有我们关心的字段
   const relevantFields = [
     'ip', 'user_agent', 'path', 'method', 'status_code', 'response_time',
     'msg', 'username', 'name', 'ip_address', 'status', 'error'
   ]
-  
+
   return relevantFields.some(field => details[field] !== undefined && details[field] !== null && details[field] !== '')
 }
 
 // 判断操作审计详细信息是否有实际内容
 const hasOperationDetailsContent = (details) => {
   if (!details) return false
-  
+
   // 检查是否有我们关心的字段
   const relevantFields = [
     'params', 'headers', 'response', 'error'
   ]
-  
+
   return relevantFields.some(field => details[field] !== undefined && details[field] !== null && details[field] !== '')
 }
 
@@ -1226,4 +1164,4 @@ onMounted(() => {
   max-height: 200px;
   overflow-y: auto;
 }
-</style> 
+</style>

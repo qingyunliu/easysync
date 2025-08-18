@@ -6,20 +6,15 @@
         <el-button type="primary" @click="handleExport">导出日志</el-button>
       </div>
     </div>
-    
+
     <el-card class="filter-card">
       <el-form :inline="true" :model="filterForm" class="filter-form">
         <el-form-item label="任务">
           <el-select v-model="filterForm.task_id" placeholder="选择任务" clearable>
-            <el-option
-              v-for="task in tasks"
-              :key="task.id"
-              :label="task.name"
-              :value="task.id"
-            />
+            <el-option v-for="task in tasks" :key="task.id" :label="task.name" :value="task.id" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="状态">
           <el-select v-model="filterForm.status" placeholder="选择状态" clearable>
             <el-option label="成功" value="completed" />
@@ -27,31 +22,21 @@
             <el-option label="运行中" value="running" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="时间范围">
-          <el-date-picker
-            v-model="filterForm.date_range"
-            type="daterange"
-            range-separator="至"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-          />
+          <el-date-picker v-model="filterForm.date_range" type="daterange" range-separator="至" start-placeholder="开始日期"
+            end-placeholder="结束日期" value-format="YYYY-MM-DD" />
         </el-form-item>
-        
+
         <el-form-item>
           <el-button type="primary" @click="handleSearch">搜索</el-button>
           <el-button @click="resetFilter">重置</el-button>
         </el-form-item>
       </el-form>
     </el-card>
-    
+
     <el-card class="logs-card">
-      <el-table
-        v-loading="loading"
-        :data="logs"
-        style="width: 100%"
-      >
+      <el-table v-loading="loading" :data="logs" style="width: 100%">
         <el-table-column prop="id" label="ID" width="80" />
         <el-table-column prop="task_name" label="任务名称" min-width="150" />
         <el-table-column prop="start_time" label="开始时间" width="180">
@@ -79,37 +64,22 @@
         </el-table-column>
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="scope">
-            <el-button
-              type="primary"
-              size="small"
-              @click="showLogDetail(scope.row)"
-            >
+            <el-button type="primary" size="small" @click="showLogDetail(scope.row)">
               详情
             </el-button>
           </template>
         </el-table-column>
       </el-table>
-      
+
       <div class="pagination">
-        <el-pagination
-          v-model:current-page="currentPage"
-          v-model:page-size="pageSize"
-          :page-sizes="[10, 20, 50, 100]"
-          layout="total, sizes, prev, pager, next, jumper"
-          :total="total"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+        <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next, jumper" :total="total" @size-change="handleSizeChange"
+          @current-change="handleCurrentChange" />
       </div>
     </el-card>
-    
+
     <!-- 日志详情对话框 -->
-    <el-dialog
-      v-model="detailDialogVisible"
-      title="日志详情"
-      width="70%"
-      destroy-on-close
-    >
+    <el-dialog v-model="detailDialogVisible" title="日志详情" width="70%" destroy-on-close>
       <div v-loading="detailLoading">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="任务名称">{{ currentLog && currentLog.task_name }}</el-descriptions-item>
@@ -118,22 +88,21 @@
               {{ getStatusText(currentLog && currentLog.status) }}
             </el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="开始时间">{{ formatDateTime(currentLog && currentLog.start_time) }}</el-descriptions-item>
-          <el-descriptions-item label="结束时间">{{ currentLog && currentLog.end_time ? formatDateTime(currentLog.end_time) : '-' }}</el-descriptions-item>
+          <el-descriptions-item label="开始时间">{{ formatDateTime(currentLog && currentLog.start_time)
+            }}</el-descriptions-item>
+          <el-descriptions-item label="结束时间">{{ currentLog && currentLog.end_time ? formatDateTime(currentLog.end_time)
+            :
+            '-' }}</el-descriptions-item>
           <el-descriptions-item label="处理文件数">{{ currentLog && currentLog.files_processed }}</el-descriptions-item>
-          <el-descriptions-item label="处理数据量">{{ formatBytes(currentLog && currentLog.bytes_processed) }}</el-descriptions-item>
+          <el-descriptions-item label="处理数据量">{{ formatBytes(currentLog && currentLog.bytes_processed)
+            }}</el-descriptions-item>
         </el-descriptions>
-        
+
         <div class="log-detail-section">
           <h3>错误信息</h3>
-          <el-input
-            :value="currentLog && currentLog.error_message"
-            type="textarea"
-            :rows="3"
-            readonly
-          />
+          <el-input :value="currentLog && currentLog.error_message" type="textarea" :rows="3" readonly />
         </div>
-        
+
         <div class="log-detail-section">
           <h3>处理文件列表</h3>
           <el-table :data="currentLog && currentLog.processed_files || []" border style="width: 100%">
@@ -202,7 +171,7 @@ const fetchLogs = async () => {
       start_date: filterForm.date_range && filterForm.date_range[0] || undefined,
       end_date: filterForm.date_range && filterForm.date_range[1] || undefined
     }
-    
+
     const response = await axios.get('/api/tasks/logs', { params })
     logs.value = response.data.items
     total.value = response.data.total
@@ -242,12 +211,12 @@ const handleExport = async () => {
       start_date: filterForm.date_range && filterForm.date_range[0] || undefined,
       end_date: filterForm.date_range && filterForm.date_range[1] || undefined
     }
-    
+
     const response = await axios.get('/api/tasks/logs/export', {
       params,
       responseType: 'blob'
     })
-    
+
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
     link.href = url
@@ -256,7 +225,7 @@ const handleExport = async () => {
     link.click()
     document.body.removeChild(link)
     window.URL.revokeObjectURL(url)
-    
+
     ElMessage.success('日志导出成功')
   } catch (error) {
     ElMessage.error('日志导出失败')
@@ -387,4 +356,4 @@ onMounted(() => {
   margin-bottom: 10px;
   font-size: 16px;
 }
-</style> 
+</style>

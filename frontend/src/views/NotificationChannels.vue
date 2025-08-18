@@ -8,7 +8,9 @@
       </div>
       <div class="header-actions">
         <el-button type="primary" @click="openCreateDialog">
-          <el-icon><Plus /></el-icon>
+          <el-icon>
+            <Plus />
+          </el-icon>
           创建渠道
         </el-button>
       </div>
@@ -27,20 +29,19 @@
           </el-select>
         </el-form-item>
         <el-form-item label="渠道名称">
-          <el-input
-            v-model="filters.keyword"
-            placeholder="搜索渠道名称"
-            clearable
-            @keyup.enter="loadChannels"
-          >
+          <el-input v-model="filters.keyword" placeholder="搜索渠道名称" clearable @keyup.enter="loadChannels">
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon>
+                <Search />
+              </el-icon>
             </template>
           </el-input>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="loadChannels">
-            <el-icon><Search /></el-icon>
+            <el-icon>
+              <Search />
+            </el-icon>
             搜索
           </el-button>
           <el-button @click="resetFilter">重置</el-button>
@@ -50,14 +51,10 @@
 
     <!-- 渠道列表 -->
     <div class="channels-container">
-      <el-table 
-        :data="filteredChannels" 
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-        v-loading="loading"
-      >
+      <el-table :data="filteredChannels" style="width: 100%" @selection-change="handleSelectionChange"
+        v-loading="loading">
         <el-table-column type="selection" width="55" />
-        
+
         <el-table-column prop="name" label="渠道名称" sortable>
           <template #default="{ row }">
             <el-link type="primary" @click="showChannelDetail(row)">
@@ -65,7 +62,7 @@
             </el-link>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="channel_type" label="渠道类型" sortable>
           <template #default="{ row }">
             <el-tag :type="getChannelTypeTagType(row.channel_type)" size="small">
@@ -73,7 +70,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="渠道状态" sortable>
           <template #default="{ row }">
             <div class="channel-status">
@@ -84,25 +81,25 @@
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="重试次数" sortable>
           <template #default="{ row }">
             {{ row.retry_count }}次
           </template>
         </el-table-column>
-        
+
         <el-table-column label="速率限制" sortable>
           <template #default="{ row }">
             {{ row.rate_limit }}次/小时
           </template>
         </el-table-column>
-        
+
         <el-table-column label="超时时间" sortable>
           <template #default="{ row }">
             {{ row.timeout }}秒
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="created_at" label="创建时间" sortable>
           <template #default="{ row }">
             <div class="time-display">
@@ -111,30 +108,22 @@
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button 
-              size="small" 
-              :type="row.enabled ? 'warning' : 'success'"
-              @click="toggleChannel(row)"
-              :loading="row.toggling"
-            >
+            <el-button size="small" :type="row.enabled ? 'warning' : 'success'" @click="toggleChannel(row)"
+              :loading="row.toggling">
               {{ row.enabled ? '禁用' : '启用' }}
             </el-button>
             <el-button size="small" @click="editChannel(row)">编辑</el-button>
             <el-button size="small" type="warning" @click="testChannel(row)">测试</el-button>
-            <el-button 
-              size="small" 
-              type="danger" 
-              @click="deleteChannel(row)"
-            >
+            <el-button size="small" type="danger" @click="deleteChannel(row)">
               删除
             </el-button>
           </template>
         </el-table-column>
       </el-table>
-      
+
       <div v-if="filteredChannels.length === 0" class="empty-state">
         <el-empty description="暂无通知渠道">
           <el-button type="primary" @click="openCreateDialog">创建第一个渠道</el-button>
@@ -148,7 +137,7 @@
         <el-form-item label="渠道名称">
           <el-input v-model="channelForm.name" />
         </el-form-item>
-        
+
         <el-form-item label="渠道类型">
           <el-select v-model="channelForm.channel_type" @change="handleChannelTypeChange">
             <el-option label="邮件" value="email" />
@@ -158,7 +147,7 @@
             <el-option label="Slack" value="slack" />
           </el-select>
         </el-form-item>
-        
+
         <!-- 邮件配置 -->
         <div v-if="channelForm.channel_type === 'email'" class="email-config">
           <el-form-item label="SMTP服务器">
@@ -174,7 +163,7 @@
             <el-input v-model="channelForm.config.password" type="password" />
           </el-form-item>
         </div>
-        
+
         <!-- 短信配置 -->
         <div v-if="channelForm.channel_type === 'sms'" class="sms-config">
           <el-form-item label="API密钥">
@@ -184,51 +173,51 @@
             <el-input v-model="channelForm.config.secret" type="password" />
           </el-form-item>
         </div>
-        
+
         <!-- WebHook配置 -->
         <div v-if="channelForm.channel_type === 'webhook'" class="webhook-config">
           <el-form-item label="URL">
             <el-input v-model="channelForm.config.url" />
           </el-form-item>
         </div>
-        
+
         <!-- 钉钉配置 -->
         <div v-if="channelForm.channel_type === 'dingtalk'" class="dingtalk-config">
           <el-form-item label="WebHook URL">
             <el-input v-model="channelForm.config.webhook_url" />
           </el-form-item>
         </div>
-        
+
         <!-- Slack配置 -->
         <div v-if="channelForm.channel_type === 'slack'" class="slack-config">
           <el-form-item label="WebHook URL">
             <el-input v-model="channelForm.config.webhook_url" />
           </el-form-item>
         </div>
-        
+
         <el-form-item label="重试次数">
           <el-input-number v-model="channelForm.retry_count" :min="1" :max="10" />
         </el-form-item>
-        
+
         <el-form-item label="速率限制">
           <el-input-number v-model="channelForm.rate_limit" :min="1" :max="1000" />
           <span style="margin-left: 8px; color: var(--text-secondary);">次/小时</span>
         </el-form-item>
-        
+
         <el-form-item label="超时时间">
           <el-input-number v-model="channelForm.timeout" :min="5" :max="300" />
           <span style="margin-left: 8px; color: var(--text-secondary);">秒</span>
         </el-form-item>
-        
+
         <el-form-item label="设为默认">
           <el-switch v-model="channelForm.is_default" />
         </el-form-item>
-        
+
         <el-form-item label="启用状态">
           <el-switch v-model="channelForm.enabled" />
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" @click="submitChannel">保存</el-button>
@@ -236,12 +225,7 @@
     </el-dialog>
 
     <!-- 渠道详情侧拉抽屉 -->
-    <el-drawer
-      v-model="showChannelDetailDrawer"
-      title="渠道详情"
-      direction="rtl"
-      size="50%"
-    >
+    <el-drawer v-model="showChannelDetailDrawer" title="渠道详情" direction="rtl" size="50%">
       <div v-if="selectedChannel" class="channel-detail">
         <div class="detail-section">
           <h3>基本信息</h3>
@@ -307,17 +291,11 @@
         <div class="detail-actions">
           <el-button type="primary" @click="editChannel(selectedChannel)">编辑渠道</el-button>
           <el-button @click="testChannel(selectedChannel)">测试渠道</el-button>
-          <el-button 
-            :type="selectedChannel.enabled ? 'warning' : 'success'"
-            @click="toggleChannel(selectedChannel)"
-            :loading="selectedChannel.toggling"
-          >
+          <el-button :type="selectedChannel.enabled ? 'warning' : 'success'" @click="toggleChannel(selectedChannel)"
+            :loading="selectedChannel.toggling">
             {{ selectedChannel.enabled ? '禁用' : '启用' }}
           </el-button>
-          <el-button 
-            type="danger" 
-            @click="deleteChannel(selectedChannel)"
-          >
+          <el-button type="danger" @click="deleteChannel(selectedChannel)">
             删除渠道
           </el-button>
         </div>
@@ -360,19 +338,19 @@ const channelForm = reactive({
 // 计算属性
 const filteredChannels = computed(() => {
   let result = channels.value
-  
+
   if (filters.channel_type) {
     result = result.filter(channel => channel.channel_type === filters.channel_type)
   }
-  
+
   if (filters.keyword) {
     const keyword = filters.keyword.toLowerCase()
-    result = result.filter(channel => 
+    result = result.filter(channel =>
       channel.name.toLowerCase().includes(keyword) ||
       channel.channel_type.toLowerCase().includes(keyword)
     )
   }
-  
+
   return result
 })
 
@@ -430,7 +408,7 @@ const resetChannelForm = () => {
 const handleChannelTypeChange = () => {
   // 根据渠道类型重置配置
   channelForm.config = {}
-  
+
   if (channelForm.channel_type === 'email') {
     channelForm.config = {
       smtp_server: '',
@@ -463,7 +441,7 @@ const submitChannel = async () => {
       await axios.put(`/api/notifications/channels/${editingChannel.value.id}`, channelForm)
       ElMessage.success('通知渠道更新成功')
     }
-    
+
     dialogVisible.value = false
     fetchChannels()
   } catch (error) {
@@ -474,7 +452,7 @@ const submitChannel = async () => {
 const editChannel = (channel) => {
   dialogMode.value = 'edit'
   editingChannel.value = channel
-  
+
   Object.assign(channelForm, {
     name: channel.name,
     channel_type: channel.channel_type,
@@ -485,7 +463,7 @@ const editChannel = (channel) => {
     is_default: channel.is_default,
     config: { ...channel.config }
   })
-  
+
   dialogVisible.value = true
 }
 
@@ -522,7 +500,7 @@ const deleteChannel = async (channel) => {
         cancelButtonText: '取消'
       }
     )
-    
+
     await axios.delete(`/api/notifications/channels/${channel.id}`)
     ElMessage.success('通知渠道删除成功')
     fetchChannels()

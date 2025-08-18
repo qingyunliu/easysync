@@ -8,23 +8,29 @@
       </div>
       <div class="header-right">
         <el-button type="primary" @click="markAllAsRead" :disabled="!hasUnreadNotifications">
-          <el-icon><Check /></el-icon>
+          <el-icon>
+            <Check />
+          </el-icon>
           {{ $t('notifications.markAllAsRead') }}
         </el-button>
         <el-button @click="clearAllNotifications" :disabled="notifications.length === 0">
-          <el-icon><Delete /></el-icon>
+          <el-icon>
+            <Delete />
+          </el-icon>
           {{ $t('notifications.clearAllMessages') }}
         </el-button>
       </div>
     </div>
-    
+
     <!-- 统计面板 -->
     <el-row :gutter="20" style="margin-bottom: 20px;">
       <el-col :span="6">
         <el-card class="stat-card">
           <div class="stat-content stat-flex">
             <div class="stat-icon total">
-              <el-icon><ChatDotRound /></el-icon>
+              <el-icon>
+                <ChatDotRound />
+              </el-icon>
             </div>
             <div>
               <div class="stat-number">{{ stats.total || 0 }}</div>
@@ -37,7 +43,9 @@
         <el-card class="stat-card unread">
           <div class="stat-content stat-flex">
             <div class="stat-icon unread">
-              <el-icon><ChatDotRound /></el-icon>
+              <el-icon>
+                <ChatDotRound />
+              </el-icon>
             </div>
             <div>
               <div class="stat-number">{{ stats.unread || 0 }}</div>
@@ -50,7 +58,9 @@
         <el-card class="stat-card info">
           <div class="stat-content stat-flex">
             <div class="stat-icon info">
-              <el-icon><InfoFilled /></el-icon>
+              <el-icon>
+                <InfoFilled />
+              </el-icon>
             </div>
             <div>
               <div class="stat-number">{{ stats.info || 0 }}</div>
@@ -63,7 +73,9 @@
         <el-card class="stat-card warning">
           <div class="stat-content stat-flex">
             <div class="stat-icon warning">
-              <el-icon><WarningFilled /></el-icon>
+              <el-icon>
+                <WarningFilled />
+              </el-icon>
             </div>
             <div>
               <div class="stat-number">{{ stats.warning || 0 }}</div>
@@ -78,21 +90,24 @@
     <el-card class="filter-card" shadow="never">
       <div class="filter-container">
         <div class="filter-left">
-          <el-select v-model="filters.level" :placeholder="$t('notifications.messageLevel')" style="width: 120px" @change="handleFilterChange">
+          <el-select v-model="filters.level" :placeholder="$t('notifications.messageLevel')" style="width: 120px"
+            @change="handleFilterChange">
             <el-option :label="$t('notifications.all')" value="" />
             <el-option :label="$t('notifications.info')" value="info" />
             <el-option :label="$t('notifications.warning')" value="warning" />
             <el-option :label="$t('notifications.error')" value="error" />
             <el-option :label="$t('notifications.success')" value="success" />
           </el-select>
-          
-          <el-select v-model="filters.status" :placeholder="$t('notifications.readStatus')" style="width: 120px" @change="handleFilterChange">
+
+          <el-select v-model="filters.status" :placeholder="$t('notifications.readStatus')" style="width: 120px"
+            @change="handleFilterChange">
             <el-option :label="$t('notifications.all')" value="" />
             <el-option :label="$t('notifications.unread')" value="unread" />
             <el-option :label="$t('notifications.read')" value="read" />
           </el-select>
-          
-          <el-select v-model="filters.type" :placeholder="$t('notifications.messageType')" style="width: 140px" @change="handleFilterChange">
+
+          <el-select v-model="filters.type" :placeholder="$t('notifications.messageType')" style="width: 140px"
+            @change="handleFilterChange">
             <el-option :label="$t('notifications.all')" value="" />
             <el-option :label="$t('notifications.systemNotification')" value="system" />
             <el-option :label="$t('notifications.taskNotification')" value="task" />
@@ -100,21 +115,20 @@
             <el-option :label="$t('notifications.userNotification')" value="user" />
           </el-select>
         </div>
-        
+
         <div class="filter-right">
-          <el-input
-            v-model="filters.keyword"
-            :placeholder="$t('notifications.searchNotifications')"
-            style="width: 250px"
-            @input="handleSearch"
-            clearable
-          >
+          <el-input v-model="filters.keyword" :placeholder="$t('notifications.searchNotifications')"
+            style="width: 250px" @input="handleSearch" clearable>
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon>
+                <Search />
+              </el-icon>
             </template>
           </el-input>
           <el-button @click="refreshNotifications" :loading="loading">
-            <el-icon><Refresh /></el-icon>
+            <el-icon>
+              <Refresh />
+            </el-icon>
             {{ $t('notifications.refresh') }}
           </el-button>
         </div>
@@ -129,14 +143,11 @@
             <el-button type="primary" @click="refreshNotifications">{{ $t('notifications.refreshPage') }}</el-button>
           </el-empty>
         </div>
-        
+
         <div v-else class="notifications-list">
-          <div 
-            v-for="notification in paginatedNotifications" 
-            :key="notification.id"
+          <div v-for="notification in paginatedNotifications" :key="notification.id"
             :class="['notification-item', { 'unread': !notification.is_read }]"
-            @click="handleNotificationClick(notification)"
-          >
+            @click="handleNotificationClick(notification)">
             <div class="notification-content">
               <div class="notification-header">
                 <div class="notification-left">
@@ -144,11 +155,7 @@
                     <component :is="getLevelIcon(notification.level)" />
                   </el-icon>
                   <span class="notification-title">{{ notification.title }}</span>
-                  <el-tag 
-                    :type="getTypeTagType(notification.type)" 
-                    size="small"
-                    class="notification-type-tag"
-                  >
+                  <el-tag :type="getTypeTagType(notification.type)" size="small" class="notification-type-tag">
                     {{ getTypeLabel(notification.type) }}
                   </el-tag>
                 </div>
@@ -156,16 +163,22 @@
                   <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
                   <el-dropdown @command="(cmd) => handleNotificationAction(cmd, notification)" trigger="click">
                     <el-button type="text" size="small">
-                      <el-icon><MoreFilled /></el-icon>
+                      <el-icon>
+                        <MoreFilled />
+                      </el-icon>
                     </el-button>
                     <template #dropdown>
                       <el-dropdown-menu>
                         <el-dropdown-item :command="notification.is_read ? 'mark-unread' : 'mark-read'">
-                          <el-icon><Check /></el-icon>
+                          <el-icon>
+                            <Check />
+                          </el-icon>
                           {{ notification.is_read ? $t('notifications.markAsUnread') : $t('notifications.markAsRead') }}
                         </el-dropdown-item>
                         <el-dropdown-item command="delete" divided>
-                          <el-icon><Delete /></el-icon>
+                          <el-icon>
+                            <Delete />
+                          </el-icon>
                           {{ $t('common.delete') }}
                         </el-dropdown-item>
                       </el-dropdown-menu>
@@ -173,39 +186,29 @@
                   </el-dropdown>
                 </div>
               </div>
-              
+
               <div class="notification-body">
                 <p class="notification-text">{{ notification.content }}</p>
               </div>
             </div>
-            
+
             <div v-if="!notification.is_read" class="unread-indicator"></div>
           </div>
         </div>
-        
+
         <!-- 分页 -->
         <div v-if="filteredNotifications.length > 0" class="pagination">
-          <el-pagination
-            v-model:current-page="currentPage"
-            v-model:page-size="pageSize"
-            :page-sizes="[10, 20, 50, 100]"
-            :total="filteredNotifications.length"
-            layout="total, sizes, prev, pager, next"
-            :locale="elementLocale"
-            @size-change="handlePageSizeChange"
-            @current-change="handleCurrentChange"
-          />
+          <el-pagination v-model:current-page="currentPage" v-model:page-size="pageSize" :page-sizes="[10, 20, 50, 100]"
+            :total="filteredNotifications.length" layout="total, sizes, prev, pager, next" :locale="elementLocale"
+            @size-change="handlePageSizeChange" @current-change="handleCurrentChange" />
         </div>
       </div>
     </el-card>
 
     <!-- 通知详情弹窗 -->
-    <el-dialog 
-      v-model="detailDialog.visible" 
-      :title="detailDialog.notification?.title || $t('notifications.notificationDetails')"
-      width="600px"
-      @open="handleDetailDialogOpen"
-    >
+    <el-dialog v-model="detailDialog.visible"
+      :title="detailDialog.notification?.title || $t('notifications.notificationDetails')" width="600px"
+      @open="handleDetailDialogOpen">
       <div v-if="detailDialog.notification" class="notification-detail">
         <div class="detail-header">
           <div class="detail-level">
@@ -218,11 +221,11 @@
             {{ getTypeLabel(detailDialog.notification.type) }}
           </el-tag>
         </div>
-        
+
         <div class="detail-content">
           <p>{{ detailDialog.notification.content }}</p>
         </div>
-        
+
         <div class="detail-meta">
           <div class="meta-item">
             <span class="meta-label">{{ $t('notifications.createdTime') }}：</span>
@@ -236,14 +239,10 @@
           </div>
         </div>
       </div>
-      
+
       <template #footer>
         <el-button @click="detailDialog.visible = false">{{ $t('common.close') }}</el-button>
-        <el-button 
-          v-if="!detailDialog.notification?.is_read" 
-          type="primary" 
-          @click="markAsReadFromDetail"
-        >
+        <el-button v-if="!detailDialog.notification?.is_read" type="primary" @click="markAsReadFromDetail">
           {{ $t('notifications.markAsRead') }}
         </el-button>
       </template>
@@ -306,7 +305,7 @@ const stats = computed(() => {
   const unread = notifications.value.filter(n => !n.is_read).length
   const info = notifications.value.filter(n => n.level === 'info').length
   const warning = notifications.value.filter(n => ['warning', 'error'].includes(n.level)).length
-  
+
   return { total, unread, info, warning }
 })
 
@@ -338,8 +337,8 @@ const filteredNotifications = computed(() => {
   // 按关键词过滤
   if (filters.keyword) {
     const keyword = filters.keyword.toLowerCase()
-    result = result.filter(n => 
-      n.title.toLowerCase().includes(keyword) || 
+    result = result.filter(n =>
+      n.title.toLowerCase().includes(keyword) ||
       n.content.toLowerCase().includes(keyword)
     )
   }
@@ -366,8 +365,8 @@ const fetchNotifications = async () => {
     const response = await axios.get('/api/notifications/list', {
       params: { limit: 1000 }
     })
-    
-    notifications.value = response.data.sort((a, b) => 
+
+    notifications.value = response.data.sort((a, b) =>
       new Date(b.created_at) - new Date(a.created_at)
     )
   } catch (error) {
@@ -420,13 +419,13 @@ const markAsReadFromDetail = async () => {
 const markAsRead = async (notificationId) => {
   try {
     await axios.post(`/api/notifications/${notificationId}/read`)
-    
+
     // 更新本地数据
     const notification = notifications.value.find(n => n.id === notificationId)
     if (notification) {
       notification.is_read = true
     }
-    
+
     ElMessage.success(t('notifications.messages.markedAsRead'))
   } catch (error) {
     console.error('标记已读失败:', error)
@@ -437,7 +436,7 @@ const markAsRead = async (notificationId) => {
 const markAllAsRead = async () => {
   try {
     const unreadIds = notifications.value.filter(n => !n.is_read).map(n => n.id)
-    
+
     if (unreadIds.length === 0) {
       ElMessage.info(t('notifications.messages.noUnreadMessages'))
       return
@@ -503,13 +502,13 @@ const handleNotificationAction = async (command, notification) => {
 const markAsUnread = async (notificationId) => {
   try {
     await axios.post(`/api/notifications/${notificationId}/unread`)
-    
+
     // 更新本地数据
     const notification = notifications.value.find(n => n.id === notificationId)
     if (notification) {
       notification.is_read = false
     }
-    
+
     ElMessage.success(t('notifications.messages.markedAsUnread'))
   } catch (error) {
     console.error('标记未读失败:', error)
@@ -524,7 +523,7 @@ const deleteNotification = async (notification) => {
     })
 
     await axios.delete(`/api/notifications/${notification.id}`)
-    
+
     // 从本地数据中移除
     const index = notifications.value.findIndex(n => n.id === notification.id)
     if (index > -1) {
@@ -583,15 +582,15 @@ const getTypeLabel = (type) => {
 
 const formatTime = (timeStr) => {
   if (!timeStr) return ''
-  
+
   const date = new Date(timeStr)
   const now = new Date()
   const diff = now - date
-  
+
   const minute = 60 * 1000
   const hour = 60 * minute
   const day = 24 * hour
-  
+
   if (diff < minute) {
     return t('notifications.time.justNow')
   } else if (diff < hour) {
@@ -672,10 +671,21 @@ const formatTime = (timeStr) => {
   color: white;
 }
 
-.stat-icon.total { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.stat-icon.unread { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-.stat-icon.info { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-.stat-icon.warning { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.stat-icon.total {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.stat-icon.unread {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.stat-icon.info {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.stat-icon.warning {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
 
 .stat-number {
   font-size: 24px;
@@ -780,10 +790,21 @@ const formatTime = (timeStr) => {
   font-size: 16px;
 }
 
-.level-icon.info { color: #409eff; }
-.level-icon.success { color: #67c23a; }
-.level-icon.warning { color: #e6a23c; }
-.level-icon.error { color: #f56c6c; }
+.level-icon.info {
+  color: #409eff;
+}
+
+.level-icon.success {
+  color: #67c23a;
+}
+
+.level-icon.warning {
+  color: #e6a23c;
+}
+
+.level-icon.error {
+  color: #f56c6c;
+}
 
 .notification-title {
   font-weight: 600;
@@ -892,37 +913,37 @@ const formatTime = (timeStr) => {
   .notifications-page {
     padding: 16px;
   }
-  
+
   .page-header {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .filter-container {
     flex-direction: column;
     gap: 12px;
     align-items: stretch;
   }
-  
+
   .filter-left {
     flex-wrap: wrap;
   }
-  
+
   .filter-right {
     justify-content: stretch;
   }
-  
+
   .notification-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
   }
-  
+
   .notification-left {
     width: 100%;
   }
-  
+
   .notification-right {
     width: 100%;
     justify-content: space-between;

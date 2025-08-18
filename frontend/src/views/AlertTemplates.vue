@@ -4,15 +4,21 @@
     <div class="page-header">
       <div class="header-left">
         <h2>告警通知模板管理</h2>
-        <p class="page-description">管理系统告警通知模板，支持邮件、短信、钉钉等多种通知方式</p>
+        <p class="page-description">
+          管理系统告警通知模板，支持邮件、短信、钉钉等多种通知方式
+        </p>
       </div>
       <div class="header-actions">
         <el-button type="primary" @click="showCreateDialog = true">
-          <el-icon><Plus /></el-icon>
+          <el-icon>
+            <Plus />
+          </el-icon>
           创建模板
         </el-button>
         <el-button @click="loadTemplates">
-          <el-icon><Refresh /></el-icon>
+          <el-icon>
+            <Refresh />
+          </el-icon>
           刷新
         </el-button>
       </div>
@@ -40,20 +46,19 @@
           </el-select>
         </el-form-item>
         <el-form-item label="模板名称">
-          <el-input
-            v-model="filters.keyword"
-            placeholder="搜索模板名称"
-            clearable
-            @keyup.enter="loadTemplates"
-          >
+          <el-input v-model="filters.keyword" placeholder="搜索模板名称" clearable @keyup.enter="loadTemplates">
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon>
+                <Search />
+              </el-icon>
             </template>
           </el-input>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="loadTemplates">
-            <el-icon><Search /></el-icon>
+            <el-icon>
+              <Search />
+            </el-icon>
             搜索
           </el-button>
           <el-button @click="resetFilter">重置</el-button>
@@ -63,14 +68,10 @@
 
     <!-- 模板列表 -->
     <div class="templates-container">
-      <el-table 
-        :data="filteredTemplates" 
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-        v-loading="loading"
-      >
+      <el-table :data="filteredTemplates" style="width: 100%" @selection-change="handleSelectionChange"
+        v-loading="loading">
         <el-table-column type="selection" width="55" />
-        
+
         <el-table-column prop="name" label="模板名称" sortable>
           <template #default="{ row }">
             <el-link type="primary" @click="showTemplateDetail(row)">
@@ -78,13 +79,13 @@
             </el-link>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="category" label="模板分类" sortable>
           <template #default="{ row }">
             <el-tag size="small">{{ row.category }}</el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="template_type" label="模板类型" sortable>
           <template #default="{ row }">
             <el-tag :type="getTemplateTypeColor(row.template_type)" size="small">
@@ -92,7 +93,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="模板状态" sortable>
           <template #default="{ row }">
             <div class="template-status">
@@ -102,56 +103,48 @@
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="使用次数" sortable>
           <template #default="{ row }">
             {{ row.usage_count || 0 }}
           </template>
         </el-table-column>
-        
+
         <el-table-column label="变量数量" sortable>
           <template #default="{ row }">
             {{ row.variables?.length || 0 }}
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="created_at" label="创建时间" sortable>
           <template #default="{ row }">
             <div class="time-display">
-              <div>{{ formatDate(row.created_at).split(' ')[0] }}</div>
-              <div class="time">{{ formatDate(row.created_at).split(' ')[1] }}</div>
+              <div>{{ formatDate(row.created_at).split(" ")[0] }}</div>
+              <div class="time">
+                {{ formatDate(row.created_at).split(" ")[1] }}
+              </div>
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="previewTemplate(row)">预览</el-button>
             <el-button size="small" @click="editTemplate(row)">编辑</el-button>
-            <el-button 
-              v-if="!row.is_system"
-              size="small" 
-              type="danger" 
-              @click="deleteTemplate(row)"
-            >
+            <el-button v-if="!row.is_system" size="small" type="danger" @click="deleteTemplate(row)">
               删除
             </el-button>
           </template>
         </el-table-column>
       </el-table>
-      
+
       <div v-if="filteredTemplates.length === 0" class="empty-state">
         <el-empty description="暂无告警模板" />
       </div>
     </div>
 
     <!-- 创建/编辑模板对话框 -->
-    <el-dialog
-      v-model="showCreateDialog"
-      :title="editingTemplate ? '编辑模板' : '创建模板'"
-      width="35%"
-      @close="resetForm"
-    >
+    <el-dialog v-model="showCreateDialog" :title="editingTemplate ? '编辑模板' : '创建模板'" width="35%" @close="resetForm">
       <el-form ref="templateFormRef" :model="templateForm" :rules="templateRules" label-width="120px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -171,16 +164,11 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <el-form-item label="模板描述" prop="description">
-          <el-input
-            v-model="templateForm.description"
-            type="textarea"
-            :rows="3"
-            placeholder="请输入模板描述"
-          />
+          <el-input v-model="templateForm.description" type="textarea" :rows="3" placeholder="请输入模板描述" />
         </el-form-item>
-        
+
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="模板类型" prop="template_type">
@@ -194,29 +182,22 @@
             </el-form-item>
           </el-col>
         </el-row>
-        
+
         <!-- 模板内容配置 -->
         <el-divider content-position="left">模板内容配置</el-divider>
-        
+
         <el-form-item label="标题模板" prop="title_template">
-          <el-input
-            v-model="templateForm.title_template"
-            placeholder="请输入标题模板，支持变量如 {alert_name} {severity}"
-          />
+          <el-input v-model="templateForm.title_template" placeholder="请输入标题模板，支持变量如 {alert_name} {severity}" />
         </el-form-item>
-        
+
         <el-form-item label="内容模板" prop="content_template">
-          <el-input
-            v-model="templateForm.content_template"
-            type="textarea"
-            :rows="8"
-            placeholder="请输入内容模板，支持变量如 {alert_name} {severity} {resource_name} {current_value} {threshold} {triggered_at} {description}"
-          />
+          <el-input v-model="templateForm.content_template" type="textarea" :rows="8"
+            placeholder="请输入内容模板，支持变量如 {alert_name} {severity} {resource_name} {current_value} {threshold} {triggered_at} {description}" />
         </el-form-item>
-        
+
         <!-- 变量配置 -->
         <el-divider content-position="left">变量配置</el-divider>
-        
+
         <el-form-item label="支持变量">
           <el-select v-model="templateForm.variables" multiple placeholder="选择支持的变量">
             <el-option label="告警名称" value="alert_name" />
@@ -231,14 +212,14 @@
             <el-option label="存储名称" value="storage_name" />
           </el-select>
         </el-form-item>
-        
+
         <!-- 模板预览 -->
         <el-divider content-position="left">模板预览</el-divider>
-        
+
         <el-form-item label="测试变量">
           <el-button @click="generateTestVariables" size="small">生成测试数据</el-button>
         </el-form-item>
-        
+
         <div class="preview-section">
           <div class="preview-item">
             <strong>标题预览:</strong>
@@ -250,11 +231,11 @@
           </div>
         </div>
       </el-form>
-      
+
       <template #footer>
         <el-button @click="showCreateDialog = false">取消</el-button>
         <el-button type="primary" @click="saveTemplate" :loading="saving">
-          {{ editingTemplate ? '更新' : '创建' }}
+          {{ editingTemplate ? "更新" : "创建" }}
         </el-button>
       </template>
     </el-dialog>
@@ -274,12 +255,7 @@
     </el-dialog>
 
     <!-- 模板详情侧拉抽屉 -->
-    <el-drawer
-      v-model="showTemplateDetailDrawer"
-      title="模板详情"
-      direction="rtl"
-      size="50%"
-    >
+    <el-drawer v-model="showTemplateDetailDrawer" title="模板详情" direction="rtl" size="50%">
       <div v-if="selectedTemplate" class="template-detail">
         <div class="detail-section">
           <h3>基本信息</h3>
@@ -289,7 +265,9 @@
           </div>
           <div class="detail-item">
             <span class="label">模板描述:</span>
-            <span class="value">{{ selectedTemplate.description || '暂无描述' }}</span>
+            <span class="value">{{
+              selectedTemplate.description || "暂无描述"
+              }}</span>
           </div>
           <div class="detail-item">
             <span class="label">模板分类:</span>
@@ -310,7 +288,9 @@
             <span class="value">
               <el-tag v-if="selectedTemplate.is_system" type="success" size="small">系统</el-tag>
               <el-tag v-if="selectedTemplate.is_default" type="warning" size="small">默认</el-tag>
-              <span v-if="!selectedTemplate.is_system && !selectedTemplate.is_default" class="custom-tag">自定义</span>
+              <span v-if="
+                !selectedTemplate.is_system && !selectedTemplate.is_default
+              " class="custom-tag">自定义</span>
             </span>
           </div>
         </div>
@@ -319,27 +299,28 @@
           <h3>模板内容</h3>
           <div class="detail-item">
             <span class="label">标题模板:</span>
-            <div class="value template-content">{{ selectedTemplate.title_template }}</div>
+            <div class="value template-content">
+              {{ selectedTemplate.title_template }}
+            </div>
           </div>
           <div class="detail-item">
             <span class="label">内容模板:</span>
-            <div class="value template-content">{{ selectedTemplate.content_template }}</div>
+            <div class="value template-content">
+              {{ selectedTemplate.content_template }}
+            </div>
           </div>
         </div>
 
-        <div class="detail-section" v-if="selectedTemplate.variables && selectedTemplate.variables.length > 0">
+        <div class="detail-section" v-if="
+          selectedTemplate.variables && selectedTemplate.variables.length > 0
+        ">
           <h3>支持变量</h3>
           <div class="detail-item">
             <span class="label">变量列表:</span>
             <div class="value">
-              <el-tag 
-                v-for="variable in selectedTemplate.variables" 
-                :key="variable"
-                size="small"
-                type="info"
-                style="margin-right: 8px; margin-bottom: 4px;"
-              >
-                {{ '{' + variable + '}' }}
+              <el-tag v-for="variable in selectedTemplate.variables" :key="variable" size="small" type="info"
+                style="margin-right: 8px; margin-bottom: 4px">
+                {{ "{" + variable + "}" }}
               </el-tag>
             </div>
           </div>
@@ -353,22 +334,22 @@
           </div>
           <div class="detail-item">
             <span class="label">创建时间:</span>
-            <span class="value">{{ formatDate(selectedTemplate.created_at) }}</span>
+            <span class="value">{{
+              formatDate(selectedTemplate.created_at)
+              }}</span>
           </div>
           <div class="detail-item">
             <span class="label">更新时间:</span>
-            <span class="value">{{ formatDate(selectedTemplate.updated_at) }}</span>
+            <span class="value">{{
+              formatDate(selectedTemplate.updated_at)
+              }}</span>
           </div>
         </div>
 
         <div class="detail-actions">
           <el-button type="primary" @click="editTemplate(selectedTemplate)">编辑模板</el-button>
           <el-button @click="previewTemplate(selectedTemplate)">预览模板</el-button>
-          <el-button 
-            v-if="!selectedTemplate.is_system"
-            type="danger" 
-            @click="deleteTemplate(selectedTemplate)"
-          >
+          <el-button v-if="!selectedTemplate.is_system" type="danger" @click="deleteTemplate(selectedTemplate)">
             删除模板
           </el-button>
         </div>
@@ -378,268 +359,287 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  Plus, Refresh, Search
-} from '@element-plus/icons-vue'
-import axios from 'axios'
+import { ref, reactive, computed, onMounted, watch } from "vue";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { Plus, Refresh, Search } from "@element-plus/icons-vue";
+import axios from "axios";
 
 // 响应式数据
-const loading = ref(false)
-const templates = ref([])
-const templateFormRef = ref(null)
+const loading = ref(false);
+const templates = ref([]);
+const templateFormRef = ref(null);
 const filters = reactive({
-  category: '',
-  template_type: '',
-  keyword: ''
-})
+  category: "",
+  template_type: "",
+  keyword: "",
+});
 
-const showCreateDialog = ref(false)
-const showPreviewDialog = ref(false)
-const showTemplateDetailDrawer = ref(false)
-const editingTemplate = ref(null)
-const selectedTemplate = ref(null)
-const saving = ref(false)
+const showCreateDialog = ref(false);
+const showPreviewDialog = ref(false);
+const showTemplateDetailDrawer = ref(false);
+const editingTemplate = ref(null);
+const selectedTemplate = ref(null);
+const saving = ref(false);
 
 // 表单数据
 const templateForm = reactive({
-  name: '',
-  description: '',
-  category: '',
-  template_type: '',
-  title_template: '',
-  content_template: '',
+  name: "",
+  description: "",
+  category: "",
+  template_type: "",
+  title_template: "",
+  content_template: "",
   variables: [],
-  variable_descriptions: {}
-})
+  variable_descriptions: {},
+});
 
 // 预览数据
 const previewData = reactive({
-  title: '',
-  content: ''
-})
+  title: "",
+  content: "",
+});
 
 // 表单验证规则
 const templateRules = {
-  name: [{ required: true, message: '请输入模板名称', trigger: 'blur' }],
-  category: [{ required: true, message: '请选择模板分类', trigger: 'change' }],
-  template_type: [{ required: true, message: '请选择模板类型', trigger: 'change' }],
-  title_template: [{ required: true, message: '请输入标题模板', trigger: 'blur' }],
-  content_template: [{ required: true, message: '请输入内容模板', trigger: 'blur' }]
-}
+  name: [{ required: true, message: "请输入模板名称", trigger: "blur" }],
+  category: [{ required: true, message: "请选择模板分类", trigger: "change" }],
+  template_type: [
+    { required: true, message: "请选择模板类型", trigger: "change" },
+  ],
+  title_template: [
+    { required: true, message: "请输入标题模板", trigger: "blur" },
+  ],
+  content_template: [
+    { required: true, message: "请输入内容模板", trigger: "blur" },
+  ],
+};
 
 // 计算属性
 const filteredTemplates = computed(() => {
-  let result = templates.value
-  
+  let result = templates.value;
+
   if (filters.category) {
-    result = result.filter(template => template.category === filters.category)
+    result = result.filter(
+      (template) => template.category === filters.category
+    );
   }
-  
+
   if (filters.template_type) {
-    result = result.filter(template => template.template_type === filters.template_type)
+    result = result.filter(
+      (template) => template.template_type === filters.template_type
+    );
   }
-  
+
   if (filters.keyword) {
-    const keyword = filters.keyword.toLowerCase()
-    result = result.filter(template => 
-      template.name.toLowerCase().includes(keyword) ||
-      template.description?.toLowerCase().includes(keyword)
-    )
+    const keyword = filters.keyword.toLowerCase();
+    result = result.filter(
+      (template) =>
+        template.name.toLowerCase().includes(keyword) ||
+        template.description?.toLowerCase().includes(keyword)
+    );
   }
-  
-  return result
-})
+
+  return result;
+});
 
 // 方法
 const loadTemplates = async () => {
   try {
-    loading.value = true
-    const params = {}
-    if (filters.category) params.category = filters.category
-    if (filters.template_type) params.template_type = filters.template_type
-    
-    const response = await axios.get('/api/alerts/templates', { params })
-    templates.value = response.data.templates || []
+    loading.value = true;
+    const params = {};
+    if (filters.category) params.category = filters.category;
+    if (filters.template_type) params.template_type = filters.template_type;
+
+    const response = await axios.get("/api/alerts/templates", { params });
+    templates.value = response.data.templates || [];
   } catch (error) {
-    ElMessage.error('加载模板列表失败')
+    ElMessage.error("加载模板列表失败");
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const resetFilter = () => {
-  filters.category = ''
-  filters.template_type = ''
-  filters.keyword = ''
-  loadTemplates()
-}
+  filters.category = "";
+  filters.template_type = "";
+  filters.keyword = "";
+  loadTemplates();
+};
 
 const showTemplateDetail = (template) => {
-  selectedTemplate.value = template
-  showTemplateDetailDrawer.value = true
-}
+  selectedTemplate.value = template;
+  showTemplateDetailDrawer.value = true;
+};
 
 const editTemplate = (template) => {
-  editingTemplate.value = template
-  Object.assign(templateForm, template)
-  showCreateDialog.value = true
-}
+  editingTemplate.value = template;
+  Object.assign(templateForm, template);
+  showCreateDialog.value = true;
+};
 
 const previewTemplate = async (template) => {
   try {
     // 生成测试变量
     const testVariables = {
-      alert_name: 'CPU使用率告警',
-      severity: 'warning',
-      resource_name: '服务器-01',
-      current_value: '85%',
-      threshold: '80%',
-      triggered_at: '2024-01-15 10:30:00',
-      description: 'CPU使用率超过阈值，请及时处理'
-    }
-    
-    const response = await axios.post(`/api/alerts/templates/${template.id}/render`, {
-      variables: testVariables
-    })
-    
-    Object.assign(previewData, response.data.data)
-    showPreviewDialog.value = true
+      alert_name: "CPU使用率告警",
+      severity: "warning",
+      resource_name: "服务器-01",
+      current_value: "85%",
+      threshold: "80%",
+      triggered_at: "2024-01-15 10:30:00",
+      description: "CPU使用率超过阈值，请及时处理",
+    };
+
+    const response = await axios.post(
+      `/api/alerts/templates/${template.id}/render`,
+      {
+        variables: testVariables,
+      }
+    );
+
+    Object.assign(previewData, response.data.data);
+    showPreviewDialog.value = true;
   } catch (error) {
-    ElMessage.error('预览模板失败')
+    ElMessage.error("预览模板失败");
   }
-}
+};
 
 const saveTemplate = async () => {
   try {
     // 表单验证
-    if (!templateFormRef.value) return
-    
-    const valid = await templateFormRef.value.validate()
+    if (!templateFormRef.value) return;
+
+    const valid = await templateFormRef.value.validate();
     if (!valid) {
-      ElMessage.error('请检查表单填写是否正确')
-      return
+      ElMessage.error("请检查表单填写是否正确");
+      return;
     }
-    
-    saving.value = true
-    
-    const data = { ...templateForm }
+
+    saving.value = true;
+
+    const data = { ...templateForm };
     if (editingTemplate.value) {
-      await axios.put(`/api/alerts/templates/${editingTemplate.value.id}`, data)
-      ElMessage.success('模板更新成功')
+      await axios.put(
+        `/api/alerts/templates/${editingTemplate.value.id}`,
+        data
+      );
+      ElMessage.success("模板更新成功");
     } else {
-      await axios.post('/api/alerts/templates', data)
-      ElMessage.success('模板创建成功')
+      await axios.post("/api/alerts/templates", data);
+      ElMessage.success("模板创建成功");
     }
-    
-    showCreateDialog.value = false
-    loadTemplates()
+
+    showCreateDialog.value = false;
+    loadTemplates();
   } catch (error) {
-    ElMessage.error('保存模板失败')
+    ElMessage.error("保存模板失败");
   } finally {
-    saving.value = false
+    saving.value = false;
   }
-}
+};
 
 const deleteTemplate = async (template) => {
   try {
     await ElMessageBox.confirm(
       `确定要删除模板 "${template.name}" 吗？`,
-      '确认删除',
-      { type: 'warning' }
-    )
-    
-    await axios.delete(`/api/alerts/templates/${template.id}`)
-    ElMessage.success('模板删除成功')
-    loadTemplates()
+      "确认删除",
+      { type: "warning" }
+    );
+
+    await axios.delete(`/api/alerts/templates/${template.id}`);
+    ElMessage.success("模板删除成功");
+    loadTemplates();
   } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除模板失败')
+    if (error !== "cancel") {
+      ElMessage.error("删除模板失败");
     }
   }
-}
+};
 
 const resetForm = () => {
-  editingTemplate.value = null
+  editingTemplate.value = null;
   Object.assign(templateForm, {
-    name: '',
-    description: '',
-    category: '',
-    template_type: '',
-    title_template: '',
-    content_template: '',
+    name: "",
+    description: "",
+    category: "",
+    template_type: "",
+    title_template: "",
+    content_template: "",
     variables: [],
-    variable_descriptions: {}
-  })
-  
+    variable_descriptions: {},
+  });
+
   // 重置表单验证
   if (templateFormRef.value) {
-    templateFormRef.value.clearValidate()
+    templateFormRef.value.clearValidate();
   }
-}
+};
 
 const getTemplateTypeColor = (type) => {
   const colors = {
-    email: 'primary',
-    sms: 'success',
-    dingtalk: 'warning',
-    wechat: 'info',
-    webhook: 'danger'
-  }
-  return colors[type] || ''
-}
+    email: "primary",
+    sms: "success",
+    dingtalk: "warning",
+    wechat: "info",
+    webhook: "danger",
+  };
+  return colors[type] || "";
+};
 
 const generateTestVariables = () => {
   // 生成测试变量数据
   const testVariables = {
-    alert_name: 'CPU使用率告警',
-    severity: 'warning',
-    resource_name: '服务器-01',
-    current_value: '85%',
-    threshold: '80%',
-    triggered_at: '2024-01-15 10:30:00',
-    description: 'CPU使用率超过阈值，请及时处理',
-    node_name: '节点-01',
-    client_name: '客户端-01',
-    storage_name: '存储-01'
-  }
-  
+    alert_name: "CPU使用率告警",
+    severity: "warning",
+    resource_name: "服务器-01",
+    current_value: "85%",
+    threshold: "80%",
+    triggered_at: "2024-01-15 10:30:00",
+    description: "CPU使用率超过阈值，请及时处理",
+    node_name: "节点-01",
+    client_name: "客户端-01",
+    storage_name: "存储-01",
+  };
+
   // 更新预览
-  updatePreview(testVariables)
-}
+  updatePreview(testVariables);
+};
 
 const updatePreview = (variables) => {
-  let title = templateForm.title_template
-  let content = templateForm.content_template
-  
+  let title = templateForm.title_template;
+  let content = templateForm.content_template;
+
   // 替换变量
   for (const [key, value] of Object.entries(variables)) {
-    const placeholder = `{${key}}`
-    title = title.replace(new RegExp(placeholder, 'g'), value)
-    content = content.replace(new RegExp(placeholder, 'g'), value)
+    const placeholder = `{${key}}`;
+    title = title.replace(new RegExp(placeholder, "g"), value);
+    content = content.replace(new RegExp(placeholder, "g"), value);
   }
-  
-  previewData.title = title
-  previewData.content = content
-}
+
+  previewData.title = title;
+  previewData.content = content;
+};
 
 const formatDate = (date) => {
-  if (!date) return '-'
-  return new Date(date).toLocaleString('zh-CN')
-}
+  if (!date) return "-";
+  return new Date(date).toLocaleString("zh-CN");
+};
 
 // 监听器
-watch([() => templateForm.title_template, () => templateForm.content_template], () => {
-  if (templateForm.title_template || templateForm.content_template) {
-    generateTestVariables()
-  }
-}, { deep: true })
+watch(
+  [() => templateForm.title_template, () => templateForm.content_template],
+  () => {
+    if (templateForm.title_template || templateForm.content_template) {
+      generateTestVariables();
+    }
+  },
+  { deep: true }
+);
 
 // 生命周期
 onMounted(() => {
-  loadTemplates()
-})
+  loadTemplates();
+});
 </script>
 
 <style scoped>
@@ -811,4 +811,4 @@ onMounted(() => {
   font-family: monospace;
   line-height: 1.6;
 }
-</style> 
+</style>

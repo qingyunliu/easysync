@@ -14,17 +14,14 @@
             <el-form-item prop="email">
               <el-input v-model="form.email" :placeholder="$t('auth.enterRegisteredEmail')">
                 <template #prefix>
-                  <el-icon><Message /></el-icon>
+                  <el-icon>
+                    <Message />
+                  </el-icon>
                 </template>
               </el-input>
             </el-form-item>
             <el-form-item>
-              <el-button 
-                type="primary" 
-                native-type="submit"
-                :loading="loading" 
-                class="forgot-btn"
-              >
+              <el-button type="primary" native-type="submit" :loading="loading" class="forgot-btn">
                 {{ $t('auth.sendResetEmail') }}
               </el-button>
             </el-form-item>
@@ -88,6 +85,7 @@ const handleSubmit = async () => {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   overflow: hidden;
 }
+
 .forgot-background {
   position: relative;
   width: 100%;
@@ -96,6 +94,7 @@ const handleSubmit = async () => {
   justify-content: center;
   align-items: center;
 }
+
 .forgot-background::before {
   content: '';
   position: absolute;
@@ -107,6 +106,7 @@ const handleSubmit = async () => {
   opacity: 0.1;
   z-index: 0;
 }
+
 .forgot-content {
   position: relative;
   z-index: 1;
@@ -117,6 +117,7 @@ const handleSubmit = async () => {
   flex-direction: column;
   align-items: center;
 }
+
 .forgot-header {
   width: 100%;
   text-align: center;
@@ -124,17 +125,21 @@ const handleSubmit = async () => {
   color: white;
   animation: fadeInDown 1s ease;
 }
+
 .forgot-logo {
   width: 80%;
   margin: 0 auto;
 }
+
 .forgot-logo img {
   width: 280px;
 }
+
 .forgot-logo p {
   font-size: 18px;
   opacity: 0.9;
 }
+
 .forgot-card {
   width: 100%;
   border-radius: 10px;
@@ -144,49 +149,58 @@ const handleSubmit = async () => {
   text-align: center;
   padding: 40px 20px 32px 20px;
 }
+
 .forgot-card h2 {
   margin: 16px 0 12px 0;
   color: #409EFF;
 }
+
 .forgot-btn {
   width: 100%;
   height: 44px;
   font-size: 16px;
   border-radius: 8px;
 }
+
 .login-link {
   text-align: center;
   margin-top: 20px;
   color: #666;
 }
+
 .login-link a {
   color: #409EFF;
   text-decoration: none;
   font-weight: 500;
   transition: all 0.3s ease;
 }
+
 .login-link a:hover {
   color: #66b1ff;
   text-decoration: underline;
 }
+
 @keyframes fadeInDown {
   from {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-</style> 
+</style>

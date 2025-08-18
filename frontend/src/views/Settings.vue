@@ -3,7 +3,7 @@
     <div class="header">
       <h2>{{ $t('settings.pageTitle') }}</h2>
     </div>
-    
+
     <el-tabs v-model="activeTab">
       <el-tab-pane :label="$t('settings.basicSettings')" name="basic">
         <el-card class="settings-card">
@@ -12,47 +12,30 @@
               <span>{{ $t('settings.basicSettings') }}</span>
             </div>
           </template>
-          
-          <el-form
-            ref="basicFormRef"
-            :model="settings"
-            :rules="basicRules"
-            label-width="180px"
-          >
+
+          <el-form ref="basicFormRef" :model="settings" :rules="basicRules" label-width="180px">
             <el-form-item :label="$t('settings.maxConcurrentTasks')" prop="max_concurrent_tasks">
-              <el-input-number
-                v-model="settings.max_concurrent_tasks"
-                :min="1"
-                :max="20"
-              />
+              <el-input-number v-model="settings.max_concurrent_tasks" :min="1" :max="20" />
               <div class="form-tip">{{ $t('settings.maxConcurrentTasksTip') }}</div>
             </el-form-item>
-            
+
             <el-form-item :label="$t('settings.defaultRetryCount')" prop="default_retry_count">
-              <el-input-number
-                v-model="settings.default_retry_count"
-                :min="0"
-                :max="10"
-              />
+              <el-input-number v-model="settings.default_retry_count" :min="0" :max="10" />
               <div class="form-tip">{{ $t('settings.defaultRetryCountTip') }}</div>
             </el-form-item>
-            
+
             <el-form-item :label="$t('settings.defaultRetryDelay')" prop="default_retry_delay">
-              <el-input-number
-                v-model="settings.default_retry_delay"
-                :min="1"
-                :max="3600"
-              />
+              <el-input-number v-model="settings.default_retry_delay" :min="1" :max="3600" />
               <div class="form-tip">{{ $t('settings.defaultRetryDelayTip') }}</div>
             </el-form-item>
-            
+
             <el-form-item>
               <el-button type="primary" @click="handleSubmit">{{ $t('settings.saveSettings') }}</el-button>
             </el-form-item>
           </el-form>
         </el-card>
       </el-tab-pane>
-      
+
       <el-tab-pane :label="$t('settings.logSettings')" name="logs">
         <el-card class="settings-card">
           <template #header>
@@ -60,22 +43,13 @@
               <span>{{ $t('settings.logSettings') }}</span>
             </div>
           </template>
-          
-          <el-form
-            ref="logsFormRef"
-            :model="settings"
-            :rules="logsRules"
-            label-width="180px"
-          >
+
+          <el-form ref="logsFormRef" :model="settings" :rules="logsRules" label-width="180px">
             <el-form-item :label="$t('settings.logRetentionDays')" prop="log_retention_days">
-              <el-input-number
-                v-model="settings.log_retention_days"
-                :min="1"
-                :max="365"
-              />
+              <el-input-number v-model="settings.log_retention_days" :min="1" :max="365" />
               <div class="form-tip">{{ $t('settings.logRetentionDaysTip') }}</div>
             </el-form-item>
-            
+
             <el-form-item :label="$t('settings.logLevel')" prop="log_level">
               <el-select v-model="settings.log_level">
                 <el-option label="DEBUG" value="DEBUG" />
@@ -86,12 +60,12 @@
               </el-select>
               <div class="form-tip">{{ $t('settings.logLevelTip') }}</div>
             </el-form-item>
-            
+
             <el-form-item :label="$t('settings.logFilePath')" prop="log_file_path">
               <el-input v-model="settings.log_file_path" />
               <div class="form-tip">{{ $t('settings.logFilePathTip') }}</div>
             </el-form-item>
-            
+
             <el-form-item>
               <el-button type="primary" @click="handleSubmit">{{ $t('settings.saveSettings') }}</el-button>
               <el-button @click="clearLogs">{{ $t('settings.clearLogs') }}</el-button>
@@ -99,18 +73,23 @@
           </el-form>
         </el-card>
       </el-tab-pane>
-      
+
       <el-tab-pane :label="$t('settings.notificationSettings')" name="notifications">
         <div class="notify-section">
           <!-- 邮件通知分组 -->
           <div class="notify-group-title clickable" @click="toggleCollapse('email')">
             <span class="notify-bar email"></span>
-            <el-icon><Message /></el-icon>
+            <el-icon>
+              <Message />
+            </el-icon>
             <span class="notify-title">{{ $t('settings.emailNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.email.editing" type="text" @click.stop="startEdit('email')">{{ $t('settings.edit') }}</el-button>
+            <el-button v-if="!notifyStates.email.editing" type="text" @click.stop="startEdit('email')">{{
+              $t('settings.edit')
+              }}</el-button>
             <template v-else>
-              <el-button type="primary" size="small" @click.stop="saveEdit('email')" :loading="saving" :disabled="!notifyStates.email.testPassed || saving">{{ $t('settings.save') }}</el-button>
+              <el-button type="primary" size="small" @click.stop="saveEdit('email')" :loading="saving"
+                :disabled="!notifyStates.email.testPassed || saving">{{ $t('settings.save') }}</el-button>
               <el-button size="small" @click.stop="cancelEdit('email')">{{ $t('settings.cancel') }}</el-button>
             </template>
             <el-icon :class="notifyStates.email.collapsed ? 'collapse-arrow collapsed' : 'collapse-arrow'">
@@ -118,15 +97,13 @@
             </el-icon>
           </div>
           <div class="notify-switch-row">
-            <el-switch
-              v-model="settings.email_enabled"
-              :disabled="!notifyStates.email.editing"
-              :class="{ 'switch-disabled': !notifyStates.email.editing }"
-            />
+            <el-switch v-model="settings.email_enabled" :disabled="!notifyStates.email.editing"
+              :class="{ 'switch-disabled': !notifyStates.email.editing }" />
             <span class="notify-switch-label">{{ $t('settings.enableEmailNotification') }}</span>
           </div>
           <el-card v-show="!notifyStates.email.collapsed && settings.email_enabled">
-            <el-form :model="settings" ref="emailForm" :rules="emailRules" label-width="120px" class="notify-form-col" :disabled="!notifyStates.email.editing">
+            <el-form :model="settings" ref="emailForm" :rules="emailRules" label-width="120px" class="notify-form-col"
+              :disabled="!notifyStates.email.editing">
               <el-form-item :label="$t('settings.smtpHost')" prop="smtp_host">
                 <el-input v-model="settings.smtp_host" :placeholder="$t('settings.placeholders.smtpHost')" />
               </el-form-item>
@@ -137,7 +114,8 @@
                 <el-input v-model="settings.smtp_username" :placeholder="$t('settings.placeholders.username')" />
               </el-form-item>
               <el-form-item :label="$t('settings.smtpPassword')" prop="smtp_password">
-                <el-input v-model="settings.smtp_password" type="password" show-password :placeholder="$t('settings.placeholders.password')" />
+                <el-input v-model="settings.smtp_password" type="password" show-password
+                  :placeholder="$t('settings.placeholders.password')" />
               </el-form-item>
               <el-form-item :label="$t('settings.senderEmail')" prop="email">
                 <el-input v-model="settings.email" :placeholder="$t('settings.placeholders.senderEmail')" />
@@ -150,12 +128,17 @@
           <!-- 短信通知分组 -->
           <div class="notify-group-title clickable" @click="toggleCollapse('sms')">
             <span class="notify-bar sms"></span>
-            <el-icon><Iphone /></el-icon>
+            <el-icon>
+              <Iphone />
+            </el-icon>
             <span class="notify-title">{{ $t('settings.smsNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.sms.editing" type="text" @click.stop="startEdit('sms')">{{ $t('settings.edit') }}</el-button>
+            <el-button v-if="!notifyStates.sms.editing" type="text" @click.stop="startEdit('sms')">{{
+              $t('settings.edit')
+              }}</el-button>
             <template v-else>
-              <el-button type="primary" size="small" @click.stop="saveEdit('sms')" :loading="saving" :disabled="!notifyStates.sms.testPassed || saving">{{ $t('settings.save') }}</el-button>
+              <el-button type="primary" size="small" @click.stop="saveEdit('sms')" :loading="saving"
+                :disabled="!notifyStates.sms.testPassed || saving">{{ $t('settings.save') }}</el-button>
               <el-button size="small" @click.stop="cancelEdit('sms')">{{ $t('settings.cancel') }}</el-button>
             </template>
             <el-icon :class="notifyStates.sms.collapsed ? 'collapse-arrow collapsed' : 'collapse-arrow'">
@@ -163,23 +146,23 @@
             </el-icon>
           </div>
           <div class="notify-switch-row">
-            <el-switch 
-              v-model="settings.sms_enabled"
-              :disabled="!notifyStates.sms.editing"
-              :class="{ 'switch-disabled': !notifyStates.sms.editing }"
-            />
+            <el-switch v-model="settings.sms_enabled" :disabled="!notifyStates.sms.editing"
+              :class="{ 'switch-disabled': !notifyStates.sms.editing }" />
             <span class="notify-switch-label">{{ $t('settings.enableSmsNotification') }}</span>
           </div>
           <el-card v-show="!notifyStates.sms.collapsed && settings.sms_enabled">
-            <el-form :model="settings" ref="smsForm" :rules="smsRules" label-width="120px" class="notify-form-col" :disabled="!notifyStates.sms.editing">
+            <el-form :model="settings" ref="smsForm" :rules="smsRules" label-width="120px" class="notify-form-col"
+              :disabled="!notifyStates.sms.editing">
               <el-form-item :label="$t('settings.smsProvider')" prop="sms_provider">
-                <el-select v-model="settings.sms_provider" :placeholder="$t('settings.selectProvider')" style="width: 100%">
+                <el-select v-model="settings.sms_provider" :placeholder="$t('settings.selectProvider')"
+                  style="width: 100%">
                   <el-option :label="$t('settings.providers.aliyun')" value="aliyun" />
                   <el-option :label="$t('settings.providers.tencent')" value="tencent" />
                 </el-select>
               </el-form-item>
               <el-form-item :label="$t('settings.smsApiKey')" prop="sms_api_key">
-                <el-input v-model="settings.sms_api_key" type="password" show-password :placeholder="$t('settings.placeholders.apiKey')" />
+                <el-input v-model="settings.sms_api_key" type="password" show-password
+                  :placeholder="$t('settings.placeholders.apiKey')" />
               </el-form-item>
               <el-form-item :label="$t('settings.smsTemplateId')" prop="sms_template_id">
                 <el-input v-model="settings.sms_template_id" :placeholder="$t('settings.placeholders.smsTemplateId')" />
@@ -195,12 +178,16 @@
           <!-- 钉钉通知分组 -->
           <div class="notify-group-title clickable" @click="toggleCollapse('dingtalk')">
             <span class="notify-bar dingtalk"></span>
-            <el-icon><ChatDotRound /></el-icon>
+            <el-icon>
+              <ChatDotRound />
+            </el-icon>
             <span class="notify-title">{{ $t('settings.dingtalkNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.dingtalk.editing" type="text" @click.stop="startEdit('dingtalk')">{{ $t('settings.edit') }}</el-button>
+            <el-button v-if="!notifyStates.dingtalk.editing" type="text" @click.stop="startEdit('dingtalk')">{{
+              $t('settings.edit') }}</el-button>
             <template v-else>
-              <el-button type="primary" size="small" @click.stop="saveEdit('dingtalk')" :loading="saving" :disabled="!notifyStates.dingtalk.testPassed || saving">{{ $t('settings.save') }}</el-button>
+              <el-button type="primary" size="small" @click.stop="saveEdit('dingtalk')" :loading="saving"
+                :disabled="!notifyStates.dingtalk.testPassed || saving">{{ $t('settings.save') }}</el-button>
               <el-button size="small" @click.stop="cancelEdit('dingtalk')">{{ $t('settings.cancel') }}</el-button>
             </template>
             <el-icon :class="notifyStates.dingtalk.collapsed ? 'collapse-arrow collapsed' : 'collapse-arrow'">
@@ -208,20 +195,20 @@
             </el-icon>
           </div>
           <div class="notify-switch-row">
-            <el-switch 
-              v-model="settings.dingtalk_enabled"
-              :disabled="!notifyStates.dingtalk.editing"
-              :class="{ 'switch-disabled': !notifyStates.dingtalk.editing }"
-            />
+            <el-switch v-model="settings.dingtalk_enabled" :disabled="!notifyStates.dingtalk.editing"
+              :class="{ 'switch-disabled': !notifyStates.dingtalk.editing }" />
             <span class="notify-switch-label">{{ $t('settings.enableDingtalkNotification') }}</span>
           </div>
           <el-card v-show="!notifyStates.dingtalk.collapsed && settings.dingtalk_enabled">
-            <el-form :model="settings" ref="dingtalkForm" :rules="dingtalkRules" label-width="120px" class="notify-form-col" :disabled="!notifyStates.dingtalk.editing">
+            <el-form :model="settings" ref="dingtalkForm" :rules="dingtalkRules" label-width="120px"
+              class="notify-form-col" :disabled="!notifyStates.dingtalk.editing">
               <el-form-item :label="$t('settings.dingtalkWebhook')" prop="dingtalk_webhook">
-                <el-input v-model="settings.dingtalk_webhook" :placeholder="$t('settings.placeholders.dingtalkWebhook')" />
+                <el-input v-model="settings.dingtalk_webhook"
+                  :placeholder="$t('settings.placeholders.dingtalkWebhook')" />
               </el-form-item>
               <el-form-item :label="$t('settings.dingtalkSecret')" prop="dingtalk_secret">
-                <el-input v-model="settings.dingtalk_secret" type="password" show-password :placeholder="$t('settings.placeholders.dingtalkSecret')" />
+                <el-input v-model="settings.dingtalk_secret" type="password" show-password
+                  :placeholder="$t('settings.placeholders.dingtalkSecret')" />
               </el-form-item>
             </el-form>
             <div class="notify-actions-bar">
@@ -231,12 +218,16 @@
           <!-- Webhook通知分组 -->
           <div class="notify-group-title clickable" @click="toggleCollapse('webhook')">
             <span class="notify-bar webhook"></span>
-            <el-icon><Link /></el-icon>
+            <el-icon>
+              <Link />
+            </el-icon>
             <span class="notify-title">{{ $t('settings.webhookNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.webhook.editing" type="text" @click.stop="startEdit('webhook')">{{ $t('settings.edit') }}</el-button>
+            <el-button v-if="!notifyStates.webhook.editing" type="text" @click.stop="startEdit('webhook')">{{
+              $t('settings.edit') }}</el-button>
             <template v-else>
-              <el-button type="primary" size="small" @click.stop="saveEdit('webhook')" :loading="saving" :disabled="!notifyStates.webhook.testPassed || saving">{{ $t('settings.save') }}</el-button>
+              <el-button type="primary" size="small" @click.stop="saveEdit('webhook')" :loading="saving"
+                :disabled="!notifyStates.webhook.testPassed || saving">{{ $t('settings.save') }}</el-button>
               <el-button size="small" @click.stop="cancelEdit('webhook')">{{ $t('settings.cancel') }}</el-button>
             </template>
             <el-icon :class="notifyStates.webhook.collapsed ? 'collapse-arrow collapsed' : 'collapse-arrow'">
@@ -244,20 +235,19 @@
             </el-icon>
           </div>
           <div class="notify-switch-row">
-            <el-switch 
-              v-model="settings.webhook_enabled"
-              :disabled="!notifyStates.webhook.editing"
-              :class="{ 'switch-disabled': !notifyStates.webhook.editing }"
-            />
+            <el-switch v-model="settings.webhook_enabled" :disabled="!notifyStates.webhook.editing"
+              :class="{ 'switch-disabled': !notifyStates.webhook.editing }" />
             <span class="notify-switch-label">{{ $t('settings.enableWebhookNotification') }}</span>
           </div>
           <el-card v-show="!notifyStates.webhook.collapsed && settings.webhook_enabled">
-            <el-form :model="settings" ref="webhookForm" :rules="webhookRules" label-width="120px" class="notify-form-col" :disabled="!notifyStates.webhook.editing">
+            <el-form :model="settings" ref="webhookForm" :rules="webhookRules" label-width="120px"
+              class="notify-form-col" :disabled="!notifyStates.webhook.editing">
               <el-form-item :label="$t('settings.webhookUrl')" prop="webhook_url">
                 <el-input v-model="settings.webhook_url" :placeholder="$t('settings.placeholders.webhookUrl')" />
               </el-form-item>
               <el-form-item :label="$t('settings.webhookSecret')" prop="webhook_secret">
-                <el-input v-model="settings.webhook_secret" type="password" show-password :placeholder="$t('settings.placeholders.webhookSecret')" />
+                <el-input v-model="settings.webhook_secret" type="password" show-password
+                  :placeholder="$t('settings.placeholders.webhookSecret')" />
               </el-form-item>
             </el-form>
             <div class="notify-actions-bar">
@@ -540,8 +530,8 @@ const handleSubmit = async () => {
     ElMessage.error(t('settings.messages.saveSettingsFailed'))
   } finally {
     saving.value = false
-    }
   }
+}
 
 function handleTest(type) {
   let formRef = null
@@ -643,8 +633,8 @@ const handleNotifySubmit = () => {
     saving.value = true
     try {
       await axios.put('/api/settings', settings.value)
-    ElMessage.success(t('settings.messages.notificationSettingsSaved'))
-  } catch (error) {
+      ElMessage.success(t('settings.messages.notificationSettingsSaved'))
+    } catch (error) {
       ElMessage.error(t('settings.messages.saveNotificationSettingsFailed'))
     } finally {
       saving.value = false
@@ -805,17 +795,17 @@ onMounted(() => {
   .settings-container {
     padding: 16px;
   }
-  
+
   .settings-header {
     flex-direction: column;
     gap: 16px;
     text-align: center;
   }
-  
+
   .action-section {
     flex-direction: column;
   }
-  
+
   .action-section .el-button {
     width: 100%;
   }
@@ -827,6 +817,7 @@ onMounted(() => {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -837,18 +828,34 @@ onMounted(() => {
   animation: fadeInUp 0.5s ease-out;
 }
 
-.notification-card:nth-child(1) { animation-delay: 0.1s; }
-.notification-card:nth-child(2) { animation-delay: 0.2s; }
-.notification-card:nth-child(3) { animation-delay: 0.3s; }
-.notification-card:nth-child(4) { animation-delay: 0.4s; }
-.notification-card:nth-child(5) { animation-delay: 0.5s; }
+.notification-card:nth-child(1) {
+  animation-delay: 0.1s;
+}
+
+.notification-card:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.notification-card:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.notification-card:nth-child(4) {
+  animation-delay: 0.4s;
+}
+
+.notification-card:nth-child(5) {
+  animation-delay: 0.5s;
+}
+
 .notify-form {
   max-width: 1100px;
   margin: 0 auto;
 }
+
 .notify-card {
   border-radius: 16px;
-  box-shadow: 0 2px 16px 0 rgba(64,158,255,0.06);
+  box-shadow: 0 2px 16px 0 rgba(64, 158, 255, 0.06);
   margin-bottom: 18px;
   transition: box-shadow 0.2s, opacity 0.2s;
   min-height: 260px;
@@ -856,10 +863,12 @@ onMounted(() => {
   border: 1px solid var(--border-color);
   position: relative;
 }
+
 .notify-card.disabled {
   opacity: 0.5;
   pointer-events: none;
 }
+
 .card-header {
   display: flex;
   align-items: center;
@@ -868,19 +877,22 @@ onMounted(() => {
   font-size: 16px;
   color: var(--text-color);
 }
+
 .notify-actions {
   display: flex;
   justify-content: center;
   gap: 24px;
   margin: 32px 0 0 0;
 }
+
 .notify-section {
   background: var(--card-bg);
   border-radius: 16px;
-  box-shadow: 0 2px 16px 0 rgba(64,158,255,0.06);
+  box-shadow: 0 2px 16px 0 rgba(64, 158, 255, 0.06);
   padding: 32px 32px 24px 32px;
   margin-bottom: 32px;
 }
+
 .notify-group-title {
   display: flex;
   align-items: center;
@@ -889,6 +901,7 @@ onMounted(() => {
   margin: 32px 0 12px 0;
   gap: 10px;
 }
+
 .notify-bar {
   width: 4px;
   height: 22px;
@@ -896,50 +909,78 @@ onMounted(() => {
   display: inline-block;
   margin-right: 8px;
 }
-.notify-bar.email { background: #409EFF; }
-.notify-bar.wechat { background: #07c160; }
-.notify-bar.event { background: #faad14; }
-.notify-bar.sms { background: #ff9800; }
-.notify-bar.dingtalk { background: #409EFF; }
-.notify-bar.webhook { background: #13c2c2; }
+
+.notify-bar.email {
+  background: #409EFF;
+}
+
+.notify-bar.wechat {
+  background: #07c160;
+}
+
+.notify-bar.event {
+  background: #faad14;
+}
+
+.notify-bar.sms {
+  background: #ff9800;
+}
+
+.notify-bar.dingtalk {
+  background: #409EFF;
+}
+
+.notify-bar.webhook {
+  background: #13c2c2;
+}
+
 .notify-title {
   margin-right: 16px;
 }
+
 .notify-switch {
   margin-left: auto;
 }
+
 .notify-switch-label {
   margin-left: 8px;
   color: #888;
   font-size: 14px;
 }
+
 .notify-card {
   border-radius: 12px;
-  box-shadow: 0 2px 8px 0 rgba(64,158,255,0.06);
+  box-shadow: 0 2px 8px 0 rgba(64, 158, 255, 0.06);
   margin-bottom: 18px;
   border: 1px solid #f0f0f0;
   background: #fff;
   transition: box-shadow 0.2s, opacity 0.2s;
 }
+
 .notify-card.disabled {
   opacity: 0.5;
   pointer-events: none;
 }
+
 .notify-form-row {
   padding: 12px 0 0 0;
 }
+
 .event-card {
   background: #fafbfc;
   border: 1px solid #f0f0f0;
 }
+
 .event-row {
   padding: 12px 0 0 0;
 }
+
 .event-label {
   font-size: 15px;
   color: #333;
   margin-right: 12px;
 }
+
 .notify-actions-bar {
   display: flex;
   justify-content: flex-end;
@@ -947,24 +988,41 @@ onMounted(() => {
   margin: 32px 0 0 0;
   padding-bottom: 8px;
 }
+
 .notify-form-col {
   padding: 12px 0 0 0;
   display: flex;
   flex-direction: column;
   gap: 0;
 }
-.flex-spacer { flex: 1; }
-.clickable { cursor: pointer; user-select: none; }
-.collapse-arrow { transition: transform 0.2s; margin-left: 8px; }
-.collapse-arrow.collapsed { transform: rotate(-90deg); }
+
+.flex-spacer {
+  flex: 1;
+}
+
+.clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.collapse-arrow {
+  transition: transform 0.2s;
+  margin-left: 8px;
+}
+
+.collapse-arrow.collapsed {
+  transform: rotate(-90deg);
+}
+
 .notify-switch-row {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 8px 0 16px 0;
 }
+
 .switch-disabled {
   opacity: 0.5;
   pointer-events: none;
 }
-</style> 
+</style>

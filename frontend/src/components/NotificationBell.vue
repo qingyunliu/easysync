@@ -1,22 +1,12 @@
 <template>
   <div class="notification-bell">
-    <el-popover
-      placement="bottom-end"
-      :width="360"
-      trigger="click"
-      popper-class="notification-popover"
-      @show="onShow"
-    >
+    <el-popover placement="bottom-end" :width="360" trigger="click" popper-class="notification-popover" @show="onShow">
       <template #reference>
         <div class="bell-container" @click="handleBellClick">
           <el-icon class="bell-icon" :class="{ shake: hasUnread }">
             <Bell />
           </el-icon>
-          <el-badge 
-            v-if="unreadCount > 0" 
-            :value="unreadCount > 99 ? '99+' : unreadCount" 
-            class="notification-badge"
-          />
+          <el-badge v-if="unreadCount > 0" :value="unreadCount > 99 ? '99+' : unreadCount" class="notification-badge" />
         </div>
       </template>
 
@@ -27,12 +17,7 @@
             <span class="unread-count" v-if="unreadCount > 0">({{ unreadCount }}条未读)</span>
           </div>
           <div class="header-actions">
-            <el-button 
-              type="text" 
-              size="small" 
-              @click="markAllAsRead"
-              v-if="unreadCount > 0"
-            >
+            <el-button type="text" size="small" @click="markAllAsRead" v-if="unreadCount > 0">
               全部已读
             </el-button>
           </div>
@@ -42,18 +27,15 @@
 
         <div class="notification-list" v-loading="loading">
           <div v-if="notifications.length === 0" class="empty-state">
-            <el-icon class="empty-icon"><ChatDotSquare /></el-icon>
+            <el-icon class="empty-icon">
+              <ChatDotSquare />
+            </el-icon>
             <p class="empty-text">暂无通知</p>
           </div>
 
           <div v-else class="notification-items">
-            <div
-              v-for="notification in notifications"
-              :key="notification.id"
-              class="notification-item"
-              :class="{ unread: !notification.is_read }"
-              @click="handleNotificationClick(notification)"
-            >
+            <div v-for="notification in notifications" :key="notification.id" class="notification-item"
+              :class="{ unread: !notification.is_read }" @click="handleNotificationClick(notification)">
               <div class="item-icon">
                 <el-icon :style="{ color: getNotificationColor(notification.level) }">
                   <component :is="getNotificationIcon(notification.type)" />
@@ -65,23 +47,18 @@
                 <div class="item-message">{{ notification.content || notification.message }}</div>
                 <div class="item-meta">
                   <span class="item-time">{{ formatRelativeTime(notification.created_at) }}</span>
-                  <el-tag 
-                    :type="getNotificationTagType(notification.level)" 
-                    size="small"
-                  >
+                  <el-tag :type="getNotificationTagType(notification.level)" size="small">
                     {{ getNotificationLevelText(notification.level) }}
                   </el-tag>
                 </div>
               </div>
 
               <div class="item-actions">
-                <el-button 
-                  v-if="!notification.is_read"
-                  type="text" 
-                  size="small"
-                  @click.stop="markAsRead(notification.id)"
-                >
-                  <el-icon><Check /></el-icon>
+                <el-button v-if="!notification.is_read" type="text" size="small"
+                  @click.stop="markAsRead(notification.id)">
+                  <el-icon>
+                    <Check />
+                  </el-icon>
                 </el-button>
               </div>
             </div>
@@ -91,12 +68,7 @@
         <el-divider style="margin: 12px 0;" />
 
         <div class="notification-footer">
-          <el-button 
-            type="text" 
-            size="small"
-            @click="viewAll"
-            class="view-all-btn"
-          >
+          <el-button type="text" size="small" @click="viewAll" class="view-all-btn">
             查看全部通知
           </el-button>
         </div>
@@ -249,13 +221,13 @@ const markAllAsRead = async () => {
     const unreadIds = notifications.value
       .filter(n => !n.is_read)
       .map(n => n.id)
-    
+
     await Promise.all(unreadIds.map(id => axios.post(`/api/notifications/${id}/read`)))
-    
+
     notifications.value.forEach(n => {
       n.is_read = true
     })
-    
+
     ElMessage.success('全部标记已读成功')
   } catch (error) {
     ElMessage.error('标记已读失败')
@@ -307,13 +279,20 @@ onMounted(() => {
 }
 
 @keyframes shake {
-  0%, 50%, 100% {
+
+  0%,
+  50%,
+  100% {
     transform: rotate(0deg);
   }
-  10%, 30% {
+
+  10%,
+  30% {
     transform: rotate(-8deg);
   }
-  20%, 40% {
+
+  20%,
+  40% {
     transform: rotate(8deg);
   }
 }
@@ -396,7 +375,7 @@ onMounted(() => {
 
 .notification-item.unread {
   background: #f0f9ff;
-  
+
   &::before {
     content: '';
     position: absolute;

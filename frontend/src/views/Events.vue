@@ -8,15 +8,21 @@
       </div>
       <div class="header-right">
         <el-button type="primary" @click="refreshEvents" :loading="loading">
-          <el-icon><Refresh /></el-icon>
+          <el-icon>
+            <Refresh />
+          </el-icon>
           {{ $t('events.refreshData') }}
         </el-button>
         <el-button @click="exportEvents">
-          <el-icon><Download /></el-icon>
+          <el-icon>
+            <Download />
+          </el-icon>
           {{ $t('events.exportData') }}
         </el-button>
         <el-button @click="cleanupEvents">
-          <el-icon><Delete /></el-icon>
+          <el-icon>
+            <Delete />
+          </el-icon>
           {{ $t('events.cleanupEvents') }}
         </el-button>
       </div>
@@ -28,7 +34,9 @@
         <el-card class="stats-card">
           <div class="stats-content">
             <div class="stats-icon">
-              <el-icon><DataAnalysis /></el-icon>
+              <el-icon>
+                <DataAnalysis />
+              </el-icon>
             </div>
             <div class="stats-info">
               <div class="stats-value">{{ statistics.total_events || 0 }}</div>
@@ -37,12 +45,14 @@
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="6">
         <el-card class="stats-card">
           <div class="stats-content">
             <div class="stats-icon">
-              <el-icon><Warning /></el-icon>
+              <el-icon>
+                <Warning />
+              </el-icon>
             </div>
             <div class="stats-info">
               <div class="stats-value">{{ statistics.event_results?.failed || 0 }}</div>
@@ -51,12 +61,14 @@
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="6">
         <el-card class="stats-card">
           <div class="stats-content">
             <div class="stats-icon">
-              <el-icon><Bell /></el-icon>
+              <el-icon>
+                <Bell />
+              </el-icon>
             </div>
             <div class="stats-info">
               <div class="stats-value">{{ alertStatistics.total_alerts || 0 }}</div>
@@ -65,12 +77,14 @@
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="6">
         <el-card class="stats-card">
           <div class="stats-content">
             <div class="stats-icon">
-              <el-icon><TrendCharts /></el-icon>
+              <el-icon>
+                <TrendCharts />
+              </el-icon>
             </div>
             <div class="stats-info">
               <div class="stats-value">{{ statistics.today_events || 0 }}</div>
@@ -86,12 +100,8 @@
       <div class="filter-content">
         <el-row :gutter="20">
           <el-col :span="6">
-            <el-select 
-              v-model="filters.event_type" 
-              :placeholder="$t('events.selectEventType')" 
-              clearable
-              @change="handleFilterChange"
-            >
+            <el-select v-model="filters.event_type" :placeholder="$t('events.selectEventType')" clearable
+              @change="handleFilterChange">
               <el-option :label="$t('events.allTypes')" value="" />
               <el-option :label="$t('events.storageEvent')" value="storage" />
               <el-option :label="$t('events.clientEvent')" value="client" />
@@ -99,14 +109,10 @@
               <el-option :label="$t('events.systemEvent')" value="system" />
             </el-select>
           </el-col>
-          
+
           <el-col :span="6">
-            <el-select 
-              v-model="filters.event_action" 
-              :placeholder="$t('events.selectEventAction')" 
-              clearable
-              @change="handleFilterChange"
-            >
+            <el-select v-model="filters.event_action" :placeholder="$t('events.selectEventAction')" clearable
+              @change="handleFilterChange">
               <el-option :label="$t('events.allActions')" value="" />
               <el-option :label="$t('events.create')" value="create" />
               <el-option :label="$t('events.update')" value="update" />
@@ -115,14 +121,10 @@
               <el-option :label="$t('events.disconnect')" value="disconnect" />
             </el-select>
           </el-col>
-          
+
           <el-col :span="6">
-            <el-select 
-              v-model="filters.event_result" 
-              :placeholder="$t('events.selectEventResult')" 
-              clearable
-              @change="handleFilterChange"
-            >
+            <el-select v-model="filters.event_result" :placeholder="$t('events.selectEventResult')" clearable
+              @change="handleFilterChange">
               <el-option :label="$t('events.allResults')" value="" />
               <el-option :label="$t('events.success')" value="success" />
               <el-option :label="$t('events.failed')" value="failed" />
@@ -131,21 +133,14 @@
               <el-option :label="$t('events.warning')" value="warning" />
             </el-select>
           </el-col>
-          
+
           <el-col :span="6">
-            <el-date-picker
-              v-model="filters.time_range"
-              type="datetimerange"
-              :range-separator="$t('events.to')"
-              :start-placeholder="$t('events.startTime')"
-              :end-placeholder="$t('events.endTime')"
-              format="YYYY-MM-DD HH:mm:ss"
-              value-format="YYYY-MM-DD HH:mm:ss"
-              @change="handleFilterChange"
-            />
+            <el-date-picker v-model="filters.time_range" type="datetimerange" :range-separator="$t('events.to')"
+              :start-placeholder="$t('events.startTime')" :end-placeholder="$t('events.endTime')"
+              format="YYYY-MM-DD HH:mm:ss" value-format="YYYY-MM-DD HH:mm:ss" @change="handleFilterChange" />
           </el-col>
         </el-row>
-        
+
         <div class="filter-actions">
           <el-button @click="resetFilters">{{ $t('events.resetFilters') }}</el-button>
           <el-button type="primary" @click="loadEvents">{{ $t('events.applyFilters') }}</el-button>
@@ -157,7 +152,9 @@
     <el-card class="events-card">
       <div class="card-header">
         <div class="card-title">
-          <el-icon class="title-icon"><List /></el-icon>
+          <el-icon class="title-icon">
+            <List />
+          </el-icon>
           <span>{{ $t('events.eventList') }}</span>
         </div>
         <div class="card-stats">
@@ -166,13 +163,9 @@
       </div>
 
       <div class="table-container">
-        <el-table 
-          :data="events" 
-          class="events-table"
-          :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--text-color)' }"
-          stripe
-          v-loading="loading"
-        >
+        <el-table :data="events" class="events-table"
+          :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--text-color)' }" stripe
+          v-loading="loading">
           <el-table-column prop="id" :label="$t('events.eventId')" width="280" align="center">
             <template #default="scope">
               <el-tooltip :content="scope.row.id" placement="top">
@@ -180,43 +173,31 @@
               </el-tooltip>
             </template>
           </el-table-column>
-          
+
           <el-table-column prop="event_type" :label="$t('events.eventType')" width="120" align="center">
             <template #default="scope">
-              <el-tag 
-                :type="getEventTypeColor(scope.row.event_type)"
-                effect="light"
-                size="small"
-              >
+              <el-tag :type="getEventTypeColor(scope.row.event_type)" effect="light" size="small">
                 {{ getEventTypeLabel(scope.row.event_type) }}
               </el-tag>
             </template>
           </el-table-column>
-          
+
           <el-table-column prop="event_action" :label="$t('events.eventAction')" width="120" align="center">
             <template #default="scope">
-              <el-tag 
-                :type="getEventActionColor(scope.row.event_action)"
-                effect="light"
-                size="small"
-              >
+              <el-tag :type="getEventActionColor(scope.row.event_action)" effect="light" size="small">
                 {{ getEventActionLabel(scope.row.event_action) }}
               </el-tag>
             </template>
           </el-table-column>
-          
+
           <el-table-column prop="event_result" :label="$t('events.eventResult')" width="100" align="center">
             <template #default="scope">
-              <el-tag 
-                :type="getEventResultColor(scope.row.event_result)"
-                effect="light"
-                size="small"
-              >
+              <el-tag :type="getEventResultColor(scope.row.event_result)" effect="light" size="small">
                 {{ getEventResultLabel(scope.row.event_result) }}
               </el-tag>
             </template>
           </el-table-column>
-          
+
           <el-table-column prop="message" :label="$t('events.eventMessage')" min-width="200">
             <template #default="scope">
               <div class="event-message">
@@ -226,23 +207,21 @@
               </div>
             </template>
           </el-table-column>
-          
+
           <el-table-column :label="$t('events.time')" width="180" align="center">
             <template #default="scope">
               <div class="time-info">
-                <el-icon class="time-icon"><Clock /></el-icon>
+                <el-icon class="time-icon">
+                  <Clock />
+                </el-icon>
                 <span>{{ formatTime(scope.row.timestamp) }}</span>
               </div>
             </template>
           </el-table-column>
-          
+
           <el-table-column :label="$t('events.actions')" width="120" align="center">
             <template #default="scope">
-              <el-button 
-                type="primary" 
-                size="small" 
-                @click="viewEventDetail(scope.row)"
-              >
+              <el-button type="primary" size="small" @click="viewEventDetail(scope.row)">
                 {{ $t('events.details') }}
               </el-button>
             </template>
@@ -252,25 +231,15 @@
 
       <!-- 分页 -->
       <div class="pagination-container">
-        <el-pagination
-          v-model:current-page="pagination.current_page"
-          v-model:page-size="pagination.per_page"
-          :page-sizes="[10, 20, 50, 100]"
-          :total="pagination.total"
-          layout="total, sizes, prev, pager, next, jumper"
-          @size-change="handleSizeChange"
-          @current-change="handleCurrentChange"
-        />
+        <el-pagination v-model:current-page="pagination.current_page" v-model:page-size="pagination.per_page"
+          :page-sizes="[10, 20, 50, 100]" :total="pagination.total" layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange" @current-change="handleCurrentChange" />
       </div>
     </el-card>
 
     <!-- 事件详情对话框 -->
-    <el-dialog
-      v-model="eventDetailVisible"
-      :title="$t('events.eventDetails')"
-      width="800px"
-      :before-close="handleCloseEventDetail"
-    >
+    <el-dialog v-model="eventDetailVisible" :title="$t('events.eventDetails')" width="800px"
+      :before-close="handleCloseEventDetail">
       <div v-if="selectedEvent" class="event-detail">
         <el-descriptions :column="2" border>
           <el-descriptions-item :label="$t('events.eventId')">{{ selectedEvent.id }}</el-descriptions-item>
@@ -290,13 +259,17 @@
             </el-tag>
           </el-descriptions-item>
           <el-descriptions-item :label="$t('events.userId')">{{ selectedEvent.user_id }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('events.clientId')">{{ selectedEvent.client_id || '-' }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('events.clientId')">{{ selectedEvent.client_id || '-'
+            }}</el-descriptions-item>
           <el-descriptions-item :label="$t('events.nodeId')">{{ selectedEvent.node_id || '-' }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('events.createTime')">{{ formatTime(selectedEvent.created_at) }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('events.eventTime')" :span="2">{{ formatTime(selectedEvent.timestamp) }}</el-descriptions-item>
-          <el-descriptions-item :label="$t('events.eventMessage')" :span="2">{{ selectedEvent.message }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('events.createTime')">{{ formatTime(selectedEvent.created_at)
+            }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('events.eventTime')" :span="2">{{ formatTime(selectedEvent.timestamp)
+            }}</el-descriptions-item>
+          <el-descriptions-item :label="$t('events.eventMessage')" :span="2">{{ selectedEvent.message
+            }}</el-descriptions-item>
         </el-descriptions>
-        
+
         <div class="event-details-section">
           <h4>{{ $t('events.detailedInfo') }}</h4>
           <el-card class="details-card">
@@ -307,25 +280,17 @@
     </el-dialog>
 
     <!-- 清理事件对话框 -->
-    <el-dialog
-      v-model="cleanupDialogVisible"
-      :title="$t('events.cleanupEvents')"
-      width="500px"
-    >
+    <el-dialog v-model="cleanupDialogVisible" :title="$t('events.cleanupEvents')" width="500px">
       <div class="cleanup-form">
         <el-form :model="cleanupForm" label-width="120px">
           <el-form-item :label="$t('events.retentionDays')">
-            <el-input-number 
-              v-model="cleanupForm.days" 
-              :min="1" 
-              :max="365"
-              :placeholder="$t('events.enterRetentionDays')"
-            />
+            <el-input-number v-model="cleanupForm.days" :min="1" :max="365"
+              :placeholder="$t('events.enterRetentionDays')" />
             <div class="form-tip">{{ $t('events.cleanupTip') }}</div>
           </el-form-item>
         </el-form>
       </div>
-      
+
       <template #footer>
         <span class="dialog-footer">
           <el-button @click="cleanupDialogVisible = false">{{ $t('common.cancel') }}</el-button>
@@ -342,13 +307,13 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { 
-  Refresh, 
-  Download, 
-  Delete, 
-  DataAnalysis, 
-  Warning, 
-  Bell, 
+import {
+  Refresh,
+  Download,
+  Delete,
+  DataAnalysis,
+  Warning,
+  Bell,
   TrendCharts,
   List,
   Clock
@@ -370,7 +335,7 @@ export default {
   },
   setup() {
     const { t } = useI18n()
-    
+
     // 响应式数据
     const loading = ref(false)
     const events = ref([])
@@ -380,20 +345,20 @@ export default {
     const selectedEvent = ref(null)
     const cleanupDialogVisible = ref(false)
     const cleanupLoading = ref(false)
-    
+
     const filters = reactive({
       event_type: '',
       event_action: '',
       event_result: '',
       time_range: []
     })
-    
+
     const pagination = reactive({
       current_page: 1,
       per_page: 10,
       total: 0
     })
-    
+
     const cleanupForm = reactive({
       days: 30
     })
@@ -407,12 +372,12 @@ export default {
           per_page: pagination.per_page,
           ...filters
         }
-        
+
         if (filters.time_range && filters.time_range.length === 2) {
           params.start_time = filters.time_range[0]
           params.end_time = filters.time_range[1]
         }
-        
+
         const response = await axios.get('/api/events', { params })
         if (response.data.status === 'success') {
           events.value = response.data.events
@@ -510,12 +475,12 @@ export default {
           params.start_time = filters.time_range[0]
           params.end_time = filters.time_range[1]
         }
-        
-        const response = await axios.get('/api/events/export', { 
+
+        const response = await axios.get('/api/events/export', {
           params,
           responseType: 'blob'
         })
-        
+
         const url = window.URL.createObjectURL(new Blob([response.data]))
         const link = document.createElement('a')
         link.href = url
@@ -524,7 +489,7 @@ export default {
         link.click()
         document.body.removeChild(link)
         window.URL.revokeObjectURL(url)
-        
+
         ElMessage.success(t('events.exportSuccess'))
       } catch (error) {
         ElMessage.error(t('events.exportFailed'))
@@ -891,18 +856,18 @@ export default {
     flex-direction: column;
     gap: 16px;
   }
-  
+
   .header-right {
     width: 100%;
     justify-content: flex-start;
   }
-  
+
   .filter-content .el-row {
     margin: 0;
   }
-  
+
   .filter-content .el-col {
     margin-bottom: 12px;
   }
 }
-</style> 
+</style>

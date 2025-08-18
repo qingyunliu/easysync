@@ -15,17 +15,14 @@
             <span>{{ $t('taskParameters.basicInfo') }}</span>
           </div>
         </template>
-        
+
         <div class="collapse-content">
           <el-form :model="form" label-width="120px">
             <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item :label="$t('taskParameters.taskName')" required>
-                  <el-input 
-                    v-model="form.taskName" 
-                    :placeholder="$t('taskParameters.enterTaskName')"
-                    @input="updateModelValue"
-                  />
+                  <el-input v-model="form.taskName" :placeholder="$t('taskParameters.enterTaskName')"
+                    @input="updateModelValue" />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
@@ -59,15 +56,10 @@
                 </el-form-item>
               </el-col>
             </el-row>
-            
+
             <el-form-item :label="$t('taskParameters.taskDescription')">
-              <el-input 
-                v-model="form.description" 
-                type="textarea" 
-                :rows="3"
-                :placeholder="$t('taskParameters.enterTaskDescription')"
-                @input="updateModelValue"
-              />
+              <el-input v-model="form.description" type="textarea" :rows="3"
+                :placeholder="$t('taskParameters.enterTaskDescription')" @input="updateModelValue" />
             </el-form-item>
           </el-form>
         </div>
@@ -81,15 +73,12 @@
             <span>{{ $t('taskParameters.syncOptions') }}</span>
           </div>
         </template>
-        
+
         <div class="collapse-content">
           <el-form :model="form.syncOptions" label-width="120px">
             <div class="options-grid">
               <div class="option-item">
-                <el-checkbox 
-                  v-model="form.syncOptions.delete"
-                  @change="updateModelValue"
-                >
+                <el-checkbox v-model="form.syncOptions.delete" @change="updateModelValue">
                   <div class="option-content">
                     <Icon icon="mdi:delete" class="option-icon" />
                     <div class="option-text">
@@ -99,12 +88,9 @@
                   </div>
                 </el-checkbox>
               </div>
-              
+
               <div class="option-item">
-                <el-checkbox 
-                  v-model="form.syncOptions.compress"
-                  @change="updateModelValue"
-                >
+                <el-checkbox v-model="form.syncOptions.compress" @change="updateModelValue">
                   <div class="option-content">
                     <Icon icon="mdi:compress" class="option-icon" />
                     <div class="option-text">
@@ -114,12 +100,9 @@
                   </div>
                 </el-checkbox>
               </div>
-              
+
               <div class="option-item">
-                <el-checkbox 
-                  v-model="form.syncOptions.checksum"
-                  @change="updateModelValue"
-                >
+                <el-checkbox v-model="form.syncOptions.checksum" @change="updateModelValue">
                   <div class="option-content">
                     <Icon icon="mdi:check-circle" class="option-icon" />
                     <div class="option-text">
@@ -130,34 +113,24 @@
                 </el-checkbox>
               </div>
             </div>
-            
+
             <el-divider />
-            
+
             <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item :label="$t('taskParameters.bandwidthLimit')">
-                  <el-input-number
-                    v-model="form.syncOptions.bandwidth_limit"
-                    :min="0"
-                    :max="1000"
-                    :placeholder="$t('taskParameters.bandwidthLimitPlaceholder')"
-                    style="width: 100%"
-                    @change="updateModelValue"
-                  >
+                  <el-input-number v-model="form.syncOptions.bandwidth_limit" :min="0" :max="1000"
+                    :placeholder="$t('taskParameters.bandwidthLimitPlaceholder')" style="width: 100%"
+                    @change="updateModelValue">
                     <template #suffix>MB/s</template>
                   </el-input-number>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item :label="$t('taskParameters.maxConnections')">
-                  <el-input-number
-                    v-model="form.syncOptions.max_connections"
-                    :min="1"
-                    :max="10"
-                    :placeholder="$t('taskParameters.maxConnectionsPlaceholder')"
-                    style="width: 100%"
-                    @change="updateModelValue"
-                  />
+                  <el-input-number v-model="form.syncOptions.max_connections" :min="1" :max="10"
+                    :placeholder="$t('taskParameters.maxConnectionsPlaceholder')" style="width: 100%"
+                    @change="updateModelValue" />
                 </el-form-item>
               </el-col>
             </el-row>
@@ -173,32 +146,22 @@
             <span>{{ $t('taskParameters.transferStrategy') }}</span>
           </div>
         </template>
-        
+
         <div class="collapse-content">
           <el-form :model="form.retryOptions" label-width="120px">
             <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item :label="$t('taskParameters.retryCount')">
-                  <el-input-number
-                    v-model="form.retryOptions.max_retries"
-                    :min="0"
-                    :max="10"
-                    :placeholder="$t('taskParameters.retryCountPlaceholder')"
-                    style="width: 100%"
-                    @change="updateModelValue"
-                  />
+                  <el-input-number v-model="form.retryOptions.max_retries" :min="0" :max="10"
+                    :placeholder="$t('taskParameters.retryCountPlaceholder')" style="width: 100%"
+                    @change="updateModelValue" />
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item :label="$t('taskParameters.retryInterval')">
-                  <el-input-number
-                    v-model="form.retryOptions.retry_interval"
-                    :min="5"
-                    :max="300"
-                    :placeholder="$t('taskParameters.retryIntervalPlaceholder')"
-                    style="width: 100%"
-                    @change="updateModelValue"
-                  >
+                  <el-input-number v-model="form.retryOptions.retry_interval" :min="5" :max="300"
+                    :placeholder="$t('taskParameters.retryIntervalPlaceholder')" style="width: 100%"
+                    @change="updateModelValue">
                     <template #suffix>{{ $t('common.seconds') }}</template>
                   </el-input-number>
                 </el-form-item>
@@ -216,58 +179,42 @@
             <span>{{ $t('taskParameters.advancedParameters') }}</span>
           </div>
         </template>
-        
+
         <div class="collapse-content">
           <el-form :model="form.advancedOptions" label-width="120px">
             <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item :label="$t('taskParameters.bufferSize')">
-                  <el-input-number
-                    v-model="form.advancedOptions.buffer_size"
-                    :min="1"
-                    :max="100"
-                    :placeholder="$t('taskParameters.bufferSizePlaceholder')"
-                    style="width: 100%"
-                    @change="updateModelValue"
-                  >
+                  <el-input-number v-model="form.advancedOptions.buffer_size" :min="1" :max="100"
+                    :placeholder="$t('taskParameters.bufferSizePlaceholder')" style="width: 100%"
+                    @change="updateModelValue">
                     <template #suffix>MB</template>
                   </el-input-number>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item :label="$t('taskParameters.timeout')">
-                  <el-input-number
-                    v-model="form.advancedOptions.timeout"
-                    :min="30"
-                    :max="3600"
-                    :placeholder="$t('taskParameters.timeoutPlaceholder')"
-                    style="width: 100%"
-                    @change="updateModelValue"
-                  >
+                  <el-input-number v-model="form.advancedOptions.timeout" :min="30" :max="3600"
+                    :placeholder="$t('taskParameters.timeoutPlaceholder')" style="width: 100%"
+                    @change="updateModelValue">
                     <template #suffix>{{ $t('common.seconds') }}</template>
                   </el-input-number>
                 </el-form-item>
               </el-col>
             </el-row>
-            
+
             <el-row :gutter="20">
               <el-col :span="12">
                 <el-form-item :label="$t('taskParameters.excludePatterns')">
-                  <el-input
-                    v-model="form.advancedOptions.exclude_patterns"
-                    :placeholder="$t('taskParameters.excludePatternsPlaceholder')"
-                    @input="updateModelValue"
-                  />
+                  <el-input v-model="form.advancedOptions.exclude_patterns"
+                    :placeholder="$t('taskParameters.excludePatternsPlaceholder')" @input="updateModelValue" />
                   <div class="form-tip">{{ $t('taskParameters.patternsTip') }}</div>
                 </el-form-item>
               </el-col>
               <el-col :span="12">
                 <el-form-item :label="$t('taskParameters.includePatterns')">
-                  <el-input
-                    v-model="form.advancedOptions.include_patterns"
-                    :placeholder="$t('taskParameters.includePatternsPlaceholder')"
-                    @input="updateModelValue"
-                  />
+                  <el-input v-model="form.advancedOptions.include_patterns"
+                    :placeholder="$t('taskParameters.includePatternsPlaceholder')" @input="updateModelValue" />
                   <div class="form-tip">{{ $t('taskParameters.patternsTip') }}</div>
                 </el-form-item>
               </el-col>
@@ -284,15 +231,10 @@
             <span>{{ scenarioTitle }}</span>
           </div>
         </template>
-        
+
         <div class="collapse-content">
-          <component 
-            :is="scenarioComponent" 
-            v-model="form.scenarioOptions"
-            :source-storage="sourceStorage"
-            :target-storage="targetStorage"
-            @change="updateModelValue"
-          />
+          <component :is="scenarioComponent" v-model="form.scenarioOptions" :source-storage="sourceStorage"
+            :target-storage="targetStorage" @change="updateModelValue" />
         </div>
       </el-collapse-item>
     </el-collapse>
@@ -383,7 +325,7 @@ const showScenarioOptions = computed(() => {
 
 const scenarioTitle = computed(() => {
   if (!showScenarioOptions.value) return ''
-  
+
   const sourceType = props.sourceStorage.storageType === 's3' ? 'OBS' : 'NAS'
   const targetType = props.targetStorage.storageType === 's3' ? 'OBS' : 'NAS'
   return `${sourceType}到${targetType}参数`
@@ -391,10 +333,10 @@ const scenarioTitle = computed(() => {
 
 const scenarioComponent = computed(() => {
   if (!showScenarioOptions.value) return null
-  
+
   const sourceType = props.sourceStorage.storageType === 's3' ? 'obs' : 'nas'
   const targetType = props.targetStorage.storageType === 's3' ? 'obs' : 'nas'
-  
+
   if (sourceType === 'nas' && targetType === 'nas') {
     return NasToNasOptions
   } else if (sourceType === 'nas' && targetType === 'obs') {
@@ -657,4 +599,4 @@ watch(() => props.modelValue, (newValue) => {
 :deep(.el-input-number .el-input__wrapper.is-focus) {
   box-shadow: 0 0 0 1px var(--el-color-primary) inset;
 }
-</style> 
+</style>

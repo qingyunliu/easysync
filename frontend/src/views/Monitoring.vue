@@ -8,11 +8,15 @@
       </div>
       <div class="header-right">
         <el-button type="primary" @click="refreshMonitoring" :loading="loading">
-          <el-icon><Refresh /></el-icon>
+          <el-icon>
+            <Refresh />
+          </el-icon>
           {{ $t('monitoring.refreshData') }}
         </el-button>
         <el-button @click="openSettings">
-          <el-icon><Setting /></el-icon>
+          <el-icon>
+            <Setting />
+          </el-icon>
           {{ $t('monitoring.monitoringSettings') }}
         </el-button>
       </div>
@@ -24,88 +28,98 @@
         <el-card class="status-card cpu">
           <div class="status-content">
             <div class="status-icon">
-              <el-icon><Cpu /></el-icon>
+              <el-icon>
+                <Cpu />
+              </el-icon>
             </div>
             <div class="status-info">
               <div class="status-value">{{ systemStatus.cpu_usage }}%</div>
               <div class="status-label">{{ $t('monitoring.cpuUsage') }}</div>
               <div class="status-trend" :class="getCpuTrendClass()">
-                <el-icon><ArrowUp v-if="systemStatus.cpu_usage > 70" /><ArrowDown v-else /></el-icon>
+                <el-icon>
+                  <ArrowUp v-if="systemStatus.cpu_usage > 70" />
+                  <ArrowDown v-else />
+                </el-icon>
                 {{ getCpuStatus() }}
               </div>
             </div>
           </div>
           <div class="status-progress">
-            <el-progress 
-              :percentage="systemStatus.cpu_usage" 
-              :color="getProgressColor(systemStatus.cpu_usage)"
-              :show-text="false"
-            />
+            <el-progress :percentage="systemStatus.cpu_usage" :color="getProgressColor(systemStatus.cpu_usage)"
+              :show-text="false" />
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="6">
         <el-card class="status-card memory">
           <div class="status-content">
             <div class="status-icon">
-              <el-icon><Monitor /></el-icon>
+              <el-icon>
+                <Monitor />
+              </el-icon>
             </div>
             <div class="status-info">
               <div class="status-value">{{ systemStatus.memory_usage }}%</div>
               <div class="status-label">{{ $t('monitoring.memoryUsage') }}</div>
               <div class="status-trend" :class="getMemoryTrendClass()">
-                <el-icon><ArrowUp v-if="systemStatus.memory_usage > 80" /><ArrowDown v-else /></el-icon>
+                <el-icon>
+                  <ArrowUp v-if="systemStatus.memory_usage > 80" />
+                  <ArrowDown v-else />
+                </el-icon>
                 {{ getMemoryStatus() }}
               </div>
             </div>
           </div>
           <div class="status-progress">
-            <el-progress 
-              :percentage="systemStatus.memory_usage" 
-              :color="getProgressColor(systemStatus.memory_usage)"
-              :show-text="false"
-            />
+            <el-progress :percentage="systemStatus.memory_usage" :color="getProgressColor(systemStatus.memory_usage)"
+              :show-text="false" />
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="6">
         <el-card class="status-card disk">
           <div class="status-content">
             <div class="status-icon">
-              <el-icon><FolderOpened /></el-icon>
+              <el-icon>
+                <FolderOpened />
+              </el-icon>
             </div>
             <div class="status-info">
               <div class="status-value">{{ systemStatus.disk_usage }}%</div>
               <div class="status-label">{{ $t('monitoring.diskUsage') }}</div>
               <div class="status-trend" :class="getDiskTrendClass()">
-                <el-icon><ArrowUp v-if="systemStatus.disk_usage > 85" /><ArrowDown v-else /></el-icon>
+                <el-icon>
+                  <ArrowUp v-if="systemStatus.disk_usage > 85" />
+                  <ArrowDown v-else />
+                </el-icon>
                 {{ getDiskStatus() }}
               </div>
             </div>
           </div>
           <div class="status-progress">
-            <el-progress 
-              :percentage="systemStatus.disk_usage" 
-              :color="getProgressColor(systemStatus.disk_usage)"
-              :show-text="false"
-            />
+            <el-progress :percentage="systemStatus.disk_usage" :color="getProgressColor(systemStatus.disk_usage)"
+              :show-text="false" />
           </div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="6">
         <el-card class="status-card network">
           <div class="status-content">
             <div class="status-icon">
-              <el-icon><Connection /></el-icon>
+              <el-icon>
+                <Connection />
+              </el-icon>
             </div>
             <div class="status-info">
               <div class="status-value">{{ systemStatus.active_connections }}</div>
               <div class="status-label">{{ $t('monitoring.activeConnections') }}</div>
               <div class="status-trend success">
-                <el-icon><Check /></el-icon>
+                <el-icon>
+                  <Check />
+                </el-icon>
                 {{ $t('monitoring.normal') }}
               </div>
             </div>
@@ -132,7 +146,7 @@
           </el-tag>
         </div>
       </template>
-      
+
       <el-row :gutter="20">
         <el-col :span="8" v-for="(status, service) in systemStatus.services_status" :key="service">
           <div class="service-item">
@@ -166,11 +180,11 @@
               </el-select>
             </div>
           </template>
-          
+
           <div class="chart-container" ref="cpuMemoryChart" style="height: 300px;"></div>
         </el-card>
       </el-col>
-      
+
       <el-col :span="12">
         <el-card class="chart-card">
           <template #header>
@@ -179,7 +193,7 @@
               <el-tag size="small" type="info">{{ $t('monitoring.realTime') }}</el-tag>
             </div>
           </template>
-          
+
           <div class="chart-container" ref="networkChart" style="height: 300px;"></div>
         </el-card>
       </el-col>
@@ -192,11 +206,13 @@
           <span>{{ $t('monitoring.alertStatistics') }}</span>
           <el-button type="text" @click="$router.push('/monitoring/alerts')">
             {{ $t('monitoring.viewDetails') }}
-            <el-icon><ArrowRight /></el-icon>
+            <el-icon>
+              <ArrowRight />
+            </el-icon>
           </el-button>
         </div>
       </template>
-      
+
       <el-row :gutter="20">
         <el-col :span="6">
           <div class="alert-stat-item">
@@ -358,33 +374,33 @@ const handleTimeRangeChange = () => {
 
 // 状态判断方法
 const getCpuTrendClass = () => {
-  return systemStatus.cpu_usage > 80 ? 'danger' : 
-         systemStatus.cpu_usage > 60 ? 'warning' : 'success'
+  return systemStatus.cpu_usage > 80 ? 'danger' :
+    systemStatus.cpu_usage > 60 ? 'warning' : 'success'
 }
 
 const getCpuStatus = () => {
-  return systemStatus.cpu_usage > 80 ? t('monitoring.status.tooHigh') : 
-         systemStatus.cpu_usage > 60 ? t('monitoring.status.high') : t('monitoring.status.normal')
+  return systemStatus.cpu_usage > 80 ? t('monitoring.status.tooHigh') :
+    systemStatus.cpu_usage > 60 ? t('monitoring.status.high') : t('monitoring.status.normal')
 }
 
 const getMemoryTrendClass = () => {
-  return systemStatus.memory_usage > 85 ? 'danger' : 
-         systemStatus.memory_usage > 70 ? 'warning' : 'success'
+  return systemStatus.memory_usage > 85 ? 'danger' :
+    systemStatus.memory_usage > 70 ? 'warning' : 'success'
 }
 
 const getMemoryStatus = () => {
-  return systemStatus.memory_usage > 85 ? t('monitoring.status.tooHigh') : 
-         systemStatus.memory_usage > 70 ? t('monitoring.status.high') : t('monitoring.status.normal')
+  return systemStatus.memory_usage > 85 ? t('monitoring.status.tooHigh') :
+    systemStatus.memory_usage > 70 ? t('monitoring.status.high') : t('monitoring.status.normal')
 }
 
 const getDiskTrendClass = () => {
-  return systemStatus.disk_usage > 90 ? 'danger' : 
-         systemStatus.disk_usage > 75 ? 'warning' : 'success'
+  return systemStatus.disk_usage > 90 ? 'danger' :
+    systemStatus.disk_usage > 75 ? 'warning' : 'success'
 }
 
 const getDiskStatus = () => {
-  return systemStatus.disk_usage > 90 ? t('monitoring.status.insufficientSpace') : 
-         systemStatus.disk_usage > 75 ? t('monitoring.status.lowSpace') : t('monitoring.status.normal')
+  return systemStatus.disk_usage > 90 ? t('monitoring.status.insufficientSpace') :
+    systemStatus.disk_usage > 75 ? t('monitoring.status.lowSpace') : t('monitoring.status.normal')
 }
 
 const getProgressColor = (value) => {
@@ -396,7 +412,7 @@ const getProgressColor = (value) => {
 const getOverallServiceStatus = () => {
   const services = Object.values(systemStatus.services_status)
   const healthyCount = services.filter(status => status === 'healthy').length
-  
+
   if (healthyCount === services.length) {
     return { type: 'success', text: t('monitoring.status.allServicesNormal') }
   } else if (healthyCount > 0) {
@@ -440,9 +456,9 @@ const initCharts = async () => {
 
 const initCpuMemoryChart = () => {
   if (!cpuMemoryChart.value) return
-  
+
   cpuMemoryChartInstance = echarts.init(cpuMemoryChart.value)
-  
+
   const option = {
     tooltip: {
       trigger: 'axis'
@@ -493,15 +509,15 @@ const initCpuMemoryChart = () => {
       }
     ]
   }
-  
+
   cpuMemoryChartInstance.setOption(option)
 }
 
 const initNetworkChart = () => {
   if (!networkChart.value) return
-  
+
   networkChartInstance = echarts.init(networkChart.value)
-  
+
   const option = {
     tooltip: {
       trigger: 'axis',
@@ -560,7 +576,7 @@ const initNetworkChart = () => {
       }
     ]
   }
-  
+
   networkChartInstance.setOption(option)
 }
 
@@ -570,7 +586,7 @@ const updateCharts = async () => {
     const now = new Date()
     const endTime = now.toISOString()
     const startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString() // 24小时前
-    
+
     // 从API获取系统监控数据
     const response = await axios.get('/api/monitor/system/metrics', {
       params: {
@@ -579,21 +595,21 @@ const updateCharts = async () => {
         limit: 24
       }
     })
-    
+
     if (response.data.status === 'success') {
       const monitorData = response.data.data
-      
+
       // 提取时间标签和数据
       const timeLabels = monitorData.map(item => {
         const date = new Date(item.timestamp)
         return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
       })
-      
+
       const cpuData = monitorData.map(item => item.cpu_usage || 0)
       const memoryData = monitorData.map(item => item.memory_usage || 0)
       const networkInData = monitorData.map(item => item.network_in || 0)
       const networkOutData = monitorData.map(item => item.network_out || 0)
-      
+
       // 更新CPU/内存图表
       if (cpuMemoryChartInstance) {
         cpuMemoryChartInstance.setOption({
@@ -604,7 +620,7 @@ const updateCharts = async () => {
           ]
         })
       }
-      
+
       // 更新网络图表
       if (networkChartInstance) {
         networkChartInstance.setOption({
@@ -625,10 +641,10 @@ const updateCharts = async () => {
 const updateCurrentStatus = async () => {
   try {
     const response = await axios.get('/api/monitor/system/current')
-    
+
     if (response.data.status === 'success') {
       const currentData = response.data.data
-      
+
       // 更新当前状态显示
       systemStatus.cpu_usage = currentData.cpu_usage || 0
       systemStatus.memory_usage = currentData.memory_usage || 0
@@ -717,10 +733,21 @@ const updateCurrentStatus = async () => {
   color: white;
 }
 
-.status-card.cpu .status-icon { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.status-card.memory .status-icon { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-.status-card.disk .status-icon { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-.status-card.network .status-icon { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.status-card.cpu .status-icon {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.status-card.memory .status-icon {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+.status-card.disk .status-icon {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.status-card.network .status-icon {
+  background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+}
 
 .status-info {
   flex: 1;
@@ -748,9 +775,17 @@ const updateCurrentStatus = async () => {
   font-weight: 500;
 }
 
-.status-trend.success { color: #67c23a; }
-.status-trend.warning { color: #e6a23c; }
-.status-trend.danger { color: #f56c6c; }
+.status-trend.success {
+  color: #67c23a;
+}
+
+.status-trend.warning {
+  color: #e6a23c;
+}
+
+.status-trend.danger {
+  color: #f56c6c;
+}
 
 .status-progress {
   margin-top: 8px;
@@ -856,10 +891,21 @@ const updateCurrentStatus = async () => {
   margin-bottom: 8px;
 }
 
-.alert-stat-number.total { color: #409eff; }
-.alert-stat-number.firing { color: #f56c6c; }
-.alert-stat-number.resolved { color: #67c23a; }
-.alert-stat-number.critical { color: #e6a23c; }
+.alert-stat-number.total {
+  color: #409eff;
+}
+
+.alert-stat-number.firing {
+  color: #f56c6c;
+}
+
+.alert-stat-number.resolved {
+  color: #67c23a;
+}
+
+.alert-stat-number.critical {
+  color: #e6a23c;
+}
 
 .alert-stat-label {
   font-size: 14px;
@@ -871,23 +917,23 @@ const updateCurrentStatus = async () => {
   .monitoring-page {
     padding: 16px;
   }
-  
+
   .page-header {
     flex-direction: column;
     gap: 16px;
     align-items: stretch;
   }
-  
+
   .status-content {
     gap: 12px;
   }
-  
+
   .status-icon {
     width: 40px;
     height: 40px;
     font-size: 18px;
   }
-  
+
   .status-value {
     font-size: 20px;
   }

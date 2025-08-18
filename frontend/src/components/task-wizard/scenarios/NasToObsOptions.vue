@@ -4,11 +4,8 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('nasToObsOptions.rcloneArgs')">
-            <el-input
-              v-model="form.rclone_args"
-              :placeholder="$t('nasToObsOptions.rcloneArgsPlaceholder')"
-              @input="updateModelValue"
-            />
+            <el-input v-model="form.rclone_args" :placeholder="$t('nasToObsOptions.rcloneArgsPlaceholder')"
+              @input="updateModelValue" />
             <div class="form-tip">{{ $t('nasToObsOptions.rcloneArgsTip') }}</div>
           </el-form-item>
         </el-col>
@@ -22,78 +19,56 @@
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('nasToObsOptions.chunkSize')">
-            <el-input-number
-              v-model="form.chunk_size"
-              :min="1"
-              :max="1000"
-              :placeholder="$t('nasToObsOptions.chunkSizePlaceholder')"
-              style="width: 100%"
-              @change="updateModelValue"
-            />
+            <el-input-number v-model="form.chunk_size" :min="1" :max="1000"
+              :placeholder="$t('nasToObsOptions.chunkSizePlaceholder')" style="width: 100%"
+              @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToObsOptions.chunkSizeTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('nasToObsOptions.uploadConcurrency')">
-            <el-input-number
-              v-model="form.upload_concurrency"
-              :min="1"
-              :max="20"
-              :placeholder="$t('nasToObsOptions.uploadConcurrencyPlaceholder')"
-              style="width: 100%"
-              @change="updateModelValue"
-            />
+            <el-input-number v-model="form.upload_concurrency" :min="1" :max="20"
+              :placeholder="$t('nasToObsOptions.uploadConcurrencyPlaceholder')" style="width: 100%"
+              @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToObsOptions.uploadConcurrencyTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('nasToObsOptions.encryptTransfer')">
-            <el-switch
-              v-model="form.encrypt_transfer"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.encrypt_transfer" @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToObsOptions.encryptTransferTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('nasToObsOptions.serverSideEncryption')">
-            <el-switch
-              v-model="form.server_side_encryption"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.server_side_encryption" @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToObsOptions.serverSideEncryptionTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('nasToObsOptions.preserveMetadata')">
-            <el-switch
-              v-model="form.preserve_metadata"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.preserve_metadata" @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToObsOptions.preserveMetadataTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('nasToObsOptions.checksumVerification')">
-            <el-switch
-              v-model="form.checksum_verification"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.checksum_verification" @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToObsOptions.checksumVerificationTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('nasToObsOptions.retryStrategy')">
@@ -106,10 +81,7 @@
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('nasToObsOptions.progressReporting')">
-            <el-switch
-              v-model="form.progress_reporting"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.progress_reporting" @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToObsOptions.progressReportingTip') }}</div>
           </el-form-item>
         </el-col>
@@ -215,4 +187,4 @@ watch(() => props.modelValue, (newValue) => {
 :deep(.el-form-item__label) {
   font-weight: 500;
 }
-</style> 
+</style>

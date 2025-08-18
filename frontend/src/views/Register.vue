@@ -15,62 +15,48 @@
               <ThemeToggle class="theme-toggle-inline" />
             </div>
           </template>
-          <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-width="0" @submit.prevent="handleRegister">
+          <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-width="0"
+            @submit.prevent="handleRegister">
             <el-form-item prop="username">
-              <el-input 
-                v-model="registerForm.username" 
-                :placeholder="$t('auth.username')"
-                class="custom-input"
-              >
+              <el-input v-model="registerForm.username" :placeholder="$t('auth.username')" class="custom-input">
                 <template #prefix>
-                  <el-icon><User /></el-icon>
+                  <el-icon>
+                    <User />
+                  </el-icon>
                 </template>
               </el-input>
             </el-form-item>
             <el-form-item prop="email">
-              <el-input 
-                v-model="registerForm.email" 
-                :placeholder="$t('auth.email')"
-                class="custom-input"
-              >
+              <el-input v-model="registerForm.email" :placeholder="$t('auth.email')" class="custom-input">
                 <template #prefix>
-                  <el-icon><Message /></el-icon>
+                  <el-icon>
+                    <Message />
+                  </el-icon>
                 </template>
               </el-input>
             </el-form-item>
             <el-form-item prop="password">
-              <el-input 
-                v-model="registerForm.password" 
-                type="password" 
-                :placeholder="$t('auth.password')" 
-                show-password
-                class="custom-input"
-              >
+              <el-input v-model="registerForm.password" type="password" :placeholder="$t('auth.password')" show-password
+                class="custom-input">
                 <template #prefix>
-                  <el-icon><Lock /></el-icon>
+                  <el-icon>
+                    <Lock />
+                  </el-icon>
                 </template>
               </el-input>
             </el-form-item>
             <el-form-item prop="confirmPassword">
-              <el-input 
-                v-model="registerForm.confirmPassword" 
-                type="password" 
-                :placeholder="$t('auth.confirmPassword')" 
-                show-password
-                class="custom-input"
-              >
+              <el-input v-model="registerForm.confirmPassword" type="password" :placeholder="$t('auth.confirmPassword')"
+                show-password class="custom-input">
                 <template #prefix>
-                  <el-icon><Lock /></el-icon>
+                  <el-icon>
+                    <Lock />
+                  </el-icon>
                 </template>
               </el-input>
             </el-form-item>
             <el-form-item>
-              <el-button 
-                type="primary" 
-                native-type="submit"
-                :loading="loading" 
-                class="register-button"
-              >
+              <el-button type="primary" native-type="submit" :loading="loading" class="register-button">
                 {{ $t('auth.register') }}
               </el-button>
             </el-form-item>
@@ -147,7 +133,7 @@ const rules = {
 
 const handleRegister = async () => {
   if (!registerFormRef.value) return
-  
+
   await registerFormRef.value.validate(async (valid) => {
     if (valid) {
       loading.value = true
@@ -157,7 +143,7 @@ const handleRegister = async () => {
           email: registerForm.email,
           password: registerForm.password
         })
-        
+
         if (response.data.status === 'success') {
           ElMessage.success({
             message: t('auth.registerSuccess'),
@@ -233,7 +219,7 @@ const handleRegister = async () => {
 }
 
 .register-logo img {
-   width: 280px;
+  width: 280px;
 }
 
 .register-header p {
@@ -319,6 +305,7 @@ const handleRegister = async () => {
   align-items: center;
   justify-content: space-between;
 }
+
 .theme-toggle-inline {
   margin-left: 12px;
 }
@@ -328,6 +315,7 @@ const handleRegister = async () => {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -339,9 +327,10 @@ const handleRegister = async () => {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-</style> 
+</style>

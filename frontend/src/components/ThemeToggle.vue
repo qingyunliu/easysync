@@ -33,7 +33,7 @@ const setTheme = (theme) => {
   currentTheme.value = theme
   document.documentElement.setAttribute('data-theme', theme)
   localStorage.setItem('theme', theme)
-  
+
   // 添加切换动画
   document.documentElement.classList.add('theme-transition')
   setTimeout(() => {

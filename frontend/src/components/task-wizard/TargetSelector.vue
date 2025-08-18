@@ -6,44 +6,29 @@
         <h3>{{ $t('targetSelector.selectTargetStorage') }}</h3>
         <p class="selection-description">{{ $t('targetSelector.selectTargetStorageDesc') }}</p>
       </div>
-      
+
       <el-form :model="form" label-width="120px">
         <el-form-item :label="$t('targetSelector.targetStorage')" required>
-          <el-select 
-            v-model="form.selectedStorageId" 
-            :placeholder="$t('targetSelector.selectTargetStoragePlaceholder')" 
-            style="width: 100%"
-            @change="handleStorageChange"
-          >
+          <el-select v-model="form.selectedStorageId" :placeholder="$t('targetSelector.selectTargetStoragePlaceholder')"
+            style="width: 100%" @change="handleStorageChange">
             <el-option-group :label="$t('targetSelector.nasStorage')">
-              <el-option
-                v-for="storage in nasStorages"
-                :key="storage.id"
-                :label="`${storage.name} (${storage.config.protocol.toUpperCase()})`"
-                :value="storage.id"
-              >
+              <el-option v-for="storage in nasStorages" :key="storage.id"
+                :label="`${storage.name} (${storage.config.protocol.toUpperCase()})`" :value="storage.id">
                 <div class="storage-option">
                   <Icon icon="mdi:folder-network" class="storage-icon" />
                   <div class="storage-info">
                     <div class="storage-name">{{ storage.name }}</div>
                     <div class="storage-detail">{{ storage.config.server }}:{{ storage.config.path }}</div>
                   </div>
-                  <el-tag 
-                    :type="storage.config.is_mounted ? 'success' : 'warning'" 
-                    size="small"
-                  >
+                  <el-tag :type="storage.config.is_mounted ? 'success' : 'warning'" size="small">
                     {{ storage.config.is_mounted ? $t('targetSelector.mounted') : $t('targetSelector.notMounted') }}
                   </el-tag>
                 </div>
               </el-option>
             </el-option-group>
             <el-option-group :label="$t('targetSelector.obsStorage')">
-              <el-option
-                v-for="storage in obsStorages"
-                :key="storage.id"
-                :label="`${storage.name} (${storage.config.provider.toUpperCase()})`"
-                :value="storage.id"
-              >
+              <el-option v-for="storage in obsStorages" :key="storage.id"
+                :label="`${storage.name} (${storage.config.provider.toUpperCase()})`" :value="storage.id">
                 <div class="storage-option">
                   <Icon icon="mdi:cloud" class="storage-icon" />
                   <div class="storage-info">
@@ -63,13 +48,8 @@
 
     <!-- 数据覆盖警告 -->
     <div v-if="showOverrideWarning" class="override-warning">
-      <el-alert
-        :title="$t('targetSelector.dataOverrideWarning')"
-        type="warning"
-        :description="overrideWarningText"
-        show-icon
-        :closable="false"
-      />
+      <el-alert :title="$t('targetSelector.dataOverrideWarning')" type="warning" :description="overrideWarningText"
+        show-icon :closable="false" />
     </div>
 
     <!-- 目标路径配置 -->
@@ -94,36 +74,21 @@
               <!-- 创建新存储桶模式 -->
               <template v-if="obsForm.mode === 'create'">
                 <el-form-item :label="$t('targetSelector.bucketName')" required>
-                  <el-input 
-                    v-model="obsForm.bucketName" 
-                    :placeholder="$t('targetSelector.enterBucketName')"
-                    @input="updateTargetPath"
-                  />
+                  <el-input v-model="obsForm.bucketName" :placeholder="$t('targetSelector.enterBucketName')"
+                    @input="updateTargetPath" />
                 </el-form-item>
                 <el-form-item :label="$t('targetSelector.targetPath')">
-                  <el-input 
-                    v-model="obsForm.targetPath" 
-                    :placeholder="$t('targetSelector.targetPathPlaceholder')"
-                    @input="updateTargetPath"
-                  />
+                  <el-input v-model="obsForm.targetPath" :placeholder="$t('targetSelector.targetPathPlaceholder')"
+                    @input="updateTargetPath" />
                 </el-form-item>
               </template>
 
               <!-- 浏览现有存储桶模式 -->
               <template v-else>
                 <el-form-item :label="$t('targetSelector.bucket')" required>
-                  <el-select 
-                    v-model="obsForm.selectedBucket" 
-                    :placeholder="$t('targetSelector.selectBucket')"
-                    @change="handleBucketChange"
-                    style="width: 100%"
-                  >
-                    <el-option
-                      v-for="bucket in buckets"
-                      :key="bucket.name"
-                      :label="bucket.name"
-                      :value="bucket.name"
-                    >
+                  <el-select v-model="obsForm.selectedBucket" :placeholder="$t('targetSelector.selectBucket')"
+                    @change="handleBucketChange" style="width: 100%">
+                    <el-option v-for="bucket in buckets" :key="bucket.name" :label="bucket.name" :value="bucket.name">
                       <div class="bucket-option">
                         <Icon icon="mdi:bucket" class="bucket-icon" />
                         <span>{{ bucket.name }}</span>
@@ -137,11 +102,8 @@
 
                 <el-form-item :label="$t('targetSelector.targetPath')">
                   <div class="path-input-group">
-                    <el-input
-                      v-model="obsForm.targetPath"
-                      :placeholder="$t('targetSelector.selectOrEnterTargetPath')"
-                      @input="updateTargetPath"
-                    >
+                    <el-input v-model="obsForm.targetPath" :placeholder="$t('targetSelector.selectOrEnterTargetPath')"
+                      @input="updateTargetPath">
                       <template #append>
                         <el-button @click="toggleObsPathSelector">
                           <Icon icon="mdi:folder-open" />
@@ -179,12 +141,8 @@
                   <el-breadcrumb-item @click="navigateToObsPath('')" class="breadcrumb-link">
                     {{ obsForm.selectedBucket }}
                   </el-breadcrumb-item>
-                  <el-breadcrumb-item 
-                    v-for="(segment, index) in obsPathSegments" 
-                    :key="index"
-                    @click="navigateToObsPath(obsPathSegments.slice(0, index + 1).join('/'))"
-                    class="breadcrumb-link"
-                  >
+                  <el-breadcrumb-item v-for="(segment, index) in obsPathSegments" :key="index"
+                    @click="navigateToObsPath(obsPathSegments.slice(0, index + 1).join('/'))" class="breadcrumb-link">
                     {{ segment }}
                   </el-breadcrumb-item>
                 </el-breadcrumb>
@@ -201,21 +159,14 @@
               </div>
 
               <div class="table-wrapper">
-                <el-table
-                  :data="obsCurrentItems"
-                  v-loading="obsLoading"
-                  @row-click="handleObsItemClick"
-                  class="directory-table"
-                  highlight-current-row
+                <el-table :data="obsCurrentItems" v-loading="obsLoading" @row-click="handleObsItemClick"
+                  class="directory-table" highlight-current-row
                   :empty-text="obsLoading ? $t('targetSelector.loadingObjectList') : $t('targetSelector.currentDirectoryEmpty')"
-                  :max-height="tableMaxHeight"
-                >
+                  :max-height="tableMaxHeight">
                   <el-table-column width="50">
                     <template #default="{ row }">
-                      <Icon 
-                        :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
-                        :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']"
-                      />
+                      <Icon :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'"
+                        :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']" />
                     </template>
                   </el-table-column>
                   <el-table-column prop="name" :label="$t('targetSelector.name')">
@@ -237,11 +188,7 @@
                   </el-table-column>
                   <el-table-column :label="$t('targetSelector.actions')" width="120">
                     <template #default="{ row }">
-                      <el-button 
-                        v-if="row.type === 'directory'"
-                        size="small" 
-                        @click.stop="selectObsDirectory(row)"
-                      >
+                      <el-button v-if="row.type === 'directory'" size="small" @click.stop="selectObsDirectory(row)">
                         {{ $t('targetSelector.select') }}
                       </el-button>
                     </template>
@@ -251,16 +198,10 @@
 
               <!-- OBS 分页 -->
               <div v-if="obsPagination.total > 0" class="pagination-container">
-                <el-pagination
-                  v-model:current-page="obsPagination.currentPage"
-                  v-model:page-size="obsPagination.pageSize"
-                  :page-sizes="[10, 20, 50, 100]"
-                  :total="obsPagination.total"
-                  layout="total, sizes, prev, pager, next"
-                  @size-change="handleObsSizeChange"
-                  @current-change="handleObsPageChange"
-                  background
-                />
+                <el-pagination v-model:current-page="obsPagination.currentPage"
+                  v-model:page-size="obsPagination.pageSize" :page-sizes="[10, 20, 50, 100]"
+                  :total="obsPagination.total" layout="total, sizes, prev, pager, next"
+                  @size-change="handleObsSizeChange" @current-change="handleObsPageChange" background />
               </div>
             </div>
           </div>
@@ -279,11 +220,8 @@
             <el-form :model="nasForm" label-width="120px">
               <el-form-item :label="$t('targetSelector.targetPath')" required>
                 <div class="path-input-group">
-                  <el-input
-                    v-model="nasForm.targetPath"
-                    :placeholder="$t('targetSelector.selectOrEnterTargetPath')"
-                    @input="updateTargetPath"
-                  >
+                  <el-input v-model="nasForm.targetPath" :placeholder="$t('targetSelector.selectOrEnterTargetPath')"
+                    @input="updateTargetPath">
                     <template #append>
                       <el-button @click="toggleNasPathSelector">
                         <Icon icon="mdi:folder-open" />
@@ -320,12 +258,8 @@
                   <el-breadcrumb-item @click="navigateToNasPath('')" class="breadcrumb-link">
                     {{ $t('targetSelector.rootDirectory') }}
                   </el-breadcrumb-item>
-                  <el-breadcrumb-item 
-                    v-for="(segment, index) in nasPathSegments" 
-                    :key="index"
-                    @click="navigateToNasPath(nasPathSegments.slice(0, index + 1).join('/'))"
-                    class="breadcrumb-link"
-                  >
+                  <el-breadcrumb-item v-for="(segment, index) in nasPathSegments" :key="index"
+                    @click="navigateToNasPath(nasPathSegments.slice(0, index + 1).join('/'))" class="breadcrumb-link">
                     {{ segment }}
                   </el-breadcrumb-item>
                 </el-breadcrumb>
@@ -342,21 +276,14 @@
               </div>
 
               <div class="table-wrapper">
-                <el-table
-                  :data="nasCurrentItems"
-                  v-loading="nasLoading"
-                  @row-click="handleNasItemClick"
-                  class="directory-table"
-                  highlight-current-row
+                <el-table :data="nasCurrentItems" v-loading="nasLoading" @row-click="handleNasItemClick"
+                  class="directory-table" highlight-current-row
                   :empty-text="nasLoading ? $t('targetSelector.loadingFileList') : $t('targetSelector.currentDirectoryEmpty')"
-                  :max-height="tableMaxHeight"
-                >
+                  :max-height="tableMaxHeight">
                   <el-table-column width="50">
                     <template #default="{ row }">
-                      <Icon 
-                        :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
-                        :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']"
-                      />
+                      <Icon :icon="row.type === 'directory' ? 'mdi:folder' : 'mdi:file'"
+                        :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']" />
                     </template>
                   </el-table-column>
                   <el-table-column prop="name" label="名称">
@@ -378,11 +305,7 @@
                   </el-table-column>
                   <el-table-column label="操作" width="120">
                     <template #default="{ row }">
-                      <el-button 
-                        v-if="row.type === 'directory'"
-                        size="small" 
-                        @click.stop="selectNasDirectory(row)"
-                      >
+                      <el-button v-if="row.type === 'directory'" size="small" @click.stop="selectNasDirectory(row)">
                         选择
                       </el-button>
                     </template>
@@ -392,16 +315,10 @@
 
               <!-- NAS 分页 -->
               <div v-if="nasPagination.total > 0" class="pagination-container">
-                <el-pagination
-                  v-model:current-page="nasPagination.currentPage"
-                  v-model:page-size="nasPagination.pageSize"
-                  :page-sizes="[10, 20, 50, 100]"
-                  :total="nasPagination.total"
-                  layout="total, sizes, prev, pager, next"
-                  @size-change="handleNasSizeChange"
-                  @current-change="handleNasPageChange"
-                  background
-                />
+                <el-pagination v-model:current-page="nasPagination.currentPage"
+                  v-model:page-size="nasPagination.pageSize" :page-sizes="[10, 20, 50, 100]"
+                  :total="nasPagination.total" layout="total, sizes, prev, pager, next"
+                  @size-change="handleNasSizeChange" @current-change="handleNasPageChange" background />
               </div>
             </div>
           </div>
@@ -494,12 +411,12 @@ const selectedStorage = computed(() => {
 const tableMaxHeight = computed(() => {
   // 根据页面大小动态调整表格高度，预留更多空间给表格头部
   const pageSize = Math.max(obsPagination.value.pageSize, nasPagination.value.pageSize)
-  
+
   // 基础行高约40px，加上头部和边距
   const baseRowHeight = 40
   const headerHeight = 60
   const padding = 30
-  
+
   if (pageSize <= 20) {
     return 350
   } else if (pageSize <= 50) {
@@ -522,9 +439,9 @@ const obsStorages = computed(() => {
 })
 
 const showOverrideWarning = computed(() => {
-  return selectedStorage.value && 
-         props.sourceStorage.storageId && 
-         selectedStorage.value.id === props.sourceStorage.storageId
+  return selectedStorage.value &&
+    props.sourceStorage.storageId &&
+    selectedStorage.value.id === props.sourceStorage.storageId
 })
 
 const overrideWarningText = computed(() => {
@@ -551,7 +468,7 @@ const fetchStorages = async () => {
 
 const handleStorageChange = async (storageId) => {
   if (!storageId) return
-  
+
   // 重置表单
   obsForm.value = {
     mode: 'browse',
@@ -562,7 +479,7 @@ const handleStorageChange = async (storageId) => {
   nasForm.value = {
     targetPath: ''
   }
-  
+
   // 重置分页状态
   obsPagination.value = {
     currentPage: 1,
@@ -574,11 +491,11 @@ const handleStorageChange = async (storageId) => {
     pageSize: 10,
     total: 0
   }
-  
+
   // 关闭路径选择器
   showObsPathSelector.value = false
   showNasPathSelector.value = false
-  
+
   const storage = storages.value.find(s => s.id === storageId)
   if (!storage) return
 
@@ -620,18 +537,18 @@ const handleBucketChange = async (bucketName) => {
   obsPathSegments.value = []
   obsCurrentItems.value = []
   showObsPathSelector.value = false
-  
+
   // 重置 OBS 分页状态
   obsPagination.value = {
     currentPage: 1,
     pageSize: 10,
     total: 0
   }
-  
+
   if (bucketName) {
     await loadObsRoot(selectedStorage.value.id, bucketName)
   }
-  
+
   updateTargetPath()
 }
 
@@ -696,7 +613,7 @@ const loadObsCurrentPage = async () => {
     obsLoading.value = true
     const currentPath = obsPathSegments.value.join('/')
     const prefix = currentPath ? currentPath + '/' : ''
-    
+
     const response = await axios.get(`/api/storages/${selectedStorage.value.id}/objects`, {
       params: {
         node_id: selectedStorage.value.node_id,
@@ -706,7 +623,7 @@ const loadObsCurrentPage = async () => {
         page_size: obsPagination.value.pageSize
       }
     })
-    
+
     if (response.data.status === 'success') {
       const data = response.data.data
       const objects = data.objects || []
@@ -718,7 +635,7 @@ const loadObsCurrentPage = async () => {
         lastModified: obj.lastModified,
         bucket: obsForm.value.selectedBucket
       }))
-      
+
       // 更新分页信息
       if (data.pagination) {
         obsPagination.value.total = data.pagination.total_count || 0
@@ -747,7 +664,7 @@ const loadNasCurrentPage = async () => {
   try {
     nasLoading.value = true
     const currentPath = nasPathSegments.value.join('/')
-    
+
     const response = await axios.get(`/api/storages/${selectedStorage.value.id}/files`, {
       params: {
         node_id: selectedStorage.value.node_id,
@@ -756,7 +673,7 @@ const loadNasCurrentPage = async () => {
         page_size: nasPagination.value.pageSize
       }
     })
-    
+
     if (response.data.status === 'success') {
       const data = response.data.data
       const files = data.objects || []
@@ -767,7 +684,7 @@ const loadNasCurrentPage = async () => {
         size: file.size,
         modified_time: file.modified_time
       }))
-      
+
       // 更新分页信息
       if (data.pagination) {
         nasPagination.value.total = data.pagination.total_count || 0
@@ -785,7 +702,7 @@ const loadObsRoot = async (storageId, bucketName) => {
     obsLoading.value = true
     // 重置分页
     obsPagination.value.currentPage = 1
-    
+
     const response = await axios.get(`/api/storages/${storageId}/objects`, {
       params: {
         node_id: selectedStorage.value.node_id,
@@ -795,7 +712,7 @@ const loadObsRoot = async (storageId, bucketName) => {
         page_size: obsPagination.value.pageSize
       }
     })
-    
+
     if (response.data.status === 'success') {
       const data = response.data.data
       const objects = data.objects || []
@@ -807,7 +724,7 @@ const loadObsRoot = async (storageId, bucketName) => {
         lastModified: obj.lastModified,
         bucket: bucketName
       }))
-      
+
       // 更新分页信息
       if (data.pagination) {
         obsPagination.value.total = data.pagination.total_count || 0
@@ -822,12 +739,12 @@ const loadObsRoot = async (storageId, bucketName) => {
 
 const navigateToObsPath = async (path) => {
   obsPathSegments.value = path ? path.split('/').filter(Boolean) : []
-  
+
   try {
     obsLoading.value = true
     // 重置分页
     obsPagination.value.currentPage = 1
-    
+
     const response = await axios.get(`/api/storages/${selectedStorage.value.id}/objects`, {
       params: {
         node_id: selectedStorage.value.node_id,
@@ -837,7 +754,7 @@ const navigateToObsPath = async (path) => {
         page_size: obsPagination.value.pageSize
       }
     })
-    
+
     if (response.data.status === 'success') {
       const data = response.data.data
       const objects = data.objects || []
@@ -849,7 +766,7 @@ const navigateToObsPath = async (path) => {
         lastModified: obj.lastModified,
         bucket: obsForm.value.selectedBucket
       }))
-      
+
       // 更新分页信息
       if (data.pagination) {
         obsPagination.value.total = data.pagination.total_count || 0
@@ -864,7 +781,7 @@ const navigateToObsPath = async (path) => {
 
 const handleObsItemClick = (row) => {
   if (row.type === 'directory') {
-    const newPath = obsPathSegments.value.length > 0 
+    const newPath = obsPathSegments.value.length > 0
       ? obsPathSegments.value.join('/') + '/' + row.name
       : row.name
     navigateToObsPath(newPath)
@@ -872,7 +789,7 @@ const handleObsItemClick = (row) => {
 }
 
 const selectObsDirectory = (row) => {
-  const path = obsPathSegments.value.length > 0 
+  const path = obsPathSegments.value.length > 0
     ? obsPathSegments.value.join('/') + '/' + row.name
     : row.name
   obsForm.value.targetPath = path
@@ -885,7 +802,7 @@ const loadNasRoot = async () => {
     nasLoading.value = true
     // 重置分页
     nasPagination.value.currentPage = 1
-    
+
     const response = await axios.get(`/api/storages/${selectedStorage.value.id}/files`, {
       params: {
         node_id: selectedStorage.value.node_id,
@@ -894,7 +811,7 @@ const loadNasRoot = async () => {
         page_size: nasPagination.value.pageSize
       }
     })
-    
+
     if (response.data.status === 'success') {
       const data = response.data.data
       const files = data.objects || []
@@ -905,7 +822,7 @@ const loadNasRoot = async () => {
         size: file.size,
         modified_time: file.modified_time
       }))
-      
+
       // 更新分页信息
       if (data.pagination) {
         nasPagination.value.total = data.pagination.total_count || 0
@@ -920,12 +837,12 @@ const loadNasRoot = async () => {
 
 const navigateToNasPath = async (path) => {
   nasPathSegments.value = path ? path.split('/').filter(Boolean) : []
-  
+
   try {
     nasLoading.value = true
     // 重置分页
     nasPagination.value.currentPage = 1
-    
+
     const response = await axios.get(`/api/storages/${selectedStorage.value.id}/files`, {
       params: {
         node_id: selectedStorage.value.node_id,
@@ -934,7 +851,7 @@ const navigateToNasPath = async (path) => {
         page_size: nasPagination.value.pageSize
       }
     })
-    
+
     if (response.data.status === 'success') {
       const data = response.data.data
       const files = data.objects || []
@@ -945,7 +862,7 @@ const navigateToNasPath = async (path) => {
         size: file.size,
         modified_time: file.modified_time
       }))
-      
+
       // 更新分页信息
       if (data.pagination) {
         nasPagination.value.total = data.pagination.total_count || 0
@@ -960,7 +877,7 @@ const navigateToNasPath = async (path) => {
 
 const handleNasItemClick = (row) => {
   if (row.type === 'directory') {
-    const newPath = nasPathSegments.value.length > 0 
+    const newPath = nasPathSegments.value.length > 0
       ? nasPathSegments.value.join('/') + '/' + row.name
       : row.name
     navigateToNasPath(newPath)
@@ -968,7 +885,7 @@ const handleNasItemClick = (row) => {
 }
 
 const selectNasDirectory = (row) => {
-  const path = nasPathSegments.value.length > 0 
+  const path = nasPathSegments.value.length > 0
     ? nasPathSegments.value.join('/') + '/' + row.name
     : row.name
   nasForm.value.targetPath = path
@@ -978,7 +895,7 @@ const selectNasDirectory = (row) => {
 
 const updateTargetPath = () => {
   let targetPath = ''
-  
+
   if (selectedStorage.value?.type === 's3') {
     if (obsForm.value.mode === 'create') {
       targetPath = obsForm.value.bucketName
@@ -996,7 +913,7 @@ const updateTargetPath = () => {
   } else {
     targetPath = nasForm.value.targetPath
   }
-  
+
   updateModelValue(targetPath)
 }
 
@@ -1014,17 +931,17 @@ const updateModelValue = (targetPath = '') => {
       finalTargetPath = nasForm.value.targetPath
     }
   }
-  
+
   // 清理最终路径，移除多余的斜杠
   finalTargetPath = finalTargetPath.replace(/\/+/g, '/').replace(/^\/+|\/+$/g, '')
-  
+
   const value = {
     storageId: form.value.selectedStorageId,
     storageName: selectedStorage.value?.name || '',
     storageType: selectedStorage.value?.type || '',
     targetPath: finalTargetPath
   }
-  
+
   emit('update:modelValue', value)
   emit('change', value)
 }
@@ -1063,28 +980,28 @@ const getProviderText = (provider) => {
 // 新增：设置初始状态的方法
 const setInitialState = async (initialData) => {
   if (!initialData) {
-        form.value.selectedStorageId = ''
+    form.value.selectedStorageId = ''
     nasForm.value.targetPath = ''
     obsForm.value.targetPath = ''
     obsForm.value.selectedBucket = ''
     return
   }
-  
+
   if (!initialData.storageId) return
   // 设置存储选择
   form.value.selectedStorageId = initialData.storageId
-  
+
   // 等待存储列表加载完成
   if (storages.value.length === 0) {
     await fetchStorages()
   }
-  
+
   // 触发存储变更，确保selectedStorage正确设置
   await handleStorageChange(initialData.storageId)
-  
+
   // 等待存储类型确定后再设置目标路径
   await new Promise(resolve => setTimeout(resolve, 200))
-  
+
   // 设置目标路径
   if (initialData.targetPath) {
     if (selectedStorage.value?.type === 's3') {
@@ -1101,7 +1018,7 @@ const setInitialState = async (initialData) => {
     } else {
       nasForm.value.targetPath = initialData.targetPath
     }
-    
+
     const value = {
       storageId: form.value.selectedStorageId,
       storageName: selectedStorage.value?.name || '',
@@ -1151,27 +1068,27 @@ watch(() => props.modelValue, (newValue, oldValue) => {
     if (newValue.storageId) {
       handleStorageChange(newValue.storageId)
     }
-    
+
     setTimeout(() => {
       updateModelValue()
     }, 100)
   }
-  
+
   if (newValue && newValue.targetPath) {
     const cleanPath = newValue.targetPath.replace(/\/+/g, '/').replace(/^\/+|\/+$/g, '')
-    
+
     let shouldUpdate = false
-    
+
     if (selectedStorage.value?.type === 's3') {
       const pathParts = cleanPath.split('/')
       const expectedBucket = pathParts.length > 0 ? pathParts[0] : ''
       const expectedPath = pathParts.length > 1 ? pathParts.slice(1).join('/') : ''
-      
+
       shouldUpdate = obsForm.value.selectedBucket !== expectedBucket || obsForm.value.targetPath !== expectedPath
     } else {
       shouldUpdate = nasForm.value.targetPath !== cleanPath
     }
-    
+
     if (shouldUpdate) {
       if (selectedStorage.value?.type === 's3') {
         const pathParts = cleanPath.split('/')
@@ -1371,7 +1288,8 @@ onMounted(() => {
   min-height: 0;
   position: relative;
   overflow: hidden;
-  padding-bottom: 10px;  /* 增加底部边距 */
+  padding-bottom: 10px;
+  /* 增加底部边距 */
 }
 
 /* 表格区域样式 */
@@ -1392,15 +1310,18 @@ onMounted(() => {
 :deep(.el-table__body-wrapper) {
   overflow-y: auto !important;
   overflow-x: hidden;
-  max-height: calc(100% - 60px) !important;  /* 增加头部预留空间 */
-  scroll-padding-bottom: 15px;  /* 增加滚动底部边距 */
+  max-height: calc(100% - 60px) !important;
+  /* 增加头部预留空间 */
+  scroll-padding-bottom: 15px;
+  /* 增加滚动底部边距 */
   scroll-behavior: smooth;
 }
 
 /* 确保表格有足够的底部空间 */
 :deep(.el-table__body) {
   overflow: visible !important;
-  padding-bottom: 15px;  /* 增加底部边距 */
+  padding-bottom: 15px;
+  /* 增加底部边距 */
 }
 
 /* 确保表格容器不会阻止滚动 */

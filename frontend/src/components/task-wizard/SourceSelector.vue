@@ -4,41 +4,26 @@
     <div class="storage-selection">
       <el-form :model="form" label-width="120px">
         <el-form-item :label="$t('sourceSelector.sourceStorage')" required>
-          <el-select 
-            v-model="form.selectedStorageId" 
-            :placeholder="$t('sourceSelector.selectSourceStorage')" 
-            style="width: 100%"
-            @change="handleStorageChange"
-          >
+          <el-select v-model="form.selectedStorageId" :placeholder="$t('sourceSelector.selectSourceStorage')"
+            style="width: 100%" @change="handleStorageChange">
             <el-option-group :label="$t('sourceSelector.nasStorage')">
-              <el-option
-                v-for="storage in nasStorages"
-                :key="storage.id"
-                :label="`${storage.name} (${storage.config.protocol.toUpperCase()})`"
-                :value="storage.id"
-              >
+              <el-option v-for="storage in nasStorages" :key="storage.id"
+                :label="`${storage.name} (${storage.config.protocol.toUpperCase()})`" :value="storage.id">
                 <div class="storage-option">
                   <Icon icon="mdi:folder-network" class="storage-icon" />
                   <div class="storage-info">
                     <div class="storage-name">{{ storage.name }}</div>
                     <div class="storage-detail">{{ storage.config.server }}:{{ storage.config.path }}</div>
                   </div>
-                  <el-tag 
-                    :type="storage.config.is_mounted ? 'success' : 'warning'" 
-                    size="small"
-                  >
+                  <el-tag :type="storage.config.is_mounted ? 'success' : 'warning'" size="small">
                     {{ storage.config.is_mounted ? $t('sourceSelector.mounted') : $t('sourceSelector.notMounted') }}
                   </el-tag>
                 </div>
               </el-option>
             </el-option-group>
             <el-option-group :label="$t('sourceSelector.obsStorage')">
-              <el-option
-                v-for="storage in obsStorages"
-                :key="storage.id"
-                :label="`${storage.name} (${storage.config.provider.toUpperCase()})`"
-                :value="storage.id"
-              >
+              <el-option v-for="storage in obsStorages" :key="storage.id"
+                :label="`${storage.name} (${storage.config.provider.toUpperCase()})`" :value="storage.id">
                 <div class="storage-option">
                   <Icon icon="mdi:cloud" class="storage-icon" />
                   <div class="storage-info">
@@ -78,24 +63,12 @@
 
       <!-- NAS 目录树 -->
       <template v-if="selectedStorage.type === 'nas'">
-        <el-tree
-          ref="nasTreeRef"
-          :data="treeData"
-          :props="treeProps"
-          show-checkbox
-          node-key="path"
-          :load="loadNasNode"
-          lazy
-          v-loading="loading"
-          @check="handleCheck"
-          class="file-tree"
-        >
+        <el-tree ref="nasTreeRef" :data="treeData" :props="treeProps" show-checkbox node-key="path" :load="loadNasNode"
+          lazy v-loading="loading" @check="handleCheck" class="file-tree">
           <template #default="{ node, data }">
             <div class="tree-node">
-              <Icon 
-                :icon="data.type === 'directory' ? 'mdi:folder' : 'mdi:file'" 
-                :class="['node-icon', data.type === 'directory' ? 'folder-icon' : 'file-icon']"
-              />
+              <Icon :icon="data.type === 'directory' ? 'mdi:folder' : 'mdi:file'"
+                :class="['node-icon', data.type === 'directory' ? 'folder-icon' : 'file-icon']" />
               <span class="node-name">{{ node.label }}</span>
               <div class="node-info">
                 <span v-if="data.size !== undefined" class="file-size">
@@ -112,24 +85,11 @@
 
       <!-- OBS 存储桶和对象树 -->
       <template v-else-if="selectedStorage.type === 's3'">
-        <el-tree
-          ref="obsTreeRef"
-          :data="treeData"
-          :props="treeProps"
-          show-checkbox
-          node-key="key"
-          :load="loadObsNode"
-          lazy
-          v-loading="loading"
-          @check="handleCheck"
-          class="file-tree"
-        >
+        <el-tree ref="obsTreeRef" :data="treeData" :props="treeProps" show-checkbox node-key="key" :load="loadObsNode"
+          lazy v-loading="loading" @check="handleCheck" class="file-tree">
           <template #default="{ node, data }">
             <div class="tree-node">
-              <Icon 
-                :icon="getBucketIcon(data)" 
-                :class="['node-icon', getBucketIconClass(data)]"
-              />
+              <Icon :icon="getBucketIcon(data)" :class="['node-icon', getBucketIconClass(data)]" />
               <span class="node-name">{{ node.label }}</span>
               <div class="node-info">
                 <span v-if="data.size !== undefined" class="file-size">
@@ -152,13 +112,19 @@
           <div class="summary-header">
             <div class="summary-info">
               <span class="count">
-                {{ $t('sourceSelector.selectedItems', { count: showOptimizedView ? selectedItems.length : originalSelectedItems.length }) }}
-                <span v-if="showOptimizedView && originalSelectedItems.length > selectedItems.length" class="compression-info">
+                {{ $t('sourceSelector.selectedItems', {
+                  count: showOptimizedView ? selectedItems.length :
+                    originalSelectedItems.length
+                }) }}
+                <span v-if="showOptimizedView && originalSelectedItems.length > selectedItems.length"
+                  class="compression-info">
                   ({{ $t('sourceSelector.original') }}: {{ originalSelectedItems.length }})
                 </span>
               </span>
               <span v-if="hasRecursiveSelection" class="recursive-hint">
-                <el-icon><InfoFilled /></el-icon>
+                <el-icon>
+                  <InfoFilled />
+                </el-icon>
                 {{ $t('sourceSelector.includeSubdirectories') }}
               </span>
             </div>
@@ -172,7 +138,7 @@
             </div>
           </div>
         </template>
-        
+
         <!-- 智能压缩视图 -->
         <div v-if="showOptimizedView" class="optimized-items">
           <div v-for="group in groupedSelection" :key="group.type" class="selection-group">
@@ -184,21 +150,14 @@
               <el-badge :value="group.items.length" class="group-badge" />
             </div>
             <div class="group-items">
-              <el-tag
-                v-for="item in group.items"
-                :key="item.key || item.path"
-                :type="getTagType(item)"
-                closable
-                @close="removeSelectedItem(item)"
-                class="selected-item"
-              >
-                <Icon 
-                  :icon="getItemIcon(item)" 
-                  class="tag-icon"
-                />
+              <el-tag v-for="item in group.items" :key="item.key || item.path" :type="getTagType(item)" closable
+                @close="removeSelectedItem(item)" class="selected-item">
+                <Icon :icon="getItemIcon(item)" class="tag-icon" />
                 <span class="item-name">{{ getDisplayName(item) }}</span>
                 <span v-if="item.recursive" class="recursive-indicator">
-                  <el-icon><FolderOpened /></el-icon>
+                  <el-icon>
+                    <FolderOpened />
+                  </el-icon>
                 </span>
               </el-tag>
             </div>
@@ -207,18 +166,9 @@
 
         <!-- 详细视图 -->
         <div v-else class="detailed-items">
-          <el-tag
-            v-for="item in originalSelectedItems"
-            :key="item.key || item.path"
-            :type="getDetailTagType(item)"
-            closable
-            @close="removeDetailedItem(item)"
-            class="selected-item"
-          >
-            <Icon 
-              :icon="getItemIcon(item)" 
-              class="tag-icon"
-            />
+          <el-tag v-for="item in originalSelectedItems" :key="item.key || item.path" :type="getDetailTagType(item)"
+            closable @close="removeDetailedItem(item)" class="selected-item">
+            <Icon :icon="getItemIcon(item)" class="tag-icon" />
             <span class="item-name">{{ getDetailDisplayName(item) }}</span>
           </el-tag>
         </div>
@@ -227,22 +177,22 @@
         <div class="selection-stats">
           <el-row :gutter="16">
             <el-col :span="8">
-                          <div class="stat-item">
-              <span class="stat-label">{{ $t('sourceSelector.directories') }}：</span>
-              <span class="stat-value">{{ directoryCount }}</span>
-            </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="stat-item">
-              <span class="stat-label">{{ $t('sourceSelector.files') }}：</span>
-              <span class="stat-value">{{ fileCount }}</span>
-            </div>
-          </el-col>
-          <el-col :span="8">
-            <div class="stat-item">
-              <span class="stat-label">{{ $t('sourceSelector.recursive') }}：</span>
-              <span class="stat-value">{{ recursiveCount }}</span>
-            </div>
+              <div class="stat-item">
+                <span class="stat-label">{{ $t('sourceSelector.directories') }}：</span>
+                <span class="stat-value">{{ directoryCount }}</span>
+              </div>
+            </el-col>
+            <el-col :span="8">
+              <div class="stat-item">
+                <span class="stat-label">{{ $t('sourceSelector.files') }}：</span>
+                <span class="stat-value">{{ fileCount }}</span>
+              </div>
+            </el-col>
+            <el-col :span="8">
+              <div class="stat-item">
+                <span class="stat-label">{{ $t('sourceSelector.recursive') }}：</span>
+                <span class="stat-value">{{ recursiveCount }}</span>
+              </div>
             </el-col>
           </el-row>
         </div>
@@ -316,14 +266,14 @@ const hasRecursiveSelection = computed(() => {
 
 const directoryCount = computed(() => {
   const items = showOptimizedView.value ? selectedItems.value : originalSelectedItems.value
-  return items.filter(item => 
+  return items.filter(item =>
     item.type === 'directory' || item.type === 'bucket'
   ).length
 })
 
 const fileCount = computed(() => {
   const items = showOptimizedView.value ? selectedItems.value : originalSelectedItems.value
-  return items.filter(item => 
+  return items.filter(item =>
     item.type !== 'directory' && item.type !== 'bucket'
   ).length
 })
@@ -334,7 +284,7 @@ const recursiveCount = computed(() => {
 
 const groupedSelection = computed(() => {
   const groups = []
-  
+
   // 递归目录组
   const recursiveDirs = selectedItems.value.filter(item => item.recursive)
   if (recursiveDirs.length > 0) {
@@ -345,9 +295,9 @@ const groupedSelection = computed(() => {
       items: recursiveDirs
     })
   }
-  
+
   // 普通目录组
-  const normalDirs = selectedItems.value.filter(item => 
+  const normalDirs = selectedItems.value.filter(item =>
     (item.type === 'directory' || item.type === 'bucket') && !item.recursive
   )
   if (normalDirs.length > 0) {
@@ -358,9 +308,9 @@ const groupedSelection = computed(() => {
       items: normalDirs
     })
   }
-  
+
   // 文件组
-  const files = selectedItems.value.filter(item => 
+  const files = selectedItems.value.filter(item =>
     item.type !== 'directory' && item.type !== 'bucket'
   )
   if (files.length > 0) {
@@ -371,7 +321,7 @@ const groupedSelection = computed(() => {
       items: files
     })
   }
-  
+
   return groups
 })
 
@@ -392,14 +342,14 @@ const fetchStorages = async () => {
 
 const handleStorageChange = async (storageId) => {
   if (!storageId) return
-  
+
   // 在复制任务时，不清空已选择的项目
   const isCopyMode = props.modelValue && props.modelValue.selectedPaths && props.modelValue.selectedPaths.length > 0
   if (!isCopyMode) {
     selectedItems.value = []
   }
   treeData.value = []
-  
+
   const storage = storages.value.find(s => s.id === storageId)
   if (!storage) return
 
@@ -418,10 +368,10 @@ const handleStorageChange = async (storageId) => {
   }
   emit('update:modelValue', value)
   // 注意：这里不触发change事件，避免覆盖父组件的数据
-  
+
   // 加载根目录
   await loadRootDirectory(storage)
-  
+
   // 重置树的选中状态
   updateTreeCheckedState()
 }
@@ -451,7 +401,7 @@ const loadNasRoot = async () => {
         page_size: 1000
       }
     })
-    
+
     if (response.data.status === 'success') {
       const files = response.data.data.objects || []
       treeData.value = files.map(file => ({
@@ -473,7 +423,7 @@ const loadNasRoot = async () => {
 const loadObsRoot = async () => {
   try {
     const response = await axios.get(`/api/storages/${selectedStorage.value.id}/buckets`)
-    
+
     if (response.data.status === 'success') {
       const buckets = response.data.data.buckets || []
       treeData.value = buckets.map(bucket => ({
@@ -507,7 +457,7 @@ const loadNasNode = async (node, resolve) => {
         page_size: 1000
       }
     })
-    
+
     if (response.data.status === 'success') {
       const files = response.data.data.objects || []
       const children = files.map(file => ({
@@ -548,7 +498,7 @@ const loadObsNode = async (node, resolve) => {
           page_size: 1000
         }
       })
-      
+
       if (response.data.status === 'success') {
         const objects = response.data.data.objects || []
         const children = objects.map(obj => ({
@@ -582,7 +532,7 @@ const loadObsNode = async (node, resolve) => {
           page_size: 1000
         }
       })
-      
+
       if (response.data.status === 'success') {
         const objects = response.data.data.objects || []
         const children = objects.map(obj => ({
@@ -615,7 +565,7 @@ const updateTreeCheckedState = () => {
 
   // 获取所有选中的节点路径
   const checkedKeys = selectedItems.value.map(item => item.key || item.path)
-  
+
   // 更新树的选中状态
   treeRef.setCheckedKeys(checkedKeys)
   return true
@@ -626,12 +576,12 @@ const compressSelectedPaths = (items) => {
   const paths = items.map(item => item.key || item.path).sort()
   const compressed = []
   const excluded = []
-  
+
   // 按路径排序，便于处理父子关系
   for (let i = 0; i < paths.length; i++) {
     const currentPath = paths[i]
     let isSubPath = false
-    
+
     // 检查是否已被父路径包含
     for (const parentPath of compressed) {
       if (currentPath.startsWith(parentPath + '/') || currentPath.startsWith(parentPath + '\\')) {
@@ -639,13 +589,13 @@ const compressSelectedPaths = (items) => {
         break
       }
     }
-    
+
     if (!isSubPath) {
       // 检查当前路径是否包含已有路径（当前路径是父路径）
-      const childPaths = compressed.filter(path => 
+      const childPaths = compressed.filter(path =>
         path.startsWith(currentPath + '/') || path.startsWith(currentPath + '\\')
       )
-      
+
       // 移除被包含的子路径
       childPaths.forEach(childPath => {
         const index = compressed.indexOf(childPath)
@@ -653,11 +603,11 @@ const compressSelectedPaths = (items) => {
           compressed.splice(index, 1)
         }
       })
-      
+
       compressed.push(currentPath)
     }
   }
-  
+
   return { included: compressed, excluded }
 }
 
@@ -671,21 +621,21 @@ const handleCheckChange = (data, checked) => {
 const handleCheck = (data, checkedInfo) => {
   // 获取所有选中的节点
   const checkedNodes = checkedInfo.checkedNodes || []
-  
+
   // 保存原始完整的选择数据（用于详细视图）
   originalSelectedItems.value = [...checkedNodes]
-  
+
   // 应用智能压缩算法
   const smartCompressedItems = applySmartCompression(checkedNodes)
   selectedItems.value = smartCompressedItems
-  
+
   updateModelValue()
 }
 
 // 智能压缩算法：只保留必要的父级路径
 const applySmartCompression = (allNodes) => {
   if (!allNodes || allNodes.length === 0) return []
-  
+
   // 按路径长度排序，短路径在前（父路径优先）
   const sortedNodes = [...allNodes].sort((a, b) => {
     const pathA = a.key || a.path || ''
@@ -697,48 +647,48 @@ const applySmartCompression = (allNodes) => {
     // 长度相同时按字母顺序
     return pathA.localeCompare(pathB)
   })
-  
+
   const compressedItems = []
-  
+
   for (const node of sortedNodes) {
     const currentPath = node.key || node.path
     if (!currentPath) continue
-    
+
     // 检查是否已有父路径包含此节点
     const hasParent = compressedItems.some(item => {
       const itemPath = item.key || item.path
-      const isChild = currentPath.startsWith(itemPath + '/') || currentPath.startsWith(itemPath + '\\') || 
-                     (itemPath.endsWith('/') && currentPath.startsWith(itemPath)) ||
-                     (itemPath.endsWith('\\') && currentPath.startsWith(itemPath))
+      const isChild = currentPath.startsWith(itemPath + '/') || currentPath.startsWith(itemPath + '\\') ||
+        (itemPath.endsWith('/') && currentPath.startsWith(itemPath)) ||
+        (itemPath.endsWith('\\') && currentPath.startsWith(itemPath))
       return isChild
     })
-    
+
     if (!hasParent) {
       // 移除所有被当前路径包含的子路径
       const filteredItems = compressedItems.filter(item => {
         const itemPath = item.key || item.path
         const isChild = itemPath.startsWith(currentPath + '/') || itemPath.startsWith(currentPath + '\\') ||
-                       (currentPath.endsWith('/') && itemPath.startsWith(currentPath)) ||
-                       (currentPath.endsWith('\\') && itemPath.startsWith(currentPath))
+          (currentPath.endsWith('/') && itemPath.startsWith(currentPath)) ||
+          (currentPath.endsWith('\\') && itemPath.startsWith(currentPath))
         return !isChild
       })
-      
+
       // 为目录添加递归标记
       const compressedNode = {
         ...node,
         recursive: node.type === 'directory' || node.type === 'bucket',
-        displayName: (node.type === 'directory' || node.type === 'bucket') 
-          ? `${node.name || node.path} (包含子目录)` 
+        displayName: (node.type === 'directory' || node.type === 'bucket')
+          ? `${node.name || node.path} (包含子目录)`
           : node.name || node.path
       }
-      
+
       compressedItems.length = 0
       compressedItems.push(...filteredItems, compressedNode)
     }
   }
-  
+
   // 智能压缩完成，返回优化后的节点列表
-  
+
   return compressedItems
 }
 
@@ -746,7 +696,7 @@ const removeSelectedItem = (item) => {
   selectedItems.value = selectedItems.value.filter(
     selected => (selected.key || selected.path) !== (item.key || item.path)
   )
-  
+
   // 更新树的选中状态
   updateTreeCheckedState()
   updateModelValue()
@@ -798,16 +748,16 @@ const getDetailDisplayName = (item) => {
 const removeDetailedItem = (item) => {
   // 从原始选择中移除项目
   const itemPath = item.key || item.path
-  
+
   // 移除原始项目
   originalSelectedItems.value = originalSelectedItems.value.filter(
     selected => (selected.key || selected.path) !== itemPath
   )
-  
+
   // 重新应用智能压缩
   const smartCompressedItems = applySmartCompression(originalSelectedItems.value)
   selectedItems.value = smartCompressedItems
-  
+
   // 同步更新树的选中状态
   updateTreeCheckedState()
   updateModelValue()
@@ -821,13 +771,13 @@ const refreshTree = async () => {
 
 const expandAll = async () => {
   const treeRef = selectedStorage.value?.type === 'nas' ? nasTreeRef.value : obsTreeRef.value
-  
+
   if (treeRef) {
-    
+
     // 获取所有节点并展开，同时触发懒加载
     const expandAllNodes = async (nodes) => {
       for (const node of nodes) {
-        
+
         // 如果节点是目录且未加载过子节点，先触发懒加载
         if (node.data && (node.data.type === 'directory' || node.data.type === 'bucket')) {
           if (!node.childNodes || node.childNodes.length === 0) {
@@ -845,19 +795,19 @@ const expandAll = async () => {
             }
           }
         }
-        
+
         // 展开当前节点
         if (node.expanded !== undefined) {
           node.expanded = true
         }
-        
+
         // 递归展开子节点
         if (node.childNodes && node.childNodes.length > 0) {
           await expandAllNodes(node.childNodes)
         }
       }
     }
-    
+
     // 从根节点开始展开
     if (treeRef.root && treeRef.root.childNodes) {
       await expandAllNodes(treeRef.root.childNodes)
@@ -871,7 +821,7 @@ const expandAll = async () => {
 
 const collapseAll = () => {
   const treeRef = selectedStorage.value?.type === 'nas' ? nasTreeRef.value : obsTreeRef.value
-  
+
   if (treeRef) {
     // 获取所有节点并收起
     const collapseAllNodes = (nodes) => {
@@ -886,7 +836,7 @@ const collapseAll = () => {
         }
       })
     }
-    
+
     // 从根节点开始收起
     if (treeRef.root && treeRef.root.childNodes) {
       collapseAllNodes(treeRef.root.childNodes)
@@ -901,7 +851,7 @@ const collapseAll = () => {
 const updateModelValue = () => {
   // 使用压缩算法优化选择路径
   const compressed = compressSelectedPaths(selectedItems.value)
-  
+
   const value = {
     storageId: form.value.selectedStorageId,
     storageName: selectedStorage.value?.name || '',
@@ -945,20 +895,20 @@ const setInitialState = async (initialData) => {
     treeData.value = []
     return
   }
-  
+
   if (!initialData.storageId) return
-  
+
   // 设置存储选择
   form.value.selectedStorageId = initialData.storageId
-  
+
   // 等待存储列表加载完成
   if (storages.value.length === 0) {
     await fetchStorages()
   }
-  
+
   // 触发存储变更，加载目录树
   await handleStorageChange(initialData.storageId)
-  
+
   // 设置选中项
   if (initialData.selectedPaths && initialData.selectedPaths.length > 0) {
     selectedItems.value = initialData.selectedPaths.map(path => ({
@@ -968,23 +918,23 @@ const setInitialState = async (initialData) => {
       size: path.size,
       bucket: path.bucket
     }))
-    
+
     // 等待树组件加载完成后再设置选中状态
     await new Promise(resolve => setTimeout(resolve, 1000))
-    
+
     // 再次检查树组件是否可用
     const treeRef = selectedStorage.value?.type === 'nas' ? nasTreeRef.value : obsTreeRef.value
     if (!treeRef) {
       console.warn('树组件仍未加载完成，等待更长时间')
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
-    
+
     // 更新树的选中状态
     updateTreeCheckedState()
-    
+
     // 确保树节点展开到选中项
     await expandToSelectedItems(initialData.selectedPaths)
-    
+
     // 更新模型值 - 在初始化时不触发change事件
     const value = {
       storageId: form.value.selectedStorageId,
@@ -1005,20 +955,20 @@ const setInitialState = async (initialData) => {
 // 展开到选中项的方法
 const expandToSelectedItems = async (selectedPaths) => {
   if (!selectedPaths || selectedPaths.length === 0) return
-  
+
   // 等待树组件完全加载
   await new Promise(resolve => setTimeout(resolve, 1000))
-  
+
   const treeRef = selectedStorage.value?.type === 'nas' ? nasTreeRef.value : obsTreeRef.value
   if (!treeRef) {
     console.warn('树组件不可用，无法展开节点')
     return
   }
-  
+
   // 对于每个选中的路径，展开到该路径
   for (const pathInfo of selectedPaths) {
     const path = pathInfo.path || pathInfo
-    
+
     try {
       // 展开到该路径的父目录
       await expandToPath(treeRef, path)
@@ -1031,28 +981,28 @@ const expandToSelectedItems = async (selectedPaths) => {
 // 展开到指定路径的方法
 const expandToPath = async (treeRef, targetPath) => {
   if (!treeRef || !targetPath) return
-  
+
   // 获取路径的各个部分
   const pathParts = targetPath.split('/').filter(part => part)
-  
+
   // 根据存储类型确定使用的key
   const isObs = selectedStorage.value?.type === 's3'
   const nodeKey = isObs ? 'key' : 'path'
-  
+
   // 逐级展开
   for (let i = 0; i < pathParts.length; i++) {
     const currentPath = pathParts.slice(0, i + 1).join('/')
-    
+
     // 等待一下，确保树组件响应
     await new Promise(resolve => setTimeout(resolve, 100))
-    
+
     // 尝试展开当前路径
     try {
       // 使用Element Plus树组件的正确API
       // 根据存储类型确定使用的key
       const isObs = selectedStorage.value?.type === 's3'
       const nodeKey = isObs ? 'key' : 'path'
-      
+
       // 查找对应的节点
       const node = treeRef.getNode(currentPath)
       if (node) {
@@ -1062,7 +1012,7 @@ const expandToPath = async (treeRef, targetPath) => {
       } else {
         const allNodes = treeRef.store.nodesMap
         if (allNodes) {
-          const foundNode = Object.values(allNodes).find(n => 
+          const foundNode = Object.values(allNodes).find(n =>
             n.data && (n.data.path === currentPath || n.data.key === currentPath)
           )
           if (foundNode) {
@@ -1071,7 +1021,7 @@ const expandToPath = async (treeRef, targetPath) => {
             }
           }
         }
-        
+
         // 对于懒加载的树，可能需要先加载父节点
         if (i > 0) {
           const parentPath = pathParts.slice(0, i).join('/')
@@ -1106,7 +1056,7 @@ const setState = async (state) => {
     if (state.form) {
       form.value.selectedStorageId = state.form.selectedStorageId || ''
     }
-    
+
     // 恢复树数据，避免重新加载
     if (state.treeData && state.treeData.length > 0) {
       treeData.value = state.treeData
@@ -1117,12 +1067,12 @@ const setState = async (state) => {
     } else {
       treeData.value = []
     }
-    
+
     // 延迟更新树状态
     setTimeout(async () => {
       let retryCount = 0
       const maxRetries = 10
-      
+
       const tryUpdateTree = () => {
         if (updateTreeCheckedState()) {
           // 延迟展开到选中项
@@ -1136,7 +1086,7 @@ const setState = async (state) => {
           setTimeout(tryUpdateTree, 300)
         }
       }
-      
+
       tryUpdateTree()
     }, 1000)
   }
@@ -1201,17 +1151,17 @@ watch(() => props.modelValue, (newValue, oldValue) => {
       handleStorageChange(newValue.storageId)
     }
   }
-  
-    // 在复制任务模式下，如果selectedPaths有内容，保持选中状态
+
+  // 在复制任务模式下，如果selectedPaths有内容，保持选中状态
   if (newValue.selectedPaths && newValue.selectedPaths.length > 0) {
-    
+
     // 检查是否需要更新选中项
-    const needsUpdate = selectedItems.value.length === 0 || 
-                       selectedItems.value.length !== newValue.selectedPaths.length ||
-                       !selectedItems.value.every((item, index) => 
-                         (item.path || item.key) === newValue.selectedPaths[index].path
-                       )
-    
+    const needsUpdate = selectedItems.value.length === 0 ||
+      selectedItems.value.length !== newValue.selectedPaths.length ||
+      !selectedItems.value.every((item, index) =>
+        (item.path || item.key) === newValue.selectedPaths[index].path
+      )
+
     if (needsUpdate) {
       selectedItems.value = newValue.selectedPaths.map(path => ({
         name: path.name || path.path.split('/').pop(),
@@ -1220,7 +1170,7 @@ watch(() => props.modelValue, (newValue, oldValue) => {
         size: path.size,
         bucket: path.bucket
       }))
-      
+
       // 检查树数据是否为空，如果为空则重新加载
       if (treeData.value.length === 0 && newValue.storageId) {
         // 重新加载树数据
@@ -1229,12 +1179,12 @@ watch(() => props.modelValue, (newValue, oldValue) => {
           console.error('重新加载树数据失败:', error)
         })
       }
-      
+
       // 延迟更新树状态，确保树组件已加载
       setTimeout(async () => {
         let retryCount = 0
         const maxRetries = 10 // 增加重试次数
-        
+
         const tryUpdateTree = () => {
           if (updateTreeCheckedState()) {
             // 再次延迟展开到选中项
@@ -1248,10 +1198,10 @@ watch(() => props.modelValue, (newValue, oldValue) => {
             console.warn('树组件加载超时，无法更新选中状态')
           }
         }
-        
+
         tryUpdateTree()
       }, 1000) // 增加初始延迟时间
-    } 
+    }
   }
 }, { immediate: true })
 

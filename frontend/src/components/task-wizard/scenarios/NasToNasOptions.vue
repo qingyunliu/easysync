@@ -4,11 +4,8 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('nasToNasOptions.rsyncArgs')">
-            <el-input
-              v-model="form.rsync_args"
-              :placeholder="$t('nasToNasOptions.rsyncArgsPlaceholder')"
-              @input="updateModelValue"
-            />
+            <el-input v-model="form.rsync_args" :placeholder="$t('nasToNasOptions.rsyncArgsPlaceholder')"
+              @input="updateModelValue" />
             <div class="form-tip">{{ $t('nasToNasOptions.rsyncArgsTip') }}</div>
           </el-form-item>
         </el-col>
@@ -22,65 +19,47 @@
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('nasToNasOptions.preservePermissions')">
-            <el-switch
-              v-model="form.preserve_permissions"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.preserve_permissions" @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToNasOptions.preservePermissionsTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('nasToNasOptions.preserveTimestamps')">
-            <el-switch
-              v-model="form.preserve_timestamps"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.preserve_timestamps" @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToNasOptions.preserveTimestampsTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('nasToNasOptions.hardLinks')">
-            <el-switch
-              v-model="form.hard_links"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.hard_links" @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToNasOptions.hardLinksTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('nasToNasOptions.sparseFiles')">
-            <el-switch
-              v-model="form.sparse_files"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.sparse_files" @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToNasOptions.sparseFilesTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('nasToNasOptions.partialTransfer')">
-            <el-switch
-              v-model="form.partial"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.partial" @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToNasOptions.partialTransferTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('nasToNasOptions.progressDisplay')">
-            <el-switch
-              v-model="form.progress"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.progress" @change="updateModelValue" />
             <div class="form-tip">{{ $t('nasToNasOptions.progressDisplayTip') }}</div>
           </el-form-item>
         </el-col>
@@ -178,4 +157,4 @@ watch(() => props.modelValue, (newValue) => {
 :deep(.el-form-item__label) {
   font-weight: 500;
 }
-</style> 
+</style>

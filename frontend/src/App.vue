@@ -19,9 +19,10 @@ import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
   padding: 0;
 }
 
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100%;
 }
-</style> 
+</style>

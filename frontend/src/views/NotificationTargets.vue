@@ -8,7 +8,9 @@
       </div>
       <div class="header-actions">
         <el-button type="primary" @click="openCreateDialog">
-          <el-icon><Plus /></el-icon>
+          <el-icon>
+            <Plus />
+          </el-icon>
           创建通知对象
         </el-button>
       </div>
@@ -25,20 +27,19 @@
           </el-select>
         </el-form-item>
         <el-form-item label="对象名称">
-          <el-input
-            v-model="filters.keyword"
-            placeholder="搜索对象名称"
-            clearable
-            @keyup.enter="loadTargets"
-          >
+          <el-input v-model="filters.keyword" placeholder="搜索对象名称" clearable @keyup.enter="loadTargets">
             <template #prefix>
-              <el-icon><Search /></el-icon>
+              <el-icon>
+                <Search />
+              </el-icon>
             </template>
           </el-input>
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="loadTargets">
-            <el-icon><Search /></el-icon>
+            <el-icon>
+              <Search />
+            </el-icon>
             搜索
           </el-button>
           <el-button @click="resetFilter">重置</el-button>
@@ -48,14 +49,10 @@
 
     <!-- 对象列表 -->
     <div class="targets-container">
-      <el-table 
-        :data="filteredTargets" 
-        style="width: 100%"
-        @selection-change="handleSelectionChange"
-        v-loading="loading"
-      >
+      <el-table :data="filteredTargets" style="width: 100%" @selection-change="handleSelectionChange"
+        v-loading="loading">
         <el-table-column type="selection" width="55" />
-        
+
         <el-table-column prop="name" label="对象名称" sortable>
           <template #default="{ row }">
             <el-link type="primary" @click="showTargetDetail(row)">
@@ -63,7 +60,7 @@
             </el-link>
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="target_type" label="对象类型" sortable>
           <template #default="{ row }">
             <el-tag :type="getTargetTypeTagType(row.target_type)" size="small">
@@ -71,7 +68,7 @@
             </el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="对象状态" sortable>
           <template #default="{ row }">
             <el-tag :type="row.enabled ? 'success' : 'info'" size="small">
@@ -79,17 +76,12 @@
             </el-tag>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="关联告警器" sortable>
           <template #default="{ row }">
             <div v-if="row.alert_policies && row.alert_policies.length > 0">
-              <el-tag 
-                v-for="policyId in row.alert_policies.slice(0, 2)" 
-                :key="policyId"
-                size="small"
-                type="warning"
-                class="mr-1"
-              >
+              <el-tag v-for="policyId in row.alert_policies.slice(0, 2)" :key="policyId" size="small" type="warning"
+                class="mr-1">
                 {{ getAlertPolicyName(policyId) }}
               </el-tag>
               <el-tag v-if="row.alert_policies.length > 2" size="small" type="warning">
@@ -99,17 +91,12 @@
             <span v-else class="text-muted">无</span>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="发送通道" sortable>
           <template #default="{ row }">
             <div v-if="row.channels && row.channels.length > 0">
-              <el-tag 
-                v-for="channelId in row.channels.slice(0, 2)" 
-                :key="channelId"
-                size="small"
-                type="success"
-                class="mr-1"
-              >
+              <el-tag v-for="channelId in row.channels.slice(0, 2)" :key="channelId" size="small" type="success"
+                class="mr-1">
                 {{ getNotificationChannelName(channelId) }}
               </el-tag>
               <el-tag v-if="row.channels.length > 2" size="small" type="success">
@@ -119,13 +106,13 @@
             <span v-else class="text-muted">无</span>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="通知地址" sortable>
           <template #default="{ row }">
             {{ getTargetAddress(row) }}
           </template>
         </el-table-column>
-        
+
         <el-table-column prop="created_at" label="创建时间" sortable>
           <template #default="{ row }">
             <div class="time-display">
@@ -134,29 +121,21 @@
             </div>
           </template>
         </el-table-column>
-        
+
         <el-table-column label="操作" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button 
-              size="small" 
-              :type="row.enabled ? 'warning' : 'success'"
-              @click="toggleTarget(row)"
-              :loading="row.toggling"
-            >
+            <el-button size="small" :type="row.enabled ? 'warning' : 'success'" @click="toggleTarget(row)"
+              :loading="row.toggling">
               {{ row.enabled ? '禁用' : '启用' }}
             </el-button>
             <el-button size="small" @click="editTarget(row)">编辑</el-button>
-            <el-button 
-              size="small" 
-              type="danger" 
-              @click="deleteTarget(row)"
-            >
+            <el-button size="small" type="danger" @click="deleteTarget(row)">
               删除
             </el-button>
           </template>
         </el-table-column>
       </el-table>
-      
+
       <div v-if="filteredTargets.length === 0" class="empty-state">
         <el-empty description="暂无通知对象">
           <el-button type="primary" @click="openCreateDialog">创建第一个通知对象</el-button>
@@ -170,7 +149,7 @@
         <el-form-item label="对象名称">
           <el-input v-model="targetForm.name" />
         </el-form-item>
-        
+
         <el-form-item label="对象类型">
           <el-select v-model="targetForm.target_type" @change="handleTargetTypeChange">
             <el-option label="邮件" value="email" />
@@ -178,59 +157,50 @@
             <el-option label="WebHook" value="webhook" />
           </el-select>
         </el-form-item>
-        
+
         <!-- 邮件配置 -->
         <div v-if="targetForm.target_type === 'email'" class="email-config">
           <el-form-item label="邮箱地址">
             <el-input v-model="targetForm.target_config.email" placeholder="example@domain.com" />
           </el-form-item>
         </div>
-        
+
         <!-- 短信配置 -->
         <div v-if="targetForm.target_type === 'sms'" class="sms-config">
           <el-form-item label="手机号码">
             <el-input v-model="targetForm.target_config.phone" placeholder="13800138000" />
           </el-form-item>
         </div>
-        
+
         <!-- WebHook配置 -->
         <div v-if="targetForm.target_type === 'webhook'" class="webhook-config">
           <el-form-item label="URL">
             <el-input v-model="targetForm.target_config.url" placeholder="https://example.com/webhook" />
           </el-form-item>
         </div>
-        
+
         <el-form-item label="关联告警器">
           <el-select v-model="targetForm.alert_policies" multiple placeholder="选择关联的告警器">
-            <el-option 
-              v-for="policy in alertPolicies" 
-              :key="policy.id" 
-              :label="policy.name" 
-              :value="policy.id" 
-            />
+            <el-option v-for="policy in alertPolicies" :key="policy.id" :label="policy.name" :value="policy.id" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="发送通道">
           <el-select v-model="targetForm.channels" multiple placeholder="选择发送通道">
-            <el-option 
-              v-for="channel in notificationChannels" 
-              :key="channel.id" 
-              :label="channel.name" 
-              :value="channel.id" 
-            />
+            <el-option v-for="channel in notificationChannels" :key="channel.id" :label="channel.name"
+              :value="channel.id" />
           </el-select>
         </el-form-item>
-        
+
         <el-form-item label="描述">
           <el-input v-model="targetForm.description" type="textarea" />
         </el-form-item>
-        
+
         <el-form-item label="启用状态">
           <el-switch v-model="targetForm.enabled" />
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
         <el-button type="primary" @click="submitTarget">保存</el-button>
@@ -238,12 +208,7 @@
     </el-dialog>
 
     <!-- 对象详情侧拉抽屉 -->
-    <el-drawer
-      v-model="showTargetDetailDrawer"
-      title="对象详情"
-      direction="rtl"
-      size="50%"
-    >
+    <el-drawer v-model="showTargetDetailDrawer" title="对象详情" direction="rtl" size="50%">
       <div v-if="selectedTarget" class="target-detail">
         <div class="detail-section">
           <h3>基本信息</h3>
@@ -299,12 +264,8 @@
           <div class="detail-item" v-if="selectedTarget.alert_policies && selectedTarget.alert_policies.length > 0">
             <span class="label">告警器列表:</span>
             <div class="value">
-              <el-tag 
-                v-for="policyId in selectedTarget.alert_policies" 
-                :key="policyId"
-                size="small"
-                style="margin-right: 8px; margin-bottom: 4px;"
-              >
+              <el-tag v-for="policyId in selectedTarget.alert_policies" :key="policyId" size="small"
+                style="margin-right: 8px; margin-bottom: 4px;">
                 {{ getAlertPolicyName(policyId) }}
               </el-tag>
             </div>
@@ -316,12 +277,8 @@
           <div class="detail-item" v-if="selectedTarget.channels && selectedTarget.channels.length > 0">
             <span class="label">通道列表:</span>
             <div class="value">
-              <el-tag 
-                v-for="channelId in selectedTarget.channels" 
-                :key="channelId"
-                size="small"
-                style="margin-right: 8px; margin-bottom: 4px;"
-              >
+              <el-tag v-for="channelId in selectedTarget.channels" :key="channelId" size="small"
+                style="margin-right: 8px; margin-bottom: 4px;">
                 {{ getNotificationChannelName(channelId) }}
               </el-tag>
             </div>
@@ -342,17 +299,11 @@
 
         <div class="detail-actions">
           <el-button type="primary" @click="editTarget(selectedTarget)">编辑对象</el-button>
-          <el-button 
-            :type="selectedTarget.enabled ? 'warning' : 'success'"
-            @click="toggleTarget(selectedTarget)"
-            :loading="selectedTarget.toggling"
-          >
+          <el-button :type="selectedTarget.enabled ? 'warning' : 'success'" @click="toggleTarget(selectedTarget)"
+            :loading="selectedTarget.toggling">
             {{ selectedTarget.enabled ? '禁用' : '启用' }}
           </el-button>
-          <el-button 
-            type="danger" 
-            @click="deleteTarget(selectedTarget)"
-          >
+          <el-button type="danger" @click="deleteTarget(selectedTarget)">
             删除对象
           </el-button>
         </div>
@@ -396,19 +347,19 @@ const targetForm = reactive({
 // 计算属性
 const filteredTargets = computed(() => {
   let result = targets.value
-  
+
   if (filters.target_type) {
     result = result.filter(target => target.target_type === filters.target_type)
   }
-  
+
   if (filters.keyword) {
     const keyword = filters.keyword.toLowerCase()
-    result = result.filter(target => 
+    result = result.filter(target =>
       target.name.toLowerCase().includes(keyword) ||
       target.target_type.toLowerCase().includes(keyword)
     )
   }
-  
+
   return result
 })
 
@@ -497,7 +448,7 @@ const resetTargetForm = () => {
 const handleTargetTypeChange = () => {
   // 根据对象类型重置配置
   targetForm.target_config = {}
-  
+
   if (targetForm.target_type === 'email') {
     targetForm.target_config = {
       email: ''
@@ -522,7 +473,7 @@ const submitTarget = async () => {
       await axios.put(`/api/notifications/targets/${editingTarget.value.id}`, targetForm)
       ElMessage.success('通知对象更新成功')
     }
-    
+
     dialogVisible.value = false
     fetchTargets()
   } catch (error) {
@@ -533,7 +484,7 @@ const submitTarget = async () => {
 const editTarget = (target) => {
   dialogMode.value = 'edit'
   editingTarget.value = target
-  
+
   Object.assign(targetForm, {
     name: target.name,
     target_type: target.target_type,
@@ -543,7 +494,7 @@ const editTarget = (target) => {
     channels: target.channels || [],
     target_config: { ...target.target_config }
   })
-  
+
   dialogVisible.value = true
 }
 
@@ -571,7 +522,7 @@ const deleteTarget = async (target) => {
         cancelButtonText: '取消'
       }
     )
-    
+
     await axios.delete(`/api/notifications/targets/${target.id}`)
     ElMessage.success('通知对象删除成功')
     fetchTargets()
@@ -634,6 +585,7 @@ const formatDate = (date) => {
 .text-muted {
   color: #909399;
 }
+
 .notification-targets-page {
   padding: 20px;
   min-height: 100vh;

@@ -17,26 +17,21 @@
           </template>
           <el-form :model="loginForm" :rules="rules" ref="loginFormRef" label-width="0" @submit.prevent="handleLogin">
             <el-form-item prop="username">
-              <el-input 
-                v-model="loginForm.username" 
-                :placeholder="$t('auth.username')"
-                class="custom-input"
-              >
+              <el-input v-model="loginForm.username" :placeholder="$t('auth.username')" class="custom-input">
                 <template #prefix>
-                  <el-icon><User /></el-icon>
+                  <el-icon>
+                    <User />
+                  </el-icon>
                 </template>
               </el-input>
             </el-form-item>
             <el-form-item prop="password">
-              <el-input 
-                v-model="loginForm.password" 
-                type="password" 
-                :placeholder="$t('auth.password')" 
-                show-password
-                class="custom-input"
-              >
+              <el-input v-model="loginForm.password" type="password" :placeholder="$t('auth.password')" show-password
+                class="custom-input">
                 <template #prefix>
-                  <el-icon><Lock /></el-icon>
+                  <el-icon>
+                    <Lock />
+                  </el-icon>
                 </template>
               </el-input>
             </el-form-item>
@@ -46,22 +41,14 @@
                   <el-input v-model="loginForm.captcha" maxlength="4" :placeholder="$t('auth.captcha')" />
                 </el-col>
                 <el-col :span="12">
-                  <img
-                    :src="captchaImg"
-                    @click="refreshCaptcha"
+                  <img :src="captchaImg" @click="refreshCaptcha"
                     style="height: 40px; cursor: pointer; border-radius: 4px; border:1px solid var(--border-color); background:var(--bg-color);"
-                    :title="$t('auth.clickToRefresh')"
-                  />
+                    :title="$t('auth.clickToRefresh')" />
                 </el-col>
               </el-row>
             </el-form-item>
             <el-form-item>
-              <el-button 
-                type="primary" 
-                native-type="submit"
-                :loading="loading" 
-                class="login-button"
-              >
+              <el-button type="primary" native-type="submit" :loading="loading" class="login-button">
                 {{ $t('auth.login') }}
               </el-button>
             </el-form-item>
@@ -308,10 +295,12 @@ const handleLogin = async () => {
   font-weight: 500;
   transition: all 0.3s ease;
 }
+
 .forgot-link:hover {
   color: #66b1ff;
   text-decoration: underline;
 }
+
 .forgot-link-sep {
   margin: 0 6px;
   color: #bbb;
@@ -322,6 +311,7 @@ const handleLogin = async () => {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -333,6 +323,7 @@ const handleLogin = async () => {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -349,7 +340,8 @@ const handleLogin = async () => {
   right: 48px;
   z-index: 10;
 }
+
 .theme-toggle-inline {
   margin-left: 12px;
 }
-</style> 
+</style>

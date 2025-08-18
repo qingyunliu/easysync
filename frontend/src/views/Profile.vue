@@ -3,44 +3,31 @@
     <div class="page-header">
       <h2>{{ $t('profile.pageTitle') }}</h2>
     </div>
-    
+
     <div class="content-wrapper">
       <el-tabs v-model="activeTab" class="profile-tabs">
         <!-- 基本信息 -->
         <el-tab-pane :label="$t('profile.basicInfo')" name="basic">
-          <el-form 
-            :model="profileForm" 
-            :rules="profileRules" 
-            ref="profileFormRef" 
-            label-width="100px"
-            class="profile-form"
-          >
+          <el-form :model="profileForm" :rules="profileRules" ref="profileFormRef" label-width="100px"
+            class="profile-form">
             <el-form-item :label="$t('profile.avatar')">
               <div class="avatar-uploader">
-                <el-avatar 
-                  :size="120" 
-                  :src="profileForm.avatar || defaultAvatar"
-                  @error="handleAvatarError"
-                >
+                <el-avatar :size="120" :src="profileForm.avatar || defaultAvatar" @error="handleAvatarError">
                   {{ profileForm.username?.charAt(0)?.toUpperCase() }}
                 </el-avatar>
-                <el-upload
-                  class="avatar-uploader"
-                  :show-file-list="false"
-                  :before-upload="beforeAvatarUpload"
-                  :http-request="handleAvatarUpload"
-                >
+                <el-upload class="avatar-uploader" :show-file-list="false" :before-upload="beforeAvatarUpload"
+                  :http-request="handleAvatarUpload">
                   <el-button type="primary" size="small" class="upload-button">
                     {{ $t('profile.changeAvatar') }}
                   </el-button>
                 </el-upload>
               </div>
             </el-form-item>
-            
+
             <el-form-item :label="$t('profile.username')">
               <el-input v-model="profileForm.username" disabled></el-input>
             </el-form-item>
-            
+
             <el-form-item :label="$t('profile.email')" prop="email">
               <el-input v-model="profileForm.email"></el-input>
             </el-form-item>
@@ -52,7 +39,9 @@
                 <template #append>
                   <el-tooltip :content="$t('profile.copyId')" placement="top">
                     <el-button class="copy-id-btn" @click="copyUserId">
-                      <el-icon><Document /></el-icon>
+                      <el-icon>
+                        <Document />
+                      </el-icon>
                     </el-button>
                   </el-tooltip>
                 </template>
@@ -60,11 +49,7 @@
             </el-form-item>
 
             <el-form-item :label="$t('profile.userRole')">
-              <el-tag 
-                :type="profileForm.role === 'admin' ? 'danger' : 'success'"
-                effect="dark"
-                class="role-tag"
-              >
+              <el-tag :type="profileForm.role === 'admin' ? 'danger' : 'success'" effect="dark" class="role-tag">
                 {{ profileForm.role === 'admin' ? $t('profile.admin') : $t('profile.normalUser') }}
               </el-tag>
             </el-form-item>
@@ -76,58 +61,33 @@
             <el-form-item :label="$t('profile.lastLogin')">
               <span class="info-text">{{ formatDate(profileForm.last_login) }}</span>
             </el-form-item>
-            
+
             <el-form-item>
-              <el-button 
-                type="primary" 
-                @click="handleUpdateProfile" 
-                :loading="userStore.loading"
-              >
+              <el-button type="primary" @click="handleUpdateProfile" :loading="userStore.loading">
                 {{ $t('profile.saveChanges') }}
               </el-button>
             </el-form-item>
           </el-form>
         </el-tab-pane>
-        
+
         <!-- 修改密码 -->
         <el-tab-pane :label="$t('profile.changePassword')" name="password">
-          <el-form 
-            :model="passwordForm" 
-            :rules="passwordRules" 
-            ref="passwordFormRef" 
-            label-width="100px"
-            class="profile-form"
-          >
+          <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" label-width="100px"
+            class="profile-form">
             <el-form-item :label="$t('profile.currentPassword')" prop="currentPassword">
-              <el-input 
-                v-model="passwordForm.currentPassword" 
-                type="password" 
-                show-password
-              ></el-input>
+              <el-input v-model="passwordForm.currentPassword" type="password" show-password></el-input>
             </el-form-item>
-            
+
             <el-form-item :label="$t('profile.newPassword')" prop="newPassword">
-              <el-input 
-                v-model="passwordForm.newPassword" 
-                type="password" 
-                show-password
-              ></el-input>
+              <el-input v-model="passwordForm.newPassword" type="password" show-password></el-input>
             </el-form-item>
-            
+
             <el-form-item :label="$t('profile.confirmPassword')" prop="confirmPassword">
-              <el-input 
-                v-model="passwordForm.confirmPassword" 
-                type="password" 
-                show-password
-              ></el-input>
+              <el-input v-model="passwordForm.confirmPassword" type="password" show-password></el-input>
             </el-form-item>
-            
+
             <el-form-item>
-              <el-button 
-                type="primary" 
-                @click="handleChangePassword" 
-                :loading="userStore.loading"
-              >
+              <el-button type="primary" @click="handleChangePassword" :loading="userStore.loading">
                 {{ $t('profile.changePassword') }}
               </el-button>
             </el-form-item>
@@ -224,7 +184,7 @@ const beforeAvatarUpload = (file) => {
 const fetchUserProfile = async () => {
   try {
     const response = await axios.get("/api/users/me");
-    
+
     const userData = response.data.data
     Object.assign(profileForm, {
       id: userData.id,
@@ -249,7 +209,7 @@ onMounted(() => {
 // 更新个人信息
 const handleUpdateProfile = async () => {
   if (!profileFormRef.value) return
-  
+
   await profileFormRef.value.validate(async (valid) => {
     if (valid) {
       try {
@@ -262,7 +222,7 @@ const handleUpdateProfile = async () => {
             }
           }
         )
-        
+
         if (response.status === 200) {
           ElMessage.success(t('profile.messages.profileUpdateSuccess'))
           // 重新获取用户信息
@@ -279,7 +239,7 @@ const handleUpdateProfile = async () => {
 const handleAvatarUpload = async (options) => {
   const formData = new FormData()
   formData.append('avatar', options.file)
-  
+
   try {
     const response = await axios.post(
       `/api/users/${profileForm.id}/avatar`,
@@ -291,7 +251,7 @@ const handleAvatarUpload = async (options) => {
         }
       }
     )
-    
+
     if (response.status === 200) {
       profileForm.avatar = `${response.data.avatar_url}`
       ElMessage.success(t('profile.messages.avatarUpdateSuccess'))
@@ -345,7 +305,7 @@ const copyUserId = () => {
 // 修改密码
 const handleChangePassword = async () => {
   if (!passwordFormRef.value) return
-  
+
   await passwordFormRef.value.validate(async (valid) => {
     if (valid) {
       try {
@@ -361,7 +321,7 @@ const handleChangePassword = async () => {
             }
           }
         )
-        
+
         if (response.status === 200) {
           ElMessage.success(t('profile.messages.passwordChangeSuccess'))
           passwordForm.currentPassword = ''
@@ -510,5 +470,4 @@ const handleChangePassword = async () => {
 :deep(.el-input-group__append .el-button:hover) {
   background-color: var(--bg-color);
 }
-
-</style> 
+</style>

@@ -4,11 +4,8 @@
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('obsToObsOptions.rcloneArgs')">
-            <el-input
-              v-model="form.rclone_args"
-              :placeholder="$t('obsToObsOptions.rcloneArgsPlaceholder')"
-              @input="updateModelValue"
-            />
+            <el-input v-model="form.rclone_args" :placeholder="$t('obsToObsOptions.rcloneArgsPlaceholder')"
+              @input="updateModelValue" />
             <div class="form-tip">{{ $t('obsToObsOptions.rcloneArgsTip') }}</div>
           </el-form-item>
         </el-col>
@@ -22,78 +19,56 @@
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('obsToObsOptions.chunkSize')">
-            <el-input-number
-              v-model="form.chunk_size"
-              :min="1"
-              :max="1000"
-              :placeholder="$t('obsToObsOptions.chunkSizePlaceholder')"
-              style="width: 100%"
-              @change="updateModelValue"
-            />
+            <el-input-number v-model="form.chunk_size" :min="1" :max="1000"
+              :placeholder="$t('obsToObsOptions.chunkSizePlaceholder')" style="width: 100%"
+              @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToObsOptions.chunkSizeTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('obsToObsOptions.transferConcurrency')">
-            <el-input-number
-              v-model="form.transfer_concurrency"
-              :min="1"
-              :max="20"
-              :placeholder="$t('obsToObsOptions.transferConcurrencyPlaceholder')"
-              style="width: 100%"
-              @change="updateModelValue"
-            />
+            <el-input-number v-model="form.transfer_concurrency" :min="1" :max="20"
+              :placeholder="$t('obsToObsOptions.transferConcurrencyPlaceholder')" style="width: 100%"
+              @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToObsOptions.transferConcurrencyTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('obsToObsOptions.encryptTransfer')">
-            <el-switch
-              v-model="form.encrypt_transfer"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.encrypt_transfer" @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToObsOptions.encryptTransferTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('obsToObsOptions.serverSideEncryption')">
-            <el-switch
-              v-model="form.server_side_encryption"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.server_side_encryption" @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToObsOptions.serverSideEncryptionTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('obsToObsOptions.preserveMetadata')">
-            <el-switch
-              v-model="form.preserve_metadata"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.preserve_metadata" @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToObsOptions.preserveMetadataTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('obsToObsOptions.checksumVerification')">
-            <el-switch
-              v-model="form.checksum_verification"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.checksum_verification" @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToObsOptions.checksumVerificationTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('obsToObsOptions.retryStrategy')">
@@ -106,32 +81,23 @@
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('obsToObsOptions.progressReporting')">
-            <el-switch
-              v-model="form.progress_reporting"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.progress_reporting" @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToObsOptions.progressReportingTip') }}</div>
           </el-form-item>
         </el-col>
       </el-row>
-      
+
       <el-row :gutter="20">
         <el-col :span="12">
           <el-form-item :label="$t('obsToObsOptions.tempDirectory')">
-            <el-input
-              v-model="form.temp_directory"
-              :placeholder="$t('obsToObsOptions.tempDirectoryPlaceholder')"
-              @input="updateModelValue"
-            />
+            <el-input v-model="form.temp_directory" :placeholder="$t('obsToObsOptions.tempDirectoryPlaceholder')"
+              @input="updateModelValue" />
             <div class="form-tip">{{ $t('obsToObsOptions.tempDirectoryTip') }}</div>
           </el-form-item>
         </el-col>
         <el-col :span="12">
           <el-form-item :label="$t('obsToObsOptions.cleanupTemp')">
-            <el-switch
-              v-model="form.cleanup_temp"
-              @change="updateModelValue"
-            />
+            <el-switch v-model="form.cleanup_temp" @change="updateModelValue" />
             <div class="form-tip">{{ $t('obsToObsOptions.cleanupTempTip') }}</div>
           </el-form-item>
         </el-col>
@@ -245,4 +211,4 @@ watch(() => props.modelValue, (newValue) => {
 :deep(.el-form-item__label) {
   font-weight: 500;
 }
-</style> 
+</style>

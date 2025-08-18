@@ -9,7 +9,9 @@
           </div>
         </div>
         <el-card class="mail-sent-card" shadow="hover">
-          <el-icon class="mail-sent-icon" color="#67C23A"><CircleCheck /></el-icon>
+          <el-icon class="mail-sent-icon" color="#67C23A">
+            <CircleCheck />
+          </el-icon>
           <h2>重置邮件已发送</h2>
           <p>我们发送了一封重置密码邮件至 <b>{{ email }}</b>。<br>请查收您的邮箱并点击链接重置密码。</p>
           <el-button type="primary" @click="goLogin" class="mail-sent-btn">返回登录</el-button>
@@ -37,6 +39,7 @@ const goLogin = () => router.push('/login')
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   overflow: hidden;
 }
+
 .mail-sent-background {
   position: relative;
   width: 100%;
@@ -45,6 +48,7 @@ const goLogin = () => router.push('/login')
   justify-content: center;
   align-items: center;
 }
+
 .mail-sent-background::before {
   content: '';
   position: absolute;
@@ -56,6 +60,7 @@ const goLogin = () => router.push('/login')
   opacity: 0.1;
   z-index: 0;
 }
+
 .mail-sent-content {
   position: relative;
   z-index: 1;
@@ -66,6 +71,7 @@ const goLogin = () => router.push('/login')
   flex-direction: column;
   align-items: center;
 }
+
 .mail-sent-header {
   width: 100%;
   text-align: center;
@@ -73,17 +79,21 @@ const goLogin = () => router.push('/login')
   color: white;
   animation: fadeInDown 1s ease;
 }
+
 .mail-sent-logo {
   width: 80%;
   margin: 0 auto;
 }
+
 .mail-sent-logo img {
   width: 280px;
 }
+
 .mail-sent-logo p {
   font-size: 18px;
   opacity: 0.9;
 }
+
 .mail-sent-card {
   width: 100%;
   border-radius: 10px;
@@ -93,19 +103,23 @@ const goLogin = () => router.push('/login')
   text-align: center;
   padding: 40px 20px 32px 20px;
 }
+
 .mail-sent-card h2 {
   margin: 16px 0 12px 0;
   color: #409EFF;
 }
+
 .mail-sent-card p {
   color: #333;
   font-size: 16px;
   margin-bottom: 0;
 }
+
 .mail-sent-icon {
   font-size: 48px;
   margin-bottom: 12px;
 }
+
 .mail-sent-btn {
   margin-top: 24px;
   width: 100%;
@@ -113,24 +127,28 @@ const goLogin = () => router.push('/login')
   font-size: 16px;
   border-radius: 8px;
 }
+
 @keyframes fadeInDown {
   from {
     opacity: 0;
     transform: translateY(-20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
+
 @keyframes fadeInUp {
   from {
     opacity: 0;
     transform: translateY(20px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
   }
 }
-</style> 
+</style>
