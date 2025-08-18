@@ -951,7 +951,8 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - 告警策略管理 (alertPolicies): 105+ 个键值对
 - 系统监控 (monitoring): 49+ 个键值对
 - 个人信息 (profile): 35+ 个键值对
-- **总计**: 1014+ 个翻译键值对
+- 系统设置 (settings): 105+ 个键值对
+- **总计**: 1119+ 个翻译键值对
 
 ### Notifications.vue 国际化完成度：100% ✅
 
@@ -1316,6 +1317,108 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 **7. 辅助函数**
 
 - ✅ 未知状态显示 (`profile.unknown`)
+
+### Settings.vue 国际化完成度：100% ✅
+
+**已完成内容：**
+
+**1. 页面标题**
+
+- ✅ 页面标题 (`settings.pageTitle`)
+
+**2. 标签页**
+
+- ✅ 基本设置标签页 (`settings.basicSettings`)
+- ✅ 日志设置标签页 (`settings.logSettings`)
+- ✅ 通知设置标签页 (`settings.notificationSettings`)
+
+**3. 基本设置表单**
+
+- ✅ 最大并发任务数标签和提示 (`settings.maxConcurrentTasks`, `settings.maxConcurrentTasksTip`)
+- ✅ 默认重试次数标签和提示 (`settings.defaultRetryCount`, `settings.defaultRetryCountTip`)
+- ✅ 默认重试延迟标签和提示 (`settings.defaultRetryDelay`, `settings.defaultRetryDelayTip`)
+- ✅ 保存设置按钮 (`settings.saveSettings`)
+
+**4. 日志设置表单**
+
+- ✅ 日志保留天数标签和提示 (`settings.logRetentionDays`, `settings.logRetentionDaysTip`)
+- ✅ 日志级别标签和提示 (`settings.logLevel`, `settings.logLevelTip`)
+- ✅ 日志文件路径标签和提示 (`settings.logFilePath`, `settings.logFilePathTip`)
+- ✅ 保存设置和清理日志按钮 (`settings.saveSettings`, `settings.clearLogs`)
+
+**5. 通知设置分组**
+
+- ✅ 邮件通知标题和按钮 (`settings.emailNotification`, `settings.edit`, `settings.save`, `settings.cancel`)
+- ✅ 短信通知标题和按钮 (`settings.smsNotification`, `settings.edit`, `settings.save`, `settings.cancel`)
+- ✅ 钉钉通知标题和按钮 (`settings.dingtalkNotification`, `settings.edit`, `settings.save`, `settings.cancel`)
+- ✅ Webhook 通知标题和按钮 (`settings.webhookNotification`, `settings.edit`, `settings.save`, `settings.cancel`)
+
+**6. 通知开关标签**
+
+- ✅ 启用邮件通知 (`settings.enableEmailNotification`)
+- ✅ 启用短信通知 (`settings.enableSmsNotification`)
+- ✅ 启用钉钉通知 (`settings.enableDingtalkNotification`)
+- ✅ 启用 Webhook 通知 (`settings.enableWebhookNotification`)
+
+**7. 邮件通知表单**
+
+- ✅ SMTP 服务器、端口、用户名、密码标签 (`settings.smtpHost`, `settings.smtpPort`, `settings.smtpUsername`, `settings.smtpPassword`)
+- ✅ 发件人邮箱标签 (`settings.senderEmail`)
+- ✅ 测试发送按钮 (`settings.testSend`)
+
+**8. 短信通知表单**
+
+- ✅ 服务商、API Key、模板 ID、签名标签 (`settings.smsProvider`, `settings.smsApiKey`, `settings.smsTemplateId`, `settings.smsSignName`)
+- ✅ 选择服务商占位符 (`settings.selectProvider`)
+- ✅ 测试发送按钮 (`settings.testSend`)
+
+**9. 钉钉通知表单**
+
+- ✅ Webhook、密钥标签 (`settings.dingtalkWebhook`, `settings.dingtalkSecret`)
+- ✅ 测试发送按钮 (`settings.testSend`)
+
+**10. Webhook 通知表单**
+
+- ✅ Webhook URL、安全密钥标签 (`settings.webhookUrl`, `settings.webhookSecret`)
+- ✅ 测试发送按钮 (`settings.testSend`)
+
+**11. 输入框占位符**
+
+- ✅ SMTP 服务器占位符 (`settings.placeholders.smtpHost`)
+- ✅ 用户名、密码占位符 (`settings.placeholders.username`, `settings.placeholders.password`)
+- ✅ 发件人邮箱占位符 (`settings.placeholders.senderEmail`)
+- ✅ API Key 占位符 (`settings.placeholders.apiKey`)
+- ✅ 短信模板 ID、签名占位符 (`settings.placeholders.smsTemplateId`, `settings.placeholders.smsSignName`)
+- ✅ 钉钉 Webhook、密钥占位符 (`settings.placeholders.dingtalkWebhook`, `settings.placeholders.dingtalkSecret`)
+- ✅ Webhook URL、密钥占位符 (`settings.placeholders.webhookUrl`, `settings.placeholders.webhookSecret`)
+
+**12. 服务商选项**
+
+- ✅ 阿里云、腾讯云选项 (`settings.providers.aliyun`, `settings.providers.tencent`)
+
+**13. 表单验证**
+
+- ✅ 基本设置验证消息 (`settings.validation.enterMaxConcurrentTasks`, `settings.validation.enterDefaultRetryCount`, `settings.validation.enterDefaultRetryDelay`)
+- ✅ 日志设置验证消息 (`settings.validation.enterLogRetentionDays`, `settings.validation.selectLogLevel`, `settings.validation.enterLogFilePath`)
+- ✅ 邮件通知验证消息 (`settings.validation.enterEmailAddress`, `settings.validation.enterValidEmailFormat`, `settings.validation.enterSmtpHost`, `settings.validation.enterSmtpPort`, `settings.validation.enterSmtpUsername`, `settings.validation.enterSmtpPassword`)
+- ✅ Webhook 通知验证消息 (`settings.validation.enterWebhookUrl`, `settings.validation.enterValidUrlFormat`, `settings.validation.enterWebhookSecret`)
+- ✅ 钉钉通知验证消息 (`settings.validation.enterDingtalkWebhook`, `settings.validation.enterDingtalkSecret`)
+- ✅ 短信通知验证消息 (`settings.validation.selectSmsProvider`, `settings.validation.enterApiKey`, `settings.validation.enterTemplateId`, `settings.validation.enterSignName`)
+
+**14. 消息提示**
+
+- ✅ 取消编辑确认 (`settings.messages.confirmCancelEdit`, `settings.messages.confirmCancel`)
+- ✅ 测试通过后保存提示 (`settings.messages.testFirstThenSave`)
+- ✅ 设置保存成功/失败 (`settings.messages.settingsSaved`, `settings.messages.saveSettingsFailed`)
+- ✅ 获取系统设置失败 (`settings.messages.getSystemSettingsFailed`)
+- ✅ 测试通知发送成功/失败 (`settings.messages.testNotificationSent`, `settings.messages.testNotificationFailed`)
+- ✅ 重置通知设置确认/成功/失败 (`settings.messages.confirmResetNotificationSettings`, `settings.messages.notificationSettingsReset`, `settings.messages.resetNotificationSettingsFailed`)
+- ✅ 通知设置保存成功/失败 (`settings.messages.notificationSettingsSaved`, `settings.messages.saveNotificationSettingsFailed`)
+
+**15. 按钮和操作**
+
+- ✅ 确认/取消按钮 (`settings.confirm`, `settings.cancel`)
+- ✅ 继续编辑按钮 (`settings.continueEdit`)
 
 ## 下一步计划
 
