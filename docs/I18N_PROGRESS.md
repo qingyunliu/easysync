@@ -924,7 +924,9 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - NAS 到 NAS 选项 (nasToNasOptions): 20+ 个键值对
 - 通知管理 (notifications): 55+ 个键值对
 - 事件管理 (events): 70+ 个键值对
-- **总计**: 825+ 个翻译键值对
+- 告警策略管理 (alertPolicies): 85+ 个键值对
+- 系统监控 (monitoring): 45+ 个键值对
+- **总计**: 955+ 个翻译键值对
 
 **英文语言包 (en-US.js)**
 
@@ -946,7 +948,9 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - NAS 到 NAS 选项 (nasToNasOptions): 20+ 个键值对
 - 通知管理 (notifications): 55+ 个键值对
 - 事件管理 (events): 70+ 个键值对
-- **总计**: 825+ 个翻译键值对
+- 告警策略管理 (alertPolicies): 85+ 个键值对
+- 系统监控 (monitoring): 45+ 个键值对
+- **总计**: 955+ 个翻译键值对
 
 ### Notifications.vue 国际化完成度：100% ✅
 
@@ -1083,6 +1087,183 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - ✅ 导出成功/失败 (`events.messages.exportSuccess`, `events.messages.exportFailed`)
 - ✅ 清理成功/失败 (`events.messages.cleanupSuccess`, `events.messages.cleanupFailed`)
 - ✅ 获取事件列表失败 (`events.messages.getEventsFailed`)
+
+### AlertPolicies.vue 国际化完成度：100% ✅
+
+**已完成内容：**
+
+**1. 页面标题和描述**
+
+- ✅ 页面标题 (`alertPolicies.pageTitle`)
+- ✅ 页面描述 (`alertPolicies.pageDescription`)
+- ✅ 创建告警策略按钮 (`alertPolicies.createAlertPolicy`)
+- ✅ 编辑告警策略标题 (`alertPolicies.editAlertPolicy`)
+
+**2. 筛选栏**
+
+- ✅ 策略类型选择器 (`alertPolicies.policyType`)
+- ✅ 告警级别选择器 (`alertPolicies.alertLevel`)
+- ✅ 状态选择器 (`alertPolicies.status`)
+- ✅ 筛选选项：全部类型、全部级别、全部状态
+- ✅ 策略类型选项：资源告警、事件告警
+- ✅ 告警级别选项：信息、警告、错误、严重
+- ✅ 状态选项：启用、禁用
+- ✅ 查询和重置按钮
+
+**3. 表格列标题**
+
+- ✅ 报警器名称 (`alertPolicies.alertName`)
+- ✅ 资源类型 (`alertPolicies.resourceType`)
+- ✅ 报警条目 (`alertPolicies.alertItems`)
+- ✅ 报警级别 (`alertPolicies.alertLevel`)
+- ✅ 启用状态 (`alertPolicies.enabledStatus`)
+- ✅ 通知对象 (`alertPolicies.notificationTargets`)
+- ✅ 监控资源数量 (`alertPolicies.monitoredResourcesCount`)
+- ✅ 创建时间 (`alertPolicies.createdTime`)
+- ✅ 操作 (`alertPolicies.actions`)
+
+**4. 表格内容**
+
+- ✅ 操作按钮：启用/禁用、编辑、删除、测试
+- ✅ 状态标签：启用、禁用
+- ✅ 告警级别标签：信息、警告、错误、严重
+- ✅ 数量显示：个、无
+
+**5. 空状态**
+
+- ✅ 暂无告警策略 (`alertPolicies.noAlertPolicies`)
+
+**6. 表单**
+
+- ✅ 基本信息标题 (`alertPolicies.basicInfo`)
+- ✅ 策略名称字段 (`alertPolicies.policyName`, `alertPolicies.enterPolicyName`)
+- ✅ 策略类型选择 (`alertPolicies.policyType`)
+- ✅ 告警级别选择 (`alertPolicies.selectAlertLevel`)
+
+**7. 表单验证**
+
+- ✅ 策略名称验证 (`alertPolicies.validation.enterPolicyName`, `alertPolicies.validation.policyNameLength`)
+- ✅ 策略类型验证 (`alertPolicies.validation.selectPolicyType`)
+- ✅ 告警级别验证 (`alertPolicies.validation.selectAlertLevel`)
+- ✅ 描述长度验证 (`alertPolicies.validation.descriptionLength`)
+
+**8. 消息提示**
+
+- ✅ 加载告警策略失败 (`alertPolicies.messages.loadPoliciesFailed`)
+- ✅ 获取兼容数据失败 (`alertPolicies.messages.getCompatibilityDataFailed`)
+- ✅ 请先选择资源类型 (`alertPolicies.messages.selectResourceTypeFirst`)
+- ✅ 策略启用/禁用 (`alertPolicies.messages.policyEnabled`, `alertPolicies.messages.policyDisabled`)
+- ✅ 操作失败 (`alertPolicies.messages.operationFailed`)
+- ✅ 测试告警发送/失败 (`alertPolicies.messages.testAlertSent`, `alertPolicies.messages.testFailed`)
+- ✅ 删除确认/成功/失败 (`alertPolicies.messages.confirmDeletePolicy`, `alertPolicies.messages.deleteSuccess`, `alertPolicies.messages.deleteFailed`)
+- ✅ 配置验证失败 (`alertPolicies.messages.configValidationFailed`)
+- ✅ 配置警告确认 (`alertPolicies.messages.configWarnings`, `alertPolicies.messages.configWarning`)
+- ✅ 更新/创建成功/失败 (`alertPolicies.messages.updateSuccess`, `alertPolicies.messages.createSuccess`, `alertPolicies.messages.updateFailed`, `alertPolicies.messages.createFailed`)
+
+**9. 工具函数**
+
+- ✅ 告警级别标签 (`alertPolicies.info`, `alertPolicies.warning`, `alertPolicies.error`, `alertPolicies.critical`)
+- ✅ 策略类型标签 (`alertPolicies.resourceAlert`, `alertPolicies.eventAlert`)
+- ✅ 通知渠道类型 (`alertPolicies.channelTypes.*`)
+- ✅ 日期格式化
+
+**10. 对话框和确认框**
+
+- ✅ 删除确认对话框 (`alertPolicies.messages.confirmDelete`)
+- ✅ 配置警告确认对话框 (`alertPolicies.messages.configWarning`)
+- ✅ 确认/取消按钮 (`alertPolicies.messages.confirm`, `alertPolicies.messages.cancel`)
+- ✅ 继续按钮 (`alertPolicies.messages.continue`)
+
+**11. 策略详情侧拉抽屉**
+
+- ✅ 告警配置标题 (`alertPolicies.alertConfig`)
+- ✅ 告警条目标签 (`alertPolicies.alertItems`)
+- ✅ 告警规则标签 (`alertPolicies.alertRules`)
+- ✅ 持续时间文本 (`alertPolicies.duration`, `alertPolicies.seconds`)
+- ✅ 通知配置标题 (`alertPolicies.notificationConfig`)
+- ✅ 通知模板标签 (`alertPolicies.notificationTemplate`, `alertPolicies.notSet`)
+- ✅ 通知对象标签 (`alertPolicies.notificationTargets`)
+- ✅ 通知列表标签 (`alertPolicies.notificationList`)
+- ✅ 通知周期标签 (`alertPolicies.notificationCycle`, `alertPolicies.immediate`)
+- ✅ 其他信息标题 (`alertPolicies.otherInfo`)
+- ✅ 创建时间/更新时间标签 (`alertPolicies.createdTime`, `alertPolicies.updatedTime`)
+- ✅ 操作按钮：编辑策略、测试策略、启用/禁用 (`alertPolicies.editPolicy`, `alertPolicies.testPolicy`, `alertPolicies.enable`, `alertPolicies.disable`)
+
+**12. 通知对象选择器**
+
+- ✅ 选择通知对象标题 (`alertPolicies.selectNotificationTargets`)
+- ✅ 搜索通知对象占位符 (`alertPolicies.searchNotificationTargets`)
+- ✅ 确认/取消按钮 (`alertPolicies.confirm`, `alertPolicies.cancel`)
+
+### Monitoring.vue 国际化完成度：100% ✅
+
+**已完成内容：**
+
+**1. 页面标题和描述**
+
+- ✅ 页面标题 (`monitoring.pageTitle`)
+- ✅ 页面描述 (`monitoring.pageDescription`)
+
+**2. 操作按钮**
+
+- ✅ 刷新数据按钮 (`monitoring.refreshData`)
+- ✅ 监控设置按钮 (`monitoring.monitoringSettings`)
+
+**3. 系统状态概览**
+
+- ✅ CPU 使用率 (`monitoring.cpuUsage`)
+- ✅ 内存使用率 (`monitoring.memoryUsage`)
+- ✅ 磁盘使用率 (`monitoring.diskUsage`)
+- ✅ 活跃连接数 (`monitoring.activeConnections`)
+- ✅ 正常状态 (`monitoring.normal`)
+- ✅ 入流量/出流量 (`monitoring.inboundTraffic`, `monitoring.outboundTraffic`)
+
+**4. 服务状态**
+
+- ✅ 服务状态标题 (`monitoring.serviceStatus`)
+- ✅ 服务名称：数据库、Redis、消息队列 (`monitoring.services.*`)
+- ✅ 服务状态文本：正常、异常 (`monitoring.status.normal`, `monitoring.status.abnormal`)
+- ✅ 整体服务状态：所有服务正常、部分服务异常、服务异常 (`monitoring.status.allServicesNormal`, `monitoring.status.partialServicesAbnormal`, `monitoring.status.servicesAbnormal`)
+
+**5. 监控图表**
+
+- ✅ CPU & 内存趋势标题 (`monitoring.cpuMemoryTrend`)
+- ✅ 网络流量标题 (`monitoring.networkTraffic`)
+- ✅ 实时标签 (`monitoring.realTime`)
+- ✅ 时间范围选择：1 小时、6 小时、24 小时、7 天 (`monitoring.oneHour`, `monitoring.sixHours`, `monitoring.twentyFourHours`, `monitoring.sevenDays`)
+- ✅ 图表标签：CPU、内存 (`monitoring.charts.cpu`, `monitoring.charts.memory`)
+
+**6. 告警统计**
+
+- ✅ 告警统计标题 (`monitoring.alertStatistics`)
+- ✅ 查看详情按钮 (`monitoring.viewDetails`)
+- ✅ 总告警数 (`monitoring.totalAlerts`)
+- ✅ 活跃告警 (`monitoring.activeAlerts`)
+- ✅ 已解决 (`monitoring.resolvedAlerts`)
+- ✅ 严重告警 (`monitoring.criticalAlerts`)
+
+**7. 状态判断函数**
+
+- ✅ CPU 状态：正常、偏高、过高 (`monitoring.status.normal`, `monitoring.status.high`, `monitoring.status.tooHigh`)
+- ✅ 内存状态：正常、偏高、过高 (`monitoring.status.normal`, `monitoring.status.high`, `monitoring.status.tooHigh`)
+- ✅ 磁盘状态：正常、空间紧张、空间不足 (`monitoring.status.normal`, `monitoring.status.lowSpace`, `monitoring.status.insufficientSpace`)
+
+**8. 消息提示**
+
+- ✅ 获取系统状态失败 (`monitoring.messages.getSystemStatusFailed`)
+- ✅ 数据刷新完成/失败 (`monitoring.messages.dataRefreshCompleted`, `monitoring.messages.dataRefreshFailed`)
+- ✅ 监控设置功能开发中 (`monitoring.messages.monitoringSettingsInDevelopment`)
+
+**9. 告警统计详情**
+
+- ✅ 总告警数 (`monitoring.totalAlerts`)
+- ✅ 活跃告警 (`monitoring.activeAlerts`)
+- ✅ 已解决 (`monitoring.resolvedAlerts`)
+- ✅ 严重告警 (`monitoring.criticalAlerts`)
+
+**10. 网络图表标签**
+
+- ✅ 入流量/出流量标签 (`monitoring.charts.networkIn`, `monitoring.charts.networkOut`)
 
 ## 下一步计划
 

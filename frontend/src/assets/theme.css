@@ -61,6 +61,7 @@
   --cyber-glass-border: rgba(255, 255, 255, 0.1);
   
   /* 侧边栏 */
+  --sidebar-width: 200px;
   --sidebar-bg: linear-gradient(135deg, #fafdff 0%, #fff 100%);
   --sidebar-text: #1c1f23;
   --sidebar-active: #22219b;
@@ -77,6 +78,12 @@
   --bg-color: #16161a;
   --bg-secondary: #1d1d22;
   --bg-tertiary: #262626;
+
+  /* 侧边栏 */
+  --sidebar-width: 200px;
+  --sidebar-bg: linear-gradient(135deg, #16161a 0%, #16161a 100%);
+  --sidebar-text: #ffffff;
+  --sidebar-active: #409eff;
   
   /* 文字颜色 */
   --text-color: #ffffff;

@@ -339,7 +339,7 @@ const handleAvatarError = () => {
 }
 
 .sidebar {
-  width: 200px;
+  width: var(--sidebar-width);
   min-width: 60px;
   background: var(--sidebar-bg);
   border-right: 1px solid var(--border-color);

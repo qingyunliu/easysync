@@ -626,7 +626,7 @@ export default {
     reports: "报表",
     logs: "日志",
     alerts: "告警",
-    notifications: "通知",
+    notifications: "消息通知",
     messages: "消息",
     files: "文件",
     folders: "文件夹",
@@ -1629,6 +1629,256 @@ export default {
       cleanupSuccess: "成功清理 {count} 条旧事件记录",
       cleanupFailed: "清理失败",
       getEventsFailed: "获取事件列表失败",
+    },
+  },
+
+  // 告警策略管理模块
+  alertPolicies: {
+    // 页面标题
+    pageTitle: "告警策略管理",
+    pageDescription: "管理系统的告警策略，监控资源状态和事件",
+    createAlertPolicy: "创建告警策略",
+    editAlertPolicy: "编辑告警策略",
+
+    // 筛选栏
+    policyType: "策略类型",
+    alertLevel: "告警级别",
+    status: "状态",
+    allTypes: "全部类型",
+    allLevels: "全部级别",
+    allStatus: "全部状态",
+    resourceAlert: "资源告警",
+    eventAlert: "事件告警",
+    info: "信息",
+    warning: "警告",
+    error: "错误",
+    critical: "严重",
+    enabled: "启用",
+    disabled: "禁用",
+    search: "查询",
+    reset: "重置",
+
+    // 表格列标题
+    alertName: "报警器名称",
+    resourceType: "资源类型",
+    alertItems: "报警条目",
+    enabledStatus: "启用状态",
+    notificationTargets: "通知对象",
+    monitoredResourcesCount: "监控资源数量",
+    createdTime: "创建时间",
+    actions: "操作",
+
+    // 表格内容
+    items: "个",
+    none: "无",
+
+    // 操作按钮
+    enable: "启用",
+    disable: "禁用",
+    edit: "编辑",
+    delete: "删除",
+    test: "测试",
+
+    // 空状态
+    noAlertPolicies: "暂无告警策略",
+
+    // 表单
+    basicInfo: "基本信息",
+    policyName: "策略名称",
+    policyDescription: "策略描述",
+    enterPolicyName: "请输入策略名称",
+    enterPolicyDescription: "请输入策略描述",
+    selectAlertLevel: "请选择告警级别",
+    selectResourceType: "请选择资源类型",
+    selectEventType: "请选择事件类型",
+    selectEventActions: "请选择事件动作",
+    selectNotificationChannels: "请选择通知渠道",
+    selectAlertTemplate: "请选择告警模板",
+    selectNotificationTargets: "请选择通知对象",
+    selectNotificationCycle: "请选择通知周期",
+    selectResources: "选择资源",
+    searchResources: "搜索资源...",
+    selectMonitoringResources: "选择监控资源 - {resourceType}",
+    currentResourceType: "当前资源类型",
+    totalResources: "共 {count} 个资源",
+    resourceList: "资源列表",
+    noDescription: "暂无描述",
+    resourceMonitoring: "资源监控",
+    eventMonitoring: "事件监控",
+
+    // 表单验证
+    validation: {
+      enterPolicyName: "请输入策略名称",
+      policyNameLength: "策略名称长度在 2 到 50 个字符",
+      selectPolicyType: "请选择策略类型",
+      selectAlertLevel: "请选择告警级别",
+      descriptionLength: "描述长度不能超过 200 个字符",
+    },
+
+    // 配置部分
+    monitoringConfig: "监控配置",
+    eventConfig: "事件配置",
+    notificationConfig: "通知配置",
+    monitoredResources: "监控资源",
+    alertItems: "告警项目",
+    triggerRules: "触发规则",
+    deleteRule: "删除规则",
+    operator: "操作符",
+    greaterThan: "大于",
+    lessThan: "小于",
+    equalTo: "等于",
+    notEqualTo: "不等于",
+    threshold: "阈值",
+    durationSeconds: "持续时间(秒)",
+    eventType: "事件类型",
+    eventActions: "事件动作",
+    eventResults: "事件结果",
+    notificationChannels: "通知渠道",
+    alertTemplate: "告警模板",
+    notificationTargets: "通知对象",
+    notificationCycle: "通知周期",
+    retryCount: "重试次数",
+    rateLimitSeconds: "频率限制(秒)",
+    timeoutSeconds: "超时时间(秒)",
+    immediateNotification: "立即通知",
+    fiveMinutes: "5分钟",
+    fifteenMinutes: "15分钟",
+    thirtyMinutes: "30分钟",
+    oneHour: "1小时",
+    retryCountTip: "告警发送失败时的重试次数",
+    rateLimitTip: "相同告警的最小发送间隔",
+    timeoutTip: "告警发送的超时时间",
+    selectNotificationChannelsTip:
+      "选择通知发送的渠道，将自动筛选兼容的模板和对象",
+    selectAlertTemplateTip: "选择用于发送通知的模板（根据渠道类型自动筛选）",
+    selectNotificationTargetsTip:
+      "选择接收通知的目标对象（根据渠道类型自动筛选）",
+    policyDetails: "策略详情",
+    update: "更新",
+    create: "创建",
+    alertConfig: "告警配置",
+    alertRules: "告警规则",
+    duration: "持续",
+    seconds: "秒",
+    notificationTemplate: "通知模板",
+    notSet: "未设置",
+    notificationList: "通知列表",
+    immediate: "立即",
+    otherInfo: "其他信息",
+    updatedTime: "更新时间",
+    editPolicy: "编辑策略",
+    testPolicy: "测试策略",
+    searchNotificationTargets: "搜索通知对象...",
+
+    // 消息提示
+    messages: {
+      loadPoliciesFailed: "加载告警策略失败",
+      getCompatibilityDataFailed: "获取兼容数据失败",
+      selectResourceTypeFirst: "请先选择资源类型",
+      policyEnabled: "策略已启用",
+      policyDisabled: "策略已禁用",
+      operationFailed: "操作失败",
+      testAlertSent: "测试告警已发送",
+      testFailed: "测试失败",
+      confirmDeletePolicy: '确定要删除告警策略 "{policyName}" 吗？',
+      confirmDelete: "确认删除",
+      confirm: "确定",
+      cancel: "取消",
+      deleteSuccess: "删除成功",
+      deleteFailed: "删除失败",
+      configValidationFailed: "配置验证失败",
+      configWarnings: "配置存在以下警告，是否继续？",
+      configWarning: "配置警告",
+      continue: "继续",
+      updateSuccess: "更新成功",
+      createSuccess: "创建成功",
+      updateFailed: "更新失败",
+      createFailed: "创建失败",
+    },
+
+    // 通知渠道类型
+    channelTypes: {
+      email: "邮件",
+      sms: "短信",
+      webhook: "WebHook",
+      dingtalk: "钉钉",
+      slack: "Slack",
+    },
+  },
+
+  // 系统监控模块
+  monitoring: {
+    // 页面标题
+    pageTitle: "系统监控",
+    pageDescription: "实时监控系统状态、性能指标和资源使用情况",
+
+    // 操作按钮
+    refreshData: "刷新数据",
+    monitoringSettings: "监控设置",
+
+    // 系统状态概览
+    cpuUsage: "CPU 使用率",
+    memoryUsage: "内存使用率",
+    diskUsage: "磁盘使用率",
+    activeConnections: "活跃连接数",
+    normal: "正常",
+    inboundTraffic: "入流量",
+    outboundTraffic: "出流量",
+
+    // 服务状态
+    serviceStatus: "服务状态",
+
+    // 监控图表
+    cpuMemoryTrend: "CPU & 内存趋势",
+    networkTraffic: "网络流量",
+    realTime: "实时",
+    oneHour: "1小时",
+    sixHours: "6小时",
+    twentyFourHours: "24小时",
+    sevenDays: "7天",
+
+    // 告警统计
+    alertStatistics: "告警统计",
+    viewDetails: "查看详情",
+    totalAlerts: "总告警数",
+    activeAlerts: "活跃告警",
+    resolvedAlerts: "已解决",
+    criticalAlerts: "严重告警",
+
+    // 状态文本
+    status: {
+      normal: "正常",
+      abnormal: "异常",
+      high: "偏高",
+      tooHigh: "过高",
+      insufficientSpace: "空间不足",
+      lowSpace: "空间紧张",
+      allServicesNormal: "所有服务正常",
+      partialServicesAbnormal: "部分服务异常",
+      servicesAbnormal: "服务异常",
+    },
+
+    // 服务名称
+    services: {
+      database: "数据库",
+      redis: "Redis",
+      queue: "消息队列",
+    },
+
+    // 图表标签
+    charts: {
+      cpu: "CPU",
+      memory: "内存",
+      networkIn: "入流量",
+      networkOut: "出流量",
+    },
+
+    // 消息提示
+    messages: {
+      getSystemStatusFailed: "获取系统状态失败",
+      dataRefreshCompleted: "数据刷新完成",
+      dataRefreshFailed: "数据刷新失败",
+      monitoringSettingsInDevelopment: "监控设置功能开发中...",
     },
   },
 };

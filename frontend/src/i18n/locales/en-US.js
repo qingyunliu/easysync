@@ -1670,4 +1670,262 @@ export default {
       getEventsFailed: "Failed to get events list",
     },
   },
+
+  // Alert Policies Management Module
+  alertPolicies: {
+    // Page Title
+    pageTitle: "Alert Policy Management",
+    pageDescription:
+      "Manage system alert policies, monitor resource status and events",
+    createAlertPolicy: "Create Alert Policy",
+    editAlertPolicy: "Edit Alert Policy",
+
+    // Filter Bar
+    policyType: "Policy Type",
+    alertLevel: "Alert Level",
+    status: "Status",
+    allTypes: "All Types",
+    allLevels: "All Levels",
+    allStatus: "All Status",
+    resourceAlert: "Resource Alert",
+    eventAlert: "Event Alert",
+    info: "Info",
+    warning: "Warning",
+    error: "Error",
+    critical: "Critical",
+    enabled: "Enabled",
+    disabled: "Disabled",
+    search: "Search",
+    reset: "Reset",
+
+    // Table Column Headers
+    alertName: "Alert Name",
+    resourceType: "Resource Type",
+    alertItems: "Alert Items",
+    enabledStatus: "Enabled Status",
+    notificationTargets: "Notification Targets",
+    monitoredResourcesCount: "Monitored Resources Count",
+    createdTime: "Created Time",
+    actions: "Actions",
+
+    // Table Content
+    items: "items",
+    none: "None",
+
+    // Action Buttons
+    enable: "Enable",
+    disable: "Disable",
+    edit: "Edit",
+    delete: "Delete",
+    test: "Test",
+
+    // Empty State
+    noAlertPolicies: "No alert policies",
+
+    // Form
+    basicInfo: "Basic Information",
+    policyName: "Policy Name",
+    policyDescription: "Policy Description",
+    enterPolicyName: "Please enter policy name",
+    enterPolicyDescription: "Please enter policy description",
+    selectAlertLevel: "Please select alert level",
+    selectResourceType: "Please select resource type",
+    selectEventType: "Please select event type",
+    selectEventActions: "Please select event actions",
+    selectNotificationChannels: "Please select notification channels",
+    selectAlertTemplate: "Please select alert template",
+    selectNotificationTargets: "Please select notification targets",
+    selectNotificationCycle: "Please select notification cycle",
+    selectResources: "Select Resources",
+    searchResources: "Search resources...",
+    selectMonitoringResources: "Select Monitoring Resources - {resourceType}",
+    currentResourceType: "Current Resource Type",
+    totalResources: "Total {count} resources",
+    resourceList: "Resource List",
+    noDescription: "No description",
+    resourceMonitoring: "Resource Monitoring",
+    eventMonitoring: "Event Monitoring",
+
+    // Form Validation
+    validation: {
+      enterPolicyName: "Please enter policy name",
+      policyNameLength:
+        "Policy name length should be between 2 and 50 characters",
+      selectPolicyType: "Please select policy type",
+      selectAlertLevel: "Please select alert level",
+      descriptionLength: "Description length cannot exceed 200 characters",
+    },
+
+    // Configuration Sections
+    monitoringConfig: "Monitoring Configuration",
+    eventConfig: "Event Configuration",
+    notificationConfig: "Notification Configuration",
+    monitoredResources: "Monitored Resources",
+    alertItems: "Alert Items",
+    triggerRules: "Trigger Rules",
+    deleteRule: "Delete Rule",
+    operator: "Operator",
+    greaterThan: "Greater Than",
+    lessThan: "Less Than",
+    equalTo: "Equal To",
+    notEqualTo: "Not Equal To",
+    threshold: "Threshold",
+    durationSeconds: "Duration (seconds)",
+    eventType: "Event Type",
+    eventActions: "Event Actions",
+    eventResults: "Event Results",
+    notificationChannels: "Notification Channels",
+    alertTemplate: "Alert Template",
+    notificationTargets: "Notification Targets",
+    notificationCycle: "Notification Cycle",
+    retryCount: "Retry Count",
+    rateLimitSeconds: "Rate Limit (seconds)",
+    timeoutSeconds: "Timeout (seconds)",
+    immediateNotification: "Immediate Notification",
+    fiveMinutes: "5 minutes",
+    fifteenMinutes: "15 minutes",
+    thirtyMinutes: "30 minutes",
+    oneHour: "1 hour",
+    retryCountTip: "Number of retries when alert sending fails",
+    rateLimitTip: "Minimum interval for sending the same alert",
+    timeoutTip: "Timeout for alert sending",
+    selectNotificationChannelsTip:
+      "Select notification channels, will automatically filter compatible templates and targets",
+    selectAlertTemplateTip:
+      "Select template for sending notifications (automatically filtered by channel type)",
+    selectNotificationTargetsTip:
+      "Select target objects for receiving notifications (automatically filtered by channel type)",
+    policyDetails: "Policy Details",
+    update: "Update",
+    create: "Create",
+    alertConfig: "Alert Configuration",
+    alertRules: "Alert Rules",
+    duration: "Duration",
+    seconds: "seconds",
+    notificationTemplate: "Notification Template",
+    notSet: "Not Set",
+    notificationList: "Notification List",
+    immediate: "Immediate",
+    otherInfo: "Other Information",
+    updatedTime: "Updated Time",
+    editPolicy: "Edit Policy",
+    testPolicy: "Test Policy",
+    searchNotificationTargets: "Search notification targets...",
+    cancel: "Cancel",
+    confirm: "Confirm",
+
+    // Messages
+    messages: {
+      loadPoliciesFailed: "Failed to load alert policies",
+      getCompatibilityDataFailed: "Failed to get compatibility data",
+      selectResourceTypeFirst: "Please select resource type first",
+      policyEnabled: "Policy enabled",
+      policyDisabled: "Policy disabled",
+      operationFailed: "Operation failed",
+      testAlertSent: "Test alert sent",
+      testFailed: "Test failed",
+      confirmDeletePolicy:
+        'Are you sure you want to delete alert policy "{policyName}"?',
+      confirmDelete: "Confirm Delete",
+      confirm: "Confirm",
+      cancel: "Cancel",
+      deleteSuccess: "Delete successful",
+      deleteFailed: "Delete failed",
+      configValidationFailed: "Configuration validation failed",
+      configWarnings: "Configuration has the following warnings, continue?",
+      configWarning: "Configuration Warning",
+      continue: "Continue",
+      updateSuccess: "Update successful",
+      createSuccess: "Create successful",
+      updateFailed: "Update failed",
+      createFailed: "Create failed",
+    },
+
+    // Notification Channel Types
+    channelTypes: {
+      email: "Email",
+      sms: "SMS",
+      webhook: "WebHook",
+      dingtalk: "DingTalk",
+      slack: "Slack",
+    },
+  },
+
+  // System Monitoring Module
+  monitoring: {
+    // Page Title
+    pageTitle: "System Monitoring",
+    pageDescription:
+      "Real-time monitoring of system status, performance metrics and resource usage",
+
+    // Action Buttons
+    refreshData: "Refresh Data",
+    monitoringSettings: "Monitoring Settings",
+
+    // System Status Overview
+    cpuUsage: "CPU Usage",
+    memoryUsage: "Memory Usage",
+    diskUsage: "Disk Usage",
+    activeConnections: "Active Connections",
+    normal: "Normal",
+    inboundTraffic: "Inbound Traffic",
+    outboundTraffic: "Outbound Traffic",
+
+    // Service Status
+    serviceStatus: "Service Status",
+
+    // Monitoring Charts
+    cpuMemoryTrend: "CPU & Memory Trend",
+    networkTraffic: "Network Traffic",
+    realTime: "Real-time",
+    oneHour: "1 hour",
+    sixHours: "6 hours",
+    twentyFourHours: "24 hours",
+    sevenDays: "7 days",
+
+    // Alert Statistics
+    alertStatistics: "Alert Statistics",
+    viewDetails: "View Details",
+    totalAlerts: "Total Alerts",
+    activeAlerts: "Active Alerts",
+    resolvedAlerts: "Resolved",
+    criticalAlerts: "Critical Alerts",
+
+    // Status Text
+    status: {
+      normal: "Normal",
+      abnormal: "Abnormal",
+      high: "High",
+      tooHigh: "Too High",
+      insufficientSpace: "Insufficient Space",
+      lowSpace: "Low Space",
+      allServicesNormal: "All Services Normal",
+      partialServicesAbnormal: "Partial Services Abnormal",
+      servicesAbnormal: "Services Abnormal",
+    },
+
+    // Service Names
+    services: {
+      database: "Database",
+      redis: "Redis",
+      queue: "Message Queue",
+    },
+
+    // Chart Labels
+    charts: {
+      cpu: "CPU",
+      memory: "Memory",
+      networkIn: "Network In",
+      networkOut: "Network Out",
+    },
+
+    // Messages
+    messages: {
+      getSystemStatusFailed: "Failed to get system status",
+      dataRefreshCompleted: "Data refresh completed",
+      dataRefreshFailed: "Data refresh failed",
+      monitoringSettingsInDevelopment:
+        "Monitoring settings feature is under development...",
+    },
+  },
 };

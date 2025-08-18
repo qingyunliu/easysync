@@ -3,17 +3,17 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h1>系统监控</h1>
-        <p class="page-description">实时监控系统状态、性能指标和资源使用情况</p>
+        <h1>{{ $t('monitoring.pageTitle') }}</h1>
+        <p class="page-description">{{ $t('monitoring.pageDescription') }}</p>
       </div>
       <div class="header-right">
         <el-button type="primary" @click="refreshMonitoring" :loading="loading">
           <el-icon><Refresh /></el-icon>
-          刷新数据
+          {{ $t('monitoring.refreshData') }}
         </el-button>
         <el-button @click="openSettings">
           <el-icon><Setting /></el-icon>
-          监控设置
+          {{ $t('monitoring.monitoringSettings') }}
         </el-button>
       </div>
     </div>
@@ -28,7 +28,7 @@
             </div>
             <div class="status-info">
               <div class="status-value">{{ systemStatus.cpu_usage }}%</div>
-              <div class="status-label">CPU 使用率</div>
+              <div class="status-label">{{ $t('monitoring.cpuUsage') }}</div>
               <div class="status-trend" :class="getCpuTrendClass()">
                 <el-icon><ArrowUp v-if="systemStatus.cpu_usage > 70" /><ArrowDown v-else /></el-icon>
                 {{ getCpuStatus() }}
@@ -53,7 +53,7 @@
             </div>
             <div class="status-info">
               <div class="status-value">{{ systemStatus.memory_usage }}%</div>
-              <div class="status-label">内存使用率</div>
+              <div class="status-label">{{ $t('monitoring.memoryUsage') }}</div>
               <div class="status-trend" :class="getMemoryTrendClass()">
                 <el-icon><ArrowUp v-if="systemStatus.memory_usage > 80" /><ArrowDown v-else /></el-icon>
                 {{ getMemoryStatus() }}
@@ -78,7 +78,7 @@
             </div>
             <div class="status-info">
               <div class="status-value">{{ systemStatus.disk_usage }}%</div>
-              <div class="status-label">磁盘使用率</div>
+              <div class="status-label">{{ $t('monitoring.diskUsage') }}</div>
               <div class="status-trend" :class="getDiskTrendClass()">
                 <el-icon><ArrowUp v-if="systemStatus.disk_usage > 85" /><ArrowDown v-else /></el-icon>
                 {{ getDiskStatus() }}
@@ -103,19 +103,19 @@
             </div>
             <div class="status-info">
               <div class="status-value">{{ systemStatus.active_connections }}</div>
-              <div class="status-label">活跃连接数</div>
+              <div class="status-label">{{ $t('monitoring.activeConnections') }}</div>
               <div class="status-trend success">
                 <el-icon><Check /></el-icon>
-                正常
+                {{ $t('monitoring.normal') }}
               </div>
             </div>
           </div>
           <div class="network-info">
             <div class="network-item">
-              <span>入流量: {{ formatBytes(systemStatus.network_in) }}/s</span>
+              <span>{{ $t('monitoring.inboundTraffic') }}: {{ formatBytes(systemStatus.network_in) }}/s</span>
             </div>
             <div class="network-item">
-              <span>出流量: {{ formatBytes(systemStatus.network_out) }}/s</span>
+              <span>{{ $t('monitoring.outboundTraffic') }}: {{ formatBytes(systemStatus.network_out) }}/s</span>
             </div>
           </div>
         </el-card>
@@ -126,7 +126,7 @@
     <el-card class="services-card" style="margin-bottom: 20px;">
       <template #header>
         <div class="card-header">
-          <span>服务状态</span>
+          <span>{{ $t('monitoring.serviceStatus') }}</span>
           <el-tag :type="getOverallServiceStatus().type" size="small">
             {{ getOverallServiceStatus().text }}
           </el-tag>
@@ -157,12 +157,12 @@
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
-              <span>CPU & 内存趋势</span>
+              <span>{{ $t('monitoring.cpuMemoryTrend') }}</span>
               <el-select v-model="timeRange" size="small" style="width: 120px" @change="handleTimeRangeChange">
-                <el-option label="1小时" value="1h" />
-                <el-option label="6小时" value="6h" />
-                <el-option label="24小时" value="24h" />
-                <el-option label="7天" value="7d" />
+                <el-option :label="$t('monitoring.oneHour')" value="1h" />
+                <el-option :label="$t('monitoring.sixHours')" value="6h" />
+                <el-option :label="$t('monitoring.twentyFourHours')" value="24h" />
+                <el-option :label="$t('monitoring.sevenDays')" value="7d" />
               </el-select>
             </div>
           </template>
@@ -175,8 +175,8 @@
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
-              <span>网络流量</span>
-              <el-tag size="small" type="info">实时</el-tag>
+              <span>{{ $t('monitoring.networkTraffic') }}</span>
+              <el-tag size="small" type="info">{{ $t('monitoring.realTime') }}</el-tag>
             </div>
           </template>
           
@@ -189,9 +189,9 @@
     <el-card class="alerts-card" style="margin-top: 20px;">
       <template #header>
         <div class="card-header">
-          <span>告警统计</span>
+          <span>{{ $t('monitoring.alertStatistics') }}</span>
           <el-button type="text" @click="$router.push('/monitoring/alerts')">
-            查看详情
+            {{ $t('monitoring.viewDetails') }}
             <el-icon><ArrowRight /></el-icon>
           </el-button>
         </div>
@@ -201,25 +201,25 @@
         <el-col :span="6">
           <div class="alert-stat-item">
             <div class="alert-stat-number total">{{ alertStats.total_alerts }}</div>
-            <div class="alert-stat-label">总告警数</div>
+            <div class="alert-stat-label">{{ $t('monitoring.totalAlerts') }}</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="alert-stat-item">
             <div class="alert-stat-number firing">{{ alertStats.firing_alerts }}</div>
-            <div class="alert-stat-label">活跃告警</div>
+            <div class="alert-stat-label">{{ $t('monitoring.activeAlerts') }}</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="alert-stat-item">
             <div class="alert-stat-number resolved">{{ alertStats.resolved_alerts }}</div>
-            <div class="alert-stat-label">已解决</div>
+            <div class="alert-stat-label">{{ $t('monitoring.resolvedAlerts') }}</div>
           </div>
         </el-col>
         <el-col :span="6">
           <div class="alert-stat-item">
             <div class="alert-stat-number critical">{{ getCriticalAlerts() }}</div>
-            <div class="alert-stat-label">严重告警</div>
+            <div class="alert-stat-label">{{ $t('monitoring.criticalAlerts') }}</div>
           </div>
         </el-col>
       </el-row>
@@ -229,6 +229,7 @@
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import {
   Refresh,
@@ -246,6 +247,8 @@ import {
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 import axios from 'axios'
+
+const { t } = useI18n()
 
 // 响应式数据
 const loading = ref(false)
@@ -307,7 +310,7 @@ const fetchSystemStatus = async () => {
     Object.assign(systemStatus, response.data)
   } catch (error) {
     console.error('获取系统状态失败:', error)
-    ElMessage.error('获取系统状态失败')
+    ElMessage.error(t('monitoring.messages.getSystemStatusFailed'))
   }
 }
 
@@ -330,9 +333,9 @@ const refreshMonitoring = async () => {
       fetchAlertStats()
     ])
     updateCharts()
-    ElMessage.success('数据刷新完成')
+    ElMessage.success(t('monitoring.messages.dataRefreshCompleted'))
   } catch (error) {
-    ElMessage.error('数据刷新失败')
+    ElMessage.error(t('monitoring.messages.dataRefreshFailed'))
   } finally {
     loading.value = false
   }
@@ -346,7 +349,7 @@ const startAutoUpdate = () => {
 }
 
 const openSettings = () => {
-  ElMessage.info('监控设置功能开发中...')
+  ElMessage.info(t('monitoring.messages.monitoringSettingsInDevelopment'))
 }
 
 const handleTimeRangeChange = () => {
@@ -360,8 +363,8 @@ const getCpuTrendClass = () => {
 }
 
 const getCpuStatus = () => {
-  return systemStatus.cpu_usage > 80 ? '过高' : 
-         systemStatus.cpu_usage > 60 ? '偏高' : '正常'
+  return systemStatus.cpu_usage > 80 ? t('monitoring.status.tooHigh') : 
+         systemStatus.cpu_usage > 60 ? t('monitoring.status.high') : t('monitoring.status.normal')
 }
 
 const getMemoryTrendClass = () => {
@@ -370,8 +373,8 @@ const getMemoryTrendClass = () => {
 }
 
 const getMemoryStatus = () => {
-  return systemStatus.memory_usage > 85 ? '过高' : 
-         systemStatus.memory_usage > 70 ? '偏高' : '正常'
+  return systemStatus.memory_usage > 85 ? t('monitoring.status.tooHigh') : 
+         systemStatus.memory_usage > 70 ? t('monitoring.status.high') : t('monitoring.status.normal')
 }
 
 const getDiskTrendClass = () => {
@@ -380,8 +383,8 @@ const getDiskTrendClass = () => {
 }
 
 const getDiskStatus = () => {
-  return systemStatus.disk_usage > 90 ? '空间不足' : 
-         systemStatus.disk_usage > 75 ? '空间紧张' : '正常'
+  return systemStatus.disk_usage > 90 ? t('monitoring.status.insufficientSpace') : 
+         systemStatus.disk_usage > 75 ? t('monitoring.status.lowSpace') : t('monitoring.status.normal')
 }
 
 const getProgressColor = (value) => {
@@ -395,25 +398,25 @@ const getOverallServiceStatus = () => {
   const healthyCount = services.filter(status => status === 'healthy').length
   
   if (healthyCount === services.length) {
-    return { type: 'success', text: '所有服务正常' }
+    return { type: 'success', text: t('monitoring.status.allServicesNormal') }
   } else if (healthyCount > 0) {
-    return { type: 'warning', text: '部分服务异常' }
+    return { type: 'warning', text: t('monitoring.status.partialServicesAbnormal') }
   } else {
-    return { type: 'danger', text: '服务异常' }
+    return { type: 'danger', text: t('monitoring.status.servicesAbnormal') }
   }
 }
 
 const getServiceName = (service) => {
   const serviceNames = {
-    database: '数据库',
-    redis: 'Redis',
-    queue: '消息队列'
+    database: t('monitoring.services.database'),
+    redis: t('monitoring.services.redis'),
+    queue: t('monitoring.services.queue')
   }
   return serviceNames[service] || service
 }
 
 const getServiceStatusText = (status) => {
-  return status === 'healthy' ? '正常' : '异常'
+  return status === 'healthy' ? t('monitoring.status.normal') : t('monitoring.status.abnormal')
 }
 
 const getCriticalAlerts = () => {
@@ -445,7 +448,7 @@ const initCpuMemoryChart = () => {
       trigger: 'axis'
     },
     legend: {
-      data: ['CPU', '内存']
+      data: [t('monitoring.charts.cpu'), t('monitoring.charts.memory')]
     },
     grid: {
       left: '3%',
@@ -467,7 +470,7 @@ const initCpuMemoryChart = () => {
     },
     series: [
       {
-        name: 'CPU',
+        name: t('monitoring.charts.cpu'),
         type: 'line',
         smooth: true,
         stack: 'Total',
@@ -478,7 +481,7 @@ const initCpuMemoryChart = () => {
         data: []
       },
       {
-        name: '内存',
+        name: t('monitoring.charts.memory'),
         type: 'line',
         smooth: true,
         stack: 'Total',
@@ -511,7 +514,7 @@ const initNetworkChart = () => {
       }
     },
     legend: {
-      data: ['入流量', '出流量']
+      data: [t('monitoring.charts.networkIn'), t('monitoring.charts.networkOut')]
     },
     grid: {
       left: '3%',
@@ -534,7 +537,7 @@ const initNetworkChart = () => {
     },
     series: [
       {
-        name: '入流量',
+        name: t('monitoring.charts.networkIn'),
         type: 'line',
         smooth: true,
         stack: 'Total',
@@ -545,7 +548,7 @@ const initNetworkChart = () => {
         data: []
       },
       {
-        name: '出流量',
+        name: t('monitoring.charts.networkOut'),
         type: 'line',
         stack: 'Total',
         smooth: true,

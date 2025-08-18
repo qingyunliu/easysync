@@ -3,13 +3,13 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h2>告警策略管理</h2>
-        <p class="page-description">管理系统的告警策略，监控资源状态和事件</p>
+        <h2>{{ $t('alertPolicies.pageTitle') }}</h2>
+        <p class="page-description">{{ $t('alertPolicies.pageDescription') }}</p>
       </div>
       <div class="header-actions">
         <el-button type="primary" @click="openCreateDialog">
           <el-icon><Plus /></el-icon>
-          创建告警策略
+          {{ $t('alertPolicies.createAlertPolicy') }}
         </el-button>
       </div>
     </div>
@@ -17,29 +17,29 @@
     <!-- 筛选栏 -->
     <div class="filter-bar">
       <el-form :model="filterForm" inline>
-        <el-form-item label="策略类型">
-          <el-select v-model="filterForm.policy_type" placeholder="全部类型" clearable>
-            <el-option label="资源告警" value="resource" />
-            <el-option label="事件告警" value="event" />
+        <el-form-item :label="$t('alertPolicies.policyType')">
+          <el-select v-model="filterForm.policy_type" :placeholder="$t('alertPolicies.allTypes')" clearable>
+            <el-option :label="$t('alertPolicies.resourceAlert')" value="resource" />
+            <el-option :label="$t('alertPolicies.eventAlert')" value="event" />
           </el-select>
         </el-form-item>
-        <el-form-item label="告警级别">
-          <el-select v-model="filterForm.level" placeholder="全部级别" clearable>
-            <el-option label="信息" value="info" />
-            <el-option label="警告" value="warning" />
-            <el-option label="错误" value="error" />
-            <el-option label="严重" value="critical" />
+        <el-form-item :label="$t('alertPolicies.alertLevel')">
+          <el-select v-model="filterForm.level" :placeholder="$t('alertPolicies.allLevels')" clearable>
+            <el-option :label="$t('alertPolicies.info')" value="info" />
+            <el-option :label="$t('alertPolicies.warning')" value="warning" />
+            <el-option :label="$t('alertPolicies.error')" value="error" />
+            <el-option :label="$t('alertPolicies.critical')" value="critical" />
           </el-select>
         </el-form-item>
-        <el-form-item label="状态">
-          <el-select v-model="filterForm.enabled" placeholder="全部状态" clearable>
-            <el-option label="启用" :value="true" />
-            <el-option label="禁用" :value="false" />
+        <el-form-item :label="$t('alertPolicies.status')">
+          <el-select v-model="filterForm.enabled" :placeholder="$t('alertPolicies.allStatus')" clearable>
+            <el-option :label="$t('alertPolicies.enabled')" :value="true" />
+            <el-option :label="$t('alertPolicies.disabled')" :value="false" />
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button @click="loadPolicies">查询</el-button>
-          <el-button @click="resetFilter">重置</el-button>
+          <el-button @click="loadPolicies">{{ $t('alertPolicies.search') }}</el-button>
+          <el-button @click="resetFilter">{{ $t('alertPolicies.reset') }}</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -54,7 +54,7 @@
       >
         <el-table-column type="selection" width="55" />
         
-        <el-table-column prop="name" label="报警器名称" sortable>
+        <el-table-column prop="name" :label="$t('alertPolicies.alertName')" sortable>
           <template #default="{ row }">
             <el-link type="primary" @click="showPolicyDetail(row)">
               {{ row.name }}
@@ -62,13 +62,13 @@
           </template>
         </el-table-column>
         
-        <el-table-column prop="resource_type" label="资源类型" sortable>
+        <el-table-column prop="resource_type" :label="$t('alertPolicies.resourceType')" sortable>
           <template #default="{ row }">
             {{ getResourceTypeLabel(row.resource_type) }}
           </template>
         </el-table-column>
         
-        <el-table-column label="报警条目" sortable>
+        <el-table-column :label="$t('alertPolicies.alertItems')" sortable>
           <template #default="{ row }">
             <div v-if="row.alert_items && row.alert_items.length > 0">
               <div v-for="item in row.alert_items.slice(0, 2)" :key="item">
@@ -76,14 +76,14 @@
                   `${row.trigger_rules[item].operator === 'gt' ? '>' : row.trigger_rules[item].operator === 'lt' ? '<' : '='}${row.trigger_rules[item].threshold}%` : '' }}
               </div>
               <div v-if="row.alert_items.length > 2" class="more-items">
-                +{{ row.alert_items.length - 2 }}个
+                +{{ row.alert_items.length - 2 }}{{ $t('alertPolicies.items') }}
               </div>
             </div>
             <span v-else>-</span>
           </template>
         </el-table-column>
         
-        <el-table-column prop="level" label="报警级别" sortable>
+        <el-table-column prop="level" :label="$t('alertPolicies.alertLevel')" sortable>
           <template #default="{ row }">
             <el-tag :type="getLevelTagType(row.level)" size="small">
               {{ getLevelLabel(row.level) }}
@@ -91,15 +91,15 @@
           </template>
         </el-table-column>
         
-        <el-table-column prop="enabled" label="启用状态" sortable>
+        <el-table-column prop="enabled" :label="$t('alertPolicies.enabledStatus')" sortable>
           <template #default="{ row }">
             <el-tag :type="row.enabled ? 'success' : 'info'" size="small">
-              {{ row.enabled ? '启用' : '禁用' }}
+              {{ row.enabled ? $t('alertPolicies.enabled') : $t('alertPolicies.disabled') }}
             </el-tag>
           </template>
         </el-table-column>
         
-        <el-table-column label="通知对象" sortable>
+        <el-table-column :label="$t('alertPolicies.notificationTargets')" sortable>
           <template #default="{ row }">
             <div v-if="row.notification_targets && row.notification_targets.length > 0">
               <el-tag 
@@ -115,17 +115,17 @@
                 +{{ row.notification_targets.length - 2 }}
               </el-tag>
             </div>
-            <span v-else class="text-muted">无</span>
+            <span v-else class="text-muted">{{ $t('alertPolicies.none') }}</span>
           </template>
         </el-table-column>
         
-        <el-table-column label="监控资源数量" sortable>
+        <el-table-column :label="$t('alertPolicies.monitoredResourcesCount')" sortable>
           <template #default="{ row }">
             {{ row.monitored_resources?.length || 0 }}
           </template>
         </el-table-column>
         
-        <el-table-column prop="created_at" label="创建时间" sortable>
+        <el-table-column prop="created_at" :label="$t('alertPolicies.createdTime')" sortable>
           <template #default="{ row }">
             <div class="time-display">
               <div>{{ formatDate(row.created_at).split(' ')[0] }}</div>
@@ -134,7 +134,7 @@
           </template>
         </el-table-column>
         
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column :label="$t('alertPolicies.actions')" width="200" fixed="right">
           <template #default="{ row }">
             <el-button 
               size="small" 
@@ -142,24 +142,24 @@
               @click="togglePolicy(row)"
               :loading="row.toggling"
             >
-              {{ row.enabled ? '禁用' : '启用' }}
+              {{ row.enabled ? $t('alertPolicies.disable') : $t('alertPolicies.enable') }}
             </el-button>
-            <el-button size="small" @click="editPolicy(row)">编辑</el-button>
-            <el-button size="small" type="danger" @click="deletePolicy(row)">删除</el-button>
-            <el-button size="small" type="warning" @click="testPolicy(row)">测试</el-button>
+            <el-button size="small" @click="editPolicy(row)">{{ $t('alertPolicies.edit') }}</el-button>
+            <el-button size="small" type="danger" @click="deletePolicy(row)">{{ $t('alertPolicies.delete') }}</el-button>
+            <el-button size="small" type="warning" @click="testPolicy(row)">{{ $t('alertPolicies.test') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
       
       <div v-if="filteredPolicies.length === 0" class="empty-state">
-        <el-empty description="暂无告警策略" />
+        <el-empty :description="$t('alertPolicies.noAlertPolicies')" />
       </div>
     </div>
 
     <!-- 创建/编辑对话框 -->
     <el-dialog
       v-model="showCreateDialog"
-      :title="editingPolicy ? '编辑告警策略' : '创建告警策略'"
+      :title="editingPolicy ? $t('alertPolicies.editAlertPolicy') : $t('alertPolicies.createAlertPolicy')"
       width="800px"
       @close="resetForm"
     >
@@ -172,20 +172,20 @@
         <!-- 基本信息 -->
         <el-card class="form-section">
           <template #header>
-            <span class="section-title">基本信息</span>
+            <span class="section-title">{{ $t('alertPolicies.basicInfo') }}</span>
           </template>
           
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="策略名称" prop="name">
-                <el-input v-model="policyForm.name" placeholder="请输入策略名称" maxlength="50" show-word-limit />
+              <el-form-item :label="$t('alertPolicies.policyName')" prop="name">
+                <el-input v-model="policyForm.name" :placeholder="$t('alertPolicies.enterPolicyName')" maxlength="50" show-word-limit />
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="策略类型" prop="policy_type">
+              <el-form-item :label="$t('alertPolicies.policyType')" prop="policy_type">
                 <el-radio-group v-model="policyForm.policy_type" @change="handlePolicyTypeChange">
-                  <el-radio label="resource">资源告警</el-radio>
-                  <el-radio label="event">事件告警</el-radio>
+                  <el-radio label="resource">{{ $t('alertPolicies.resourceAlert') }}</el-radio>
+                  <el-radio label="event">{{ $t('alertPolicies.eventAlert') }}</el-radio>
                 </el-radio-group>
               </el-form-item>
             </el-col>
@@ -193,28 +193,28 @@
           
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="告警级别" prop="level">
-                <el-select v-model="policyForm.level" placeholder="请选择告警级别">
-                  <el-option label="信息" value="info" />
-                  <el-option label="警告" value="warning" />
-                  <el-option label="错误" value="error" />
-                  <el-option label="严重" value="critical" />
+              <el-form-item :label="$t('alertPolicies.alertLevel')" prop="level">
+                <el-select v-model="policyForm.level" :placeholder="$t('alertPolicies.selectAlertLevel')">
+                  <el-option :label="$t('alertPolicies.info')" value="info" />
+                  <el-option :label="$t('alertPolicies.warning')" value="warning" />
+                  <el-option :label="$t('alertPolicies.error')" value="error" />
+                  <el-option :label="$t('alertPolicies.critical')" value="critical" />
                 </el-select>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="启用状态">
+              <el-form-item :label="$t('alertPolicies.enabledStatus')">
                 <el-switch v-model="policyForm.enabled" />
               </el-form-item>
             </el-col>
           </el-row>
           
-          <el-form-item label="策略描述" prop="description">
+          <el-form-item :label="$t('alertPolicies.policyDescription')" prop="description">
             <el-input 
               v-model="policyForm.description" 
               type="textarea" 
               :rows="3"
-              placeholder="请输入策略描述"
+              :placeholder="$t('alertPolicies.enterPolicyDescription')"
               maxlength="200"
               show-word-limit
             />
@@ -224,13 +224,13 @@
         <!-- 监控配置 -->
         <el-card class="form-section" v-if="isResourcePolicy">
           <template #header>
-            <span class="section-title">监控配置</span>
+            <span class="section-title">{{ $t('alertPolicies.monitoringConfig') }}</span>
           </template>
           
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="资源类型" prop="resource_type">
-                <el-select v-model="policyForm.resource_type" placeholder="请选择资源类型" @change="handleResourceTypeChange">
+              <el-form-item :label="$t('alertPolicies.resourceType')" prop="resource_type">
+                <el-select v-model="policyForm.resource_type" :placeholder="$t('alertPolicies.selectResourceType')" @change="handleResourceTypeChange">
                   <el-option 
                     v-for="type in resourceTypes" 
                     :key="type.code" 
@@ -241,21 +241,21 @@
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="监控资源" prop="monitored_resources">
+              <el-form-item :label="$t('alertPolicies.monitoredResources')" prop="monitored_resources">
                 <el-button 
                   @click="openResourceSelector" 
                   type="primary" 
                   plain
                   :disabled="!policyForm.resource_type"
                 >
-                  选择资源 ({{ policyForm.monitored_resources?.length || 0 }})
+                  {{ $t('alertPolicies.selectResources') }} ({{ policyForm.monitored_resources?.length || 0 }})
                 </el-button>
-                <div class="form-tip">请先选择资源类型</div>
+                <div class="form-tip">{{ $t('alertPolicies.selectResourceTypeFirst') }}</div>
               </el-form-item>
             </el-col>
           </el-row>
           
-          <el-form-item label="告警项目" prop="alert_items">
+          <el-form-item :label="$t('alertPolicies.alertItems')" prop="alert_items">
             <el-checkbox-group v-model="policyForm.alert_items">
               <el-checkbox 
                 v-for="item in resourceItems" 
@@ -270,27 +270,27 @@
           
           <!-- 触发规则 -->
           <div v-if="policyForm.alert_items && policyForm.alert_items.length > 0">
-            <el-divider content-position="left">触发规则</el-divider>
+            <el-divider content-position="left">{{ $t('alertPolicies.triggerRules') }}</el-divider>
             <div v-for="item in policyForm.alert_items" :key="item" class="trigger-rule">
               <div class="rule-header">
                 <span class="rule-title">{{ getAlertItemLabel(item) }}</span>
                 <el-button size="small" @click="removeTriggerRule(item)" type="danger" plain>
-                  删除规则
+                  {{ $t('alertPolicies.deleteRule') }}
                 </el-button>
               </div>
               <el-row :gutter="20">
                 <el-col :span="8">
-                  <el-form-item :label="'操作符'" :prop="`trigger_rules.${item}.operator`">
+                  <el-form-item :label="$t('alertPolicies.operator')" :prop="`trigger_rules.${item}.operator`">
                     <el-select v-model="policyForm.trigger_rules[item].operator">
-                      <el-option label="大于" value="gt" />
-                      <el-option label="小于" value="lt" />
-                      <el-option label="等于" value="eq" />
-                      <el-option label="不等于" value="ne" />
+                      <el-option :label="$t('alertPolicies.greaterThan')" value="gt" />
+                      <el-option :label="$t('alertPolicies.lessThan')" value="lt" />
+                      <el-option :label="$t('alertPolicies.equalTo')" value="eq" />
+                      <el-option :label="$t('alertPolicies.notEqualTo')" value="ne" />
                     </el-select>
                   </el-form-item>
                 </el-col>
                 <el-col :span="10">
-                  <el-form-item :label="'阈值'" :prop="`trigger_rules.${item}.threshold`">
+                  <el-form-item :label="$t('alertPolicies.threshold')" :prop="`trigger_rules.${item}.threshold`">
                     <el-input-number 
                       v-model="policyForm.trigger_rules[item].threshold" 
                       :min="0" 
@@ -300,7 +300,7 @@
                   </el-form-item>
                 </el-col>
                 <el-col :span="10">
-                  <el-form-item :label="'持续时间(秒)'" :prop="`trigger_rules.${item}.duration`">
+                  <el-form-item :label="$t('alertPolicies.durationSeconds')" :prop="`trigger_rules.${item}.duration`">
                     <el-input-number 
                       v-model="policyForm.trigger_rules[item].duration" 
                       :min="1" 
@@ -316,13 +316,13 @@
         <!-- 事件配置 -->
         <el-card class="form-section" v-if="isEventPolicy">
           <template #header>
-            <span class="section-title">事件配置</span>
+            <span class="section-title">{{ $t('alertPolicies.eventConfig') }}</span>
           </template>
           
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="事件类型" prop="event_type">
-                <el-select v-model="policyForm.event_type" placeholder="请选择事件类型" @change="handleEventTypeChange">
+              <el-form-item :label="$t('alertPolicies.eventType')" prop="event_type">
+                <el-select v-model="policyForm.event_type" :placeholder="$t('alertPolicies.selectEventType')" @change="handleEventTypeChange">
                   <el-option 
                     v-for="type in eventTypes" 
                     :key="type.code" 
@@ -333,8 +333,8 @@
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="事件动作" prop="event_actions">
-                <el-select v-model="policyForm.event_actions" multiple placeholder="请选择事件动作">
+              <el-form-item :label="$t('alertPolicies.eventActions')" prop="event_actions">
+                <el-select v-model="policyForm.event_actions" multiple :placeholder="$t('alertPolicies.selectEventActions')">
                   <el-option 
                     v-for="action in eventActions" 
                     :key="action.code" 
@@ -346,7 +346,7 @@
             </el-col>
           </el-row>
           
-          <el-form-item label="事件结果" prop="event_results">
+          <el-form-item :label="$t('alertPolicies.eventResults')" prop="event_results">
             <el-checkbox-group v-model="policyForm.event_results">
               <el-checkbox 
                 v-for="result in eventResults" 
@@ -362,16 +362,16 @@
         <!-- 通知配置 -->
         <el-card class="form-section">
           <template #header>
-            <span class="section-title">通知配置</span>
+            <span class="section-title">{{ $t('alertPolicies.notificationConfig') }}</span>
           </template>
           
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="通知渠道" prop="notification_channels">
+              <el-form-item :label="$t('alertPolicies.notificationChannels')" prop="notification_channels">
                 <el-select 
                   v-model="policyForm.notification_channels" 
                   multiple 
-                  placeholder="请选择通知渠道"
+                  :placeholder="$t('alertPolicies.selectNotificationChannels')"
                   @change="handleNotificationChannelsChange"
                 >
                   <el-option 
@@ -381,7 +381,7 @@
                     :value="channel.id"
                   />
                 </el-select>
-                <div class="form-tip">选择通知发送的渠道，将自动筛选兼容的模板和对象</div>
+                <div class="form-tip">{{ $t('alertPolicies.selectNotificationChannelsTip') }}</div>
                 <!-- 兼容性信息提示 -->
                 <div v-if="compatibilityInfo.message" class="compatibility-info">
                   <el-alert 
@@ -394,10 +394,10 @@
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="告警模板" prop="template_id">
+              <el-form-item :label="$t('alertPolicies.alertTemplate')" prop="template_id">
                 <el-select 
                   v-model="policyForm.template_id" 
-                  placeholder="请选择告警模板" 
+                  :placeholder="$t('alertPolicies.selectAlertTemplate')" 
                   clearable
                   :disabled="!policyForm.notification_channels.length"
                 >
@@ -408,18 +408,18 @@
                     :value="template.id"
                   />
                 </el-select>
-                <div class="form-tip">选择用于发送通知的模板（根据渠道类型自动筛选）</div>
+                <div class="form-tip">{{ $t('alertPolicies.selectAlertTemplateTip') }}</div>
               </el-form-item>
             </el-col>
           </el-row>
           
           <el-row :gutter="20">
             <el-col :span="12">
-              <el-form-item label="通知对象" prop="notification_targets">
+              <el-form-item :label="$t('alertPolicies.notificationTargets')" prop="notification_targets">
                 <el-select 
                   v-model="policyForm.notification_targets" 
                   multiple 
-                  placeholder="请选择通知对象"
+                  :placeholder="$t('alertPolicies.selectNotificationTargets')"
                   :disabled="!policyForm.notification_channels.length"
                 >
                   <el-option 
@@ -429,17 +429,17 @@
                     :value="target.id"
                   />
                 </el-select>
-                <div class="form-tip">选择接收通知的目标对象（根据渠道类型自动筛选）</div>
+                <div class="form-tip">{{ $t('alertPolicies.selectNotificationTargetsTip') }}</div>
               </el-form-item>
             </el-col>
             <el-col :span="12">
-              <el-form-item label="通知周期" prop="notification_cycle">
-                <el-select v-model="policyForm.notification_cycle" placeholder="请选择通知周期">
-                  <el-option label="立即通知" value="immediate" />
-                  <el-option label="5分钟" value="5min" />
-                  <el-option label="15分钟" value="15min" />
-                  <el-option label="30分钟" value="30min" />
-                  <el-option label="1小时" value="1hour" />
+              <el-form-item :label="$t('alertPolicies.notificationCycle')" prop="notification_cycle">
+                <el-select v-model="policyForm.notification_cycle" :placeholder="$t('alertPolicies.selectNotificationCycle')">
+                  <el-option :label="$t('alertPolicies.immediateNotification')" value="immediate" />
+                  <el-option :label="$t('alertPolicies.fiveMinutes')" value="5min" />
+                  <el-option :label="$t('alertPolicies.fifteenMinutes')" value="15min" />
+                  <el-option :label="$t('alertPolicies.thirtyMinutes')" value="30min" />
+                  <el-option :label="$t('alertPolicies.oneHour')" value="1hour" />
                 </el-select>
               </el-form-item>
             </el-col>
@@ -447,36 +447,36 @@
           
           <el-row :gutter="20">
             <el-col :span="8">
-              <el-form-item label="重试次数" prop="retry_count">
+              <el-form-item :label="$t('alertPolicies.retryCount')" prop="retry_count">
                 <el-input-number 
                   v-model="policyForm.retry_count" 
                   :min="0" 
                   :max="10"
                   controls-position="right"
                 />
-                <div class="form-tip">告警发送失败时的重试次数</div>
+                <div class="form-tip">{{ $t('alertPolicies.retryCountTip') }}</div>
               </el-form-item>
             </el-col>
             <el-col :span="8">
-              <el-form-item label="频率限制(秒)" prop="rate_limit">
+              <el-form-item :label="$t('alertPolicies.rateLimitSeconds')" prop="rate_limit">
                 <el-input-number 
                   v-model="policyForm.rate_limit" 
                   :min="60" 
                   :max="3600"
                   controls-position="right"
                 />
-                <div class="form-tip">相同告警的最小发送间隔</div>
+                <div class="form-tip">{{ $t('alertPolicies.rateLimitTip') }}</div>
               </el-form-item>
             </el-col>
             <el-col :span="8">
-              <el-form-item label="超时时间(秒)" prop="timeout">
+              <el-form-item :label="$t('alertPolicies.timeoutSeconds')" prop="timeout">
                 <el-input-number 
                   v-model="policyForm.timeout" 
                   :min="10" 
                   :max="300"
                   controls-position="right"
                 />
-                <div class="form-tip">告警发送的超时时间</div>
+                <div class="form-tip">{{ $t('alertPolicies.timeoutTip') }}</div>
               </el-form-item>
             </el-col>
           </el-row>
@@ -484,27 +484,27 @@
       </el-form>
       
       <template #footer>
-        <el-button @click="showCreateDialog = false">取消</el-button>
+        <el-button @click="showCreateDialog = false">{{ $t('alertPolicies.cancel') }}</el-button>
         <el-button type="primary" @click="savePolicy" :loading="saving">
-          {{ editingPolicy ? '更新' : '创建' }}
+          {{ editingPolicy ? $t('alertPolicies.update') : $t('alertPolicies.create') }}
         </el-button>
       </template>
     </el-dialog>
 
     <!-- 资源选择器 -->
-    <el-dialog v-model="showResourceSelector" :title="`选择监控资源 - ${getResourceTypeLabel(policyForm.resource_type)}`" width="600px">
+    <el-dialog v-model="showResourceSelector" :title="$t('alertPolicies.selectMonitoringResources', { resourceType: getResourceTypeLabel(policyForm.resource_type) })" width="600px">
       <div class="selector-content">
         <div class="selector-header">
           <div class="resource-type-info">
-            当前资源类型: <el-tag size="small">{{ getResourceTypeLabel(policyForm.resource_type) }}</el-tag>
+            {{ $t('alertPolicies.currentResourceType') }}: <el-tag size="small">{{ getResourceTypeLabel(policyForm.resource_type) }}</el-tag>
           </div>
           <div class="resource-count">
-            共 {{ filteredResources.length }} 个资源
+            {{ $t('alertPolicies.totalResources', { count: filteredResources.length }) }}
           </div>
         </div>
         <el-input
           v-model="resourceSearchKeyword"
-          placeholder="搜索资源..."
+          :placeholder="$t('alertPolicies.searchResources')"
           clearable
         >
           <template #prefix>
@@ -530,35 +530,35 @@
       </div>
       
       <template #footer>
-        <el-button @click="showResourceSelector = false">取消</el-button>
-        <el-button type="primary" @click="confirmResourceSelection">确定</el-button>
+        <el-button @click="showResourceSelector = false">{{ $t('alertPolicies.cancel') }}</el-button>
+        <el-button type="primary" @click="confirmResourceSelection">{{ $t('alertPolicies.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 策略详情侧拉抽屉 -->
     <el-drawer
       v-model="showPolicyDetailDrawer"
-      title="策略详情"
+      :title="$t('alertPolicies.policyDetails')"
       direction="rtl"
       size="50%"
     >
       <div v-if="selectedPolicy" class="policy-detail">
         <div class="detail-section">
-          <h3>基本信息</h3>
+          <h3>{{ $t('alertPolicies.basicInfo') }}</h3>
           <div class="detail-item">
-            <span class="label">策略名称:</span>
+            <span class="label">{{ $t('alertPolicies.policyName') }}:</span>
             <span class="value">{{ selectedPolicy.name }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">策略描述:</span>
-            <span class="value">{{ selectedPolicy.description || '暂无描述' }}</span>
+            <span class="label">{{ $t('alertPolicies.policyDescription') }}:</span>
+            <span class="value">{{ selectedPolicy.description || $t('alertPolicies.noDescription') }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">策略类型:</span>
-            <span class="value">{{ selectedPolicy.policy_type === 'resource' ? '资源监控' : '事件监控' }}</span>
+            <span class="label">{{ $t('alertPolicies.policyType') }}:</span>
+            <span class="value">{{ selectedPolicy.policy_type === 'resource' ? $t('alertPolicies.resourceMonitoring') : $t('alertPolicies.eventMonitoring') }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">告警级别:</span>
+            <span class="label">{{ $t('alertPolicies.alertLevel') }}:</span>
             <span class="value">
               <el-tag :type="getLevelTagType(selectedPolicy.level)" size="small">
                 {{ getLevelLabel(selectedPolicy.level) }}
@@ -566,27 +566,27 @@
             </span>
           </div>
           <div class="detail-item">
-            <span class="label">启用状态:</span>
+            <span class="label">{{ $t('alertPolicies.enabledStatus') }}:</span>
             <span class="value">
               <el-tag :type="selectedPolicy.enabled ? 'success' : 'info'" size="small">
-                {{ selectedPolicy.enabled ? '启用' : '禁用' }}
+                {{ selectedPolicy.enabled ? $t('alertPolicies.enabled') : $t('alertPolicies.disabled') }}
               </el-tag>
             </span>
           </div>
         </div>
 
         <div class="detail-section" v-if="selectedPolicy.policy_type === 'resource'">
-          <h3>监控配置</h3>
+          <h3>{{ $t('alertPolicies.monitoringConfig') }}</h3>
           <div class="detail-item">
-            <span class="label">资源类型:</span>
+            <span class="label">{{ $t('alertPolicies.resourceType') }}:</span>
             <span class="value">{{ getResourceTypeLabel(selectedPolicy.resource_type) }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">监控资源:</span>
-            <span class="value">{{ selectedPolicy.monitored_resources?.length || 0 }}个</span>
+            <span class="label">{{ $t('alertPolicies.monitoredResources') }}:</span>
+            <span class="value">{{ selectedPolicy.monitored_resources?.length || 0 }}{{ $t('alertPolicies.items') }}</span>
           </div>
           <div class="detail-item" v-if="selectedPolicy.monitored_resources && selectedPolicy.monitored_resources.length > 0">
-            <span class="label">资源列表:</span>
+            <span class="label">{{ $t('alertPolicies.resourceList') }}:</span>
             <div class="value">
               <el-tag 
                 v-for="resource in selectedPolicy.monitored_resources" 
@@ -601,13 +601,13 @@
         </div>
 
         <div class="detail-section">
-          <h3>告警配置</h3>
+          <h3>{{ $t('alertPolicies.alertConfig') }}</h3>
           <div class="detail-item">
-            <span class="label">告警条目:</span>
-            <span class="value">{{ selectedPolicy.alert_items?.length || 0 }}个</span>
+            <span class="label">{{ $t('alertPolicies.alertItems') }}:</span>
+            <span class="value">{{ selectedPolicy.alert_items?.length || 0 }}{{ $t('alertPolicies.items') }}</span>
           </div>
           <div class="detail-item" v-if="selectedPolicy.alert_items && selectedPolicy.alert_items.length > 0">
-            <span class="label">告警规则:</span>
+            <span class="label">{{ $t('alertPolicies.alertRules') }}:</span>
             <div class="value">
               <div v-for="item in selectedPolicy.alert_items" :key="item" class="rule-item">
                 <span class="rule-name">{{ getAlertItemLabel(item) }}</span>
@@ -616,7 +616,7 @@
                      selectedPolicy.trigger_rules[item].operator === 'lt' ? '<' : 
                      selectedPolicy.trigger_rules[item].operator === 'eq' ? '=' : '!=' }}
                   {{ selectedPolicy.trigger_rules[item].threshold }}%
-                  (持续{{ selectedPolicy.trigger_rules[item].duration }}秒)
+                  ({{ $t('alertPolicies.duration') }}{{ selectedPolicy.trigger_rules[item].duration }}{{ $t('alertPolicies.seconds') }})
                 </span>
               </div>
             </div>
@@ -624,17 +624,17 @@
         </div>
 
         <div class="detail-section">
-          <h3>通知配置</h3>
+          <h3>{{ $t('alertPolicies.notificationConfig') }}</h3>
           <div class="detail-item">
-            <span class="label">通知模板:</span>
-            <span class="value">{{ selectedPolicy.template_name || '未设置' }}</span>
+            <span class="label">{{ $t('alertPolicies.notificationTemplate') }}:</span>
+            <span class="value">{{ selectedPolicy.template_name || $t('alertPolicies.notSet') }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">通知对象:</span>
-            <span class="value">{{ selectedPolicy.notification_targets?.length || 0 }}个</span>
+            <span class="label">{{ $t('alertPolicies.notificationTargets') }}:</span>
+            <span class="value">{{ selectedPolicy.notification_targets?.length || 0 }}{{ $t('alertPolicies.items') }}</span>
           </div>
           <div class="detail-item" v-if="selectedPolicy.notification_targets && selectedPolicy.notification_targets.length > 0">
-            <span class="label">通知列表:</span>
+            <span class="label">{{ $t('alertPolicies.notificationList') }}:</span>
             <div class="value">
               <el-tag 
                 v-for="target in selectedPolicy.notification_targets" 
@@ -647,43 +647,43 @@
             </div>
           </div>
           <div class="detail-item">
-            <span class="label">通知周期:</span>
-            <span class="value">{{ selectedPolicy.notification_cycle || '立即' }}</span>
+            <span class="label">{{ $t('alertPolicies.notificationCycle') }}:</span>
+            <span class="value">{{ selectedPolicy.notification_cycle || $t('alertPolicies.immediate') }}</span>
           </div>
         </div>
 
         <div class="detail-section">
-          <h3>其他信息</h3>
+          <h3>{{ $t('alertPolicies.otherInfo') }}</h3>
           <div class="detail-item">
-            <span class="label">创建时间:</span>
+            <span class="label">{{ $t('alertPolicies.createdTime') }}:</span>
             <span class="value">{{ formatDate(selectedPolicy.created_at) }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">更新时间:</span>
+            <span class="label">{{ $t('alertPolicies.updatedTime') }}:</span>
             <span class="value">{{ formatDate(selectedPolicy.updated_at) }}</span>
           </div>
         </div>
 
         <div class="detail-actions">
-          <el-button type="primary" @click="editPolicy(selectedPolicy)">编辑策略</el-button>
-          <el-button @click="testPolicy(selectedPolicy)">测试策略</el-button>
+          <el-button type="primary" @click="editPolicy(selectedPolicy)">{{ $t('alertPolicies.editPolicy') }}</el-button>
+          <el-button @click="testPolicy(selectedPolicy)">{{ $t('alertPolicies.testPolicy') }}</el-button>
           <el-button 
             :type="selectedPolicy.enabled ? 'warning' : 'success'"
             @click="togglePolicy(selectedPolicy)"
             :loading="selectedPolicy.toggling"
           >
-            {{ selectedPolicy.enabled ? '禁用' : '启用' }}
+            {{ selectedPolicy.enabled ? $t('alertPolicies.disable') : $t('alertPolicies.enable') }}
           </el-button>
         </div>
       </div>
     </el-drawer>
 
     <!-- 通知对象选择器 -->
-    <el-dialog v-model="showNotificationSelector" title="选择通知对象" width="600px">
+    <el-dialog v-model="showNotificationSelector" :title="$t('alertPolicies.selectNotificationTargets')" width="600px">
       <div class="selector-content">
         <el-input
           v-model="notificationSearchKeyword"
-          placeholder="搜索通知对象..."
+          :placeholder="$t('alertPolicies.searchNotificationTargets')"
           clearable
         >
           <template #prefix>
@@ -709,8 +709,8 @@
       </div>
       
       <template #footer>
-        <el-button @click="showNotificationSelector = false">取消</el-button>
-        <el-button type="primary" @click="confirmNotificationSelection">确定</el-button>
+        <el-button @click="showNotificationSelector = false">{{ $t('alertPolicies.cancel') }}</el-button>
+        <el-button type="primary" @click="confirmNotificationSelection">{{ $t('alertPolicies.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>
@@ -718,9 +718,12 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import axios from 'axios'
+
+const { t } = useI18n()
 
 // 响应式数据
 const loading = ref(false)
@@ -774,17 +777,17 @@ const policyForm = reactive({
 // 表单验证规则
 const policyRules = {
   name: [
-    { required: true, message: '请输入策略名称', trigger: 'blur' },
-    { min: 2, max: 50, message: '策略名称长度在 2 到 50 个字符', trigger: 'blur' }
+    { required: true, message: t('alertPolicies.validation.enterPolicyName'), trigger: 'blur' },
+    { min: 2, max: 50, message: t('alertPolicies.validation.policyNameLength'), trigger: 'blur' }
   ],
   policy_type: [
-    { required: true, message: '请选择策略类型', trigger: 'change' }
+    { required: true, message: t('alertPolicies.validation.selectPolicyType'), trigger: 'change' }
   ],
   level: [
-    { required: true, message: '请选择告警级别', trigger: 'change' }
+    { required: true, message: t('alertPolicies.validation.selectAlertLevel'), trigger: 'change' }
   ],
   description: [
-    { max: 200, message: '描述长度不能超过 200 个字符', trigger: 'blur' }
+    { max: 200, message: t('alertPolicies.validation.descriptionLength'), trigger: 'blur' }
   ]
 }
 
@@ -856,7 +859,7 @@ const loadPolicies = async () => {
     const response = await axios.get('/api/alerts/policies')
     policies.value = response.data.policies || []
   } catch (error) {
-    ElMessage.error('加载告警策略失败')
+    ElMessage.error(t('alertPolicies.messages.loadPoliciesFailed'))
   } finally {
     loading.value = false
   }
@@ -998,18 +1001,18 @@ const handleNotificationChannelsChange = async () => {
     
   } catch (error) {
     console.error('获取兼容数据失败:', error)
-    ElMessage.error('获取兼容数据失败')
+    ElMessage.error(t('alertPolicies.messages.getCompatibilityDataFailed'))
   }
 }
 
 // 获取渠道类型显示名称
 const getChannelTypeName = (type) => {
   const typeNames = {
-    'email': '邮件',
-    'sms': '短信',
-    'webhook': 'WebHook',
-    'dingtalk': '钉钉',
-    'slack': 'Slack'
+    'email': t('alertPolicies.channelTypes.email'),
+    'sms': t('alertPolicies.channelTypes.sms'),
+    'webhook': t('alertPolicies.channelTypes.webhook'),
+    'dingtalk': t('alertPolicies.channelTypes.dingtalk'),
+    'slack': t('alertPolicies.channelTypes.slack')
   }
   return typeNames[type] || type
 }
@@ -1150,7 +1153,7 @@ const handleEventTypeChange = async () => {
 
 const openResourceSelector = () => {
   if (!policyForm.resource_type) {
-    ElMessage.warning('请先选择资源类型')
+    ElMessage.warning(t('alertPolicies.messages.selectResourceTypeFirst'))
     return
   }
   showResourceSelector.value = true
@@ -1188,10 +1191,10 @@ const togglePolicy = async (policy) => {
     const response = await axios.put(`/api/alerts/policies/${policy.id}`, {
       enabled: policy.enabled
     })
-    ElMessage.success(policy.enabled ? '策略已启用' : '策略已禁用')
+    ElMessage.success(policy.enabled ? t('alertPolicies.messages.policyEnabled') : t('alertPolicies.messages.policyDisabled'))
   } catch (error) {
     policy.enabled = !policy.enabled // 恢复状态
-    ElMessage.error('操作失败')
+    ElMessage.error(t('alertPolicies.messages.operationFailed'))
   } finally {
     policy.toggling = false
   }
@@ -1200,30 +1203,30 @@ const togglePolicy = async (policy) => {
 const testPolicy = async (policy) => {
   try {
     await axios.post(`/api/alerts/policies/${policy.id}/test`)
-    ElMessage.success('测试告警已发送')
+    ElMessage.success(t('alertPolicies.messages.testAlertSent'))
   } catch (error) {
-    ElMessage.error('测试失败')
+          ElMessage.error(t('alertPolicies.messages.testFailed'))
   }
 }
 
 const deletePolicy = async (policy) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除告警策略 "${policy.name}" 吗？`,
-      '确认删除',
+      t('alertPolicies.messages.confirmDeletePolicy', { policyName: policy.name }),
+      t('alertPolicies.messages.confirmDelete'),
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: t('alertPolicies.messages.confirm'),
+        cancelButtonText: t('alertPolicies.messages.cancel'),
         type: 'warning'
       }
     )
     
     await axios.delete(`/api/alerts/policies/${policy.id}`)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('alertPolicies.messages.deleteSuccess'))
     loadPolicies()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除失败')
+      ElMessage.error(t('alertPolicies.messages.deleteFailed'))
     }
   }
 }
@@ -1245,17 +1248,17 @@ const savePolicy = async () => {
     const validationResult = validationResponse.data
     
     if (!validationResult.valid) {
-      ElMessage.error('配置验证失败: ' + validationResult.errors.join('; '))
+      ElMessage.error(t('alertPolicies.messages.configValidationFailed') + ': ' + validationResult.errors.join('; '))
       return
     }
     
     if (validationResult.warnings.length > 0) {
       const confirmed = await ElMessageBox.confirm(
-        '配置存在以下警告，是否继续？\n' + validationResult.warnings.join('\n'),
-        '配置警告',
+        t('alertPolicies.messages.configWarnings') + '\n' + validationResult.warnings.join('\n'),
+        t('alertPolicies.messages.configWarning'),
         {
-          confirmButtonText: '继续',
-          cancelButtonText: '取消',
+          confirmButtonText: t('alertPolicies.messages.continue'),
+          cancelButtonText: t('alertPolicies.messages.cancel'),
           type: 'warning'
         }
       ).catch(() => false)
@@ -1267,17 +1270,17 @@ const savePolicy = async () => {
     
     if (editingPolicy.value) {
       await axios.put(`/api/alerts/policies/${editingPolicy.value.id}`, data)
-      ElMessage.success('更新成功')
+      ElMessage.success(t('alertPolicies.messages.updateSuccess'))
     } else {
       await axios.post('/api/alerts/policies', data)
-      ElMessage.success('创建成功')
+      ElMessage.success(t('alertPolicies.messages.createSuccess'))
     }
     
     showCreateDialog.value = false
     loadPolicies()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(editingPolicy.value ? '更新失败' : '创建失败')
+      ElMessage.error(editingPolicy.value ? t('alertPolicies.messages.updateFailed') : t('alertPolicies.messages.createFailed'))
     }
   } finally {
     saving.value = false
@@ -1291,10 +1294,10 @@ const resetForm = () => {
 // 工具方法
 const getLevelLabel = (level) => {
   const labels = {
-    info: '信息',
-    warning: '警告',
-    error: '错误',
-    critical: '严重'
+    info: t('alertPolicies.info'),
+    warning: t('alertPolicies.warning'),
+    error: t('alertPolicies.error'),
+    critical: t('alertPolicies.critical')
   }
   return labels[level] || level
 }
@@ -1311,8 +1314,8 @@ const getLevelTagType = (level) => {
 
 const getPolicyTypeLabel = (type) => {
   const labels = {
-    resource: '资源告警',
-    event: '事件告警'
+    resource: t('alertPolicies.resourceAlert'),
+    event: t('alertPolicies.eventAlert')
   }
   return labels[type] || type
 }
@@ -1352,7 +1355,7 @@ const getEventResultLabel = (code) => {
 
 const formatDate = (date) => {
   if (!date) return '-'
-  return new Date(date).toLocaleString('zh-CN')
+  return new Date(date).toLocaleString()
 }
 
 // 监听告警条目变化，初始化触发规则
