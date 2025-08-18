@@ -948,9 +948,10 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 - NAS 到 NAS 选项 (nasToNasOptions): 20+ 个键值对
 - 通知管理 (notifications): 55+ 个键值对
 - 事件管理 (events): 70+ 个键值对
-- 告警策略管理 (alertPolicies): 85+ 个键值对
-- 系统监控 (monitoring): 45+ 个键值对
-- **总计**: 955+ 个翻译键值对
+- 告警策略管理 (alertPolicies): 105+ 个键值对
+- 系统监控 (monitoring): 49+ 个键值对
+- 个人信息 (profile): 35+ 个键值对
+- **总计**: 1014+ 个翻译键值对
 
 ### Notifications.vue 国际化完成度：100% ✅
 
@@ -1264,6 +1265,57 @@ message = ngettext('%(count)d file', '%(count)d files', count)
 **10. 网络图表标签**
 
 - ✅ 入流量/出流量标签 (`monitoring.charts.networkIn`, `monitoring.charts.networkOut`)
+
+### Profile.vue 国际化完成度：100% ✅
+
+**已完成内容：**
+
+**1. 页面标题**
+
+- ✅ 页面标题 (`profile.pageTitle`)
+
+**2. 标签页**
+
+- ✅ 基本信息标签页 (`profile.basicInfo`)
+- ✅ 修改密码标签页 (`profile.changePassword`)
+
+**3. 基本信息表单**
+
+- ✅ 头像标签和更换头像按钮 (`profile.avatar`, `profile.changeAvatar`)
+- ✅ 用户名标签 (`profile.username`)
+- ✅ 邮箱标签 (`profile.email`)
+- ✅ 账户信息分割线 (`profile.accountInfo`)
+- ✅ 用户 ID 标签和复制 ID 提示 (`profile.userId`, `profile.copyId`)
+- ✅ 用户角色标签和角色显示 (`profile.userRole`, `profile.admin`, `profile.normalUser`)
+- ✅ 创建时间/最后登录标签 (`profile.createdTime`, `profile.lastLogin`)
+- ✅ 保存修改按钮 (`profile.saveChanges`)
+
+**4. 修改密码表单**
+
+- ✅ 当前密码标签 (`profile.currentPassword`)
+- ✅ 新密码标签 (`profile.newPassword`)
+- ✅ 确认新密码标签 (`profile.confirmPassword`)
+- ✅ 修改密码按钮 (`profile.changePassword`)
+
+**5. 表单验证**
+
+- ✅ 邮箱验证消息 (`profile.validation.enterEmail`, `profile.validation.enterValidEmail`)
+- ✅ 密码验证消息 (`profile.validation.enterCurrentPassword`, `profile.validation.enterNewPassword`, `profile.validation.confirmNewPassword`)
+- ✅ 密码长度验证 (`profile.validation.passwordLength`)
+- ✅ 密码确认验证 (`profile.validation.passwordsNotMatch`)
+
+**6. 消息提示**
+
+- ✅ 头像格式/大小错误 (`profile.messages.avatarFormatError`, `profile.messages.avatarSizeError`)
+- ✅ 获取用户信息失败 (`profile.messages.getUserInfoFailed`)
+- ✅ 个人信息更新成功/失败 (`profile.messages.profileUpdateSuccess`, `profile.messages.updateFailed`)
+- ✅ 头像更新成功/失败 (`profile.messages.avatarUpdateSuccess`, `profile.messages.avatarUpdateFailed`)
+- ✅ 用户 ID 复制成功/失败 (`profile.messages.userIdCopied`, `profile.messages.copyFailed`)
+- ✅ 密码修改成功/失败 (`profile.messages.passwordChangeSuccess`, `profile.messages.changeFailed`)
+
+**7. 辅助函数**
+
+- ✅ 未知状态显示 (`profile.unknown`)
 
 ## 下一步计划
 

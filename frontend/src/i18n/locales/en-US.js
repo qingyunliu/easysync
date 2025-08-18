@@ -1851,6 +1851,52 @@ export default {
     },
   },
 
+  // Profile Module
+  profile: {
+    pageTitle: "Profile",
+    basicInfo: "Basic Information",
+    changePassword: "Change Password",
+    avatar: "Avatar",
+    changeAvatar: "Change Avatar",
+    username: "Username",
+    email: "Email",
+    accountInfo: "Account Information",
+    userId: "User ID",
+    copyId: "Copy ID",
+    userRole: "User Role",
+    admin: "Administrator",
+    normalUser: "Normal User",
+    createdTime: "Created Time",
+    lastLogin: "Last Login",
+    saveChanges: "Save Changes",
+    currentPassword: "Current Password",
+    newPassword: "New Password",
+    confirmPassword: "Confirm Password",
+    unknown: "Unknown",
+    validation: {
+      enterEmail: "Please enter email address",
+      enterValidEmail: "Please enter a valid email address",
+      enterCurrentPassword: "Please enter current password",
+      enterNewPassword: "Please enter new password",
+      confirmNewPassword: "Please confirm new password",
+      passwordLength: "Length should be between 6 and 20 characters",
+      passwordsNotMatch: "The two passwords do not match",
+    },
+    messages: {
+      avatarFormatError: "Avatar can only be JPG or PNG format!",
+      avatarSizeError: "Avatar size cannot exceed 2MB!",
+      getUserInfoFailed: "Failed to get user information",
+      profileUpdateSuccess: "Profile updated successfully",
+      updateFailed: "Update failed",
+      avatarUpdateSuccess: "Avatar updated successfully",
+      avatarUpdateFailed: "Avatar update failed",
+      userIdCopied: "User ID copied to clipboard",
+      copyFailed: "Copy failed",
+      passwordChangeSuccess: "Password changed successfully",
+      changeFailed: "Change failed",
+    },
+  },
+
   // System Monitoring Module
   monitoring: {
     // Page Title

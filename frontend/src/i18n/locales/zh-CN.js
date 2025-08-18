@@ -1806,6 +1806,52 @@ export default {
     },
   },
 
+  // 个人信息模块
+  profile: {
+    pageTitle: "个人信息",
+    basicInfo: "基本信息",
+    changePassword: "修改密码",
+    avatar: "头像",
+    changeAvatar: "更换头像",
+    username: "用户名",
+    email: "邮箱",
+    accountInfo: "账户信息",
+    userId: "用户ID",
+    copyId: "复制ID",
+    userRole: "用户角色",
+    admin: "管理员",
+    normalUser: "普通用户",
+    createdTime: "创建时间",
+    lastLogin: "最后登录",
+    saveChanges: "保存修改",
+    currentPassword: "当前密码",
+    newPassword: "新密码",
+    confirmPassword: "确认新密码",
+    unknown: "未知",
+    validation: {
+      enterEmail: "请输入邮箱地址",
+      enterValidEmail: "请输入正确的邮箱地址",
+      enterCurrentPassword: "请输入当前密码",
+      enterNewPassword: "请输入新密码",
+      confirmNewPassword: "请确认新密码",
+      passwordLength: "长度在 6 到 20 个字符",
+      passwordsNotMatch: "两次输入的密码不一致",
+    },
+    messages: {
+      avatarFormatError: "头像只能是 JPG 或 PNG 格式!",
+      avatarSizeError: "头像大小不能超过 2MB!",
+      getUserInfoFailed: "获取用户信息失败",
+      profileUpdateSuccess: "个人信息更新成功",
+      updateFailed: "更新失败",
+      avatarUpdateSuccess: "头像更新成功",
+      avatarUpdateFailed: "头像更新失败",
+      userIdCopied: "用户ID已复制到剪贴板",
+      copyFailed: "复制失败",
+      passwordChangeSuccess: "密码修改成功",
+      changeFailed: "修改失败",
+    },
+  },
+
   // 系统监控模块
   monitoring: {
     // 页面标题
