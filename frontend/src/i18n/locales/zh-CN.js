@@ -115,11 +115,12 @@ export default {
     hour: "小时",
     second: "秒",
     minute: "分钟",
-    hour: "小时",
     day: "天",
     week: "周",
     month: "月",
     year: "年",
+    to: "至",
+    unknown: "未知",
   },
 
   // 认证相关

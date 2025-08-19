@@ -120,6 +120,8 @@ export default {
     week: "Week",
     month: "Month",
     year: "Year",
+    to: "To",
+    unknown: "Unknown",
   },
 
   // Authentication
