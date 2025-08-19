@@ -2686,6 +2686,17 @@ export default {
     otherOS: "其他操作系统",
     getLoginLogsFailed: "获取登录审计日志失败",
     getOperationLogsFailed: "获取操作审计日志失败",
+    auditLogDetail: "审计日志详情",
+    logId: "日志ID",
+    operationResult: "操作结果",
+    resourceId: "资源ID",
+    userAgent: "用户代理",
+    selectActionType: "选择操作类型",
+    selectResourceType: "选择资源类型",
+    status: "状态",
+    operationDetails: "操作详情",
+    noContent: "无",
+    items: "项",
   },
 
   // 告警模板相关

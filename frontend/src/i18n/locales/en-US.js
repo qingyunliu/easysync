@@ -2760,6 +2760,17 @@ export default {
     otherOS: "Other OS",
     getLoginLogsFailed: "Failed to get login audit logs",
     getOperationLogsFailed: "Failed to get operation audit logs",
+    auditLogDetail: "Audit Log Detail",
+    logId: "Log ID",
+    operationResult: "Operation Result",
+    resourceId: "Resource ID",
+    userAgent: "User Agent",
+    selectActionType: "Select Action Type",
+    selectResourceType: "Select Resource Type",
+    status: "Status",
+    operationDetails: "Operation Details",
+    noContent: "No Content",
+    items: "items",
   },
 
   // Alert templates related

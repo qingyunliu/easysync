@@ -1,20 +1,20 @@
 <template>
   <div class="audit-logs-page">
     <div class="page-header">
-      <h2>审计日志</h2>
+      <h2>{{ $t('audit.title') }}</h2>
     </div>
 
     <div class="page-content">
       <el-tabs v-model="activeTab">
         <!-- 登录/登出审计 -->
-        <el-tab-pane label="登录审计" name="login">
+        <el-tab-pane :label="$t('audit.loginAudit')" name="login">
           <div class="tab-header">
             <div class="header-actions">
-              <el-select v-model="loginActionFilter" placeholder="选择操作类型" class="filter-select"
+              <el-select v-model="loginActionFilter" :placeholder="$t('audit.selectActionType')" class="filter-select"
                 @change="handleLoginFilterChange">
-                <el-option label="全部操作" value="all" />
-                <el-option label="登录记录" value="login" />
-                <el-option label="退出记录" value="logout" />
+                <el-option :label="$t('audit.allOperations')" value="all" />
+                <el-option :label="$t('audit.loginRecord')" value="login" />
+                <el-option :label="$t('audit.logoutRecord')" value="logout" />
               </el-select>
             </div>
           </div>
@@ -25,10 +25,10 @@
                 <el-icon class="title-icon">
                   <DataAnalysis />
                 </el-icon>
-                <span>登录/登出审计日志</span>
+                <span>{{ $t('audit.loginLogoutAudit') }}</span>
               </div>
               <div class="card-stats">
-                <span class="stats-text">共 {{ loginTotal }} 条记录</span>
+                <span class="stats-text">{{ $t('audit.totalRecords', { count: loginTotal }) }}</span>
               </div>
             </div>
 
@@ -36,8 +36,8 @@
               <el-table :data="loginLogs" class="audit-table"
                 :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--text-color)' }" stripe
                 @row-click="handleLoginRowClick">
-                <el-table-column prop="id" label="ID" width="330" align="center" />
-                <el-table-column prop="username" label="用户" width="160" align="center">
+                <el-table-column prop="id" :label="$t('audit.id')" width="330" align="center" />
+                <el-table-column prop="username" :label="$t('audit.username')" width="160" align="center">
                   <template #default="scope">
                     <div class="user-info">
                       <el-avatar :size="28" style="margin-right: 8px">
@@ -48,16 +48,16 @@
                   </template>
                 </el-table-column>
 
-                <el-table-column prop="action" label="操作类型" width="120" align="center">
+                <el-table-column prop="action" :label="$t('audit.actionType')" width="120" align="center">
                   <template #default="scope">
                     <el-tag :type="scope.row.action === 'login' ? 'success' : 'warning'"
                       :icon="scope.row.action === 'login' ? 'CircleCheck' : 'CircleClose'" effect="light">
-                      {{ scope.row.action === 'login' ? '登录' : '退出' }}
+                      {{ scope.row.action === 'login' ? $t('audit.loginRecord') : $t('audit.logoutRecord') }}
                     </el-tag>
                   </template>
                 </el-table-column>
 
-                <el-table-column label="操作时间" width="220" align="center">
+                <el-table-column :label="$t('audit.operationTime')" width="220" align="center">
                   <template #default="scope">
                     <div class="time-info">
                       <el-icon class="time-icon">
@@ -68,15 +68,15 @@
                   </template>
                 </el-table-column>
 
-                <el-table-column prop="result" label="结果" width="100" align="center">
+                <el-table-column prop="result" :label="$t('audit.result')" width="100" align="center">
                   <template #default="scope">
                     <el-tag :type="scope.row.result === 'success' ? 'success' : 'danger'" effect="light" size="small">
-                      {{ scope.row.result === 'success' ? '成功' : '失败' }}
+                      {{ scope.row.result === 'success' ? $t('logs.success') : $t('logs.failed') }}
                     </el-tag>
                   </template>
                 </el-table-column>
 
-                <el-table-column prop="details.ip" label="IP地址" width="180" align="center">
+                <el-table-column prop="details.ip" :label="$t('audit.ipAddress')" width="180" align="center">
                   <template #default="scope">
                     <el-tag type="info" effect="plain" size="small">
                       {{ scope.row.details.ip }}
@@ -84,7 +84,7 @@
                   </template>
                 </el-table-column>
 
-                <el-table-column prop="details.user_agent" label="客户端信息" min-width="200">
+                <el-table-column prop="details.user_agent" :label="$t('audit.clientInfo')" min-width="200">
                   <template #default="scope">
                     <div class="user-agent-info">
                       <el-tooltip :content="scope.row.details.user_agent" placement="top">
@@ -105,25 +105,25 @@
         </el-tab-pane>
 
         <!-- 常规操作审计 -->
-        <el-tab-pane label="操作审计" name="operation">
+        <el-tab-pane :label="$t('audit.operationAudit')" name="operation">
           <div class="tab-header">
             <div class="header-actions">
-              <el-select v-model="operationActionFilter" placeholder="选择操作类型" class="filter-select"
-                @change="handleOperationFilterChange">
-                <el-option label="全部操作" value="all" />
-                <el-option label="创建" value="create" />
-                <el-option label="更新" value="update" />
-                <el-option label="删除" value="delete" />
-                <el-option label="查询" value="read" />
+              <el-select v-model="operationActionFilter" :placeholder="$t('audit.selectActionType')"
+                class="filter-select" @change="handleOperationFilterChange">
+                <el-option :label="$t('audit.allOperations')" value="all" />
+                <el-option :label="$t('audit.create')" value="create" />
+                <el-option :label="$t('audit.update')" value="update" />
+                <el-option :label="$t('audit.delete')" value="delete" />
+                <el-option :label="$t('audit.read')" value="read" />
               </el-select>
-              <el-select v-model="resourceTypeFilter" placeholder="选择资源类型" class="filter-select"
-                @change="handleOperationFilterChange">
-                <el-option label="全部资源" value="all" />
-                <el-option label="用户" value="user" />
-                <el-option label="节点" value="node" />
-                <el-option label="存储" value="storage" />
-                <el-option label="任务" value="task" />
-                <el-option label="客户端" value="client" />
+              <el-select v-model="resourceTypeFilter" :placeholder="$t('audit.selectResourceType')"
+                class="filter-select" @change="handleOperationFilterChange">
+                <el-option :label="$t('audit.allResources')" value="all" />
+                <el-option :label="$t('audit.user')" value="user" />
+                <el-option :label="$t('audit.node')" value="node" />
+                <el-option :label="$t('audit.storage')" value="storage" />
+                <el-option :label="$t('audit.task')" value="task" />
+                <el-option :label="$t('audit.client')" value="client" />
               </el-select>
             </div>
           </div>
@@ -134,10 +134,10 @@
                 <el-icon class="title-icon">
                   <Operation />
                 </el-icon>
-                <span>操作审计日志</span>
+                <span>{{ $t('audit.operationAuditLog') }}</span>
               </div>
               <div class="card-stats">
-                <span class="stats-text">共 {{ operationTotal }} 条记录</span>
+                <span class="stats-text">{{ $t('audit.totalRecords', { count: operationTotal }) }}</span>
               </div>
             </div>
 
@@ -145,9 +145,9 @@
               <el-table :data="operationLogs" class="audit-table"
                 :header-cell-style="{ background: 'var(--table-header-bg)', color: 'var(--text-color)' }" stripe
                 @row-click="handleOperationRowClick">
-                <el-table-column prop="id" label="ID" width="330" align="center" />
+                <el-table-column prop="id" :label="$t('audit.id')" width="330" align="center" />
 
-                <el-table-column prop="username" label="用户" width="120" align="center">
+                <el-table-column prop="username" :label="$t('audit.username')" width="120" align="center">
                   <template #default="scope">
                     <div class="user-info">
                       <el-avatar :size="24" style="margin-right: 6px">
@@ -158,13 +158,13 @@
                   </template>
                 </el-table-column>
 
-                <el-table-column prop="resource_name" label="资源名称" width="150" align="center">
+                <el-table-column prop="resource_name" :label="$t('audit.resourceName')" width="150" align="center">
                   <template #default="scope">
                     <span>{{ scope.row.resource_name || '-' }}</span>
                   </template>
                 </el-table-column>
 
-                <el-table-column prop="resource_type" label="资源类型" width="100" align="center">
+                <el-table-column prop="resource_type" :label="$t('audit.resourceType')" width="100" align="center">
                   <template #default="scope">
                     <el-tag :type="getResourceTypeColor(scope.row.resource_type)" effect="light" size="small">
                       {{ getResourceTypeLabel(scope.row.resource_type) }}
@@ -172,7 +172,7 @@
                   </template>
                 </el-table-column>
 
-                <el-table-column prop="action" label="操作类型" width="180" align="center">
+                <el-table-column prop="action" :label="$t('audit.actionType')" width="180" align="center">
                   <template #default="scope">
                     <el-tag :type="getActionTypeColor(scope.row.action)" effect="light" size="small">
                       {{ getActionLabel(scope.row.action) }}
@@ -180,7 +180,7 @@
                   </template>
                 </el-table-column>
 
-                <el-table-column label="操作时间" width="180" align="center">
+                <el-table-column :label="$t('audit.operationTime')" width="180" align="center">
                   <template #default="scope">
                     <div class="time-info">
                       <el-icon class="time-icon">
@@ -191,15 +191,15 @@
                   </template>
                 </el-table-column>
 
-                <el-table-column prop="result" label="结果" width="100" align="center">
+                <el-table-column prop="result" :label="$t('audit.result')" width="100" align="center">
                   <template #default="scope">
                     <el-tag :type="scope.row.result === 'success' ? 'success' : 'danger'" effect="light" size="small">
-                      {{ scope.row.result === 'success' ? '成功' : '失败' }}
+                      {{ scope.row.result === 'success' ? $t('logs.success') : $t('logs.failed') }}
                     </el-tag>
                   </template>
                 </el-table-column>
 
-                <el-table-column prop="details" label="详细信息" min-width="200">
+                <el-table-column prop="details" :label="$t('audit.details')" min-width="200">
                   <template #default="scope">
                     <div class="details-info">
                       <el-tooltip :content="JSON.stringify(scope.row.details, null, 2)" placement="top">
@@ -223,22 +223,22 @@
     </div>
 
     <!-- 审计日志详情抽屉 -->
-    <el-drawer v-model="drawerVisible" title="审计日志详情" direction="rtl" size="60%" :before-close="handleDrawerClose"
-      class="audit-drawer">
+    <el-drawer v-model="drawerVisible" :title="$t('audit.auditLogDetail')" direction="rtl" size="60%"
+      :before-close="handleDrawerClose" class="audit-drawer">
       <div class="detail-content">
 
         <!-- 基本信息卡片 -->
         <el-card class="info-card">
           <template #header>
             <div class="card-header">
-              <span>基本信息</span>
+              <span>{{ $t('audit.basicInfo') }}</span>
             </div>
           </template>
           <el-descriptions :column="2" border>
-            <el-descriptions-item label="日志ID">
+            <el-descriptions-item :label="$t('audit.logId')">
               <el-tag type="info">{{ currentLog.id }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="用户">
+            <el-descriptions-item :label="$t('audit.username')">
               <div class="user-info">
                 <el-avatar :size="24" style="margin-right: 8px">
                   {{ currentLog.username?.charAt(0)?.toUpperCase() }}
@@ -246,33 +246,33 @@
                 <span>{{ currentLog.username }}</span>
               </div>
             </el-descriptions-item>
-            <el-descriptions-item label="操作类型">
+            <el-descriptions-item :label="$t('audit.actionType')">
               <el-tag :type="currentLog.action === 'login' ? 'success' :
                 currentLog.action === 'logout' ? 'warning' :
                   getActionTypeColor(currentLog.action)" effect="light">
-                {{ currentLog.action === 'login' ? '登录' :
-                  currentLog.action === 'logout' ? '退出' :
+                {{ currentLog.action === 'login' ? $t('audit.loginRecord') :
+                  currentLog.action === 'logout' ? $t('audit.logoutRecord') :
                     getActionLabel(currentLog.action) }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="操作结果">
+            <el-descriptions-item :label="$t('audit.operationResult')">
               <el-tag :type="currentLog.result === 'success' ? 'success' : 'danger'" effect="light">
-                {{ currentLog.result === 'success' ? '成功' : '失败' }}
+                {{ currentLog.result === 'success' ? $t('logs.success') : $t('logs.failed') }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item label="操作时间">
+            <el-descriptions-item :label="$t('audit.operationTime')">
               {{ formatTime(currentLog.created_at || currentLog.details?.login_time || currentLog.details?.logout_time)
               }}
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.resource_type" label="资源类型">
+            <el-descriptions-item v-if="currentLog.resource_type" :label="$t('audit.resourceType')">
               <el-tag :type="getResourceTypeColor(currentLog.resource_type)" effect="light">
                 {{ getResourceTypeLabel(currentLog.resource_type) }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.resource_name" label="资源名称">
+            <el-descriptions-item v-if="currentLog.resource_name" :label="$t('audit.resourceName')">
               {{ currentLog.resource_name }}
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.resource_id" label="资源ID">
+            <el-descriptions-item v-if="currentLog.resource_id" :label="$t('audit.resourceId')">
               <el-tag type="info" size="small">{{ currentLog.resource_id }}</el-tag>
             </el-descriptions-item>
           </el-descriptions>
@@ -282,52 +282,52 @@
         <el-card class="info-card" v-if="currentLog.details && hasDetailsContent(currentLog.details)">
           <template #header>
             <div class="card-header">
-              <span>详细信息</span>
+              <span>{{ $t('audit.details') }}</span>
             </div>
           </template>
           <el-descriptions :column="1" border>
-            <el-descriptions-item v-if="currentLog.details.ip" label="IP地址">
+            <el-descriptions-item v-if="currentLog.details.ip" :label="$t('audit.ipAddress')">
               <el-tag type="info" effect="plain">{{ currentLog.details.ip }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.user_agent" label="用户代理">
+            <el-descriptions-item v-if="currentLog.details.user_agent" :label="$t('audit.userAgent')">
               <div class="user-agent-detail">
                 <span>{{ currentLog.details.user_agent }}</span>
               </div>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.path" label="请求路径">
+            <el-descriptions-item v-if="currentLog.details.path" :label="$t('audit.requestPath')">
               <el-tag type="info" effect="plain">{{ currentLog.details.path }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.method" label="请求方法">
+            <el-descriptions-item v-if="currentLog.details.method" :label="$t('audit.requestMethod')">
               <el-tag type="info" effect="plain">{{ currentLog.details.method }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.status_code" label="状态码">
+            <el-descriptions-item v-if="currentLog.details.status_code" :label="$t('audit.statusCode')">
               <el-tag
                 :type="currentLog.details.status_code >= 200 && currentLog.details.status_code < 300 ? 'success' : 'danger'"
                 effect="light">
                 {{ currentLog.details.status_code }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.response_time" label="响应时间">
+            <el-descriptions-item v-if="currentLog.details.response_time" :label="$t('audit.responseTime')">
               <span>{{ currentLog.details.response_time }}ms</span>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.msg" label="操作消息">
+            <el-descriptions-item v-if="currentLog.details.msg" :label="$t('audit.operationMessage')">
               <span>{{ currentLog.details.msg }}</span>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.username" label="操作用户名">
+            <el-descriptions-item v-if="currentLog.details.username" :label="$t('audit.operationUsername')">
               <span>{{ currentLog.details.username }}</span>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.name" label="资源名称">
+            <el-descriptions-item v-if="currentLog.details.name" :label="$t('audit.resourceNameDetail')">
               <span>{{ currentLog.details.name }}</span>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.ip_address" label="IP地址">
+            <el-descriptions-item v-if="currentLog.details.ip_address" :label="$t('audit.ipAddress')">
               <span>{{ currentLog.details.ip_address }}</span>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.status" label="状态">
+            <el-descriptions-item v-if="currentLog.details.status" :label="$t('audit.status')">
               <el-tag :type="currentLog.details.status === 'success' ? 'success' : 'danger'" effect="light">
                 {{ currentLog.details.status }}
               </el-tag>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.error" label="错误信息">
+            <el-descriptions-item v-if="currentLog.details.error" :label="$t('audit.errorInfo')">
               <div class="error-detail">
                 <el-tag type="danger" effect="light">{{ currentLog.details.error }}</el-tag>
               </div>
@@ -339,9 +339,9 @@
         <el-card class="info-card" v-if="currentLog.resource_type && currentLog.details">
           <template #header>
             <div class="card-header">
-              <span>操作详情</span>
+              <span>{{ $t('audit.operationDetails') }}</span>
               <el-button type="primary" link @click="toggleDetailsExpanded" size="small">
-                {{ detailsExpanded ? '收起' : '展开' }}
+                {{ detailsExpanded ? $t('audit.collapse') : $t('audit.expand') }}
                 <el-icon style="margin-left: 4px;">
                   <ArrowDown v-if="!detailsExpanded" />
                   <ArrowUp v-else />
@@ -353,25 +353,25 @@
           <!-- 简化的详细信息 -->
           <div v-if="!detailsExpanded" class="details-summary">
             <div class="summary-item" v-if="currentLog.details.params">
-              <span class="summary-label">请求参数:</span>
+              <span class="summary-label">{{ $t('audit.requestParams') }}:</span>
               <span class="summary-value">{{ getSummaryText(currentLog.details.params) }}</span>
             </div>
             <div class="summary-item" v-if="currentLog.details.headers">
-              <span class="summary-label">请求头:</span>
+              <span class="summary-label">{{ $t('audit.requestHeaders') }}:</span>
               <span class="summary-value">{{ getSummaryText(currentLog.details.headers) }}</span>
             </div>
             <div class="summary-item" v-if="currentLog.details.response">
-              <span class="summary-label">响应数据:</span>
+              <span class="summary-label">{{ $t('audit.responseData') }}:</span>
               <span class="summary-value">{{ getSummaryText(currentLog.details.response) }}</span>
             </div>
             <div class="summary-item" v-if="currentLog.details.error">
-              <span class="summary-label">错误信息:</span>
+              <span class="summary-label">{{ $t('audit.errorInfo') }}:</span>
               <span class="summary-value error-text">{{ currentLog.details.error }}</span>
             </div>
             <div
               v-if="!currentLog.details.params && !currentLog.details.headers && !currentLog.details.response && !currentLog.details.error"
               class="summary-item">
-              <span class="summary-label">详细信息:</span>
+              <span class="summary-label">{{ $t('audit.details') }}:</span>
               <span class="summary-value">{{ getSummaryText(currentLog.details) }}</span>
             </div>
           </div>
@@ -379,25 +379,25 @@
           <!-- 展开的详细信息 -->
           <div v-else class="details-expanded">
             <el-collapse v-model="activeDetailsCollapse">
-              <el-collapse-item v-if="currentLog.details.params" title="请求参数" name="params">
+              <el-collapse-item v-if="currentLog.details.params" :title="$t('audit.requestParams')" name="params">
                 <div class="json-detail">
                   <pre>{{ formatJSON(currentLog.details.params) }}</pre>
                 </div>
               </el-collapse-item>
 
-              <el-collapse-item v-if="currentLog.details.headers" title="请求头" name="headers">
+              <el-collapse-item v-if="currentLog.details.headers" :title="$t('audit.requestHeaders')" name="headers">
                 <div class="json-detail">
                   <pre>{{ formatJSON(currentLog.details.headers) }}</pre>
                 </div>
               </el-collapse-item>
 
-              <el-collapse-item v-if="currentLog.details.response" title="响应数据" name="response">
+              <el-collapse-item v-if="currentLog.details.response" :title="$t('audit.responseData')" name="response">
                 <div class="json-detail">
                   <pre>{{ formatJSON(currentLog.details.response) }}</pre>
                 </div>
               </el-collapse-item>
 
-              <el-collapse-item v-if="currentLog.details.error" title="错误信息" name="error">
+              <el-collapse-item v-if="currentLog.details.error" :title="$t('audit.errorInfo')" name="error">
                 <div class="error-detail">
                   <el-tag type="danger" effect="light">{{ currentLog.details.error }}</el-tag>
                 </div>
@@ -405,7 +405,7 @@
 
               <el-collapse-item
                 v-if="!currentLog.details.params && !currentLog.details.headers && !currentLog.details.response && !currentLog.details.error"
-                title="完整详细信息" name="full">
+                :title="$t('audit.fullDetails')" name="full">
                 <div class="json-detail">
                   <pre>{{ formatJSON(currentLog.details) }}</pre>
                 </div>
@@ -419,26 +419,26 @@
           v-if="currentLog.details && (currentLog.details.user_agent || currentLog.details.ip)">
           <template #header>
             <div class="card-header">
-              <span>环境信息</span>
+              <span>{{ $t('audit.environmentInfo') }}</span>
             </div>
           </template>
           <el-descriptions :column="2" border>
-            <el-descriptions-item v-if="currentLog.details.session_id" label="会话ID">
+            <el-descriptions-item v-if="currentLog.details.session_id" :label="$t('audit.sessionId')">
               <el-tag type="info" size="small">{{ currentLog.details.session_id }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.user_id" label="用户ID">
+            <el-descriptions-item v-if="currentLog.details.user_id" :label="$t('audit.userId')">
               <el-tag type="info" size="small">{{ currentLog.details.user_id }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.user_agent" label="客户端类型">
+            <el-descriptions-item v-if="currentLog.details.user_agent" :label="$t('audit.clientType')">
               <el-tag type="info" effect="plain">{{ getClientType(currentLog.details.user_agent) }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.user_agent" label="操作系统">
+            <el-descriptions-item v-if="currentLog.details.user_agent" :label="$t('audit.operatingSystem')">
               <el-tag type="info" effect="plain">{{ getOSInfo(currentLog.details.user_agent) }}</el-tag>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.location" label="地理位置">
+            <el-descriptions-item v-if="currentLog.details.location" :label="$t('audit.location')">
               <span>{{ currentLog.details.location }}</span>
             </el-descriptions-item>
-            <el-descriptions-item v-if="currentLog.details.timezone" label="时区">
+            <el-descriptions-item v-if="currentLog.details.timezone" :label="$t('audit.timezone')">
               <span>{{ currentLog.details.timezone }}</span>
             </el-descriptions-item>
           </el-descriptions>
@@ -447,11 +447,11 @@
         <el-card class="info-card original-card" v-if="currentLog.id">
           <template #header>
             <div class="card-header">
-              <span>原始信息</span>
+              <span>{{ $t('audit.originalInfo') }}</span>
             </div>
           </template>
           <div class="original-content">
-            <p><strong>日志数据:</strong></p>
+            <p><strong>{{ $t('audit.logData') }}:</strong></p>
             <pre>{{ JSON.stringify(currentLog, null, 2) }}</pre>
           </div>
         </el-card>
@@ -462,8 +462,11 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 import { DataAnalysis, Clock, Operation, ArrowDown, ArrowUp } from '@element-plus/icons-vue'
+
+const { t } = useI18n()
 
 // 登录审计相关
 const loginLogs = ref([])
@@ -504,7 +507,7 @@ const fetchLoginLogs = async () => {
     loginLogs.value = res.data.logs
     loginTotal.value = res.data.total
   } catch (error) {
-    console.error('获取登录审计日志失败:', error)
+    console.error(t('audit.getLoginLogsFailed'), error)
   }
 }
 
@@ -522,7 +525,7 @@ const fetchOperationLogs = async () => {
     operationLogs.value = res.data.logs
     operationTotal.value = res.data.total
   } catch (error) {
-    console.error('获取操作审计日志失败:', error)
+    console.error(t('audit.getOperationLogsFailed'), error)
   }
 }
 
@@ -608,7 +611,7 @@ const formatUserAgent = (userAgent) => {
   if (userAgent.includes('Firefox')) return 'Firefox'
   if (userAgent.includes('Safari')) return 'Safari'
   if (userAgent.includes('Edge')) return 'Edge'
-  return '其他浏览器'
+  return t('audit.otherBrowser')
 }
 
 // 格式化详细信息
@@ -634,11 +637,11 @@ const formatJSON = (json) => {
 // 获取资源类型标签
 const getResourceTypeLabel = (type) => {
   const labels = {
-    'user': '用户',
-    'node': '节点',
-    'storage': '存储',
-    'task': '任务',
-    'client': '客户端'
+    'user': t('audit.user'),
+    'node': t('audit.node'),
+    'storage': t('audit.storage'),
+    'task': t('audit.task'),
+    'client': t('audit.client')
   }
   return labels[type] || type
 }
@@ -658,10 +661,10 @@ const getResourceTypeColor = (type) => {
 // 获取动作标签
 const getActionLabel = (action) => {
   const labels = {
-    'create': '创建',
-    'update': '更新',
-    'delete': '删除',
-    'read': '查询'
+    'create': t('audit.create'),
+    'update': t('audit.update'),
+    'delete': t('audit.delete'),
+    'read': t('audit.read')
   }
   return labels[action] || action
 }
@@ -679,23 +682,23 @@ const getActionTypeColor = (action) => {
 
 // 获取客户端类型
 const getClientType = (userAgent) => {
-  if (!userAgent) return '未知'
+  if (!userAgent) return t('audit.unknown')
   if (userAgent.includes('Chrome')) return 'Chrome'
   if (userAgent.includes('Firefox')) return 'Firefox'
   if (userAgent.includes('Safari')) return 'Safari'
   if (userAgent.includes('Edge')) return 'Edge'
-  return '其他浏览器'
+  return t('audit.otherBrowser')
 }
 
 // 获取操作系统信息
 const getOSInfo = (userAgent) => {
-  if (!userAgent) return '未知'
+  if (!userAgent) return t('audit.unknown')
   if (userAgent.includes('Windows')) return 'Windows'
   if (userAgent.includes('Macintosh')) return 'Mac OS'
   if (userAgent.includes('Linux')) return 'Linux'
   if (userAgent.includes('Android')) return 'Android'
   if (userAgent.includes('iOS')) return 'iOS'
-  return '其他操作系统'
+  return t('audit.otherOS')
 }
 
 // 切换操作审计详细信息展开/收起
@@ -710,13 +713,13 @@ const toggleDetailsExpanded = () => {
 
 // 获取操作审计详细信息摘要文本
 const getSummaryText = (json) => {
-  if (!json) return '无'
+  if (!json) return t('audit.noContent')
   if (typeof json === 'string') {
     return json.length > 50 ? json.substring(0, 50) + '...' : json
   }
   const keys = Object.keys(json)
-  if (keys.length === 0) return '无'
-  return `${keys.length} 项`
+  if (keys.length === 0) return t('audit.noContent')
+  return `${keys.length} ${t('audit.items')}`
 }
 
 // 判断详细信息是否有实际内容
