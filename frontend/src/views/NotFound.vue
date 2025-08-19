@@ -1,10 +1,10 @@
 <template>
   <div class="not-found-container">
     <div class="content">
-      <h1>404</h1>
-      <h2>页面未找到</h2>
-      <p>抱歉，您访问的页面不存在</p>
-      <el-button type="primary" @click="$router.push('/')">返回首页</el-button>
+      <h1>{{ $t('notFound.title') }}</h1>
+      <h2>{{ $t('notFound.subtitle') }}</h2>
+      <p>{{ $t('notFound.description') }}</p>
+      <el-button type="primary" @click="$router.push('/')">{{ $t('notFound.backToHome') }}</el-button>
     </div>
   </div>
 </template>

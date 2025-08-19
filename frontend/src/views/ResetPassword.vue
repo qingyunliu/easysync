@@ -5,25 +5,27 @@
         <div class="reset-header">
           <div class="reset-logo">
             <img src="/src/assets/logo/easysync-login-page.svg">
-            <p>数据同步管理平台</p>
+            <p>{{ $t('auth.dataSyncPlatform') }}</p>
           </div>
         </div>
         <el-card class="reset-card" shadow="hover">
-          <h2>重置密码</h2>
+          <h2>{{ $t('auth.resetPasswordTitle') }}</h2>
           <el-form :model="form" :rules="rules" ref="formRef" label-width="0" @submit.prevent="handleSubmit">
             <el-form-item prop="password">
-              <el-input v-model="form.password" type="password" placeholder="新密码" show-password />
+              <el-input v-model="form.password" type="password" :placeholder="$t('auth.newPasswordPlaceholder')"
+                show-password />
             </el-form-item>
             <el-form-item prop="confirmPassword">
-              <el-input v-model="form.confirmPassword" type="password" placeholder="确认新密码" show-password />
+              <el-input v-model="form.confirmPassword" type="password"
+                :placeholder="$t('auth.confirmPasswordPlaceholder')" show-password />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" native-type="submit" :loading="loading" class="reset-btn">
-                重置密码
+                {{ $t('auth.resetPasswordButton') }}
               </el-button>
             </el-form-item>
             <div class="login-link">
-              <router-link to="/login">返回登录</router-link>
+              <router-link to="/login">{{ $t('auth.backToLogin') }}</router-link>
             </div>
           </el-form>
         </el-card>
@@ -36,24 +38,26 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 import axios from 'axios'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const formRef = ref(null)
 const loading = ref(false)
 const form = ref({ password: '', confirmPassword: '' })
 const rules = {
   password: [
-    { required: true, message: '请输入新密码', trigger: 'blur' },
-    { min: 6, max: 20, message: '密码长度应在6-20个字符之间', trigger: 'blur' }
+    { required: true, message: t('auth.enterNewPassword'), trigger: 'blur' },
+    { min: 6, max: 20, message: t('auth.passwordTooShort'), trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: '请确认新密码', trigger: 'blur' },
+    { required: true, message: t('auth.confirmNewPassword'), trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
         if (value !== form.value.password) {
-          callback(new Error('两次输入的密码不一致'))
+          callback(new Error(t('auth.passwordMismatch')))
         } else {
           callback()
         }
@@ -70,7 +74,7 @@ const handleSubmit = async () => {
       try {
         const token = route.query.token
         if (!token) {
-          ElMessage.error('重置链接无效')
+          ElMessage.error(t('auth.resetLinkInvalid'))
           return
         }
         const res = await axios.post('/api/auth/reset_password', {
@@ -78,13 +82,13 @@ const handleSubmit = async () => {
           password: form.value.password
         })
         if (res.data.status === 'success') {
-          ElMessage.success('密码重置成功，请登录')
+          ElMessage.success(t('auth.resetSuccess'))
           setTimeout(() => router.push('/login'), 1500)
         } else {
-          ElMessage.error(res.data.msg || '重置失败')
+          ElMessage.error(res.data.msg || t('auth.resetFailed'))
         }
       } catch (e) {
-        ElMessage.error(e.response?.data?.msg || '重置失败')
+        ElMessage.error(e.response?.data?.msg || t('auth.resetFailed'))
       } finally {
         loading.value = false
       }

@@ -377,8 +377,8 @@
                   :show-after="300" :disabled="currentPath.length <= 40">
                   <span>{{ $t('storage.currentPathLabel', {
                     path: pathExpanded ? currentPath : truncatePath(currentPath,
-                    40)
-                    }) }}</span>
+                      40)
+                  }) }}</span>
                 </el-tooltip>
                 <el-button v-if="currentPath.length > 40" type="text" size="small" @click="togglePathExpanded"
                   class="path-expand-button">
@@ -1739,7 +1739,7 @@ const handleSubmit = async () => {
     console.error('提交错误:', error)
     if (error.response) {
       console.error('错误响应:', error.response.data)
-      ElMessage.error(error.response.data.message || '操作失败')
+      ElMessage.error(error.response.data.message || t('storage.operationFailed'))
     } else if (error.message) {
       ElMessage.error(error.message)
     }
@@ -1895,7 +1895,7 @@ const refreshStats = async () => {
   try {
     // 检查存储是否有绑定的节点
     if (!currentStorage.value.node_id) {
-      ElMessage.error('该存储未绑定任何节点，无法刷新统计信息')
+      ElMessage.error(t('storage.noBoundNodeForRefreshStats'))
       return
     }
 

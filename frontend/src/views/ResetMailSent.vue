@@ -5,16 +5,16 @@
         <div class="mail-sent-header">
           <div class="mail-sent-logo">
             <img src="/src/assets/logo/easysync-login-page.svg">
-            <p>数据同步管理平台</p>
+            <p>{{ $t('auth.dataSyncPlatform') }}</p>
           </div>
         </div>
         <el-card class="mail-sent-card" shadow="hover">
           <el-icon class="mail-sent-icon" color="#67C23A">
             <CircleCheck />
           </el-icon>
-          <h2>重置邮件已发送</h2>
-          <p>我们发送了一封重置密码邮件至 <b>{{ email }}</b>。<br>请查收您的邮箱并点击链接重置密码。</p>
-          <el-button type="primary" @click="goLogin" class="mail-sent-btn">返回登录</el-button>
+          <h2>{{ $t('auth.emailSentTitle') }}</h2>
+          <p>{{ $t('auth.emailSentDesc') }} <b>{{ email }}</b>。<br>{{ $t('auth.emailSentCheck') }}</p>
+          <el-button type="primary" @click="goLogin" class="mail-sent-btn">{{ $t('auth.backToLogin') }}</el-button>
         </el-card>
       </div>
     </div>

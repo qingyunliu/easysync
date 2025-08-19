@@ -610,7 +610,7 @@ const fetchClients = async () => {
       clients.value = response.data.data || []
     }
   } catch (error) {
-    ElMessage.error('获取客户端列表失败')
+    ElMessage.error(t('tasks.messages.getClientsFailed'))
   }
 }
 
@@ -621,7 +621,7 @@ const fetchStorages = async () => {
       storages.value = response.data.data || []
     }
   } catch (error) {
-    ElMessage.error('获取存储列表失败')
+    ElMessage.error(t('tasks.messages.getStoragesFailed'))
   }
 }
 
@@ -658,7 +658,7 @@ const fetchTaskLogs = async () => {
       logsPagination.value.per_page = response.data.per_page || 20
     }
   } catch (error) {
-    ElMessage.error('获取任务日志失败')
+    ElMessage.error(t('tasks.messages.getTaskLogsFailed'))
   } finally {
     logsLoading.value = false
   }
@@ -680,7 +680,7 @@ const cleanupLogs = async (type = 'duplicate') => {
       }
     }
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '清理日志失败')
+    ElMessage.error(error.response?.data?.message || t('tasks.messages.clearLogsFailed'))
   }
 }
 
@@ -799,7 +799,7 @@ const handleLogsDialogClose = () => {
 }
 
 const handleTaskCreated = (task) => {
-  ElMessage.success(copyFromTask.value ? '任务复制成功' : '任务创建成功')
+  ElMessage.success(copyFromTask.value ? t('tasks.messages.taskCopySuccess') : t('tasks.messages.taskCreateSuccess'))
   copyFromTask.value = null
   fetchTasks()
 }
@@ -813,10 +813,10 @@ const handleStartTask = async (task) => {
   loadingTasks.value.add(task.id)
   try {
     await axios.post(`/api/tasks/${task.id}/start`)
-    ElMessage.success('任务启动成功')
+    ElMessage.success(t('tasks.messages.taskStartSuccess'))
     fetchTasks()
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '启动失败')
+    ElMessage.error(error.response?.data?.message || t('tasks.messages.startFailed'))
   } finally {
     loadingTasks.value.delete(task.id)
   }
@@ -828,10 +828,10 @@ const handlePauseTask = async (task) => {
   loadingTasks.value.add(task.id)
   try {
     await axios.post(`/api/tasks/${task.id}/pause`)
-    ElMessage.success('任务暂停请求已发送')
+    ElMessage.success(t('tasks.messages.taskPauseRequestSent'))
     fetchTasks()
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '暂停失败')
+    ElMessage.error(error.response?.data?.message || t('tasks.messages.pauseFailed'))
   } finally {
     loadingTasks.value.delete(task.id)
   }
@@ -843,10 +843,10 @@ const handleResumeTask = async (task) => {
   loadingTasks.value.add(task.id)
   try {
     await axios.post(`/api/tasks/${task.id}/resume`)
-    ElMessage.success('任务恢复请求已发送')
+    ElMessage.success(t('tasks.messages.taskResumeRequestSent'))
     fetchTasks()
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '恢复失败')
+    ElMessage.error(error.response?.data?.message || t('tasks.messages.resumeFailed'))
   } finally {
     loadingTasks.value.delete(task.id)
   }
@@ -866,18 +866,18 @@ const handleCancelTask = async (task) => {
     if (response.data.status === 'success') {
       // 根据任务状态显示不同的消息
       if (task.status === 'running' || task.status === 'assigned') {
-        ElMessage.success('任务取消请求已发送，正在等待Agent处理...')
+        ElMessage.success(t('tasks.messages.taskCancelRequestSent'))
         // 对于运行中的任务，启动轮询检查取消状态
         startCancelStatusPolling(task.id)
       } else {
-        ElMessage.success('任务已取消')
+        ElMessage.success(t('tasks.messages.taskCancelled'))
       }
     }
 
     fetchTasks()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '取消失败')
+      ElMessage.error(error.response?.data?.message || t('tasks.messages.cancelFailed'))
     }
   } finally {
     loadingTasks.value.delete(task.id)
@@ -900,7 +900,7 @@ const startCancelStatusPolling = (taskId) => {
       if (response.data.status === 'success') {
         const task = response.data.data
         if (task.status === 'cancelled') {
-          ElMessage.success('任务已成功取消')
+          ElMessage.success(t('tasks.messages.taskSuccessfullyCancelled'))
           clearInterval(timer)
           cancelPollingTimers.value.delete(taskId)
           fetchTasks()
@@ -908,7 +908,7 @@ const startCancelStatusPolling = (taskId) => {
           // 继续轮询
         } else if (task.status === 'running') {
           // 如果状态又变回running，说明取消失败
-          ElMessage.warning('任务取消失败，状态已恢复为运行中')
+          ElMessage.warning(t('tasks.messages.taskCancelFailedStatusRestored'))
           clearInterval(timer)
           cancelPollingTimers.value.delete(taskId)
           fetchTasks()
@@ -926,7 +926,7 @@ const startCancelStatusPolling = (taskId) => {
     if (cancelPollingTimers.value.has(taskId)) {
       clearInterval(cancelPollingTimers.value.get(taskId))
       cancelPollingTimers.value.delete(taskId)
-      ElMessage.warning('任务取消状态检查超时，请手动刷新查看最新状态')
+      ElMessage.warning(t('tasks.messages.taskCancelStatusCheckTimeout'))
     }
   }, 30000)
 }
@@ -941,11 +941,11 @@ const handleDeleteTask = async (task) => {
 
     const force = ['running', 'assigned'].includes(task.status)
     await axios.delete(`/api/tasks/${task.id}${force ? '?force=true' : ''}`)
-    ElMessage.success('删除任务成功')
+    ElMessage.success(t('tasks.messages.deleteTaskSuccess'))
     fetchTasks()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '删除失败')
+      ElMessage.error(error.response?.data?.message || t('tasks.messages.deleteFailed'))
     }
   }
 }
@@ -958,7 +958,7 @@ const handleDuplicateTask = async (task) => {
       const taskDetail = response.data.data
       // 验证任务数据是否完整
       if (!taskDetail.source_storage_id || !taskDetail.target_storage_id) {
-        ElMessage.warning('该任务配置不完整，无法复制')
+        ElMessage.warning(t('tasks.messages.taskConfigIncompleteCannotCopy'))
         return
       }
 
@@ -970,10 +970,10 @@ const handleDuplicateTask = async (task) => {
       // 再设置复制任务数据
       copyFromTask.value = taskDetail
     } else {
-      ElMessage.error(response.data.message || '获取任务详情失败')
+      ElMessage.error(response.data.message || t('tasks.messages.getTaskDetailFailed'))
     }
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '获取任务详情失败')
+    ElMessage.error(error.response?.data?.message || t('tasks.messages.getTaskDetailFailed'))
   }
 }
 
@@ -987,7 +987,7 @@ const getProgressTooltip = (task) => {
 
   // 添加进度信息
   if (task.progress !== undefined && task.progress !== null) {
-    details.push(`同步进度: ${task.progress.toFixed(1)}%`)
+    details.push(`${t('tasks.progress')}: ${task.progress.toFixed(1)}%`)
   }
 
   // 添加传输大小信息
@@ -1000,13 +1000,13 @@ const getProgressTooltip = (task) => {
   // 添加传输速率
   if (task.details && task.details.transfer_speed) {
     const transfer_speed = task.details.transfer_speed
-    details.push(`速率: ${transfer_speed}`)
+    details.push(`${t('tasks.transferSpeed')}: ${transfer_speed}`)
   }
 
   // 添加剩余时间信息
   if (task.details && task.details.eta) {
     const eta = task.details.eta
-    details.push(`剩余时间: ${eta}`)
+    details.push(`${t('tasks.remainingTime')}: ${eta}`)
   }
 
   return details.length > 0 ? details.join(' ') : null
@@ -1079,10 +1079,10 @@ const handleViewDetail = async (task) => {
 const handleRetryTask = async (task) => {
   try {
     await axios.post(`/api/tasks/${task.id}/retry`)
-    ElMessage.success('重试任务成功')
+    ElMessage.success(t('tasks.messages.retryTaskSuccess'))
     fetchTasks()
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '重试失败')
+    ElMessage.error(error.response?.data?.message || t('tasks.messages.retryFailed'))
   }
 }
 
@@ -1097,11 +1097,11 @@ const batchCancel = async () => {
 
     const taskIds = selectedTasks.value.map(task => task.id)
     await axios.put('/api/tasks/batch/cancel', { task_ids: taskIds })
-    ElMessage.success('批量取消成功')
+    ElMessage.success(t('tasks.messages.batchCancelSuccess'))
     fetchTasks()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '批量取消失败')
+      ElMessage.error(error.response?.data?.message || t('tasks.messages.batchCancelFailed'))
     }
   }
 }
@@ -1116,11 +1116,11 @@ const batchRetry = async () => {
 
     const taskIds = selectedTasks.value.map(task => task.id)
     await axios.put('/api/tasks/batch/retry', { task_ids: taskIds })
-    ElMessage.success('批量重试成功')
+    ElMessage.success(t('tasks.messages.batchRetrySuccess'))
     fetchTasks()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '批量重试失败')
+      ElMessage.error(error.response?.data?.message || t('tasks.messages.batchRetryFailed'))
     }
   }
 }
@@ -1135,11 +1135,11 @@ const batchDelete = async () => {
 
     const taskIds = selectedTasks.value.map(task => task.id)
     await axios.delete('/api/tasks/batch/delete', { data: { task_ids: taskIds } })
-    ElMessage.success('批量删除成功')
+    ElMessage.success(t('tasks.messages.batchDeleteSuccess'))
     fetchTasks()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || '批量删除失败')
+      ElMessage.error(error.response?.data?.message || t('tasks.messages.batchDeleteFailed'))
     }
   }
 }

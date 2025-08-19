@@ -635,11 +635,11 @@ const calculateSuccessRate = () => {
 // 获取系统状态样式
 const getSystemStatusClass = (status) => {
   switch (status) {
-    case '正常':
+    case t('dashboard.statuses.normal'):
       return 'success'
-    case '注意':
+    case t('dashboard.statuses.attention'):
       return 'warning'
-    case '警告':
+    case t('dashboard.statuses.warning'):
       return 'danger'
     default:
       return 'info'

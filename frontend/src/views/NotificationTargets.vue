@@ -3,15 +3,15 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h2>通知对象</h2>
-        <p class="page-description">管理系统通知对象，支持邮件、短信、WebHook等多种通知方式</p>
+        <h2>{{ $t('notification.targets.title') }}</h2>
+        <p class="page-description">{{ $t('notification.targets.description') }}</p>
       </div>
       <div class="header-actions">
         <el-button type="primary" @click="openCreateDialog">
           <el-icon>
             <Plus />
           </el-icon>
-          创建通知对象
+          {{ $t('notification.targets.createTarget') }}
         </el-button>
       </div>
     </div>
@@ -19,15 +19,17 @@
     <!-- 筛选栏 -->
     <div class="filter-bar">
       <el-form :model="filters" inline>
-        <el-form-item label="对象类型">
-          <el-select v-model="filters.target_type" placeholder="选择对象类型" clearable @change="loadTargets">
-            <el-option label="邮件" value="email" />
-            <el-option label="短信" value="sms" />
-            <el-option label="WebHook" value="webhook" />
+        <el-form-item :label="$t('notification.targets.targetType')">
+          <el-select v-model="filters.target_type" :placeholder="$t('notification.targets.targetType')" clearable
+            @change="loadTargets">
+            <el-option :label="$t('notification.targets.targetTypes.email')" value="email" />
+            <el-option :label="$t('notification.targets.targetTypes.sms')" value="sms" />
+            <el-option :label="$t('notification.targets.targetTypes.webhook')" value="webhook" />
           </el-select>
         </el-form-item>
-        <el-form-item label="对象名称">
-          <el-input v-model="filters.keyword" placeholder="搜索对象名称" clearable @keyup.enter="loadTargets">
+        <el-form-item :label="$t('notification.targets.targetName')">
+          <el-input v-model="filters.keyword" :placeholder="$t('notification.targets.targetName')" clearable
+            @keyup.enter="loadTargets">
             <template #prefix>
               <el-icon>
                 <Search />
@@ -40,9 +42,9 @@
             <el-icon>
               <Search />
             </el-icon>
-            搜索
+            {{ $t('common.search') }}
           </el-button>
-          <el-button @click="resetFilter">重置</el-button>
+          <el-button @click="resetFilter">{{ $t('common.reset') }}</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -53,7 +55,7 @@
         v-loading="loading">
         <el-table-column type="selection" width="55" />
 
-        <el-table-column prop="name" label="对象名称" sortable>
+        <el-table-column prop="name" :label="$t('notification.targets.targetName')" sortable>
           <template #default="{ row }">
             <el-link type="primary" @click="showTargetDetail(row)">
               {{ row.name }}
@@ -61,7 +63,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="target_type" label="对象类型" sortable>
+        <el-table-column prop="target_type" :label="$t('notification.targets.targetType')" sortable>
           <template #default="{ row }">
             <el-tag :type="getTargetTypeTagType(row.target_type)" size="small">
               {{ getTargetTypeLabel(row.target_type) }}
@@ -69,15 +71,15 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="对象状态" sortable>
+        <el-table-column :label="$t('notification.targets.targetStatus')" sortable>
           <template #default="{ row }">
             <el-tag :type="row.enabled ? 'success' : 'info'" size="small">
-              {{ row.enabled ? '启用' : '禁用' }}
+              {{ row.enabled ? $t('notification.targets.enabled') : $t('notification.targets.disabled') }}
             </el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column label="关联告警器" sortable>
+        <el-table-column :label="$t('alertPolicies.alertName')" sortable>
           <template #default="{ row }">
             <div v-if="row.alert_policies && row.alert_policies.length > 0">
               <el-tag v-for="policyId in row.alert_policies.slice(0, 2)" :key="policyId" size="small" type="warning"
@@ -88,11 +90,11 @@
                 +{{ row.alert_policies.length - 2 }}
               </el-tag>
             </div>
-            <span v-else class="text-muted">无</span>
+            <span v-else class="text-muted">{{ $t('common.noData') }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column label="发送通道" sortable>
+        <el-table-column :label="$t('notification.channels.title')" sortable>
           <template #default="{ row }">
             <div v-if="row.channels && row.channels.length > 0">
               <el-tag v-for="channelId in row.channels.slice(0, 2)" :key="channelId" size="small" type="success"
@@ -103,17 +105,17 @@
                 +{{ row.channels.length - 2 }}
               </el-tag>
             </div>
-            <span v-else class="text-muted">无</span>
+            <span v-else class="text-muted">{{ $t('common.noData') }}</span>
           </template>
         </el-table-column>
 
-        <el-table-column label="通知地址" sortable>
+        <el-table-column :label="$t('notification.targets.targetAddress')" sortable>
           <template #default="{ row }">
             {{ getTargetAddress(row) }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="created_at" label="创建时间" sortable>
+        <el-table-column prop="created_at" :label="$t('notification.targets.createTime')" sortable>
           <template #default="{ row }">
             <div class="time-display">
               <div>{{ formatDate(row.created_at).split(' ')[0] }}</div>
@@ -122,102 +124,106 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column :label="$t('notification.targets.actions')" width="200" fixed="right">
           <template #default="{ row }">
             <el-button size="small" :type="row.enabled ? 'warning' : 'success'" @click="toggleTarget(row)"
               :loading="row.toggling">
-              {{ row.enabled ? '禁用' : '启用' }}
+              {{ row.enabled ? $t('notification.targets.disabled') : $t('notification.targets.enabled') }}
             </el-button>
-            <el-button size="small" @click="editTarget(row)">编辑</el-button>
+            <el-button size="small" @click="editTarget(row)">{{ $t('common.edit') }}</el-button>
             <el-button size="small" type="danger" @click="deleteTarget(row)">
-              删除
+              {{ $t('common.delete') }}
             </el-button>
           </template>
         </el-table-column>
       </el-table>
 
       <div v-if="filteredTargets.length === 0" class="empty-state">
-        <el-empty description="暂无通知对象">
-          <el-button type="primary" @click="openCreateDialog">创建第一个通知对象</el-button>
+        <el-empty :description="$t('notification.targets.noTargets')">
+          <el-button type="primary" @click="openCreateDialog">{{ $t('notification.targets.createFirstTarget')
+            }}</el-button>
         </el-empty>
       </div>
     </div>
 
     <!-- 创建/编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogMode === 'create' ? '创建通知对象' : '编辑通知对象'" width="600px">
+    <el-dialog v-model="dialogVisible"
+      :title="dialogMode === 'create' ? $t('notification.targets.createTarget') : $t('notification.targets.createTarget')"
+      width="600px">
       <el-form :model="targetForm" label-width="100px">
-        <el-form-item label="对象名称">
+        <el-form-item :label="$t('notification.targets.targetName')">
           <el-input v-model="targetForm.name" />
         </el-form-item>
 
-        <el-form-item label="对象类型">
+        <el-form-item :label="$t('notification.targets.targetType')">
           <el-select v-model="targetForm.target_type" @change="handleTargetTypeChange">
-            <el-option label="邮件" value="email" />
-            <el-option label="短信" value="sms" />
-            <el-option label="WebHook" value="webhook" />
+            <el-option :label="$t('notification.targets.targetTypes.email')" value="email" />
+            <el-option :label="$t('notification.targets.targetTypes.sms')" value="sms" />
+            <el-option :label="$t('notification.targets.targetTypes.webhook')" value="webhook" />
           </el-select>
         </el-form-item>
 
         <!-- 邮件配置 -->
         <div v-if="targetForm.target_type === 'email'" class="email-config">
-          <el-form-item label="邮箱地址">
+          <el-form-item :label="$t('notification.targets.targetConfig.email')">
             <el-input v-model="targetForm.target_config.email" placeholder="example@domain.com" />
           </el-form-item>
         </div>
 
         <!-- 短信配置 -->
         <div v-if="targetForm.target_type === 'sms'" class="sms-config">
-          <el-form-item label="手机号码">
+          <el-form-item :label="$t('notification.targets.targetConfig.phone')">
             <el-input v-model="targetForm.target_config.phone" placeholder="13800138000" />
           </el-form-item>
         </div>
 
         <!-- WebHook配置 -->
         <div v-if="targetForm.target_type === 'webhook'" class="webhook-config">
-          <el-form-item label="URL">
+          <el-form-item :label="$t('notification.targets.targetConfig.url')">
             <el-input v-model="targetForm.target_config.url" placeholder="https://example.com/webhook" />
           </el-form-item>
         </div>
 
-        <el-form-item label="关联告警器">
-          <el-select v-model="targetForm.alert_policies" multiple placeholder="选择关联的告警器">
+        <el-form-item :label="$t('alertPolicies.alertName')">
+          <el-select v-model="targetForm.alert_policies" multiple :placeholder="$t('alertPolicies.selectAlertPolicy')">
             <el-option v-for="policy in alertPolicies" :key="policy.id" :label="policy.name" :value="policy.id" />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="发送通道">
-          <el-select v-model="targetForm.channels" multiple placeholder="选择发送通道">
+        <el-form-item :label="$t('notification.channels.title')">
+          <el-select v-model="targetForm.channels" multiple :placeholder="$t('notification.channels.selectChannel')">
             <el-option v-for="channel in notificationChannels" :key="channel.id" :label="channel.name"
               :value="channel.id" />
           </el-select>
         </el-form-item>
 
-        <el-form-item label="描述">
+        <el-form-item :label="$t('common.description')">
           <el-input v-model="targetForm.description" type="textarea" />
         </el-form-item>
 
-        <el-form-item label="启用状态">
+        <el-form-item :label="$t('notification.targets.targetStatus')">
           <el-switch v-model="targetForm.enabled" />
         </el-form-item>
       </el-form>
 
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitTarget">保存</el-button>
+        <el-button @click="dialogVisible = false">{{ $t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="submitTarget">{{ $t('common.save') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 对象详情侧拉抽屉 -->
-    <el-drawer v-model="showTargetDetailDrawer" title="对象详情" direction="rtl" size="50%">
+    <el-drawer v-model="showTargetDetailDrawer" :title="$t('notification.targets.targetDetail')" direction="rtl"
+      size="50%">
       <div v-if="selectedTarget" class="target-detail">
         <div class="detail-section">
-          <h3>基本信息</h3>
+          <h3>{{ $t('common.basicInfo') }}</h3>
           <div class="detail-item">
-            <span class="label">对象名称:</span>
+            <span class="label">{{ $t('notification.targets.targetName') }}:</span>
             <span class="value">{{ selectedTarget.name }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">对象类型:</span>
+            <span class="label">{{ $t('notification.targets.targetType') }}:</span>
             <span class="value">
               <el-tag :type="getTargetTypeTagType(selectedTarget.target_type)" size="small">
                 {{ getTargetTypeLabel(selectedTarget.target_type) }}
@@ -225,27 +231,27 @@
             </span>
           </div>
           <div class="detail-item">
-            <span class="label">对象状态:</span>
+            <span class="label">{{ $t('notification.targets.targetStatus') }}:</span>
             <span class="value">
               <el-tag :type="selectedTarget.enabled ? 'success' : 'info'" size="small">
-                {{ selectedTarget.enabled ? '启用' : '禁用' }}
+                {{ selectedTarget.enabled ? $t('notification.targets.enabled') : $t('notification.targets.disabled') }}
               </el-tag>
             </span>
           </div>
           <div class="detail-item">
-            <span class="label">对象描述:</span>
-            <span class="value">{{ selectedTarget.description || '暂无描述' }}</span>
+            <span class="label">{{ $t('common.description') }}:</span>
+            <span class="value">{{ selectedTarget.description || $t('notification.targets.noDescription') }}</span>
           </div>
         </div>
 
         <div class="detail-section">
-          <h3>配置信息</h3>
+          <h3>{{ $t('common.configInfo') }}</h3>
           <div class="detail-item">
-            <span class="label">通知地址:</span>
+            <span class="label">{{ $t('notification.targets.targetAddress') }}:</span>
             <span class="value">{{ getTargetAddress(selectedTarget) }}</span>
           </div>
           <div class="detail-item" v-if="selectedTarget.target_config">
-            <span class="label">详细配置:</span>
+            <span class="label">{{ $t('common.details') }}:</span>
             <div class="value">
               <div v-for="(value, key) in selectedTarget.target_config" :key="key" class="config-item">
                 <span class="config-key">{{ getConfigLabel(key) }}:</span>
@@ -256,13 +262,13 @@
         </div>
 
         <div class="detail-section">
-          <h3>关联信息</h3>
+          <h3>{{ $t('common.relatedInfo') }}</h3>
           <div class="detail-item">
-            <span class="label">关联告警器:</span>
-            <span class="value">{{ selectedTarget.alert_policies?.length || 0 }}个</span>
+            <span class="label">{{ $t('alertPolicies.alertName') }}:</span>
+            <span class="value">{{ selectedTarget.alert_policies?.length || 0 }}{{ $t('common.count') }}</span>
           </div>
           <div class="detail-item" v-if="selectedTarget.alert_policies && selectedTarget.alert_policies.length > 0">
-            <span class="label">告警器列表:</span>
+            <span class="label">{{ $t('alertPolicies.policyList') }}:</span>
             <div class="value">
               <el-tag v-for="policyId in selectedTarget.alert_policies" :key="policyId" size="small"
                 style="margin-right: 8px; margin-bottom: 4px;">
@@ -271,11 +277,11 @@
             </div>
           </div>
           <div class="detail-item">
-            <span class="label">发送通道:</span>
-            <span class="value">{{ selectedTarget.channels?.length || 0 }}个</span>
+            <span class="label">{{ $t('notification.channels.title') }}:</span>
+            <span class="value">{{ selectedTarget.channels?.length || 0 }}{{ $t('common.count') }}</span>
           </div>
           <div class="detail-item" v-if="selectedTarget.channels && selectedTarget.channels.length > 0">
-            <span class="label">通道列表:</span>
+            <span class="label">{{ $t('notification.channels.channelList') }}:</span>
             <div class="value">
               <el-tag v-for="channelId in selectedTarget.channels" :key="channelId" size="small"
                 style="margin-right: 8px; margin-bottom: 4px;">
@@ -286,25 +292,26 @@
         </div>
 
         <div class="detail-section">
-          <h3>其他信息</h3>
+          <h3>{{ $t('common.otherInfo') }}</h3>
           <div class="detail-item">
-            <span class="label">创建时间:</span>
+            <span class="label">{{ $t('notification.targets.createTime') }}:</span>
             <span class="value">{{ formatDate(selectedTarget.created_at) }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">更新时间:</span>
+            <span class="label">{{ $t('common.updateTime') }}:</span>
             <span class="value">{{ formatDate(selectedTarget.updated_at) }}</span>
           </div>
         </div>
 
         <div class="detail-actions">
-          <el-button type="primary" @click="editTarget(selectedTarget)">编辑对象</el-button>
+          <el-button type="primary" @click="editTarget(selectedTarget)">{{ $t('notification.targets.editTarget')
+            }}</el-button>
           <el-button :type="selectedTarget.enabled ? 'warning' : 'success'" @click="toggleTarget(selectedTarget)"
             :loading="selectedTarget.toggling">
-            {{ selectedTarget.enabled ? '禁用' : '启用' }}
+            {{ selectedTarget.enabled ? $t('notification.targets.disable') : $t('notification.targets.enable') }}
           </el-button>
           <el-button type="danger" @click="deleteTarget(selectedTarget)">
-            删除对象
+            {{ $t('notification.targets.deleteTarget') }}
           </el-button>
         </div>
       </div>
@@ -316,7 +323,10 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
 import axios from 'axios'
+
+const { t } = useI18n()
 
 const loading = ref(false)
 const targets = ref([])
@@ -375,7 +385,7 @@ const fetchTargets = async () => {
     const response = await axios.get('/api/notifications/targets')
     targets.value = response.data.targets || []
   } catch (error) {
-    ElMessage.error('获取通知对象失败')
+    ElMessage.error(t('notification.targets.messages.getTargetsFailed'))
   } finally {
     loading.value = false
   }
@@ -468,16 +478,16 @@ const submitTarget = async () => {
   try {
     if (dialogMode.value === 'create') {
       await axios.post('/api/notifications/targets', targetForm)
-      ElMessage.success('通知对象创建成功')
+      ElMessage.success(t('notification.targets.messages.createSuccess'))
     } else {
       await axios.put(`/api/notifications/targets/${editingTarget.value.id}`, targetForm)
-      ElMessage.success('通知对象更新成功')
+      ElMessage.success(t('notification.targets.messages.updateSuccess'))
     }
 
     dialogVisible.value = false
     fetchTargets()
   } catch (error) {
-    ElMessage.error(dialogMode.value === 'create' ? '创建通知对象失败' : '更新通知对象失败')
+    ElMessage.error(dialogMode.value === 'create' ? t('notification.targets.messages.createFailed') : t('notification.targets.messages.updateFailed'))
   }
 }
 
@@ -502,10 +512,10 @@ const toggleTarget = async (target) => {
   try {
     target.toggling = true
     await axios.put(`/api/notifications/targets/${target.id}`, { enabled: target.enabled })
-    ElMessage.success(`通知对象已${target.enabled ? '启用' : '禁用'}`)
+    ElMessage.success(t('notification.targets.messages.updateSuccess'))
   } catch (error) {
     target.enabled = !target.enabled
-    ElMessage.error('更新状态失败')
+    ElMessage.error(t('notification.targets.messages.updateFailed'))
   } finally {
     target.toggling = false
   }
@@ -514,21 +524,21 @@ const toggleTarget = async (target) => {
 const deleteTarget = async (target) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除通知对象"${target.name}"吗？此操作不可恢复。`,
-      '确认删除',
+      t('notification.targets.messages.confirmDelete', { name: target.name }),
+      t('common.confirmDelete'),
       {
         type: 'warning',
-        confirmButtonText: '确定删除',
-        cancelButtonText: '取消'
+        confirmButtonText: t('common.confirmDelete'),
+        cancelButtonText: t('common.cancel')
       }
     )
 
     await axios.delete(`/api/notifications/targets/${target.id}`)
-    ElMessage.success('通知对象删除成功')
+    ElMessage.success(t('notification.targets.messages.deleteSuccess'))
     fetchTargets()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('删除通知对象失败')
+      ElMessage.error(t('notification.targets.messages.deleteFailed'))
     }
   }
 }
@@ -544,29 +554,29 @@ const getTargetTypeTagType = (targetType) => {
 
 const getTargetTypeLabel = (targetType) => {
   const labelMap = {
-    email: '邮件',
-    sms: '短信',
-    webhook: 'WebHook'
+    email: t('notification.targets.targetTypes.email'),
+    sms: t('notification.targets.targetTypes.sms'),
+    webhook: t('notification.targets.targetTypes.webhook')
   }
   return labelMap[targetType] || targetType
 }
 
 const getTargetAddress = (target) => {
   if (target.target_type === 'email') {
-    return target.target_config?.email || '未配置'
+    return target.target_config?.email || t('common.notConfigured')
   } else if (target.target_type === 'sms') {
-    return target.target_config?.phone || '未配置'
+    return target.target_config?.phone || t('common.notConfigured')
   } else if (target.target_type === 'webhook') {
-    return target.target_config?.url || '未配置'
+    return target.target_config?.url || t('common.notConfigured')
   }
-  return '未配置'
+  return t('common.notConfigured')
 }
 
 const getConfigLabel = (key) => {
   const labelMap = {
-    email: '邮箱地址',
-    phone: '手机号码',
-    url: 'URL'
+    email: t('notification.targets.targetConfig.email'),
+    phone: t('notification.targets.targetConfig.phone'),
+    url: t('notification.targets.targetConfig.url')
   }
   return labelMap[key] || key
 }
