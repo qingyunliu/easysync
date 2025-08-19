@@ -244,8 +244,8 @@
 
         <!-- 服务器表格 -->
         <div class="table-container">
-          <el-table :data="filteredClients" style="width: 100%" v-loading="loading" class="clients-table"
-            @selection-change="handleSelectionChange">
+          <el-table :data="filteredClients" :empty-text="$t('common.noData')" style="width: 100%" v-loading="loading"
+            class="clients-table" @selection-change="handleSelectionChange">
             <el-table-column type="selection" width="50" />
             <el-table-column prop="name" :label="$t('clients.name')" min-width="150">
               <template #default="{ row }">
@@ -462,7 +462,7 @@
                   </div>
                 </template>
                 <el-descriptions :column="2" border>
-                  <el-descriptions-item :label="$t('clients.hostName')">
+                  <el-descriptions-item :label="$t('clients.name')">
                     <el-tag type="info">{{ currentClient.name }}</el-tag>
                   </el-descriptions-item>
                   <el-descriptions-item :label="$t('clients.hostname')">
@@ -589,16 +589,17 @@
                       <span>{{ $t('clients.refresh') }}</span>
                     </el-button>
                     <div class="auto-refresh-control">
-                      <el-switch v-model="autoRefresh" active-text="自动刷新" inactive-text="" class="refresh-switch"
-                        @change="handleAutoRefreshChange" />
-                      <el-select v-if="autoRefresh" v-model="refreshInterval" placeholder="刷新间隔"
-                        @change="handleRefreshIntervalChange" size="default" class="interval-select">
-                        <el-option label="3秒" value="3" />
-                        <el-option label="5秒" value="5" />
-                        <el-option label="10秒" value="10" />
-                        <el-option label="30秒" value="30" />
-                        <el-option label="1分钟" value="60" />
-                        <el-option label="5分钟" value="300" />
+                      <el-switch v-model="autoRefresh" :active-text="$t('clients.autoRefresh')" inactive-text=""
+                        class="refresh-switch" @change="handleAutoRefreshChange" />
+                      <el-select v-if="autoRefresh" v-model="refreshInterval"
+                        :placeholder="$t('clients.refreshInterval')" @change="handleRefreshIntervalChange"
+                        size="default" class="interval-select">
+                        <el-option :label="$t('clients.3Seconds')" value="3" />
+                        <el-option :label="$t('clients.5Seconds')" value="5" />
+                        <el-option :label="$t('clients.10Seconds')" value="10" />
+                        <el-option :label="$t('clients.30Seconds')" value="30" />
+                        <el-option :label="$t('clients.1Minute')" value="60" />
+                        <el-option :label="$t('clients.5Minutes')" value="300" />
                       </el-select>
                     </div>
                   </div>
@@ -608,7 +609,7 @@
               <!-- CPU使用率图表 -->
               <div class="chart-container">
                 <div class="chart-header">
-                  <h3>CPU使用率</h3>
+                  <h3>{{ $t('clients.cpuUsage') }}</h3>
                 </div>
                 <div class="chart" ref="cpuChart"></div>
               </div>
@@ -616,7 +617,7 @@
               <!-- 内存使用率图表 -->
               <div class="chart-container">
                 <div class="chart-header">
-                  <h3>内存使用率</h3>
+                  <h3>{{ $t('clients.memoryUsage') }}</h3>
                 </div>
                 <div class="chart" ref="memoryChart"></div>
               </div>
@@ -624,22 +625,22 @@
               <!-- 磁盘使用率 -->
               <div class="chart-container">
                 <div class="chart-header">
-                  <h3>磁盘使用率</h3>
+                  <h3>{{ $t('clients.diskUsage') }}</h3>
                 </div>
-                <el-table :data="clientDetail.disk_info" style="width: 100%">
-                  <el-table-column prop="device" label="设备" />
-                  <el-table-column prop="mount" label="挂载点" />
-                  <el-table-column prop="total" label="总容量">
+                <el-table :data="clientDetail.disk_info" :empty-text="$t('common.noData')" style="width: 100%">
+                  <el-table-column prop="device" :label="$t('clients.device')" />
+                  <el-table-column prop="mount" :label="$t('clients.mountPoint')" />
+                  <el-table-column prop="total" :label="$t('clients.totalCapacity')">
                     <template #default="{ row }">
                       {{ formatSize(row.total) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="used" label="已使用">
+                  <el-table-column prop="used" :label="$t('clients.usedCapacity')">
                     <template #default="{ row }">
                       {{ formatSize(row.used) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="usage" label="使用率">
+                  <el-table-column prop="usage" :label="$t('clients.usageRate')">
                     <template #default="{ row }">
                       <el-progress :percentage="row.usage" :status="getUsageStatus(row.usage)" />
                     </template>
@@ -650,7 +651,7 @@
               <!-- 网络流量 -->
               <div class="chart-container">
                 <div class="chart-header">
-                  <h3>网络流量</h3>
+                  <h3>{{ $t('clients.networkTraffic') }}</h3>
                 </div>
                 <div class="chart" ref="networkChart"></div>
               </div>
@@ -658,79 +659,83 @@
               <!-- 进程列表 -->
               <div class="chart-container">
                 <div class="chart-header">
-                  <h3>进程列表</h3>
-                  <el-button type="primary" size="small" @click="refreshProcessList">刷新</el-button>
+                  <h3>{{ $t('clients.processList') }}</h3>
+                  <el-button type="primary" size="small" @click="refreshProcessList">{{ $t('clients.refresh')
+                    }}</el-button>
                 </div>
-                <el-table :data="clientDetail.process_list" style="width: 100%" :max-height="300">
-                  <el-table-column prop="pid" label="PID" width="80" />
-                  <el-table-column prop="user" label="用户" width="100" />
-                  <el-table-column prop="cpu_percent" label="CPU%" width="100" />
-                  <el-table-column prop="memory_percent" label="内存%" width="100" />
-                  <el-table-column prop="command" label="命令" show-overflow-tooltip />
+                <el-table :data="clientDetail.process_list" :empty-text="$t('common.noData')" style="width: 100%"
+                  :max-height="300">
+                  <el-table-column prop="pid" :label="$t('clients.pid')" width="80" />
+                  <el-table-column prop="user" :label="$t('clients.user')" width="100" />
+                  <el-table-column prop="cpu_percent" :label="$t('clients.cpuPercent')" width="100" />
+                  <el-table-column prop="memory_percent" :label="$t('clients.memoryPercent')" width="100" />
+                  <el-table-column prop="command" :label="$t('clients.command')" show-overflow-tooltip />
                 </el-table>
               </div>
             </div>
           </el-tab-pane>
 
           <!-- 系统日志标签页 -->
-          <el-tab-pane label="系统日志" name="logs">
+          <el-tab-pane :label="$t('clients.systemLogs')" name="logs">
             <div class="logs-content">
               <!-- 日志控制面板 -->
               <div class="logs-control-panel">
                 <div class="panel-section search-controls">
-                  <el-input v-model="logSearchQuery" placeholder="搜索日志" clearable @clear="handleLogSearch"
-                    @input="handleLogSearch" class="search-input">
+                  <el-input v-model="logSearchQuery" :placeholder="$t('clients.searchLogs')" clearable
+                    @clear="handleLogSearch" @input="handleLogSearch" class="search-input">
                     <template #prefix>
                       <el-icon>
                         <Search />
                       </el-icon>
                     </template>
                   </el-input>
-                  <el-select v-model="logLevelFilter" placeholder="日志级别" clearable @change="handleLogSearch"
-                    class="level-select">
-                    <el-option label="全部" value="" />
-                    <el-option label="DEBUG" value="DEBUG" />
-                    <el-option label="INFO" value="INFO" />
-                    <el-option label="WARNING" value="WARNING" />
-                    <el-option label="ERROR" value="ERROR" />
-                    <el-option label="CRITICAL" value="CRITICAL" />
+                  <el-select v-model="logLevelFilter" :placeholder="$t('clients.logLevel')" clearable
+                    @change="handleLogSearch" class="level-select">
+                    <el-option :label="$t('clients.all')" value="" />
+                    <el-option :label="$t('clients.debug')" value="DEBUG" />
+                    <el-option :label="$t('clients.info')" value="INFO" />
+                    <el-option :label="$t('clients.warning')" value="WARNING" />
+                    <el-option :label="$t('clients.error')" value="ERROR" />
+                    <el-option :label="$t('clients.critical')" value="CRITICAL" />
                   </el-select>
                   <el-button type="primary" :loading="refreshingLogs" @click="handleManualLogRefresh"
                     class="refresh-button">
                     <el-icon>
                       <Refresh />
                     </el-icon>
-                    <span>刷新</span>
+                    <span>{{ $t('clients.refresh') }}</span>
                   </el-button>
-                  <el-switch v-model="autoRefreshLogs" active-text="自动刷新" inactive-text="" class="refresh-switch"
-                    @change="handleAutoLogRefreshChange" />
-                  <el-select v-if="autoRefreshLogs" v-model="logRefreshInterval" placeholder="刷新间隔"
-                    @change="handleLogRefreshIntervalChange" class="interval-select">
-                    <el-option label="3秒" value="3" />
-                    <el-option label="5秒" value="5" />
-                    <el-option label="10秒" value="10" />
-                    <el-option label="30秒" value="30" />
+                  <el-switch v-model="autoRefreshLogs" :active-text="$t('clients.autoRefresh')" inactive-text=""
+                    class="refresh-switch" @change="handleAutoLogRefreshChange" />
+                  <el-select v-if="autoRefreshLogs" v-model="logRefreshInterval"
+                    :placeholder="$t('clients.refreshInterval')" @change="handleLogRefreshIntervalChange"
+                    class="interval-select">
+                    <el-option :label="$t('clients.3Seconds')" value="3" />
+                    <el-option :label="$t('clients.5Seconds')" value="5" />
+                    <el-option :label="$t('clients.10Seconds')" value="10" />
+                    <el-option :label="$t('clients.30Seconds')" value="30" />
                   </el-select>
                 </div>
               </div>
 
               <!-- 日志列表 -->
               <div class="logs-list">
-                <el-table :data="filteredLogs" style="width: 100%" height="calc(100vh - 300px)" v-loading="loadingLogs">
-                  <el-table-column prop="timestamp" label="时间" width="180">
+                <el-table :data="filteredLogs" :empty-text="$t('common.noData')" style="width: 100%"
+                  height="calc(100vh - 300px)" v-loading="loadingLogs">
+                  <el-table-column prop="timestamp" :label="$t('clients.timestamp')" width="180">
                     <template #default="{ row }">
                       {{ row.timestamp }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="level" label="级别" width="100">
+                  <el-table-column prop="level" :label="$t('clients.level')" width="100">
                     <template #default="{ row }">
                       <el-tag :type="getLogLevelType(row.level)">
                         {{ row.level }}
                       </el-tag>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="module" label="模块" width="150" />
-                  <el-table-column prop="message" label="消息" show-overflow-tooltip />
+                  <el-table-column prop="module" :label="$t('clients.module')" width="150" />
+                  <el-table-column prop="message" :label="$t('clients.message')" show-overflow-tooltip />
                 </el-table>
               </div>
             </div>
@@ -852,30 +857,30 @@ const installForm = ref({
 
 const rules = {
   name: [
-    { required: true, message: '请输入名称', trigger: 'blur' }
+    { required: true, message: t('clients.enterName'), trigger: 'blur' }
   ],
   hostname: [
-    { required: false, message: '请输入服务器主机名', trigger: 'blur' }
+    { required: false, message: t('clients.enterServerHostname'), trigger: 'blur' }
   ],
   ip_address: [
-    { required: true, message: '请输入服务器地址', trigger: 'blur' }
+    { required: true, message: t('clients.enterServerAddress'), trigger: 'blur' }
   ],
   port: [
-    { required: true, message: '请输入SSH端口', trigger: 'blur' },
-    { type: 'number', min: 1, max: 65535, message: '端口号必须在1-65535之间', trigger: 'blur' }
+    { required: true, message: t('clients.enterSshPort'), trigger: 'blur' },
+    { type: 'number', min: 1, max: 65535, message: t('clients.portRangeError'), trigger: 'blur' }
   ],
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' }
+    { required: true, message: t('clients.enterUsername'), trigger: 'blur' }
   ],
   auth_type: [
-    { required: true, message: '请选择认证方式', trigger: 'change' }
+    { required: true, message: t('clients.selectAuthType'), trigger: 'change' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
+    { required: true, message: t('clients.enterPassword'), trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
         if (form.value.auth_type === 'password' && !value) {
-          callback(new Error('密码不能为空'))
+          callback(new Error(t('clients.passwordRequired')))
         } else {
           callback()
         }
@@ -883,11 +888,11 @@ const rules = {
     }
   ],
   ssh_key: [
-    { required: true, message: '请输入SSH密钥', trigger: 'blur' },
+    { required: true, message: t('clients.enterSshKey'), trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
         if (form.value.auth_type === 'key' && !value) {
-          callback(new Error('SSH密钥不能为空'))
+          callback(new Error(t('clients.sshKeyRequired')))
         } else {
           callback()
         }
@@ -1054,7 +1059,7 @@ const fetchClients = async () => {
 
 // 格式化日期
 const formatDate = (date) => {
-  if (!date) return '从未在线'
+  if (!date) return t('clients.neverOnline')
   return new Date(date).toLocaleString()
 }
 
@@ -1083,13 +1088,13 @@ const getUsageStatus = (usage) => {
 const getStatusText = (status) => {
   switch (status) {
     case 'online':
-      return '在线'
+      return t('clients.online')
     case 'offline':
-      return '离线'
+      return t('clients.offline')
     case 'error':
-      return '错误'
+      return t('clients.error')
     default:
-      return '未知'
+      return t('clients.unknown')
   }
 }
 
@@ -1119,21 +1124,21 @@ const getAgentStatusType = (status) => {
 const getAgentStatusText = (status) => {
   switch (status) {
     case 'running':
-      return '运行中'
+      return t('clients.running')
     case 'installing':
-      return '安装中'
+      return t('clients.installing')
     case 'not_installed':
-      return '未安装'
+      return t('clients.notInstalled')
     case 'uninstall_error':
-      return '卸载失败'
+      return t('clients.uninstallError')
     case 'install_error':
-      return '安装失败'
+      return t('clients.installError')
     case 'online':
-      return '在线'
+      return t('clients.online')
     case 'offline':
-      return '离线'
+      return t('clients.offline')
     default:
-      return '未知'
+      return t('clients.unknown')
   }
 }
 
@@ -1194,17 +1199,17 @@ const handleSubmit = async () => {
     if (dialogType.value === 'add') {
       const response = await axios.post('/api/clients', payload)
       if (response.data.status === 'success') {
-        ElMessage.success('添加成功')
+        ElMessage.success(t('clients.addSuccess'))
         dialogVisible.value = false
 
-        ElMessage.success('服务器添加成功')
+        ElMessage.success(t('clients.addSuccess'))
 
         fetchClients()
       }
     } else {
       const response = await axios.put(`/api/clients/${form.value.id}`, payload)
       if (response.data.status === 'success') {
-        ElMessage.success('更新成功')
+        ElMessage.success(t('clients.updateSuccess'))
         dialogVisible.value = false
         fetchClients()
       }
@@ -1214,7 +1219,7 @@ const handleSubmit = async () => {
       // 错误处理已经在拦截器中完成
     } else if (error.message) {
       // 表单验证错误
-      ElMessage.error(error.message)
+      ElMessage.error(t('clients.formValidationError'))
     }
   }
 }
@@ -1234,11 +1239,11 @@ const installAgent = (row) => {
 const confirmInstall = async () => {
   try {
     if (!currentClient.value) {
-      ElMessage.error('未选择客户端')
+      ElMessage.error(t('clients.noClientSelected'))
       return
     }
     await axios.post(`/api/clients/${currentClient.value.id}/install`, installForm.value)
-    ElMessage.success('开始安装Agent')
+    ElMessage.success(t('clients.startInstallAgent'))
     installDialogVisible.value = false
     fetchClients()
   } catch (error) {
@@ -1249,11 +1254,11 @@ const confirmInstall = async () => {
 // 卸载Agent
 const uninstallAgent = async (row) => {
   try {
-    await ElMessageBox.confirm('确定要卸载Agent吗？', '提示', {
+    await ElMessageBox.confirm(t('clients.confirmUninstallAgent'), t('clients.tip'), {
       type: 'warning'
     })
     await axios.post(`/api/clients/${row.id}/uninstall`)
-    ElMessage.success('开始卸载Agent')
+    ElMessage.success(t('clients.startUninstallAgent'))
     fetchClients()
   } catch (error) {
     if (error !== 'cancel') {
@@ -1265,11 +1270,11 @@ const uninstallAgent = async (row) => {
 // 删除服务器
 const handleDelete = async (row) => {
   try {
-    await ElMessageBox.confirm('确定要删除该服务器吗？', '提示', {
+    await ElMessageBox.confirm(t('clients.confirmDeleteClient'), t('clients.tip'), {
       type: 'warning'
     })
     await axios.delete(`/api/clients/${row.id}`)
-    ElMessage.success('删除成功')
+    ElMessage.success(t('clients.deleteSuccess'))
     fetchClients()
   } catch (error) {
     if (error !== 'cancel') {
@@ -1284,7 +1289,7 @@ const testConnection = async (row) => {
     row.testing = true
     const response = await axios.post(`/api/clients/${row.id}/test-connection`)
     if (response.data.status === 'success') {
-      ElMessage.success('连接测试成功')
+      ElMessage.success(t('clients.connectionTestSuccess'))
       // 更新本地状态
       row.status = 'online'
       fetchClients()  // 刷新列表以更新状态
@@ -1302,11 +1307,11 @@ const getClientInfo = async (row) => {
     row.fetching = true
     const response = await axios.post(`/api/clients/${row.id}/status`)
     if (response.data.status === 'success') {
-      ElMessage.success('获取信息成功')
+      ElMessage.success(t('clients.getInfoSuccess'))
       fetchClients()  // 刷新列表以更新信息
     }
   } catch (error) {
-    ElMessage.error('获取信息失败')
+    ElMessage.error(t('clients.getInfoFailed'))
   } finally {
     row.fetching = false
   }
@@ -1322,8 +1327,8 @@ const showClientDetail = async (client) => {
     await initCharts();
     fetchMonitorData(client.id)
   } catch (error) {
-    console.error('Error showing client detail:', error);
-    ElMessage.error('加载客户端详情失败');
+    console.error(t('clients.errorShowingClientDetail'), error);
+    ElMessage.error(t('clients.loadClientDetailFailed'));
   }
 };
 
@@ -1334,14 +1339,14 @@ const fetchClientDetail = async (clientId) => {
     clientDetail.value = response.data.data
     clientDetail.value.os_type = response.data.data.os_type
   } catch (error) {
-    ElMessage.error('获取主机详情失败')
+    ElMessage.error(t('clients.getHostDetailFailed'))
   }
 }
 
 // 初始化图表
 const initCharts = async () => {
   if (!currentClient.value?.id) {
-    console.warn('当前没有选中的客户端')
+    console.warn(t('clients.noClientSelected'))
     return
   }
 
@@ -1359,7 +1364,7 @@ const initCharts = async () => {
       })
       const cpuOption = {
         title: {
-          text: 'CPU使用率',
+          text: t('clients.cpuUsage'),
           left: 'center',
           top: 10,
           textStyle: {
@@ -1384,7 +1389,7 @@ const initCharts = async () => {
               <div style="font-weight: bold">${time}</div>
               <div style="margin-top: 5px">
                 <span style="display:inline-block;margin-right:5px;border-radius:50%;width:10px;height:10px;background-color:${params[0].color};"></span>
-                CPU使用率: ${usage}%
+                ${t('clients.cpuUsage')}: ${usage}%
               </div>
             `;
           }
@@ -1415,7 +1420,7 @@ const initCharts = async () => {
         },
         yAxis: {
           type: 'value',
-          name: '使用率(%)',
+          name: t('clients.usagePercent'),
           min: 0,
           max: 100,
           axisLabel: {
@@ -1429,7 +1434,7 @@ const initCharts = async () => {
           }
         },
         series: [{
-          name: 'CPU使用率',
+          name: t('clients.cpuUsage'),
           type: 'line',
           smooth: true,
           symbol: 'circle',
@@ -1470,7 +1475,7 @@ const initCharts = async () => {
       })
       const memoryOption = {
         title: {
-          text: '内存使用率',
+          text: t('clients.memoryUsage'),
           left: 'center',
           top: 10,
           textStyle: {
@@ -1495,7 +1500,7 @@ const initCharts = async () => {
               <div style="font-weight: bold">${time}</div>
               <div style="margin-top: 5px">
                 <span style="display:inline-block;margin-right:5px;border-radius:50%;width:10px;height:10px;background-color:${params[0].color};"></span>
-                内存使用率: ${usage}%
+                ${t('clients.memoryUsage')}: ${usage}%
               </div>
             `;
           }
@@ -1526,7 +1531,7 @@ const initCharts = async () => {
         },
         yAxis: {
           type: 'value',
-          name: '使用率(%)',
+          name: t('clients.usagePercent'),
           min: 0,
           max: 100,
           axisLabel: {
@@ -1581,7 +1586,7 @@ const initCharts = async () => {
       })
       const networkOption = {
         title: {
-          text: '网络流量',
+          text: t('clients.networkTraffic'),
           left: 'center',
           top: 10,
           textStyle: {
@@ -1606,17 +1611,17 @@ const initCharts = async () => {
               <div style="font-weight: bold">${time}</div>
               <div style="margin-top: 5px">
                 <span style="display:inline-block;margin-right:5px;border-radius:50%;width:10px;height:10px;background-color:${params[0].color};"></span>
-                接收: ${formatSize(params[0].value[1])}/s
+                ${t('clients.received')}: ${formatSize(params[0].value[1])}/s
               </div>
               <div style="margin-top: 5px">
                 <span style="display:inline-block;margin-right:5px;border-radius:50%;width:10px;height:10px;background-color:${params[1].color};"></span>
-                发送: ${formatSize(params[1].value[1])}/s
+                ${t('clients.sent')}: ${formatSize(params[1].value[1])}/s
               </div>
             `;
           }
         },
         legend: {
-          data: ['接收', '发送'],
+          data: [t('clients.received'), t('clients.sent')],
           top: 40
         },
         grid: {
@@ -1645,7 +1650,7 @@ const initCharts = async () => {
         },
         yAxis: {
           type: 'value',
-          name: '流量/s',
+          name: t('clients.trafficPerSecond'),
           axisLabel: {
             formatter: (value) => formatSize(value) + '/s'
           },
@@ -1658,7 +1663,7 @@ const initCharts = async () => {
         },
         series: [
           {
-            name: '接收',
+            name: t('clients.received'),
             type: 'line',
             smooth: true,
             symbol: 'circle',
@@ -1688,7 +1693,7 @@ const initCharts = async () => {
             data: monitorData.value.network.recv || []
           },
           {
-            name: '发送',
+            name: t('clients.sent'),
             type: 'line',
             smooth: true,
             symbol: 'circle',
@@ -1726,8 +1731,8 @@ const initCharts = async () => {
     await loadHistoryData()
 
   } catch (error) {
-    console.error('初始化图表失败:', error)
-    ElMessage.error('初始化图表失败，请稍后重试')
+    console.error(t('clients.initChartFailed'), error)
+    ElMessage.error(t('clients.initChartFailed'))
   }
 }
 
@@ -1800,8 +1805,8 @@ const loadHistoryData = async () => {
       updateCharts()
     }
   } catch (error) {
-    console.error('加载历史数据失败:', error)
-    ElMessage.error('加载历史数据失败，请稍后重试')
+    console.error(t('clients.loadHistoryDataFailed'), error)
+    ElMessage.error(t('clients.loadHistoryDataFailed'))
   }
 }
 
@@ -1944,7 +1949,7 @@ const handleResize = () => {
         })
       }
     } catch (error) {
-      console.warn('图表调整大小失败:', error)
+      console.warn(t('clients.chartResizeFailed'), error)
     }
   })
 }
@@ -1965,7 +1970,7 @@ const disposeCharts = () => {
       networkChartInstance.value = null
     }
   } catch (error) {
-    console.warn('销毁图表实例失败:', error)
+    console.warn(t('clients.destroyChartFailed'), error)
   }
 }
 
@@ -2021,7 +2026,7 @@ const refreshProcessList = async () => {
       clientDetail.value.process_list = response.data.data
     }
   } catch (error) {
-    ElMessage.error('获取进程列表失败')
+    ElMessage.error(t('clients.getProcessListFailed'))
   }
 }
 
@@ -2139,8 +2144,8 @@ const fetchLogs = async () => {
       logs.value = logEntries
     }
   } catch (error) {
-    console.error('获取日志失败:', error)
-    ElMessage.error('获取日志失败')
+    console.error(t('clients.getLogsFailed'), error)
+    ElMessage.error(t('clients.getLogsFailed'))
   } finally {
     loadingLogs.value = false
   }
@@ -2180,24 +2185,24 @@ const handleSelectionChange = (selection) => {
 // 批量删除
 const handleBatchDelete = async () => {
   if (!multipleSelection.value.length) {
-    ElMessage.warning('请选择要删除的服务器')
+    ElMessage.warning(t('clients.selectServersToDelete'))
     return
   }
 
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${multipleSelection.value.length} 台服务器吗？`, '批量删除', {
+    await ElMessageBox.confirm(t('clients.confirmBatchDelete', { count: multipleSelection.value.length }), t('clients.batchDelete'), {
       type: 'warning'
     })
 
     const clientIds = multipleSelection.value.map(item => item.id)
     await axios.post('/api/clients/batch_delete', { client_ids: clientIds })
 
-    ElMessage.success('批量删除成功')
+    ElMessage.success(t('clients.batchDeleteSuccess'))
     fetchClients()
     multipleSelection.value = []
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('批量删除失败')
+      ElMessage.error(t('clients.batchDeleteFailed'))
     }
   }
 }
@@ -2205,42 +2210,45 @@ const handleBatchDelete = async () => {
 // 批量分组对话框
 const showBatchGroupDialog = async () => {
   if (!multipleSelection.value.length) {
-    ElMessage.warning('请选择要分组的服务器')
+    ElMessage.warning(t('clients.selectServersToGroup'))
     return
   }
 
   // 分析当前选中服务器的分组情况
   const groupStats = {}
   multipleSelection.value.forEach(client => {
-    const group = client.group || '未分组'
+    const group = client.group || t('clients.ungrouped')
     groupStats[group] = (groupStats[group] || 0) + 1
   })
 
   const groupInfo = Object.entries(groupStats)
-    .map(([group, count]) => `${group}: ${count}台`)
+    .map(([group, count]) => `${group}: ${count}${t('clients.servers')}`)
     .join('\n')
 
   try {
     const { value: groupName } = await ElMessageBox.prompt(
-      `当前选中 ${multipleSelection.value.length} 台服务器\n\n分组分布：\n${groupInfo}\n\n请输入新的分组名称（留空则清空分组）：`,
-      '批量分组',
+      t('clients.batchGroupPrompt', {
+        count: multipleSelection.value.length,
+        groupInfo: groupInfo
+      }),
+      t('clients.batchGroup'),
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: t('clients.confirm'),
+        cancelButtonText: t('clients.cancel'),
         inputValue: '',
-        inputPlaceholder: '请输入分组名称'
+        inputPlaceholder: t('clients.enterGroupName')
       }
     )
 
     const clientIds = multipleSelection.value.map(item => item.id)
     await axios.post('/api/clients/batch_group', { client_ids: clientIds, group: groupName || '' })
 
-    ElMessage.success('批量分组成功')
+    ElMessage.success(t('clients.batchGroupSuccess'))
     fetchClients()
     fetchGroups()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('批量分组失败')
+      ElMessage.error(t('clients.batchGroupFailed'))
     }
   }
 }
@@ -2248,7 +2256,7 @@ const showBatchGroupDialog = async () => {
 // 批量打标签对话框
 const showBatchTagDialog = async () => {
   if (!multipleSelection.value.length) {
-    ElMessage.warning('请选择要打标签的服务器')
+    ElMessage.warning(t('clients.selectServersToTag'))
     return
   }
 
@@ -2267,32 +2275,35 @@ const showBatchTagDialog = async () => {
   })
 
   const tagInfo = Object.entries(tagStats)
-    .map(([tag, count]) => `${tag}: ${count}台`)
+    .map(([tag, count]) => `${tag}: ${count}${t('clients.servers')}`)
     .join('\n')
 
   const currentTags = Array.from(allTags).join(', ')
 
   try {
     const { value: tags } = await ElMessageBox.prompt(
-      `当前选中 ${multipleSelection.value.length} 台服务器\n\n现有标签分布：\n${tagInfo}\n\n请输入新标签（逗号分隔，留空则清空标签）：`,
-      '批量打标签',
+      t('clients.batchTagPrompt', {
+        count: multipleSelection.value.length,
+        tagInfo: tagInfo
+      }),
+      t('clients.batchTag'),
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: t('clients.confirm'),
+        cancelButtonText: t('clients.cancel'),
         inputValue: currentTags,
-        inputPlaceholder: '请输入标签，多个标签用逗号分隔'
+        inputPlaceholder: t('clients.enterTagsCommaSeparated')
       }
     )
 
     const clientIds = multipleSelection.value.map(item => item.id)
     await axios.post('/api/clients/batch_tags', { client_ids: clientIds, tags: tags || '' })
 
-    ElMessage.success('批量打标签成功')
+    ElMessage.success(t('clients.batchTagSuccess'))
     fetchClients()
     fetchTags()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('批量打标签失败')
+      ElMessage.error(t('clients.batchTagFailed'))
     }
   }
 }
@@ -2305,7 +2316,7 @@ const fetchGroups = async () => {
       groupList.value = response.data.data || []
     }
   } catch (error) {
-    console.error('获取分组列表失败:', error)
+    console.error(t('clients.getGroupsFailed'), error)
   }
 }
 
@@ -2317,7 +2328,7 @@ const fetchTags = async () => {
       tagList.value = response.data.data || []
     }
   } catch (error) {
-    console.error('获取标签列表失败:', error)
+    console.error(t('clients.getTagsFailed'), error)
   }
 }
 
