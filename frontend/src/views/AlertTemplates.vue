@@ -3,9 +3,9 @@
     <!-- 页面头部 -->
     <div class="page-header">
       <div class="header-left">
-        <h2>告警通知模板管理</h2>
+        <h2>{{ $t('alertTemplates.title') }}</h2>
         <p class="page-description">
-          管理系统告警通知模板，支持邮件、短信、钉钉等多种通知方式
+          {{ $t('alertTemplates.description') }}
         </p>
       </div>
       <div class="header-actions">
@@ -13,13 +13,13 @@
           <el-icon>
             <Plus />
           </el-icon>
-          创建模板
+          {{ $t('alertTemplates.createTemplate') }}
         </el-button>
         <el-button @click="loadTemplates">
           <el-icon>
             <Refresh />
           </el-icon>
-          刷新
+          {{ $t('alertTemplates.refresh') }}
         </el-button>
       </div>
     </div>
@@ -27,26 +27,29 @@
     <!-- 筛选栏 -->
     <div class="filter-bar">
       <el-form :model="filters" inline>
-        <el-form-item label="模板分类">
-          <el-select v-model="filters.category" placeholder="选择分类" clearable @change="loadTemplates">
-            <el-option label="邮件" value="email" />
-            <el-option label="短信" value="sms" />
-            <el-option label="钉钉" value="dingtalk" />
-            <el-option label="企业微信" value="wechat" />
-            <el-option label="Webhook" value="webhook" />
+        <el-form-item :label="$t('alertTemplates.templateCategory')">
+          <el-select v-model="filters.category" :placeholder="$t('alertTemplates.selectCategory')" clearable
+            @change="loadTemplates">
+            <el-option :label="$t('alertTemplates.categories.email')" value="email" />
+            <el-option :label="$t('alertTemplates.categories.sms')" value="sms" />
+            <el-option :label="$t('alertTemplates.categories.dingtalk')" value="dingtalk" />
+            <el-option :label="$t('alertTemplates.categories.wechat')" value="wechat" />
+            <el-option :label="$t('alertTemplates.categories.webhook')" value="webhook" />
           </el-select>
         </el-form-item>
-        <el-form-item label="模板类型">
-          <el-select v-model="filters.template_type" placeholder="选择类型" clearable @change="loadTemplates">
-            <el-option label="邮件" value="email" />
-            <el-option label="短信" value="sms" />
-            <el-option label="钉钉" value="dingtalk" />
-            <el-option label="企业微信" value="wechat" />
-            <el-option label="Webhook" value="webhook" />
+        <el-form-item :label="$t('alertTemplates.templateType')">
+          <el-select v-model="filters.template_type" :placeholder="$t('alertTemplates.selectType')" clearable
+            @change="loadTemplates">
+            <el-option :label="$t('alertTemplates.categories.email')" value="email" />
+            <el-option :label="$t('alertTemplates.categories.sms')" value="sms" />
+            <el-option :label="$t('alertTemplates.categories.dingtalk')" value="dingtalk" />
+            <el-option :label="$t('alertTemplates.categories.wechat')" value="wechat" />
+            <el-option :label="$t('alertTemplates.categories.webhook')" value="webhook" />
           </el-select>
         </el-form-item>
-        <el-form-item label="模板名称">
-          <el-input v-model="filters.keyword" placeholder="搜索模板名称" clearable @keyup.enter="loadTemplates">
+        <el-form-item :label="$t('alertTemplates.templateName')">
+          <el-input v-model="filters.keyword" :placeholder="$t('alertTemplates.searchTemplateName')" clearable
+            @keyup.enter="loadTemplates">
             <template #prefix>
               <el-icon>
                 <Search />
@@ -59,9 +62,9 @@
             <el-icon>
               <Search />
             </el-icon>
-            搜索
+            {{ $t('common.search') }}
           </el-button>
-          <el-button @click="resetFilter">重置</el-button>
+          <el-button @click="resetFilter">{{ $t('common.reset') }}</el-button>
         </el-form-item>
       </el-form>
     </div>
@@ -72,7 +75,7 @@
         v-loading="loading">
         <el-table-column type="selection" width="55" />
 
-        <el-table-column prop="name" label="模板名称" sortable>
+        <el-table-column prop="name" :label="$t('alertTemplates.templateName')" sortable>
           <template #default="{ row }">
             <el-link type="primary" @click="showTemplateDetail(row)">
               {{ row.name }}
@@ -80,13 +83,13 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="category" label="模板分类" sortable>
+        <el-table-column prop="category" :label="$t('alertTemplates.templateCategory')" sortable>
           <template #default="{ row }">
             <el-tag size="small">{{ row.category }}</el-tag>
           </template>
         </el-table-column>
 
-        <el-table-column prop="template_type" label="模板类型" sortable>
+        <el-table-column prop="template_type" :label="$t('alertTemplates.templateType')" sortable>
           <template #default="{ row }">
             <el-tag :type="getTemplateTypeColor(row.template_type)" size="small">
               {{ row.template_type }}
@@ -94,29 +97,29 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="模板状态" sortable>
+        <el-table-column :label="$t('alertTemplates.templateStatus')" sortable>
           <template #default="{ row }">
             <div class="template-status">
-              <el-tag v-if="row.is_system" type="success" size="small">系统</el-tag>
-              <el-tag v-if="row.is_default" type="warning" size="small">默认</el-tag>
-              <span v-if="!row.is_system && !row.is_default" class="custom-tag">自定义</span>
+              <el-tag v-if="row.is_system" type="success" size="small">{{ $t('alertTemplates.system') }}</el-tag>
+              <el-tag v-if="row.is_default" type="warning" size="small">{{ $t('alertTemplates.default') }}</el-tag>
+              <span v-if="!row.is_system && !row.is_default" class="custom-tag">{{ $t('alertTemplates.custom') }}</span>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column label="使用次数" sortable>
+        <el-table-column :label="$t('alertTemplates.usageCount')" sortable>
           <template #default="{ row }">
             {{ row.usage_count || 0 }}
           </template>
         </el-table-column>
 
-        <el-table-column label="变量数量" sortable>
+        <el-table-column :label="$t('alertTemplates.variableCount')" sortable>
           <template #default="{ row }">
             {{ row.variables?.length || 0 }}
           </template>
         </el-table-column>
 
-        <el-table-column prop="created_at" label="创建时间" sortable>
+        <el-table-column prop="created_at" :label="$t('common.createTime')" sortable>
           <template #default="{ row }">
             <div class="time-display">
               <div>{{ formatDate(row.created_at).split(" ")[0] }}</div>
@@ -127,156 +130,160 @@
           </template>
         </el-table-column>
 
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column :label="$t('common.actions')" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" @click="previewTemplate(row)">预览</el-button>
-            <el-button size="small" @click="editTemplate(row)">编辑</el-button>
+            <el-button size="small" @click="previewTemplate(row)">{{ $t('alertTemplates.preview') }}</el-button>
+            <el-button size="small" @click="editTemplate(row)">{{ $t('common.edit') }}</el-button>
             <el-button v-if="!row.is_system" size="small" type="danger" @click="deleteTemplate(row)">
-              删除
+              {{ $t('common.delete') }}
             </el-button>
           </template>
         </el-table-column>
       </el-table>
 
       <div v-if="filteredTemplates.length === 0" class="empty-state">
-        <el-empty description="暂无告警模板" />
+        <el-empty :description="$t('alertTemplates.noTemplates')" />
       </div>
     </div>
 
     <!-- 创建/编辑模板对话框 -->
-    <el-dialog v-model="showCreateDialog" :title="editingTemplate ? '编辑模板' : '创建模板'" width="35%" @close="resetForm">
+    <el-dialog v-model="showCreateDialog"
+      :title="editingTemplate ? $t('alertTemplates.editTemplate') : $t('alertTemplates.createTemplate')" width="35%"
+      @close="resetForm">
       <el-form ref="templateFormRef" :model="templateForm" :rules="templateRules" label-width="120px">
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="模板名称" prop="name">
-              <el-input v-model="templateForm.name" placeholder="请输入模板名称" />
+            <el-form-item :label="$t('alertTemplates.templateName')" prop="name">
+              <el-input v-model="templateForm.name" :placeholder="$t('alertTemplates.enterTemplateName')" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
-            <el-form-item label="模板分类" prop="category">
-              <el-select v-model="templateForm.category" placeholder="选择分类">
-                <el-option label="邮件" value="email" />
-                <el-option label="短信" value="sms" />
-                <el-option label="钉钉" value="dingtalk" />
-                <el-option label="企业微信" value="wechat" />
-                <el-option label="Webhook" value="webhook" />
+            <el-form-item :label="$t('alertTemplates.templateCategory')" prop="category">
+              <el-select v-model="templateForm.category" :placeholder="$t('alertTemplates.selectCategory')">
+                <el-option :label="$t('alertTemplates.categories.email')" value="email" />
+                <el-option :label="$t('alertTemplates.categories.sms')" value="sms" />
+                <el-option :label="$t('alertTemplates.categories.dingtalk')" value="dingtalk" />
+                <el-option :label="$t('alertTemplates.categories.wechat')" value="wechat" />
+                <el-option :label="$t('alertTemplates.categories.webhook')" value="webhook" />
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
 
-        <el-form-item label="模板描述" prop="description">
-          <el-input v-model="templateForm.description" type="textarea" :rows="3" placeholder="请输入模板描述" />
+        <el-form-item :label="$t('alertTemplates.templateDescription')" prop="description">
+          <el-input v-model="templateForm.description" type="textarea" :rows="3"
+            :placeholder="$t('alertTemplates.enterDescription')" />
         </el-form-item>
 
         <el-row :gutter="20">
           <el-col :span="12">
-            <el-form-item label="模板类型" prop="template_type">
-              <el-select v-model="templateForm.template_type" placeholder="选择模板类型">
-                <el-option label="邮件" value="email" />
-                <el-option label="短信" value="sms" />
-                <el-option label="钉钉" value="dingtalk" />
-                <el-option label="企业微信" value="wechat" />
-                <el-option label="Webhook" value="webhook" />
+            <el-form-item :label="$t('alertTemplates.templateType')" prop="template_type">
+              <el-select v-model="templateForm.template_type" :placeholder="$t('alertTemplates.selectType')">
+                <el-option :label="$t('alertTemplates.categories.email')" value="email" />
+                <el-option :label="$t('alertTemplates.categories.sms')" value="sms" />
+                <el-option :label="$t('alertTemplates.categories.dingtalk')" value="dingtalk" />
+                <el-option :label="$t('alertTemplates.categories.wechat')" value="wechat" />
+                <el-option :label="$t('alertTemplates.categories.webhook')" value="webhook" />
               </el-select>
             </el-form-item>
           </el-col>
         </el-row>
 
         <!-- 模板内容配置 -->
-        <el-divider content-position="left">模板内容配置</el-divider>
+        <el-divider content-position="left">{{ $t('alertTemplates.templateContentConfig') }}</el-divider>
 
-        <el-form-item label="标题模板" prop="title_template">
-          <el-input v-model="templateForm.title_template" placeholder="请输入标题模板，支持变量如 {alert_name} {severity}" />
+        <el-form-item :label="$t('alertTemplates.titleTemplate')" prop="title_template">
+          <el-input v-model="templateForm.title_template" :placeholder="$t('alertTemplates.enterTitleTemplate')" />
         </el-form-item>
 
-        <el-form-item label="内容模板" prop="content_template">
+        <el-form-item :label="$t('alertTemplates.contentTemplate')" prop="content_template">
           <el-input v-model="templateForm.content_template" type="textarea" :rows="8"
-            placeholder="请输入内容模板，支持变量如 {alert_name} {severity} {resource_name} {current_value} {threshold} {triggered_at} {description}" />
+            :placeholder="$t('alertTemplates.enterContentTemplate')" />
         </el-form-item>
 
         <!-- 变量配置 -->
-        <el-divider content-position="left">变量配置</el-divider>
+        <el-divider content-position="left">{{ $t('alertTemplates.variableConfig') }}</el-divider>
 
-        <el-form-item label="支持变量">
-          <el-select v-model="templateForm.variables" multiple placeholder="选择支持的变量">
-            <el-option label="告警名称" value="alert_name" />
-            <el-option label="告警级别" value="severity" />
-            <el-option label="资源名称" value="resource_name" />
-            <el-option label="当前值" value="current_value" />
-            <el-option label="阈值" value="threshold" />
-            <el-option label="触发时间" value="triggered_at" />
-            <el-option label="告警描述" value="description" />
-            <el-option label="节点名称" value="node_name" />
-            <el-option label="客户端名称" value="client_name" />
-            <el-option label="存储名称" value="storage_name" />
+        <el-form-item :label="$t('alertTemplates.supportedVariables')">
+          <el-select v-model="templateForm.variables" multiple :placeholder="$t('alertTemplates.selectVariables')">
+            <el-option :label="$t('alertTemplates.alertName')" value="alert_name" />
+            <el-option :label="$t('alertTemplates.alertLevel')" value="severity" />
+            <el-option :label="$t('alertTemplates.resourceName')" value="resource_name" />
+            <el-option :label="$t('alertTemplates.currentValue')" value="current_value" />
+            <el-option :label="$t('alertTemplates.threshold')" value="threshold" />
+            <el-option :label="$t('alertTemplates.triggeredAt')" value="triggered_at" />
+            <el-option :label="$t('alertTemplates.description')" value="description" />
+            <el-option :label="$t('alertTemplates.nodeName')" value="node_name" />
+            <el-option :label="$t('alertTemplates.clientName')" value="client_name" />
+            <el-option :label="$t('alertTemplates.storageName')" value="storage_name" />
           </el-select>
         </el-form-item>
 
         <!-- 模板预览 -->
-        <el-divider content-position="left">模板预览</el-divider>
+        <el-divider content-position="left">{{ $t('alertTemplates.templatePreview') }}</el-divider>
 
-        <el-form-item label="测试变量">
-          <el-button @click="generateTestVariables" size="small">生成测试数据</el-button>
+        <el-form-item :label="$t('alertTemplates.testVariables')">
+          <el-button @click="generateTestVariables" size="small">{{ $t('alertTemplates.generateTestData') }}</el-button>
         </el-form-item>
 
         <div class="preview-section">
           <div class="preview-item">
-            <strong>标题预览:</strong>
+            <strong>{{ $t('alertTemplates.titlePreview') }}:</strong>
             <div class="preview-content">{{ previewData.title }}</div>
           </div>
           <div class="preview-item">
-            <strong>内容预览:</strong>
+            <strong>{{ $t('alertTemplates.contentPreview') }}:</strong>
             <div class="preview-content">{{ previewData.content }}</div>
           </div>
         </div>
       </el-form>
 
       <template #footer>
-        <el-button @click="showCreateDialog = false">取消</el-button>
+        <el-button @click="showCreateDialog = false">{{ $t('common.cancel') }}</el-button>
         <el-button type="primary" @click="saveTemplate" :loading="saving">
-          {{ editingTemplate ? "更新" : "创建" }}
+          {{ editingTemplate ? $t('common.update') : $t('common.create') }}
         </el-button>
       </template>
     </el-dialog>
 
     <!-- 预览对话框 -->
-    <el-dialog v-model="showPreviewDialog" title="模板预览" width="30%">
+    <el-dialog v-model="showPreviewDialog" :title="$t('alertTemplates.templatePreview')" width="30%">
       <div class="preview-dialog-content">
         <div class="preview-section">
-          <h4>标题:</h4>
+          <h4>{{ $t('alertTemplates.title') }}:</h4>
           <div class="preview-text">{{ previewData.title }}</div>
         </div>
         <div class="preview-section">
-          <h4>内容:</h4>
+          <h4>{{ $t('alertTemplates.content') }}:</h4>
           <div class="preview-text">{{ previewData.content }}</div>
         </div>
       </div>
     </el-dialog>
 
     <!-- 模板详情侧拉抽屉 -->
-    <el-drawer v-model="showTemplateDetailDrawer" title="模板详情" direction="rtl" size="50%">
+    <el-drawer v-model="showTemplateDetailDrawer" :title="$t('alertTemplates.templateDetails')" direction="rtl"
+      size="50%">
       <div v-if="selectedTemplate" class="template-detail">
         <div class="detail-section">
-          <h3>基本信息</h3>
+          <h3>{{ $t('alertTemplates.basicInfo') }}</h3>
           <div class="detail-item">
-            <span class="label">模板名称:</span>
+            <span class="label">{{ $t('alertTemplates.templateName') }}:</span>
             <span class="value">{{ selectedTemplate.name }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">模板描述:</span>
+            <span class="label">{{ $t('alertTemplates.templateDescription') }}:</span>
             <span class="value">{{
-              selectedTemplate.description || "暂无描述"
+              selectedTemplate.description || $t('alertTemplates.noDescription')
               }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">模板分类:</span>
+            <span class="label">{{ $t('alertTemplates.templateCategory') }}:</span>
             <span class="value">
               <el-tag size="small">{{ selectedTemplate.category }}</el-tag>
             </span>
           </div>
           <div class="detail-item">
-            <span class="label">模板类型:</span>
+            <span class="label">{{ $t('alertTemplates.templateType') }}:</span>
             <span class="value">
               <el-tag :type="getTemplateTypeColor(selectedTemplate.template_type)" size="small">
                 {{ selectedTemplate.template_type }}
@@ -284,27 +291,29 @@
             </span>
           </div>
           <div class="detail-item">
-            <span class="label">模板状态:</span>
+            <span class="label">{{ $t('alertTemplates.templateStatus') }}:</span>
             <span class="value">
-              <el-tag v-if="selectedTemplate.is_system" type="success" size="small">系统</el-tag>
-              <el-tag v-if="selectedTemplate.is_default" type="warning" size="small">默认</el-tag>
+              <el-tag v-if="selectedTemplate.is_system" type="success" size="small">{{ $t('alertTemplates.system')
+              }}</el-tag>
+              <el-tag v-if="selectedTemplate.is_default" type="warning" size="small">{{ $t('alertTemplates.default')
+              }}</el-tag>
               <span v-if="
                 !selectedTemplate.is_system && !selectedTemplate.is_default
-              " class="custom-tag">自定义</span>
+              " class="custom-tag">{{ $t('alertTemplates.custom') }}</span>
             </span>
           </div>
         </div>
 
         <div class="detail-section">
-          <h3>模板内容</h3>
+          <h3>{{ $t('alertTemplates.templateContent') }}</h3>
           <div class="detail-item">
-            <span class="label">标题模板:</span>
+            <span class="label">{{ $t('alertTemplates.titleTemplate') }}:</span>
             <div class="value template-content">
               {{ selectedTemplate.title_template }}
             </div>
           </div>
           <div class="detail-item">
-            <span class="label">内容模板:</span>
+            <span class="label">{{ $t('alertTemplates.contentTemplate') }}:</span>
             <div class="value template-content">
               {{ selectedTemplate.content_template }}
             </div>
@@ -314,9 +323,9 @@
         <div class="detail-section" v-if="
           selectedTemplate.variables && selectedTemplate.variables.length > 0
         ">
-          <h3>支持变量</h3>
+          <h3>{{ $t('alertTemplates.supportedVariables') }}</h3>
           <div class="detail-item">
-            <span class="label">变量列表:</span>
+            <span class="label">{{ $t('alertTemplates.variableList') }}:</span>
             <div class="value">
               <el-tag v-for="variable in selectedTemplate.variables" :key="variable" size="small" type="info"
                 style="margin-right: 8px; margin-bottom: 4px">
@@ -327,30 +336,31 @@
         </div>
 
         <div class="detail-section">
-          <h3>使用统计</h3>
+          <h3>{{ $t('alertTemplates.usageStats') }}</h3>
           <div class="detail-item">
-            <span class="label">使用次数:</span>
-            <span class="value">{{ selectedTemplate.usage_count || 0 }}次</span>
+            <span class="label">{{ $t('alertTemplates.usageCount') }}:</span>
+            <span class="value">{{ selectedTemplate.usage_count || 0 }}{{ $t('alertTemplates.times') }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">创建时间:</span>
+            <span class="label">{{ $t('common.createTime') }}:</span>
             <span class="value">{{
               formatDate(selectedTemplate.created_at)
-              }}</span>
+            }}</span>
           </div>
           <div class="detail-item">
-            <span class="label">更新时间:</span>
+            <span class="label">{{ $t('common.updateTime') }}:</span>
             <span class="value">{{
               formatDate(selectedTemplate.updated_at)
-              }}</span>
+            }}</span>
           </div>
         </div>
 
         <div class="detail-actions">
-          <el-button type="primary" @click="editTemplate(selectedTemplate)">编辑模板</el-button>
-          <el-button @click="previewTemplate(selectedTemplate)">预览模板</el-button>
+          <el-button type="primary" @click="editTemplate(selectedTemplate)">{{ $t('alertTemplates.editTemplate')
+            }}</el-button>
+          <el-button @click="previewTemplate(selectedTemplate)">{{ $t('alertTemplates.preview') }}</el-button>
           <el-button v-if="!selectedTemplate.is_system" type="danger" @click="deleteTemplate(selectedTemplate)">
-            删除模板
+            {{ $t('common.delete') }}
           </el-button>
         </div>
       </div>
@@ -362,7 +372,10 @@
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Plus, Refresh, Search } from "@element-plus/icons-vue";
+import { useI18n } from "vue-i18n";
 import axios from "axios";
+
+const { t } = useI18n();
 
 // 响应式数据
 const loading = ref(false);
@@ -401,16 +414,16 @@ const previewData = reactive({
 
 // 表单验证规则
 const templateRules = {
-  name: [{ required: true, message: "请输入模板名称", trigger: "blur" }],
-  category: [{ required: true, message: "请选择模板分类", trigger: "change" }],
+  name: [{ required: true, message: t('alertTemplates.enterTemplateName'), trigger: "blur" }],
+  category: [{ required: true, message: t('alertTemplates.selectCategory'), trigger: "change" }],
   template_type: [
-    { required: true, message: "请选择模板类型", trigger: "change" },
+    { required: true, message: t('alertTemplates.selectType'), trigger: "change" },
   ],
   title_template: [
-    { required: true, message: "请输入标题模板", trigger: "blur" },
+    { required: true, message: t('alertTemplates.enterTitleTemplate'), trigger: "blur" },
   ],
   content_template: [
-    { required: true, message: "请输入内容模板", trigger: "blur" },
+    { required: true, message: t('alertTemplates.enterContentTemplate'), trigger: "blur" },
   ],
 };
 
@@ -453,7 +466,7 @@ const loadTemplates = async () => {
     const response = await axios.get("/api/alerts/templates", { params });
     templates.value = response.data.templates || [];
   } catch (error) {
-    ElMessage.error("加载模板列表失败");
+    ElMessage.error(t('alertTemplates.loadTemplatesFailed'));
   } finally {
     loading.value = false;
   }
@@ -481,13 +494,13 @@ const previewTemplate = async (template) => {
   try {
     // 生成测试变量
     const testVariables = {
-      alert_name: "CPU使用率告警",
+      alert_name: t('alertTemplates.testData.alertName'),
       severity: "warning",
-      resource_name: "服务器-01",
+      resource_name: t('alertTemplates.testData.resourceName'),
       current_value: "85%",
       threshold: "80%",
       triggered_at: "2024-01-15 10:30:00",
-      description: "CPU使用率超过阈值，请及时处理",
+      description: t('alertTemplates.testData.description'),
     };
 
     const response = await axios.post(
@@ -500,7 +513,7 @@ const previewTemplate = async (template) => {
     Object.assign(previewData, response.data.data);
     showPreviewDialog.value = true;
   } catch (error) {
-    ElMessage.error("预览模板失败");
+    ElMessage.error(t('alertTemplates.previewFailed'));
   }
 };
 
@@ -511,7 +524,7 @@ const saveTemplate = async () => {
 
     const valid = await templateFormRef.value.validate();
     if (!valid) {
-      ElMessage.error("请检查表单填写是否正确");
+      ElMessage.error(t('alertTemplates.checkFormError'));
       return;
     }
 
@@ -523,16 +536,16 @@ const saveTemplate = async () => {
         `/api/alerts/templates/${editingTemplate.value.id}`,
         data
       );
-      ElMessage.success("模板更新成功");
+      ElMessage.success(t('alertTemplates.updateSuccess'));
     } else {
       await axios.post("/api/alerts/templates", data);
-      ElMessage.success("模板创建成功");
+      ElMessage.success(t('alertTemplates.createSuccess'));
     }
 
     showCreateDialog.value = false;
     loadTemplates();
   } catch (error) {
-    ElMessage.error("保存模板失败");
+    ElMessage.error(t('alertTemplates.saveFailed'));
   } finally {
     saving.value = false;
   }
@@ -541,17 +554,17 @@ const saveTemplate = async () => {
 const deleteTemplate = async (template) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除模板 "${template.name}" 吗？`,
-      "确认删除",
+      t('alertTemplates.confirmDelete', { name: template.name }),
+      t('common.confirmDelete'),
       { type: "warning" }
     );
 
     await axios.delete(`/api/alerts/templates/${template.id}`);
-    ElMessage.success("模板删除成功");
+    ElMessage.success(t('alertTemplates.deleteSuccess'));
     loadTemplates();
   } catch (error) {
     if (error !== "cancel") {
-      ElMessage.error("删除模板失败");
+      ElMessage.error(t('alertTemplates.deleteFailed'));
     }
   }
 };
@@ -589,16 +602,16 @@ const getTemplateTypeColor = (type) => {
 const generateTestVariables = () => {
   // 生成测试变量数据
   const testVariables = {
-    alert_name: "CPU使用率告警",
+    alert_name: t('alertTemplates.testData.alertName'),
     severity: "warning",
-    resource_name: "服务器-01",
+    resource_name: t('alertTemplates.testData.resourceName'),
     current_value: "85%",
     threshold: "80%",
     triggered_at: "2024-01-15 10:30:00",
-    description: "CPU使用率超过阈值，请及时处理",
-    node_name: "节点-01",
-    client_name: "客户端-01",
-    storage_name: "存储-01",
+    description: t('alertTemplates.testData.description'),
+    node_name: t('alertTemplates.testData.nodeName'),
+    client_name: t('alertTemplates.testData.clientName'),
+    storage_name: t('alertTemplates.testData.storageName'),
   };
 
   // 更新预览
