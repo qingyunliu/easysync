@@ -97,7 +97,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column :label="$t('alertTemplates.templateStatus')" sortable>
+        <el-table-column :label="$t('alertTemplates.templateProperty')" width="180" sortable>
           <template #default="{ row }">
             <div class="template-status">
               <el-tag v-if="row.is_system" type="success" size="small">{{ $t('alertTemplates.system') }}</el-tag>
@@ -274,7 +274,7 @@
             <span class="label">{{ $t('alertTemplates.templateDescription') }}:</span>
             <span class="value">{{
               selectedTemplate.description || $t('alertTemplates.noDescription')
-              }}</span>
+            }}</span>
           </div>
           <div class="detail-item">
             <span class="label">{{ $t('alertTemplates.templateCategory') }}:</span>
@@ -294,9 +294,9 @@
             <span class="label">{{ $t('alertTemplates.templateStatus') }}:</span>
             <span class="value">
               <el-tag v-if="selectedTemplate.is_system" type="success" size="small">{{ $t('alertTemplates.system')
-              }}</el-tag>
+                }}</el-tag>
               <el-tag v-if="selectedTemplate.is_default" type="warning" size="small">{{ $t('alertTemplates.default')
-              }}</el-tag>
+                }}</el-tag>
               <span v-if="
                 !selectedTemplate.is_system && !selectedTemplate.is_default
               " class="custom-tag">{{ $t('alertTemplates.custom') }}</span>
@@ -345,19 +345,19 @@
             <span class="label">{{ $t('common.createTime') }}:</span>
             <span class="value">{{
               formatDate(selectedTemplate.created_at)
-            }}</span>
+              }}</span>
           </div>
           <div class="detail-item">
             <span class="label">{{ $t('common.updateTime') }}:</span>
             <span class="value">{{
               formatDate(selectedTemplate.updated_at)
-            }}</span>
+              }}</span>
           </div>
         </div>
 
         <div class="detail-actions">
           <el-button type="primary" @click="editTemplate(selectedTemplate)">{{ $t('alertTemplates.editTemplate')
-            }}</el-button>
+          }}</el-button>
           <el-button @click="previewTemplate(selectedTemplate)">{{ $t('alertTemplates.preview') }}</el-button>
           <el-button v-if="!selectedTemplate.is_system" type="danger" @click="deleteTemplate(selectedTemplate)">
             {{ $t('common.delete') }}
