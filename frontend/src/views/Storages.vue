@@ -494,7 +494,7 @@
               <!-- 对象状态信息 -->
               <div class="object-status" v-if="!loadingObjects && total > 0">
                 <el-tag type="info" size="small">
-                  共 {{ total }} 个对象
+                  {{ $t('storage.objectCount', { count: total }) }}
                 </el-tag>
                 <el-tag type="success" size="small" v-if="currentPath">
                   <el-tooltip :content="`${$t('storage.currentPath')}: ${currentPath}`" placement="top"

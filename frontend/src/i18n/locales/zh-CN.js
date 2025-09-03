@@ -2823,6 +2823,8 @@ export default {
     reportIssue: "报告问题",
     errorRecorded: "错误已记录，我们会尽快处理",
     fetchUserFailed: "获取用户信息失败",
+    componentRenderErrorWithHint: "组件渲染错误，请刷新页面重试",
+    unknownWithHint: "发生未知错误，请刷新页面重试",
   },
 
   // 主题切换
@@ -2853,6 +2855,90 @@ export default {
       hoursAgo: "{hours}小时前",
       daysAgo: "{days}天前",
     },
+  },
+
+  // 任务向导
+  taskWizard: {
+    selectTargetStorageAndPath: "选择目标端存储和路径",
+    selectTargetStorageAndPathDesc: "请选择目标端存储，并指定同步的目标路径",
+    configureTaskParameters: "配置任务参数",
+    configureTaskParametersDesc: "根据源端和目标端类型配置相应的同步参数",
+    confirmTaskConfiguration: "确认任务配置",
+    confirmTaskConfigurationDesc: "请确认以下配置信息，确认无误后点击创建任务",
+    warnings: {
+      sourceInitTimeout: "复制任务配置可能不完整，请检查源端配置",
+      sourceConfigIncompleteManual: "任务源端配置不完整，请手动配置源端",
+      targetConfigIncompleteManual: "任务目标端配置不完整，请手动配置目标端",
+    },
+    errors: {
+      extractConfigFailed: "提取任务配置时出错，请手动配置任务",
+    },
+    messages: {
+      completeAllRequiredConfig: "请先完成所有必填配置",
+      taskCreatedSuccess: "任务创建成功",
+      createTaskFailed: "创建任务失败",
+    },
+    steps: {
+      selectSource: "选择源端",
+      selectSourceDesc: "选择源端存储和文件",
+      selectTarget: "选择目标端",
+      selectTargetDesc: "选择目标端存储和路径",
+      configureParameters: "配置参数",
+      configureParametersDesc: "配置同步任务所需参数",
+      confirmConfig: "确认配置",
+      confirmConfigDesc: "核对配置后创建任务",
+    },
+    previousStep: "上一步",
+    reset: "重置",
+    stepProgress: "步骤 {current}/{total}",
+    nextStep: "下一步",
+    createTask: "创建任务",
+    createCopy: "创建副本任务",
+    selectSourceStorageAndFiles: "选择源端存储和文件",
+    selectSourceStorageAndFilesDesc:
+      "请选择源端存储，并选择需要同步的文件或目录",
+    copyTaskConfig: "复制任务配置",
+    copyingTaskConfig: "正在复制任务“{taskName}”的配置",
+    confirmTaskConfigurationShort: "确认配置",
+  },
+
+  // 存储
+  storage: {
+    name: "名称",
+    objectCount: "共 {count} 个对象",
+    errors: {
+      fetchStoragesFailed: "获取存储列表失败",
+      loadDirectoryFailed: "加载目录失败",
+      fetchFilesFailed: "获取文件列表失败",
+      fetchBucketsFailed: "获取存储桶列表失败",
+      fetchObjectsFailed: "获取对象列表失败",
+    },
+  },
+
+  // 任务/监控错误
+  tasks: {
+    errors: {
+      fetchDetailFailed: "获取任务详情失败",
+    },
+  },
+  monitoring: {
+    errors: {
+      fetchFailed: "获取监控数据失败",
+    },
+  },
+
+  // 通用错误提示
+  common: {
+    operationFailedRetry: "操作失败，请重试",
+    noRootNode: "没有找到根节点",
+    treeNotFound: "树不存在",
+  },
+
+  // Socket 文案
+  socket: {
+    disconnected: "与服务器断开连接",
+    connectFailedRetry: "连接服务器失败，请刷新页面重试",
+    websocketError: "WebSocket错误：",
   },
 
   // 404页面

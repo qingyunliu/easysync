@@ -286,7 +286,7 @@
                         :class="['file-icon', row.type === 'directory' ? 'folder' : 'file']" />
                     </template>
                   </el-table-column>
-                  <el-table-column prop="name" label="名称">
+                  <el-table-column prop="name" :label="$t('storage.name')">
                     <template #default="{ row }">
                       <span :class="{ 'directory-name': row.type === 'directory' }">
                         {{ row.name }}

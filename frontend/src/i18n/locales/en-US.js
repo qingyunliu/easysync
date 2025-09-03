@@ -2902,6 +2902,9 @@ export default {
     errorRecorded:
       "Error has been recorded, we will handle it as soon as possible",
     fetchUserFailed: "Failed to fetch user information",
+    componentRenderErrorWithHint:
+      "Component render error, please refresh and try again",
+    unknownWithHint: "Unknown error, please refresh and try again",
   },
 
   // Theme switching
@@ -2932,6 +2935,99 @@ export default {
       hoursAgo: "{hours} hours ago",
       daysAgo: "{days} days ago",
     },
+  },
+
+  // Task Wizard
+  taskWizard: {
+    selectTargetStorageAndPath: "Select target storage and path",
+    selectTargetStorageAndPathDesc:
+      "Please select target storage and specify the destination path",
+    configureTaskParameters: "Configure task parameters",
+    configureTaskParametersDesc:
+      "Configure sync parameters based on source and target types",
+    confirmTaskConfiguration: "Confirm task configuration",
+    confirmTaskConfigurationDesc:
+      "Please confirm the configuration below, then click to create the task",
+    warnings: {
+      sourceInitTimeout:
+        "Copy config may be incomplete. Please check the source settings",
+      sourceConfigIncompleteManual:
+        "Source settings are incomplete. Please configure the source manually",
+      targetConfigIncompleteManual:
+        "Target settings are incomplete. Please configure the target manually",
+    },
+    errors: {
+      extractConfigFailed:
+        "Failed to extract task configuration. Please configure the task manually",
+    },
+    messages: {
+      completeAllRequiredConfig:
+        "Please complete all required configuration first",
+      taskCreatedSuccess: "Task created successfully",
+      createTaskFailed: "Failed to create task",
+    },
+    steps: {
+      selectSource: "Select Source",
+      selectSourceDesc: "Choose source storage and files",
+      selectTarget: "Select Target",
+      selectTargetDesc: "Choose target storage and path",
+      configureParameters: "Configure Parameters",
+      configureParametersDesc: "Configure parameters required by the sync task",
+      confirmConfig: "Confirm Configuration",
+      confirmConfigDesc: "Review and create task",
+    },
+    previousStep: "Previous",
+    reset: "Reset",
+    stepProgress: "Step {current}/{total}",
+    nextStep: "Next",
+    createTask: "Create Task",
+    createCopy: "Create Copy Task",
+    selectSourceStorageAndFiles: "Select source storage and files",
+    selectSourceStorageAndFilesDesc:
+      "Please select source storage and choose files or directories to sync",
+    copyTaskConfig: "Copy Task Configuration",
+    copyingTaskConfig: 'Copying configuration of task "{taskName}"',
+    confirmTaskConfigurationShort: "Confirm Configuration",
+  },
+
+  // Storage
+  storage: {
+    name: "Name",
+    objectCount: "{count} objects",
+    errors: {
+      fetchStoragesFailed: "Failed to fetch storage list",
+      loadDirectoryFailed: "Failed to load directory",
+      fetchFilesFailed: "Failed to fetch file list",
+      fetchBucketsFailed: "Failed to fetch bucket list",
+      fetchObjectsFailed: "Failed to fetch object list",
+    },
+  },
+
+  // Tasks/Monitoring errors
+  tasks: {
+    errors: {
+      fetchDetailFailed: "Failed to fetch task detail",
+    },
+  },
+  monitoring: {
+    errors: {
+      fetchFailed: "Failed to fetch monitoring data",
+    },
+  },
+
+  // Common error hints
+  common: {
+    operationFailedRetry: "Operation failed, please try again",
+    noRootNode: "Root node not found",
+    treeNotFound: "Tree not found",
+  },
+
+  // Socket texts
+  socket: {
+    disconnected: "Disconnected from server",
+    connectFailedRetry:
+      "Failed to connect to server, please refresh and try again",
+    websocketError: "WebSocket error: ",
   },
 
   // 404 page

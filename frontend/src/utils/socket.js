@@ -51,20 +51,41 @@ class SocketManager {
     this.socket.on("disconnect", () => {
       console.log("WebSocket disconnected");
       this.connected = false;
-      ElMessage.warning("与服务器断开连接");
+      try {
+        const msg =
+          window?.__app_i18n__?.global?.t?.("socket.disconnected") ||
+          "与服务器断开连接";
+        ElMessage.warning(msg);
+      } catch (_) {
+        ElMessage.warning("与服务器断开连接");
+      }
     });
 
     this.socket.on("connect_error", (error) => {
       console.error("WebSocket connection error:", error);
       this.reconnectAttempts++;
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-        ElMessage.error("连接服务器失败，请刷新页面重试");
+        try {
+          const msg =
+            window?.__app_i18n__?.global?.t?.("socket.connectFailedRetry") ||
+            "连接服务器失败，请刷新页面重试";
+          ElMessage.error(msg);
+        } catch (_) {
+          ElMessage.error("连接服务器失败，请刷新页面重试");
+        }
       }
     });
 
     this.socket.on("error", (error) => {
       console.error("WebSocket error:", error);
-      ElMessage.error("WebSocket错误：" + error.message);
+      try {
+        const prefix =
+          window?.__app_i18n__?.global?.t?.("socket.websocketError") ||
+          "WebSocket错误：";
+        ElMessage.error(prefix + error.message);
+      } catch (_) {
+        ElMessage.error("WebSocket错误：" + error.message);
+      }
     });
 
     this.socket.on("subscribed", (data) => {

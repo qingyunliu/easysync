@@ -113,7 +113,15 @@ export const registerErrorHandler = (app) => {
     console.error("Vue Error:", err);
     console.error("Error Info:", info);
 
-    ElMessage.error("组件渲染错误，请刷新页面重试");
+    try {
+      const message =
+        window?.__app_i18n__?.global?.t?.(
+          "errors.componentRenderErrorWithHint"
+        ) || "组件渲染错误，请刷新页面重试";
+      ElMessage.error(message);
+    } catch (_) {
+      ElMessage.error("组件渲染错误，请刷新页面重试");
+    }
   };
 
   window.onerror = (message, source, lineno, colno, error) => {
@@ -150,12 +158,26 @@ export const registerErrorHandler = (app) => {
       error,
     });
 
-    ElMessage.error("发生未知错误，请刷新页面重试");
+    try {
+      const message =
+        window?.__app_i18n__?.global?.t?.("errors.unknownWithHint") ||
+        "发生未知错误，请刷新页面重试";
+      ElMessage.error(message);
+    } catch (_) {
+      ElMessage.error("发生未知错误，请刷新页面重试");
+    }
   };
 
   window.onunhandledrejection = (event) => {
     console.error("Unhandled Promise Rejection:", event.reason);
 
-    ElMessage.error("操作失败，请重试");
+    try {
+      const message =
+        window?.__app_i18n__?.global?.t?.("common.operationFailedRetry") ||
+        "操作失败，请重试";
+      ElMessage.error(message);
+    } catch (_) {
+      ElMessage.error("操作失败，请重试");
+    }
   };
 };

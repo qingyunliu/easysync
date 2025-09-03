@@ -98,9 +98,9 @@
                 <el-icon class="header-icon">
                   <FolderAdd />
                 </el-icon>
-                选择目标端存储和路径
+                {{ $t('taskWizard.selectTargetStorageAndPath') }}
               </h3>
-              <p class="step-description">请选择目标端存储，并指定同步的目标路径</p>
+              <p class="step-description">{{ $t('taskWizard.selectTargetStorageAndPathDesc') }}</p>
             </div>
             <div class="header-decoration reverse">
               <div class="header-dot"></div>
@@ -128,9 +128,9 @@
                 <el-icon class="header-icon">
                   <Setting />
                 </el-icon>
-                配置任务参数
+                {{ $t('taskWizard.configureTaskParameters') }}
               </h3>
-              <p class="step-description">根据源端和目标端类型配置相应的同步参数</p>
+              <p class="step-description">{{ $t('taskWizard.configureTaskParametersDesc') }}</p>
             </div>
             <div class="header-decoration reverse">
               <div class="header-dot"></div>
@@ -158,9 +158,9 @@
                 <el-icon class="header-icon">
                   <Check />
                 </el-icon>
-                确认任务配置
+                {{ $t('taskWizard.confirmTaskConfiguration') }}
               </h3>
-              <p class="step-description">请确认以下配置信息，确认无误后点击创建任务</p>
+              <p class="step-description">{{ $t('taskWizard.confirmTaskConfigurationDesc') }}</p>
             </div>
             <div class="header-decoration reverse">
               <div class="header-dot"></div>
@@ -200,7 +200,7 @@
         <!-- 中间进度指示 -->
         <div class="progress-indicator">
           <div class="progress-text">{{ $t('taskWizard.stepProgress', { current: currentStep + 1, total: steps.length })
-            }}</div>
+          }}</div>
           <div class="progress-bar">
             <div class="progress-fill" :style="{ width: `${((currentStep + 1) / steps.length) * 100}%` }"></div>
           </div>
@@ -382,7 +382,7 @@ const initializeChildComponents = async () => {
 
   if (retryCount >= maxRetries) {
     console.warn('源端选择器初始化超时，可能需要手动配置')
-    ElMessage.warning('复制任务配置可能不完整，请检查源端配置')
+    ElMessage.warning(t('taskWizard.warnings.sourceInitTimeout'))
   }
 }
 
@@ -447,7 +447,7 @@ const extractConfigFromTask = (task) => {
 
     } else {
       console.warn('任务源端配置不完整，无法复制')
-      ElMessage.warning('任务源端配置不完整，请手动配置源端')
+      ElMessage.warning(t('taskWizard.warnings.sourceConfigIncompleteManual'))
     }
 
     // 提取目标端配置
@@ -467,7 +467,7 @@ const extractConfigFromTask = (task) => {
 
     } else {
       console.warn('任务目标端配置不完整，无法复制')
-      ElMessage.warning('任务目标端配置不完整，请手动配置目标端')
+      ElMessage.warning(t('taskWizard.warnings.targetConfigIncompleteManual'))
     }
 
     // 提取任务参数
@@ -501,7 +501,7 @@ const extractConfigFromTask = (task) => {
     }
   } catch (error) {
     console.error('提取任务配置时出错:', error)
-    ElMessage.error('提取任务配置时出错，请手动配置任务')
+    ElMessage.error(t('taskWizard.errors.extractConfigFailed'))
   }
 }
 

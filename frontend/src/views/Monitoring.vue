@@ -634,7 +634,7 @@ const updateCharts = async () => {
     }
   } catch (error) {
     console.error('获取监控数据失败:', error)
-    ElMessage.error('获取监控数据失败')
+    ElMessage.error($t('monitoring.errors.fetchFailed'))
   }
 }
 

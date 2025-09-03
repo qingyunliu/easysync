@@ -1067,12 +1067,12 @@ const handleViewDetail = async (task) => {
     if (response.data.status === 'success') {
       selectedTask.value = response.data.data
     } else {
-      ElMessage.error(response.data.message || '获取任务详情失败')
+      ElMessage.error(response.data.message || $t('tasks.errors.fetchDetailFailed'))
       return
     }
     detailDialogVisible.value = true
   } catch (error) {
-    ElMessage.error(error.response?.data?.message || '获取任务详情失败')
+    ElMessage.error(error.response?.data?.message || $t('tasks.errors.fetchDetailFailed'))
   }
 }
 

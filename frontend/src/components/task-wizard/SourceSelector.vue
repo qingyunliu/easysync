@@ -332,11 +332,11 @@ const fetchStorages = async () => {
     if (response.data.status === 'success') {
       storages.value = response.data.storages || []
     } else {
-      ElMessage.error('获取存储列表失败')
+      ElMessage.error(t('storage.errors.fetchStoragesFailed'))
     }
   } catch (error) {
     console.error('获取存储列表错误:', error)
-    ElMessage.error('获取存储列表失败')
+    ElMessage.error(t('storage.errors.fetchStoragesFailed'))
   }
 }
 
@@ -385,7 +385,7 @@ const loadRootDirectory = async (storage) => {
       await loadObsRoot()
     }
   } catch (error) {
-    ElMessage.error('加载目录失败')
+    ElMessage.error(t('storage.errors.loadDirectoryFailed'))
   } finally {
     loading.value = false
   }
@@ -413,10 +413,10 @@ const loadNasRoot = async () => {
         isLeaf: file.type !== 'directory'
       }))
     } else {
-      ElMessage.error(response.data.message || '获取文件列表失败')
+      ElMessage.error(response.data.message || t('storage.errors.fetchFilesFailed'))
     }
   } catch (error) {
-    ElMessage.error('获取文件列表失败')
+    ElMessage.error(t('storage.errors.fetchFilesFailed'))
   }
 }
 
@@ -434,10 +434,10 @@ const loadObsRoot = async () => {
         isLeaf: false
       }))
     } else {
-      ElMessage.error(response.data.message || '获取存储桶列表失败')
+      ElMessage.error(response.data.message || t('storage.errors.fetchBucketsFailed'))
     }
   } catch (error) {
-    ElMessage.error('获取存储桶列表失败')
+    ElMessage.error(t('storage.errors.fetchBucketsFailed'))
   }
 }
 
@@ -513,11 +513,11 @@ const loadObsNode = async (node, resolve) => {
         resolve(children)
       } else {
         resolve([])
-        ElMessage.error(response.data.message || '获取对象列表失败')
+        ElMessage.error(response.data.message || t('storage.errors.fetchObjectsFailed'))
       }
     } catch (error) {
       resolve([])
-      ElMessage.error('获取对象列表失败')
+      ElMessage.error(t('storage.errors.fetchObjectsFailed'))
     }
   } else if (node.data.type === 'directory') {
     // 如果是目录，加载子对象
@@ -812,10 +812,10 @@ const expandAll = async () => {
     if (treeRef.root && treeRef.root.childNodes) {
       await expandAllNodes(treeRef.root.childNodes)
     } else {
-      ElMessage.error('没有找到根节点')
+      ElMessage.error(t('common.noRootNode'))
     }
   } else {
-    ElMessage.error('树不存在')
+    ElMessage.error(t('common.treeNotFound'))
   }
 }
 
@@ -841,10 +841,10 @@ const collapseAll = () => {
     if (treeRef.root && treeRef.root.childNodes) {
       collapseAllNodes(treeRef.root.childNodes)
     } else {
-      ElMessage.error('没有找到根节点')
+      ElMessage.error(t('common.noRootNode'))
     }
   } else {
-    ElMessage.error('树不存在')
+    ElMessage.error(t('common.treeNotFound'))
   }
 }
 
