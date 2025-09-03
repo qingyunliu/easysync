@@ -1,9 +1,9 @@
 <template>
   <div v-if="error" class="error-boundary">
-    <el-result icon="error" title="组件渲染错误" :sub-title="error.message">
+    <el-result icon="error" :title="$t('errors.componentRenderError')" :sub-title="error.message">
       <template #extra>
-        <el-button type="primary" @click="handleReset">重试</el-button>
-        <el-button @click="handleReport">报告问题</el-button>
+        <el-button type="primary" @click="handleReset">{{ $t('common.retry') }}</el-button>
+        <el-button @click="handleReport">{{ $t('errors.reportIssue') }}</el-button>
       </template>
     </el-result>
   </div>
@@ -13,7 +13,9 @@
 <script setup>
 import { ref, onErrorCaptured } from 'vue'
 import { ElMessage } from 'element-plus'
+import { useI18n } from 'vue-i18n'
 
+const { t } = useI18n()
 const error = ref(null)
 
 onErrorCaptured((err, instance, info) => {
@@ -37,7 +39,7 @@ const handleReport = () => {
 
   // 这里可以添加错误上报逻辑
   console.error('错误详情:', errorInfo)
-  ElMessage.success('错误已记录，我们会尽快处理')
+  ElMessage.success(t('errors.errorRecorded'))
 }
 </script>
 

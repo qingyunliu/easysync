@@ -31,7 +31,8 @@ export const useUserStore = defineStore("user", {
         this.user = res.data.data;
       } catch (error) {
         this.user = null;
-        this.error = error.response?.data?.message || "获取用户信息失败";
+        // Use a generic error message that can be handled by the UI
+        this.error = error.response?.data?.message || "FETCH_USER_FAILED";
       } finally {
         this.loaded = true;
       }

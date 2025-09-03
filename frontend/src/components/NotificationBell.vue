@@ -13,12 +13,13 @@
       <div class="notification-dropdown">
         <div class="notification-header">
           <div class="header-left">
-            <h4 class="header-title">通知消息</h4>
-            <span class="unread-count" v-if="unreadCount > 0">({{ unreadCount }}条未读)</span>
+            <h4 class="header-title">{{ $t('notifications.title') }}</h4>
+            <span class="unread-count" v-if="unreadCount > 0">({{ unreadCount }}{{ $t('notifications.unreadCount')
+            }})</span>
           </div>
           <div class="header-actions">
             <el-button type="text" size="small" @click="markAllAsRead" v-if="unreadCount > 0">
-              全部已读
+              {{ $t('notifications.markAllRead') }}
             </el-button>
           </div>
         </div>
@@ -30,7 +31,7 @@
             <el-icon class="empty-icon">
               <ChatDotSquare />
             </el-icon>
-            <p class="empty-text">暂无通知</p>
+            <p class="empty-text">{{ $t('notifications.noNotifications') }}</p>
           </div>
 
           <div v-else class="notification-items">
@@ -69,7 +70,7 @@
 
         <div class="notification-footer">
           <el-button type="text" size="small" @click="viewAll" class="view-all-btn">
-            查看全部通知
+            {{ $t('notifications.viewAll') }}
           </el-button>
         </div>
       </div>
@@ -80,6 +81,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import {
   Bell,
@@ -93,6 +95,7 @@ import {
 } from '@element-plus/icons-vue'
 import axios from 'axios'
 
+const { t } = useI18n()
 const router = useRouter()
 const loading = ref(false)
 const notifications = ref([])
@@ -109,13 +112,12 @@ const hasUnread = computed(() => {
 // 获取通知图标
 const getNotificationIcon = (type) => {
   const iconMap = {
-    'task_completed': CircleCheck,
-    'task_failed': CircleClose,
-    'task_started': Notification,
-    'system_error': Warning,
-    'storage_mounted': InfoFilled,
-    'storage_unmounted': Warning,
-    default: InfoFilled
+    'info': InfoFilled,
+    'success': CircleCheck,
+    'warning': Warning,
+    'error': CircleClose,
+    'critical': CircleClose,
+    'default': Notification
   }
   return iconMap[type] || iconMap.default
 }
@@ -146,14 +148,14 @@ const getNotificationTagType = (level) => {
 
 // 获取等级文本
 const getNotificationLevelText = (level) => {
-  const textMap = {
-    'info': '信息',
-    'success': '成功',
-    'warning': '警告',
-    'error': '错误',
-    'critical': '严重'
+  const levelMap = {
+    'info': t('notifications.levels.info'),
+    'success': t('notifications.levels.success'),
+    'warning': t('notifications.levels.warning'),
+    'error': t('notifications.levels.error'),
+    'critical': t('notifications.levels.critical')
   }
-  return textMap[level] || '信息'
+  return levelMap[level] || t('notifications.levels.info')
 }
 
 // 格式化相对时间
@@ -166,10 +168,10 @@ const formatRelativeTime = (dateStr) => {
   const diffHours = Math.floor(diffMins / 60)
   const diffDays = Math.floor(diffHours / 24)
 
-  if (diffMins < 1) return '刚刚'
-  if (diffMins < 60) return `${diffMins}分钟前`
-  if (diffHours < 24) return `${diffHours}小时前`
-  if (diffDays < 7) return `${diffDays}天前`
+  if (diffMins < 1) return t('notifications.time.justNow')
+  if (diffMins < 60) return t('notifications.time.minutesAgo', { minutes: diffMins })
+  if (diffHours < 24) return t('notifications.time.hoursAgo', { hours: diffHours })
+  if (diffDays < 7) return t('notifications.time.daysAgo', { days: diffDays })
   return date.toLocaleDateString()
 }
 
@@ -212,7 +214,7 @@ const markAsRead = async (notificationId) => {
       notification.is_read = true
     }
   } catch (error) {
-    ElMessage.error('标记已读失败')
+    ElMessage.error(t('notifications.markReadFailed'))
   }
 }
 
@@ -228,9 +230,9 @@ const markAllAsRead = async () => {
       n.is_read = true
     })
 
-    ElMessage.success('全部标记已读成功')
+    ElMessage.success(t('notifications.markAllReadSuccess'))
   } catch (error) {
-    ElMessage.error('标记已读失败')
+    ElMessage.error(t('notifications.markReadFailed'))
   }
 }
 

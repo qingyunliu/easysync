@@ -54,7 +54,7 @@
           <el-table-column prop="config.protocol" :label="$t('storage.protocolType')">
             <template #default="{ row }">
               <el-tag>{{ row.config.protocol === 'nfs' ? $t('storage.protocols.nfs') : $t('storage.protocols.cifs')
-                }}</el-tag>
+              }}</el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="config.server" :label="$t('storage.server')" min-width="160" :resizable="true" />
@@ -497,10 +497,10 @@
                   共 {{ total }} 个对象
                 </el-tag>
                 <el-tag type="success" size="small" v-if="currentPath">
-                  <el-tooltip :content="`当前路径: ${currentPath}`" placement="top" :show-after="300"
-                    :disabled="currentPath.length <= 40">
+                  <el-tooltip :content="`${$t('storage.currentPath')}: ${currentPath}`" placement="top"
+                    :show-after="300" :disabled="currentPath.length <= 40">
                     <span>{{ $t('storage.currentPath') }}: {{ pathExpanded ? currentPath : truncatePath(currentPath, 40)
-                      }}</span>
+                    }}</span>
                   </el-tooltip>
                   <el-button v-if="currentPath.length > 40" type="text" size="small" @click="togglePathExpanded"
                     class="path-expand-button">
@@ -710,11 +710,11 @@
                   <span>{{ node.name }} ({{ node.ipaddress }})</span>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <el-tag size="small" type="success" v-if="node.status === 'online'">{{ $t('storage.online')
-                      }}</el-tag>
+                    }}</el-tag>
                     <el-tag size="small" type="warning" v-else>{{ $t('storage.offline') }}</el-tag>
                     <el-tag size="small" type="primary" v-if="node.agent_status === 'running'">{{
                       $t('storage.agentRunning')
-                      }}</el-tag>
+                    }}</el-tag>
                     <el-tag size="small" type="danger" v-else>{{ $t('storage.agentNotRunning') }}</el-tag>
                   </div>
                 </div>

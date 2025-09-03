@@ -293,20 +293,20 @@
                       </span>
                     </template>
                   </el-table-column>
-                  <el-table-column prop="size" label="大小" width="120">
+                  <el-table-column prop="size" :label="$t('storage.size')" width="120">
                     <template #default="{ row }">
                       {{ row.type === 'directory' ? '-' : formatSize(row.size) }}
                     </template>
                   </el-table-column>
-                  <el-table-column prop="modified_time" label="修改时间" width="180">
+                  <el-table-column prop="modified_time" :label="$t('storage.lastModifiedTime')" width="180">
                     <template #default="{ row }">
                       {{ formatDate(row.modified_time) }}
                     </template>
                   </el-table-column>
-                  <el-table-column label="操作" width="120">
+                  <el-table-column :label="$t('common.action')" width="120">
                     <template #default="{ row }">
                       <el-button v-if="row.type === 'directory'" size="small" @click.stop="selectNasDirectory(row)">
-                        选择
+                        {{ $t('common.select') }}
                       </el-button>
                     </template>
                   </el-table-column>

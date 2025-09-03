@@ -13,13 +13,16 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import { Sunny, Moon } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // 当前主题状态
 const currentTheme = ref('light')
 
 // 计算属性
 const tooltipText = computed(() => {
-  return currentTheme.value === 'light' ? '切换到深色模式' : '切换到浅色模式'
+  return currentTheme.value === 'light' ? t('theme.switchToDark') : t('theme.switchToLight')
 })
 
 // 切换主题

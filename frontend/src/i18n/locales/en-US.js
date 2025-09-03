@@ -98,6 +98,8 @@ export default {
     goodAfternoon: "Good Afternoon",
     goodEvening: "Good Evening",
     goodNight: "Good Night",
+    platformName: "Data Sync Management Platform",
+    pleaseWait: "Please wait...",
     notConfigured: "Not Configured",
     confirmDelete: "Confirm Delete",
     basicInfo: "Basic Info",
@@ -165,6 +167,15 @@ export default {
     networkError: "Network error",
     unknownError: "Unknown error",
     welcomeBack: "Welcome Back",
+    verifyingEmail: "Verifying your email",
+    emailVerifySuccess: "Email verification successful",
+    emailActivatedSuccess:
+      "Your email has been successfully activated, please return to the login page to log in.",
+    goLogin: "Go to Login",
+    emailVerifyFailed: "Email verification failed",
+    verifyLinkInvalid:
+      "Verification link is invalid or expired, please register again.",
+    reregister: "Re-register",
     welcomeTo: "Welcome to",
     dataSyncPlatform: "Data Sync Management Platform",
     noAccount: "Don't have an account?",
@@ -2881,6 +2892,45 @@ export default {
       nodeName: "Node-01",
       clientName: "Client-01",
       storageName: "Storage-01",
+    },
+  },
+
+  // Error handling
+  errors: {
+    componentRenderError: "Component Render Error",
+    reportIssue: "Report Issue",
+    errorRecorded:
+      "Error has been recorded, we will handle it as soon as possible",
+    fetchUserFailed: "Failed to fetch user information",
+  },
+
+  // Theme switching
+  theme: {
+    switchToDark: "Switch to Dark Mode",
+    switchToLight: "Switch to Light Mode",
+  },
+
+  // Notification system
+  notifications: {
+    title: "Notifications",
+    unreadCount: " unread",
+    markAllRead: "Mark all as read",
+    noNotifications: "No notifications",
+    viewAll: "View all notifications",
+    markReadFailed: "Failed to mark as read",
+    markAllReadSuccess: "All notifications marked as read",
+    levels: {
+      info: "Info",
+      success: "Success",
+      warning: "Warning",
+      error: "Error",
+      critical: "Critical",
+    },
+    time: {
+      justNow: "Just now",
+      minutesAgo: "{minutes} minutes ago",
+      hoursAgo: "{hours} hours ago",
+      daysAgo: "{days} days ago",
     },
   },
 

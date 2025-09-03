@@ -5,7 +5,7 @@
         <div class="verify-header">
           <div class="verify-logo">
             <img src="/src/assets/logo/easysync-login-page.svg">
-            <p>数据同步管理平台</p>
+            <p>{{ $t('common.platformName') }}</p>
           </div>
         </div>
         <el-card class="verify-card" shadow="hover">
@@ -13,24 +13,24 @@
             <el-icon class="verify-icon">
               <Loading />
             </el-icon>
-            <h2>正在验证您的邮箱</h2>
-            <p>请稍候...</p>
+            <h2>{{ $t('auth.verifyingEmail') }}</h2>
+            <p>{{ $t('common.pleaseWait') }}</p>
           </div>
           <div v-else-if="status === 'success'" class="verify-status">
             <el-icon class="verify-icon" color="#67C23A">
               <CircleCheck />
             </el-icon>
-            <h2>邮箱验证成功</h2>
-            <p>您的邮箱已成功激活，请返回登录页面登录。</p>
-            <el-button type="primary" @click="goLogin" class="verify-btn">去登录</el-button>
+            <h2>{{ $t('auth.emailVerifySuccess') }}</h2>
+            <p>{{ $t('auth.emailActivatedSuccess') }}</p>
+            <el-button type="primary" @click="goLogin" class="verify-btn">{{ $t('auth.goLogin') }}</el-button>
           </div>
           <div v-else class="verify-status">
             <el-icon class="verify-icon" color="#F56C6C">
               <CircleClose />
             </el-icon>
-            <h2>邮箱验证失败</h2>
-            <p>验证链接无效或已过期，请重新注册。</p>
-            <el-button type="primary" @click="goRegister" class="verify-btn">重新注册</el-button>
+            <h2>{{ $t('auth.emailVerifyFailed') }}</h2>
+            <p>{{ $t('auth.verifyLinkInvalid') }}</p>
+            <el-button type="primary" @click="goRegister" class="verify-btn">{{ $t('auth.reregister') }}</el-button>
           </div>
         </el-card>
       </div>
@@ -41,9 +41,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { Loading, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import axios from 'axios'
 
+const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const status = ref('pending')

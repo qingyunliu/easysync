@@ -98,6 +98,8 @@ export default {
     goodAfternoon: "下午好",
     goodEvening: "晚上好",
     goodNight: "深夜好",
+    platformName: "数据同步管理平台",
+    pleaseWait: "请稍候...",
     notConfigured: "未配置",
     confirmDelete: "确认删除",
     basicInfo: "基本信息",
@@ -164,6 +166,13 @@ export default {
     networkError: "网络错误",
     unknownError: "未知错误",
     welcomeBack: "欢迎回来",
+    verifyingEmail: "正在验证您的邮箱",
+    emailVerifySuccess: "邮箱验证成功",
+    emailActivatedSuccess: "您的邮箱已成功激活，请返回登录页面登录。",
+    goLogin: "去登录",
+    emailVerifyFailed: "邮箱验证失败",
+    verifyLinkInvalid: "验证链接无效或已过期，请重新注册。",
+    reregister: "重新注册",
     welcomeTo: "欢迎使用",
     dataSyncPlatform: "数据同步管理平台",
     noAccount: "还没有账号？",
@@ -2805,6 +2814,44 @@ export default {
       nodeName: "节点-01",
       clientName: "客户端-01",
       storageName: "存储-01",
+    },
+  },
+
+  // 错误处理
+  errors: {
+    componentRenderError: "组件渲染错误",
+    reportIssue: "报告问题",
+    errorRecorded: "错误已记录，我们会尽快处理",
+    fetchUserFailed: "获取用户信息失败",
+  },
+
+  // 主题切换
+  theme: {
+    switchToDark: "切换到深色模式",
+    switchToLight: "切换到浅色模式",
+  },
+
+  // 通知系统
+  notifications: {
+    title: "通知消息",
+    unreadCount: "条未读",
+    markAllRead: "全部已读",
+    noNotifications: "暂无通知",
+    viewAll: "查看全部通知",
+    markReadFailed: "标记已读失败",
+    markAllReadSuccess: "全部标记已读成功",
+    levels: {
+      info: "信息",
+      success: "成功",
+      warning: "警告",
+      error: "错误",
+      critical: "严重",
+    },
+    time: {
+      justNow: "刚刚",
+      minutesAgo: "{minutes}分钟前",
+      hoursAgo: "{hours}小时前",
+      daysAgo: "{days}天前",
     },
   },
 
