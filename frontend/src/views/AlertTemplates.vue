@@ -119,7 +119,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="created_at" :label="$t('common.createTime')" sortable>
+        <el-table-column prop="created_at" :label="$t('common.createTime')" width="220" sortable>
           <template #default="{ row }">
             <div class="time-display">
               <div>{{ formatDate(row.created_at).split(" ")[0] }}</div>
@@ -130,7 +130,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column :label="$t('common.actions')" width="200" fixed="right">
+        <el-table-column :label="$t('common.actions')" width="220" fixed="right">
           <template #default="{ row }">
             <el-button size="small" @click="previewTemplate(row)">{{ $t('alertTemplates.preview') }}</el-button>
             <el-button size="small" @click="editTemplate(row)">{{ $t('common.edit') }}</el-button>

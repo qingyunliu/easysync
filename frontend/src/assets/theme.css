@@ -839,3 +839,12 @@ body {
     color: var(--bg-color) !important;
   }
 }
+
+html[lang="en-US"][data-theme="light"],
+html[lang="en-US"][data-theme="dark"] {
+  --sidebar-width: 230px;
+}
+
+html[lang="en-US"] {
+  --sidebar-width: 230px;
+}

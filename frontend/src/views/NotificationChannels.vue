@@ -98,24 +98,23 @@
 
         <el-table-column :label="$t('common.timeout')" sortable>
           <template #default="{ row }">
-            {{ row.timeout }}{{ $t('common.second') }}
+            {{ row.timeout }} {{ $t('common.second') }}s
           </template>
         </el-table-column>
 
-        <el-table-column prop="created_at" :label="$t('common.createTime')" sortable>
+        <el-table-column prop="created_at" :label="$t('common.createTime')" width="180" sortable>
           <template #default="{ row }">
             <div class="time-display">
-              <div>{{ formatDate(row.created_at).split(' ')[0] }}</div>
-              <div class="time">{{ formatDate(row.created_at).split(' ')[1] }}</div>
+              <div>{{ formatDate(row.created_at).split(' ')[0] }} {{ formatDate(row.created_at).split(' ')[1] }}</div>
             </div>
           </template>
         </el-table-column>
 
-        <el-table-column :label="$t('common.actions')" width="200" fixed="right">
+        <el-table-column :label="$t('common.actions')" width="380" fixed="right">
           <template #default="{ row }">
             <el-button size="small" :type="row.enabled ? 'warning' : 'success'" @click="toggleChannel(row)"
               :loading="row.toggling">
-              {{ row.enabled ? $t('common.disable') : $t('common.enable') }}
+              {{ row.enabled ? $t('common.disabled') : $t('common.enabled') }}
             </el-button>
             <el-button size="small" @click="editChannel(row)">{{ $t('common.edit') }}</el-button>
             <el-button size="small" type="warning" @click="testChannel(row)">{{ $t('common.test') }}</el-button>
@@ -642,12 +641,6 @@ const formatDate = (date) => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-}
-
-.time-display .time {
-  font-size: 12px;
-  color: var(--text-secondary);
-  margin-top: 2px;
 }
 
 .empty-state {
