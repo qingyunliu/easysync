@@ -397,7 +397,7 @@
           <el-table-column prop="status" :label="$t('tasks.status')" width="100">
             <template #default="{ row }">
               <el-tag :type="getLogStatusType(row.status, row.message)" size="small">
-                {{ row.message && row.message.includes('同步进度') ? $t('tasks.logLevels.progress') : row.status }}
+                {{ row.message && row.message.includes($t('tasks.logMessages.syncProgress')) ? $t('tasks.logLevels.progress') : row.status }}
               </el-tag>
             </template>
           </el-table-column>
@@ -520,7 +520,7 @@ const filteredLogs = computed(() => {
   if (logLevel.value === 'all') {
     return taskLogs.value
   } else if (logLevel.value === 'progress') {
-    return taskLogs.value.filter(log => log.message && log.message.includes('同步进度'))
+    return taskLogs.value.filter(log => log.message && log.message.includes($t('tasks.logMessages.syncProgress')))
   } else if (logLevel.value === 'error') {
     return taskLogs.value.filter(log => log.status === 'error')
   }
@@ -640,8 +640,8 @@ const fetchTaskLogs = async () => {
       const allLogs = response.data.data || []
 
       // 优化日志显示：对于进度日志，只保留最新的一条
-      const progressLogs = allLogs.filter(log => log.message && log.message.includes('同步进度'))
-      const otherLogs = allLogs.filter(log => !log.message || !log.message.includes('同步进度'))
+      const progressLogs = allLogs.filter(log => log.message && log.message.includes($t('tasks.logMessages.syncProgress')))
+      const otherLogs = allLogs.filter(log => !log.message || !log.message.includes($t('tasks.logMessages.syncProgress')))
 
       // 如果有进度日志，只取最新的一条
       const latestProgressLog = progressLogs.length > 0
@@ -1244,12 +1244,12 @@ const getProgressStatus = (status) => {
 
 const getNodeName = (nodeId) => {
   const node = nodes.value.find(n => n.id === nodeId)
-  return node ? node.name : `节点${nodeId}`
+  return node ? node.name : `${t('tasks.node')}${nodeId}`
 }
 
 const getLogStatusType = (status, message) => {
   // 如果是同步进度消息，显示为进度类型
-  if (message && message.includes('同步进度')) {
+  if (message && message.includes($t('tasks.logMessages.syncProgress'))) {
     return 'success'
   }
 
@@ -1267,7 +1267,7 @@ const getLogStatusType = (status, message) => {
 const getLogMessageClass = (status, message) => {
   return {
     'log-error': status === 'error',
-    'log-success': (status === 'progress' || status === 'completed') || (message && message.includes('同步进度')),
+    'log-success': (status === 'progress' || status === 'completed') || (message && message.includes($t('tasks.logMessages.syncProgress'))),
     'log-warning': status === 'running'
   }
 }
@@ -1286,16 +1286,7 @@ const getStorageTypeColor = (type) => {
 }
 
 const getStorageTypeText = (type) => {
-  const texts = {
-    local: '本地',
-    nfs: 'NFS',
-    smb: 'SMB',
-    ftp: 'FTP',
-    s3: 'S3',
-    obs: 'OBS',
-    nas: 'NAS'
-  }
-  return texts[type] || type
+  return $t(`storages.storageTypeShort.${type}`) || type
 }
 
 // 新增工具函数

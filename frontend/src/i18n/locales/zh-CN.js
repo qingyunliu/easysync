@@ -123,6 +123,9 @@ export default {
     year: "年",
     to: "至",
     unknown: "未知",
+    operationFailedRetry: "操作失败，请重试",
+    noRootNode: "没有找到根节点",
+    treeNotFound: "树不存在",
   },
 
   // 认证相关
@@ -542,6 +545,13 @@ export default {
     noNasStorages: "暂无NAS存储设备",
     noS3Storages: "暂无对象存储设备",
     none: "无",
+    errors: {
+      fetchStoragesFailed: "获取存储列表失败",
+      loadDirectoryFailed: "加载目录失败",
+      fetchFilesFailed: "获取文件列表失败",
+      fetchBucketsFailed: "获取存储桶列表失败",
+      fetchObjectsFailed: "获取对象列表失败",
+    },
     providers: {
       aws: "AWS",
       googleCloud: "Google Cloud",
@@ -550,6 +560,22 @@ export default {
       huaweiCloud: "华为云",
       minio: "MinIO",
       other: "其他",
+      unknown: "未知",
+      tencent: "腾讯云",
+      aliyun: "阿里云",
+      huawei: "华为云",
+      google: "Google Cloud",
+    },
+    storageTypes: {
+      nas: "NAS存储",
+      s3: "S3存储",
+      unknown: "未知类型",
+    },
+    statusTypes: {
+      active: "正常",
+      error: "错误",
+      disabled: "已禁用",
+      unknown: "未知",
     },
     protocols: {
       nfs: "NFS",
@@ -601,6 +627,18 @@ export default {
       selectProtocolType: "请选择协议类型",
       selectReadWritePermission: "请选择读写权限",
       selectProtocolVersion: "请选择协议版本",
+    },
+    
+    // 日志消息
+    logMessages: {
+      loadStorageDetailsFailed: "加载存储详情失败:",
+      getNASStorageInfoFailed: "获取 NAS 存储信息失败:",
+      downloadFailed: "下载失败:",
+      getFileListFailed: "获取文件列表失败:",
+      getBucketListFailed: "获取存储桶列表失败:",
+      getObjectListFailed: "获取对象列表失败:",
+      getNodeListFailed: "获取节点列表失败:",
+      getStatsFailed: "获取统计信息失败:",
     },
     addStorageSuccess: "添加存储成功",
     updateStorageSuccess: "更新存储成功",
@@ -833,6 +871,10 @@ export default {
       onlineNodes: "在线节点",
     },
 
+    errors: {
+      fetchDetailFailed: "获取任务详情失败",
+    },    
+
     // 工具栏
     searchPlaceholder: "搜索任务名称...",
     statusFilter: "状态筛选",
@@ -922,6 +964,11 @@ export default {
       all: "全部",
       error: "错误",
       progress: "进度",
+    },
+    
+    // 日志消息
+    logMessages: {
+      syncProgress: "同步进度",
     },
 
     // 消息
@@ -1047,6 +1094,27 @@ export default {
     // 存储类型
     storageTypes: {
       local: "本地",
+      s3: "S3兼容存储",
+      oss: "阿里云OSS",
+      cos: "腾讯云COS",
+      obs: "华为云OBS",
+      minio: "MinIO",
+      sftp: "SFTP",
+      smb: "SMB/CIFS",
+      nfs: "NFS",
+    },
+    
+    // 存储类型简称
+    storageTypeShort: {
+      local: "本地",
+      s3: "S3",
+      oss: "OSS",
+      cos: "COS",
+      obs: "OBS",
+      minio: "MinIO",
+      sftp: "SFTP",
+      smb: "SMB",
+      nfs: "NFS",
     },
   },
 
@@ -1536,6 +1604,13 @@ export default {
       user: "用户通知",
     },
 
+    title: "通知消息",
+    unreadCount: "条未读",
+    markAllRead: "全部已读",
+    viewAll: "查看全部通知",
+    markReadFailed: "标记已读失败",
+    markAllReadSuccess: "全部标记已读成功",
+
     // 消息类型（用于过滤器）
     systemNotification: "系统通知",
     taskNotification: "任务通知",
@@ -1963,6 +2038,33 @@ export default {
 
   // 节点管理模块
   nodes: {
+    // 节点分组和标签
+    noGroup: "未分组",
+    batchGroup: "批量分组",
+    inputGroupName: "请输入分组名称",
+    inputTags: "请输入标签，多个标签用逗号分隔",
+    batchTag: "批量打标签",
+    neverOnline: "从未在线",
+    currentSelected: "当前选中",
+    nodesCount: "台节点",
+    nodesUnit: "台",
+    groupDistribution: "分组分布",
+    tagDistribution: "现有标签分布",
+    enterNewGroupNameTip: "请输入新的分组名称（留空则清空分组）",
+    enterNewTagsTip: "请输入新标签（逗号分隔，留空则清空标签）",
+    
+    // 监控数据
+    diskUsed: "已用空间",
+    diskFree: "可用空间",
+    networkRecv: "接收流量",
+    networkSent: "发送流量",
+    networkDropped: "丢包数",
+    
+    // 验证
+    passwordRequired: "密码不能为空",
+    enterSshKey: "请输入SSH密钥",
+    sshKeyRequired: "SSH密钥不能为空",
+    
     pageTitle: "同步代理节点管理",
     pageSubtitle: "管理您的EasySync-Proxy代理节点，用于执行数据同步任务",
     addProxyNode: "添加代理节点",
@@ -2274,6 +2376,10 @@ export default {
       dataRefreshCompleted: "数据刷新完成",
       dataRefreshFailed: "数据刷新失败",
       monitoringSettingsInDevelopment: "监控设置功能开发中...",
+    },
+
+    errors: {
+      fetchFailed: "获取监控数据失败",
     },
   },
 
@@ -2832,31 +2938,6 @@ export default {
     switchToDark: "切换到深色模式",
     switchToLight: "切换到浅色模式",
   },
-
-  // 通知系统
-  notifications: {
-    title: "通知消息",
-    unreadCount: "条未读",
-    markAllRead: "全部已读",
-    noNotifications: "暂无通知",
-    viewAll: "查看全部通知",
-    markReadFailed: "标记已读失败",
-    markAllReadSuccess: "全部标记已读成功",
-    levels: {
-      info: "信息",
-      success: "成功",
-      warning: "警告",
-      error: "错误",
-      critical: "严重",
-    },
-    time: {
-      justNow: "刚刚",
-      minutesAgo: "{minutes}分钟前",
-      hoursAgo: "{hours}小时前",
-      daysAgo: "{days}天前",
-    },
-  },
-
   // 任务向导
   taskWizard: {
     selectTargetStorageAndPath: "选择目标端存储和路径",
@@ -2900,38 +2981,6 @@ export default {
     copyTaskConfig: "复制任务配置",
     copyingTaskConfig: "正在复制任务“{taskName}”的配置",
     confirmTaskConfigurationShort: "确认配置",
-  },
-
-  // 存储
-  storage: {
-    name: "名称",
-    objectCount: "共 {count} 个对象",
-    errors: {
-      fetchStoragesFailed: "获取存储列表失败",
-      loadDirectoryFailed: "加载目录失败",
-      fetchFilesFailed: "获取文件列表失败",
-      fetchBucketsFailed: "获取存储桶列表失败",
-      fetchObjectsFailed: "获取对象列表失败",
-    },
-  },
-
-  // 任务/监控错误
-  tasks: {
-    errors: {
-      fetchDetailFailed: "获取任务详情失败",
-    },
-  },
-  monitoring: {
-    errors: {
-      fetchFailed: "获取监控数据失败",
-    },
-  },
-
-  // 通用错误提示
-  common: {
-    operationFailedRetry: "操作失败，请重试",
-    noRootNode: "没有找到根节点",
-    treeNotFound: "树不存在",
   },
 
   // Socket 文案

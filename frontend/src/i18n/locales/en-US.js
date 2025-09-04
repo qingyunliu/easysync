@@ -124,6 +124,9 @@ export default {
     year: "Year",
     to: "To",
     unknown: "Unknown",
+    operationFailedRetry: "Operation failed, please try again",
+    noRootNode: "Root node not found",
+    treeNotFound: "Tree not found",
   },
 
   // Authentication
@@ -560,6 +563,13 @@ export default {
     noNasStorages: "No NAS storage devices",
     noS3Storages: "No object storage devices",
     none: "None",
+    errors: {
+      fetchStoragesFailed: "Failed to fetch storage list",
+      loadDirectoryFailed: "Failed to load directory",
+      fetchFilesFailed: "Failed to fetch file list",
+      fetchBucketsFailed: "Failed to fetch bucket list",
+      fetchObjectsFailed: "Failed to fetch object list",
+    },
     providers: {
       aws: "AWS",
       googleCloud: "Google Cloud",
@@ -568,6 +578,22 @@ export default {
       huaweiCloud: "Huawei Cloud",
       minio: "MinIO",
       other: "Other",
+      unknown: "Unknown",
+      tencent: "Tencent Cloud",
+      aliyun: "Ali Cloud",
+      huawei: "Huawei Cloud",
+      google: "Google Cloud",
+    },
+    storageTypes: {
+      nas: "NAS Storage",
+      s3: "S3 Storage",
+      unknown: "Unknown Type",
+    },
+    statusTypes: {
+      active: "Active",
+      error: "Error",
+      disabled: "Disabled",
+      unknown: "Unknown",
     },
     protocols: {
       nfs: "NFS",
@@ -622,6 +648,18 @@ export default {
       selectProtocolType: "Please select protocol type",
       selectReadWritePermission: "Please select read/write permission",
       selectProtocolVersion: "Please select protocol version",
+    },
+    
+    // Log messages
+    logMessages: {
+      loadStorageDetailsFailed: "Failed to load storage details:",
+      getNASStorageInfoFailed: "Failed to get NAS storage info:",
+      downloadFailed: "Download failed:",
+      getFileListFailed: "Failed to get file list:",
+      getBucketListFailed: "Failed to get bucket list:",
+      getObjectListFailed: "Failed to get object list:",
+      getNodeListFailed: "Failed to get node list:",
+      getStatsFailed: "Failed to get statistics:",
     },
     addStorageSuccess: "Storage added successfully",
     updateStorageSuccess: "Storage updated successfully",
@@ -863,6 +901,10 @@ export default {
       onlineNodes: "Online Nodes",
     },
 
+    errors: {
+      fetchDetailFailed: "Failed to fetch task detail",
+    },
+
     // Toolbar
     searchPlaceholder: "Search task name...",
     statusFilter: "Status Filter",
@@ -952,6 +994,11 @@ export default {
       all: "All",
       error: "Error",
       progress: "Progress",
+    },
+    
+    // Log Messages
+    logMessages: {
+      syncProgress: "Sync Progress",
     },
 
     // Messages
@@ -1077,6 +1124,27 @@ export default {
     // Storage Types
     storageTypes: {
       local: "Local",
+      s3: "S3 Compatible",
+      oss: "Alibaba OSS",
+      cos: "Tencent COS",
+      obs: "Huawei OBS",
+      minio: "MinIO",
+      sftp: "SFTP",
+      smb: "SMB/CIFS",
+      nfs: "NFS",
+    },
+    
+    // Storage Type Short Names
+    storageTypeShort: {
+      local: "Local",
+      s3: "S3",
+      oss: "OSS",
+      cos: "COS",
+      obs: "OBS",
+      minio: "MinIO",
+      sftp: "SFTP",
+      smb: "SMB",
+      nfs: "NFS",
     },
   },
 
@@ -1578,6 +1646,13 @@ export default {
       user: "User Notification",
     },
 
+    title: "Notifications",
+    unreadCount: " unread",
+    markAllRead: "Mark all as read",
+    viewAll: "View all notifications",
+    markReadFailed: "Failed to mark as read",
+    markAllReadSuccess: "All notifications marked as read",
+
     // Message Types (for filters)
     systemNotification: "System Notification",
     taskNotification: "Task Notification",
@@ -2017,6 +2092,33 @@ export default {
 
   // Nodes Management Module
   nodes: {
+    // Node groups and tags
+    noGroup: "No Group",
+    batchGroup: "Batch Group",
+    inputGroupName: "Please enter group name",
+    inputTags: "Please enter tags, separate multiple tags with commas",
+    batchTag: "Batch Tag",
+    neverOnline: "Never Online",
+    currentSelected: "Currently selected",
+    nodesCount: "nodes",
+    nodesUnit: "",
+    groupDistribution: "Group distribution",
+    tagDistribution: "Existing tag distribution",
+    enterNewGroupNameTip: "Please enter a new group name (leave empty to clear group)",
+    enterNewTagsTip: "Please enter new tags (comma separated, leave empty to clear tags)",
+    
+    // Monitoring data
+    diskUsed: "Disk Used",
+    diskFree: "Disk Free",
+    networkRecv: "Network Received",
+    networkSent: "Network Sent",
+    networkDropped: "Packets Dropped",
+    
+    // Validation
+    passwordRequired: "Password is required",
+    enterSshKey: "Please enter SSH key",
+    sshKeyRequired: "SSH key is required",
+    
     pageTitle: "Sync Proxy Node Management",
     pageSubtitle:
       "Manage your EasySync-Proxy nodes for data synchronization tasks",
@@ -2338,6 +2440,10 @@ export default {
       dataRefreshFailed: "Data refresh failed",
       monitoringSettingsInDevelopment:
         "Monitoring settings feature is under development...",
+    },
+
+    errors: {
+      fetchFailed: "Failed to fetch monitoring data",
     },
   },
 
@@ -2913,30 +3019,6 @@ export default {
     switchToLight: "Switch to Light Mode",
   },
 
-  // Notification system
-  notifications: {
-    title: "Notifications",
-    unreadCount: " unread",
-    markAllRead: "Mark all as read",
-    noNotifications: "No notifications",
-    viewAll: "View all notifications",
-    markReadFailed: "Failed to mark as read",
-    markAllReadSuccess: "All notifications marked as read",
-    levels: {
-      info: "Info",
-      success: "Success",
-      warning: "Warning",
-      error: "Error",
-      critical: "Critical",
-    },
-    time: {
-      justNow: "Just now",
-      minutesAgo: "{minutes} minutes ago",
-      hoursAgo: "{hours} hours ago",
-      daysAgo: "{days} days ago",
-    },
-  },
-
   // Task Wizard
   taskWizard: {
     selectTargetStorageAndPath: "Select target storage and path",
@@ -2988,38 +3070,6 @@ export default {
     copyTaskConfig: "Copy Task Configuration",
     copyingTaskConfig: 'Copying configuration of task "{taskName}"',
     confirmTaskConfigurationShort: "Confirm Configuration",
-  },
-
-  // Storage
-  storage: {
-    name: "Name",
-    objectCount: "{count} objects",
-    errors: {
-      fetchStoragesFailed: "Failed to fetch storage list",
-      loadDirectoryFailed: "Failed to load directory",
-      fetchFilesFailed: "Failed to fetch file list",
-      fetchBucketsFailed: "Failed to fetch bucket list",
-      fetchObjectsFailed: "Failed to fetch object list",
-    },
-  },
-
-  // Tasks/Monitoring errors
-  tasks: {
-    errors: {
-      fetchDetailFailed: "Failed to fetch task detail",
-    },
-  },
-  monitoring: {
-    errors: {
-      fetchFailed: "Failed to fetch monitoring data",
-    },
-  },
-
-  // Common error hints
-  common: {
-    operationFailedRetry: "Operation failed, please try again",
-    noRootNode: "Root node not found",
-    treeNotFound: "Tree not found",
   },
 
   // Socket texts

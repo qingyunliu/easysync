@@ -767,7 +767,7 @@ const rules = {
     {
       validator: (rule, value, callback) => {
         if (form.value.auth_type === 'password' && !value) {
-          callback(new Error('密码不能为空'))
+          callback(new Error(t('nodes.validation.passwordRequired')))
         } else {
           callback()
         }
@@ -775,11 +775,11 @@ const rules = {
     }
   ],
   ssh_key: [
-    { required: true, message: '请输入SSH密钥', trigger: 'blur' },
+    { required: true, message: t('nodes.validation.enterSshKey'), trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
         if (form.value.auth_type === 'key' && !value) {
-          callback(new Error('SSH密钥不能为空'))
+          callback(new Error(t('nodes.validation.sshKeyRequired')))
         } else {
           callback()
         }
@@ -923,21 +923,21 @@ const showBatchGroupDialog = async () => {
   // 统计当前选中节点的分组分布
   const groupStats = {}
   multipleSelection.value.forEach(node => {
-    const group = node.group || '未分组'
+    const group = node.group || t('nodes.noGroup')
     groupStats[group] = (groupStats[group] || 0) + 1
   })
   const groupInfo = Object.entries(groupStats)
-    .map(([group, count]) => `${group}: ${count}台`)
+    .map(([group, count]) => `${group}: ${count}${t('nodes.nodesUnit')}`)
     .join('\n')
   try {
     const { value: groupName } = await ElMessageBox.prompt(
-      `当前选中 ${multipleSelection.value.length} 台节点\n\n分组分布：\n${groupInfo}\n\n请输入新的分组名称（留空则清空分组）：`,
-      '批量分组',
+      `${t('nodes.currentSelected')} ${multipleSelection.value.length} ${t('nodes.nodesCount')}\n\n${t('nodes.groupDistribution')}：\n${groupInfo}\n\n${t('nodes.enterNewGroupNameTip')}`,
+      t('nodes.batchGroup'),
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
         inputValue: '',
-        inputPlaceholder: '请输入分组名称'
+        inputPlaceholder: t('nodes.inputGroupName')
       }
     )
     const nodeIds = multipleSelection.value.map(item => item.id)
@@ -971,18 +971,18 @@ const showBatchTagDialog = async () => {
     }
   })
   const tagInfo = Object.entries(tagStats)
-    .map(([tag, count]) => `${tag}: ${count}台`)
+    .map(([tag, count]) => `${tag}: ${count}${t('nodes.nodesUnit')}`)
     .join('\n')
   const currentTags = Array.from(allTags).join(', ')
   try {
     const { value: tags } = await ElMessageBox.prompt(
-      `当前选中 ${multipleSelection.value.length} 台节点\n\n现有标签分布：\n${tagInfo}\n\n请输入新标签（逗号分隔，留空则清空标签）：`,
-      '批量打标签',
+      `${t('nodes.currentSelected')} ${multipleSelection.value.length} ${t('nodes.nodesCount')}\n\n${t('nodes.tagDistribution')}：\n${tagInfo}\n\n${t('nodes.enterNewTagsTip')}`,
+      t('nodes.batchTag'),
       {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel'),
         inputValue: currentTags,
-        inputPlaceholder: '请输入标签，多个标签用逗号分隔'
+        inputPlaceholder: t('nodes.inputTags')
       }
     )
     const nodeIds = multipleSelection.value.map(item => item.id)
@@ -1059,7 +1059,7 @@ const fetchNodes = async () => {
 
 // 格式化日期
 const formatDate = (date) => {
-  if (!date) return '从未在线'
+  if (!date) return t('nodes.neverOnline')
   return new Date(date).toLocaleString()
 }
 

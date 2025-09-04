@@ -471,11 +471,11 @@ const loadNasNode = async (node, resolve) => {
       resolve(children)
     } else {
       resolve([])
-      ElMessage.error(response.data.message || '获取文件列表失败')
+      ElMessage.error(response.data.message || t('storage.errors.fetchFilesFailed'))
     }
   } catch (error) {
     resolve([])
-    ElMessage.error('获取文件列表失败')
+    ElMessage.error(t('storage.errors.fetchFilesFailed'))
   }
 }
 

@@ -985,11 +985,11 @@ const getStorageTypeTag = (type) => {
 const getStorageTypeText = (type) => {
   switch (type) {
     case 'nas':
-      return 'NAS存储'
+      return t('storage.storageTypes.nas')
     case 's3':
-      return 'S3存储'
+      return t('storage.storageTypes.s3')
     default:
-      return '未知类型'
+      return t('storage.storageTypes.unknown')
   }
 }
 
@@ -1011,13 +1011,13 @@ const getStatusType = (status) => {
 const getStatusText = (status) => {
   switch (status) {
     case 'active':
-      return '正常'
+      return t('storage.statusTypes.active')
     case 'error':
-      return '错误'
+      return t('storage.statusTypes.error')
     case 'disabled':
-      return '已禁用'
+      return t('storage.statusTypes.disabled')
     default:
-      return '未知'
+      return t('storage.statusTypes.unknown')
   }
 }
 
@@ -1155,7 +1155,7 @@ const handleNameClick = async (row) => {
       await fetchBuckets()
     }
   } catch (error) {
-    console.error('加载存储详情失败:', error)
+    console.error(t('storage.logMessages.loadStorageDetailsFailed'), error)
     ElMessage.error(t('storage.loadStorageDetailsFailed'))
   }
 }
@@ -1190,7 +1190,7 @@ const fetchNASDetails = async () => {
       ElMessage.error(response.data.message || t('storage.getStatsFailed'))
     }
   } catch (error) {
-    console.error('获取 NAS 存储信息失败:', error)
+    console.error(t('storage.logMessages.getNASStorageInfoFailed'), error)
     ElMessage.error(t('storage.getNASStorageInfoFailed'))
   } finally {
     loadingNASStats.value = false
@@ -1218,7 +1218,7 @@ const refreshNASStats = async () => {
       ElMessage.error(response.data.message || t('storage.updateStatsFailed'))
     }
   } catch (error) {
-    console.error('更新统计信息失败:', error)
+    console.error(t('storage.logMessages.updateStatsFailed'), error)
     ElMessage.error(t('storage.updateStatsFailed'))
   } finally {
     refreshingStats.value = false
@@ -1258,7 +1258,7 @@ const handleFileDownload = async (file) => {
       ElMessage.error(response.data.message || t('storage.downloadFailed'))
     }
   } catch (error) {
-    console.error('下载失败:', error)
+    console.error(t('storage.logMessages.downloadFailed'), error)
     ElMessage.error(t('storage.downloadFailed'))
   }
 }
@@ -1304,7 +1304,7 @@ const fetchFiles = async () => {
       ElMessage.error(response.data.message || t('storage.getFileListFailed'))
     }
   } catch (error) {
-    console.error('获取文件列表失败:', error)
+    console.error(t('storage.logMessages.getFileListFailed'), error)
     ElMessage.error(t('storage.getFileListFailed'))
   } finally {
     loadingFiles.value = false
@@ -1350,7 +1350,7 @@ const fetchBuckets = async () => {
       ElMessage.error(response.data.message || t('storage.getBucketListFailed'))
     }
   } catch (error) {
-    console.error('获取存储桶列表失败:', error)
+    console.error(t('storage.logMessages.getBucketListFailed'), error)
     ElMessage.error(t('storage.getBucketListFailed'))
   } finally {
     loadingBuckets.value = false
@@ -1418,7 +1418,7 @@ const fetchObjects = async () => {
       ElMessage.error(response.data.message || t('storage.getObjectListFailed'))
     }
   } catch (error) {
-    console.error('获取对象列表失败:', error)
+    console.error(t('storage.logMessages.getObjectListFailed'), error)
     ElMessage.error(t('storage.getObjectListFailed'))
   } finally {
     loadingObjects.value = false
@@ -1543,16 +1543,11 @@ const getProviderType = (provider) => {
 }
 
 const getProviderText = (provider) => {
-  const texts = {
-    'aws': 'AWS',
-    'google': 'Google Cloud',
-    'tencent': '腾讯云',
-    'aliyun': '阿里云',
-    'huawei': '华为云',
-    'minio': 'MinIO',
-    'other': '其他'
-  }
-  return texts[provider] || '未知'
+  if (!provider) return t('storage.providers.unknown')
+  
+  const providerKey = `storage.providers.${provider}`
+  // 检查是否有对应的翻译键
+  return t(providerKey) !== providerKey ? t(providerKey) : t('storage.providers.unknown')
 }
 
 // 处理添加存储
@@ -1765,7 +1760,7 @@ const fetchAvailableNodes = async () => {
     }
 
   } catch (error) {
-    console.error('获取节点列表失败:', error)
+    console.error(t('storage.logMessages.getNodeListFailed'), error)
     ElMessage.error(t('storage.getNodeListFailed'))
     availableNodes.value = []
   }
@@ -1900,8 +1895,8 @@ const refreshStats = async () => {
     }
 
     await ElMessageBox.confirm(t('storage.refreshStatsConfirm'), t('common.tip'), {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+      confirmButtonText: t('common.confirmButton'),
+      cancelButtonText: t('common.cancelButton'),
       type: 'warning'
     })
 
@@ -1919,7 +1914,7 @@ const refreshStats = async () => {
   } catch (error) {
     // 如果是用户取消操作,不显示错误提示
     if (error !== 'cancel') {
-      console.error('获取统计信息失败:', error)
+      console.error(t('storage.logMessages.getStatsFailed'), error)
       ElMessage.error(t('storage.getStatsFailed'))
     }
   } finally {
