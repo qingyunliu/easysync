@@ -240,7 +240,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column :label="$t('tasks.actions')" width="300" fixed="right">
+        <el-table-column :label="$t('common.actions')" width="300" fixed="right">
           <template #default="{ row }">
             <el-button-group size="small">
               <!-- 启动/停止按钮 -->
@@ -520,7 +520,7 @@ const filteredLogs = computed(() => {
   if (logLevel.value === 'all') {
     return taskLogs.value
   } else if (logLevel.value === 'progress') {
-    return taskLogs.value.filter(log => log.message && log.message.includes($t('tasks.logMessages.syncProgress')))
+    return taskLogs.value.filter(log => log.message && log.message.includes("$t('tasks.logMessages.syncProgress')"))
   } else if (logLevel.value === 'error') {
     return taskLogs.value.filter(log => log.status === 'error')
   }
@@ -543,7 +543,7 @@ const fetchStatistics = async () => {
     const nodesResponse = await axios.get('/api/nodes')
     OnlineNodeStats.value = nodesResponse.data.data.filter(node => node.status === 'online').length
   } catch (error) {
-    console.error('获取统计数据失败:', error)
+    console.error(t('tasks.messages.fetchStatsFailed'), error)
   }
 }
 
@@ -640,8 +640,8 @@ const fetchTaskLogs = async () => {
       const allLogs = response.data.data || []
 
       // 优化日志显示：对于进度日志，只保留最新的一条
-      const progressLogs = allLogs.filter(log => log.message && log.message.includes($t('tasks.logMessages.syncProgress')))
-      const otherLogs = allLogs.filter(log => !log.message || !log.message.includes($t('tasks.logMessages.syncProgress')))
+      const progressLogs = allLogs.filter(log => log.message && log.message.includes("$t('tasks.logMessages.syncProgress')"))
+      const otherLogs = allLogs.filter(log => !log.message || !log.message.includes("$t('tasks.logMessages.syncProgress')"))
 
       // 如果有进度日志，只取最新的一条
       const latestProgressLog = progressLogs.length > 0
@@ -804,8 +804,6 @@ const handleTaskCreated = (task) => {
   fetchTasks()
 }
 
-
-
 // 新增任务管理方法
 const handleStartTask = async (task) => {
   if (loadingTasks.value.has(task.id)) return
@@ -856,7 +854,7 @@ const handleCancelTask = async (task) => {
   if (loadingTasks.value.has(task.id)) return
 
   try {
-    await ElMessageBox.confirm('确定要取消此任务吗？', '提示', {
+    await ElMessageBox.confirm(t('tasks.messages.confirmCancel'), t('common.tip'), {
       type: 'warning'
     })
 
@@ -915,7 +913,7 @@ const startCancelStatusPolling = (taskId) => {
         }
       }
     } catch (error) {
-      console.error('轮询任务状态失败:', error)
+      console.error(t('tasks.messages.pollTaskStatusFailed'), error)
     }
   }, 2000) // 每2秒检查一次
 
@@ -933,10 +931,10 @@ const startCancelStatusPolling = (taskId) => {
 
 const handleDeleteTask = async (task) => {
   try {
-    await ElMessageBox.confirm('确定要删除此任务吗？此操作不可恢复。', '危险操作', {
+    await ElMessageBox.confirm(t('tasks.messages.confirmDeleteTask'), t('common.dangerOperation'), {
       type: 'error',
-      confirmButtonText: '确定删除',
-      cancelButtonText: '取消'
+      confirmButtonText: t('common.confirmDelete'),
+      cancelButtonText: t('common.cancel')
     })
 
     const force = ['running', 'assigned'].includes(task.status)
@@ -1091,7 +1089,7 @@ const batchCancel = async () => {
   if (selectedTasks.value.length === 0) return
 
   try {
-    await ElMessageBox.confirm(`确定要取消选中的 ${selectedTasks.value.length} 个任务吗？`, '提示', {
+    await ElMessageBox.confirm(t('tasks.messages.confirmCancel'), t('common.tip'), {
       type: 'warning'
     })
 
@@ -1110,7 +1108,7 @@ const batchRetry = async () => {
   if (selectedTasks.value.length === 0) return
 
   try {
-    await ElMessageBox.confirm(`确定要重试选中的 ${selectedTasks.value.length} 个任务吗？`, '提示', {
+    await ElMessageBox.confirm(t('tasks.messages.confirmRetry'), t('common.tip'), {
       type: 'warning'
     })
 
@@ -1129,7 +1127,7 @@ const batchDelete = async () => {
   if (selectedTasks.value.length === 0) return
 
   try {
-    await ElMessageBox.confirm(`确定要删除选中的 ${selectedTasks.value.length} 个任务吗？`, '提示', {
+    await ElMessageBox.confirm(t('tasks.messages.confirmDelete'), t('common.tip'), {
       type: 'warning'
     })
 
@@ -1249,7 +1247,7 @@ const getNodeName = (nodeId) => {
 
 const getLogStatusType = (status, message) => {
   // 如果是同步进度消息，显示为进度类型
-  if (message && message.includes($t('tasks.logMessages.syncProgress'))) {
+  if (message && message.includes("$t('tasks.logMessages.syncProgress')")) {
     return 'success'
   }
 
@@ -1267,7 +1265,7 @@ const getLogStatusType = (status, message) => {
 const getLogMessageClass = (status, message) => {
   return {
     'log-error': status === 'error',
-    'log-success': (status === 'progress' || status === 'completed') || (message && message.includes($t('tasks.logMessages.syncProgress'))),
+    'log-success': (status === 'progress' || status === 'completed') || (message && message.includes("$t('tasks.logMessages.syncProgress')")),
     'log-warning': status === 'running'
   }
 }

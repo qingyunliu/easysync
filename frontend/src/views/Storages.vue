@@ -75,7 +75,7 @@
               <el-tag v-else type="warning" size="small">{{ $t('storage.unbound') }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column :label="$t('storage.actions')" min-width="280" fixed="right">
+          <el-table-column :label="$t('common.actions')" min-width="280" fixed="right">
             <template #default="{ row }">
               <StorageActions :storage="row" @refresh="fetchStorages" />
             </template>
@@ -123,7 +123,7 @@
               <el-tag v-else type="warning" size="small">{{ $t('storage.unbound') }}</el-tag>
             </template>
           </el-table-column>
-          <el-table-column :label="$t('storage.actions')" min-width="280" fixed="right">
+          <el-table-column :label="$t('common.actions')" min-width="280" fixed="right">
             <template #default="{ row }">
               <StorageActions :storage="row" @refresh="fetchStorages" />
             </template>
@@ -421,7 +421,7 @@
                   {{ formatDate(row.modified_time) }}
                 </template>
               </el-table-column>
-              <el-table-column :label="$t('storage.actions')" width="120" fixed="right">
+              <el-table-column :label="$t('common.actions')" width="120" fixed="right">
                 <template #default="{ row }">
                   <el-button v-if="row.type !== 'directory'" type="primary" size="small"
                     @click.stop="handleFileDownload(row)">
@@ -546,7 +546,7 @@
                     {{ formatDate(row.lastModified) }}
                   </template>
                 </el-table-column>
-                <el-table-column :label="$t('storage.actions')" width="120" fixed="right">
+                <el-table-column :label="$t('common.actions')" width="120" fixed="right">
                   <template #default="{ row }">
                     <el-button v-if="row.type !== 'directory'" type="primary" size="small"
                       @click.stop="handleS3Download(row)">
@@ -1731,9 +1731,9 @@ const handleSubmit = async () => {
     dialogVisible.value = false
     fetchStorages()
   } catch (error) {
-    console.error('提交错误:', error)
+    console.error(t('storage.logMessages.submitError'), error)
     if (error.response) {
-      console.error('错误响应:', error.response.data)
+      console.error(t('storage.logMessages.errorResponse'), error.response.data)
       ElMessage.error(error.response.data.message || t('storage.operationFailed'))
     } else if (error.message) {
       ElMessage.error(error.message)

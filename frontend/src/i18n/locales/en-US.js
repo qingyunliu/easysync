@@ -127,6 +127,8 @@ export default {
     operationFailedRetry: "Operation failed, please try again",
     noRootNode: "Root node not found",
     treeNotFound: "Tree not found",
+    time: "Time",
+    message: "Message",
   },
 
   // Authentication
@@ -381,6 +383,13 @@ export default {
     storageMounted: "Storage Mounted",
     storageUnmounted: "Storage Unmounted",
     systemNotification: "System Notification",
+  },
+
+  // Home
+  home: {
+    logMessages: {
+      logoutAuditFailed: "Logout audit record failed:",
+    },
   },
 
   // Storage Management
@@ -660,6 +669,9 @@ export default {
       getObjectListFailed: "Failed to get object list:",
       getNodeListFailed: "Failed to get node list:",
       getStatsFailed: "Failed to get statistics:",
+      fetchStoragesError: "Failed to fetch storages:",
+      submitError: "Submit error:",
+      errorResponse: "Error response:",
     },
     addStorageSuccess: "Storage added successfully",
     updateStorageSuccess: "Storage updated successfully",
@@ -1016,6 +1028,7 @@ export default {
       confirmDelete: "Are you sure you want to delete the selected tasks?",
       confirmCancel: "Are you sure you want to cancel the selected tasks?",
       confirmRetry: "Are you sure you want to retry the selected tasks?",
+      confirmDeleteTask: "Are you sure you want to delete this task? This action cannot be undone.",
       noTasksSelected: "Please select tasks to operate",
       taskNotFound: "Task not found",
       operationFailed: "Operation failed",
@@ -1024,6 +1037,9 @@ export default {
       invalidTaskStatus: "Invalid task status",
       nodeOffline: "Execution node offline",
       taskInProgress: "Task is in progress, cannot operate",
+      getTaskLogsFailed: "Failed to get task logs",
+      pollTaskStatusFailed: "Failed to poll task status:",
+      fetchStatsFailed: "Failed to fetch statistics:",
     },
 
     // Validation Rules
@@ -1187,6 +1203,8 @@ export default {
         "Please complete all required configuration information",
       taskCreatedSuccess: "Task created successfully",
       createTaskFailed: "Failed to create task",
+      sourceInitFailed: "Source initialization failed",
+      waitingForComponentMount: "Waiting for component mount",
     },
   },
 
@@ -1940,6 +1958,18 @@ export default {
     searchNotificationTargets: "Search notification targets...",
     cancel: "Cancel",
     confirm: "Confirm",
+
+    // Log messages
+    logMessages: {
+      loadResourcesFailed: "Failed to load resources:",
+      loadNotificationTargetsFailed: "Failed to load notification targets:",
+      loadNotificationChannelsFailed: "Failed to load notification channels:",
+      loadTemplatesFailed: "Failed to load templates:",
+      getAlertDefinitionsFailed: "Failed to get alert definitions:",
+      getResourceItemsFailed: "Failed to get resource items:",
+      getCompatibilityDataFailed: "Failed to get compatibility data:",
+      getEventActionsFailed: "Failed to get event actions:",
+    },
 
     // Messages
     messages: {

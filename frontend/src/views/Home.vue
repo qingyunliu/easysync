@@ -333,7 +333,7 @@ const handleCommand = async (command) => {
       // 调用退出登录API记录审计日志
       await axios.post('/api/auth/logout')
     } catch (error) {
-      console.warn('退出登录审计记录失败:', error)
+      console.warn(t('home.logMessages.logoutAuditFailed'), error)
     }
 
     // 清除本地存储

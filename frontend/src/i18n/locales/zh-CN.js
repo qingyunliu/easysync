@@ -126,6 +126,8 @@ export default {
     operationFailedRetry: "操作失败，请重试",
     noRootNode: "没有找到根节点",
     treeNotFound: "树不存在",
+    time: "时间",
+    message: "消息",
   },
 
   // 认证相关
@@ -377,6 +379,15 @@ export default {
     storageUnmounted: "存储卸载",
     systemNotification: "系统通知",
   },
+
+  // 首页模块
+  home: {
+    // 日志消息
+    logMessages: {
+      logoutAuditFailed: "退出登录审计记录失败:",
+    },
+  },
+
   storage: {
     title: "存储管理",
     description: "管理和监控存储的创建、配置和使用",
@@ -639,6 +650,9 @@ export default {
       getObjectListFailed: "获取对象列表失败:",
       getNodeListFailed: "获取节点列表失败:",
       getStatsFailed: "获取统计信息失败:",
+      fetchStoragesError: "获取存储列表错误:",
+      submitError: "提交错误:",
+      errorResponse: "错误响应:",
     },
     addStorageSuccess: "添加存储成功",
     updateStorageSuccess: "更新存储成功",
@@ -971,7 +985,7 @@ export default {
       syncProgress: "同步进度",
     },
 
-    // 消息
+    // 消息提示
     messages: {
       taskCreated: "任务创建成功",
       taskUpdated: "任务更新成功",
@@ -986,6 +1000,7 @@ export default {
       confirmDelete: "确定要删除选中的任务吗？",
       confirmCancel: "确定要取消选中的任务吗？",
       confirmRetry: "确定要重试选中的任务吗？",
+      confirmDeleteTask: "确定要删除此任务吗？此操作不可恢复。",
       noTasksSelected: "请先选择要操作的任务",
       taskNotFound: "任务不存在",
       operationFailed: "操作失败",
@@ -994,6 +1009,9 @@ export default {
       invalidTaskStatus: "无效的任务状态",
       nodeOffline: "执行节点离线",
       taskInProgress: "任务正在执行中，无法操作",
+      getTaskLogsFailed: "获取任务日志失败",
+      pollTaskStatusFailed: "轮询任务状态失败:",
+      fetchStatsFailed: "获取统计数据失败:",
     },
 
     // 验证规则
@@ -1891,6 +1909,18 @@ export default {
     editPolicy: "编辑策略",
     testPolicy: "测试策略",
     searchNotificationTargets: "搜索通知对象...",
+
+    // 日志消息
+    logMessages: {
+      loadResourcesFailed: "加载资源失败:",
+      loadNotificationTargetsFailed: "加载通知对象失败:",
+      loadNotificationChannelsFailed: "加载通知渠道失败:",
+      loadTemplatesFailed: "加载模板失败:",
+      getAlertDefinitionsFailed: "获取告警定义数据失败:",
+      getResourceItemsFailed: "获取资源条目失败:",
+      getCompatibilityDataFailed: "获取兼容数据失败:",
+      getEventActionsFailed: "获取事件动作失败:",
+    },
 
     // 消息提示
     messages: {
@@ -2958,6 +2988,8 @@ export default {
       completeAllRequiredConfig: "请先完成所有必填配置",
       taskCreatedSuccess: "任务创建成功",
       createTaskFailed: "创建任务失败",
+      sourceInitFailed: "源端初始化失败",
+      waitingForComponentMount: "等待组件挂载",
     },
     steps: {
       selectSource: "选择源端",

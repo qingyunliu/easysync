@@ -127,7 +127,7 @@
           </template>
         </el-table-column>
 
-        <el-table-column :label="$t('alertPolicies.actions')" width="200" fixed="right">
+        <el-table-column :label="$t('alertPolicies.actions')" width="280" fixed="right">
           <template #default="{ row }">
             <el-button size="small" :type="row.enabled ? 'success' : 'info'" @click="togglePolicy(row)"
               :loading="row.toggling">
@@ -770,7 +770,7 @@ const loadResources = async () => {
     const response = await axios.get(apiUrl)
     availableResources.value = response.data.data || []
   } catch (error) {
-    console.error('加载资源失败:', error)
+    console.error(t('alertPolicies.logMessages.loadResourcesFailed'), error)
   }
 }
 
@@ -779,7 +779,7 @@ const loadNotificationTargets = async () => {
     const response = await axios.get('/api/notifications/targets')
     notificationTargets.value = response.data.targets || []
   } catch (error) {
-    console.error('加载通知对象失败:', error)
+    console.error(t('alertPolicies.logMessages.loadNotificationTargetsFailed'), error)
   }
 }
 
@@ -788,7 +788,7 @@ const loadNotificationChannels = async () => {
     const response = await axios.get('/api/notifications/channels')
     notificationChannels.value = response.data.channels || []
   } catch (error) {
-    console.error('加载通知渠道失败:', error)
+    console.error(t('alertPolicies.logMessages.loadNotificationChannelsFailed'), error)
   }
 }
 
@@ -797,7 +797,7 @@ const loadTemplates = async () => {
     const response = await axios.get('/api/alerts/templates')
     templates.value = response.data.templates || []
   } catch (error) {
-    console.error('加载模板失败:', error)
+    console.error(t('alertPolicies.logMessages.loadTemplatesFailed'), error)
   }
 }
 
@@ -817,7 +817,7 @@ const loadAlertDefinitions = async () => {
     eventResults.value = eventResultsResponse.data.event_results || []
 
   } catch (error) {
-    console.error('获取告警定义数据失败:', error)
+    console.error(t('alertPolicies.logMessages.getAlertDefinitionsFailed'), error)
   }
 }
 
@@ -827,7 +827,7 @@ const loadResourceItems = async (resourceTypeCode) => {
     const response = await axios.get(`/api/alerts/resource-items?resource_type_code=${resourceTypeCode}`)
     resourceItems.value = response.data.resource_items || []
   } catch (error) {
-    console.error('获取资源条目失败:', error)
+    console.error(t('alertPolicies.logMessages.getResourceItemsFailed'), error)
   }
 }
 
@@ -885,7 +885,7 @@ const handleNotificationChannelsChange = async () => {
     }
 
   } catch (error) {
-    console.error('获取兼容数据失败:', error)
+    console.error(t('alertPolicies.logMessages.getCompatibilityDataFailed'), error)
     ElMessage.error(t('alertPolicies.messages.getCompatibilityDataFailed'))
   }
 }
@@ -916,7 +916,7 @@ const loadEventActions = async (eventTypeCode) => {
     const response = await axios.get(`/api/alerts/event-actions?event_type_code=${eventTypeCode}`)
     eventActions.value = response.data.event_actions || []
   } catch (error) {
-    console.error('获取事件动作失败:', error)
+    console.error(t('alertPolicies.logMessages.getEventActionsFailed'), error)
   }
 }
 

@@ -368,10 +368,10 @@ const initializeChildComponents = async () => {
         await sourceSelectorRef.value.setInitialState(extractedSourceConfig.value)
         break
       } catch (error) {
-        console.error(`初始化源端选择器失败 (尝试 ${retryCount + 1}/${maxRetries}):`, error)
+        console.error(t('taskWizard.messages.sourceInitFailed', { current: retryCount + 1, max: maxRetries }), error)
       }
     } else {
-      console.log(`等待子组件挂载... (尝试 ${retryCount + 1}/${maxRetries})`, {
+      console.log(t('taskWizard.messages.waitingForComponentMount', { current: retryCount + 1, max: maxRetries }), {
         storageId: extractedSourceConfig.value?.storageId,
         sourceSelectorRef: !!sourceSelectorRef.value
       })

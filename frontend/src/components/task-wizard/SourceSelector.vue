@@ -335,7 +335,7 @@ const fetchStorages = async () => {
       ElMessage.error(t('storage.errors.fetchStoragesFailed'))
     }
   } catch (error) {
-    console.error('获取存储列表错误:', error)
+    console.error(t('storage.logMessages.fetchStoragesError'), error)
     ElMessage.error(t('storage.errors.fetchStoragesFailed'))
   }
 }
