@@ -12,7 +12,10 @@
           <template #header>
             <div class="card-header">
               <h2>{{ $t('auth.createAccount') }}</h2>
-              <ThemeToggle class="theme-toggle-inline" />
+              <div class="header-actions">
+                <LanguageIcon />
+                <ThemeToggle class="theme-toggle-inline" />
+              </div>
             </div>
           </template>
           <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-width="0"
@@ -79,6 +82,7 @@ import { ElMessage } from 'element-plus'
 import { User, Message, Lock } from '@element-plus/icons-vue'
 import axios from 'axios'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import LanguageIcon from '@/components/LanguageIcon.vue'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -229,7 +233,7 @@ const handleRegister = async () => {
 
 .register-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 430px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
@@ -308,6 +312,12 @@ const handleRegister = async () => {
 
 .theme-toggle-inline {
   margin-left: 12px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 @keyframes fadeInDown {

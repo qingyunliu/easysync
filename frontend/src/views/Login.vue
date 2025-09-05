@@ -12,7 +12,10 @@
           <template #header>
             <div class="card-header">
               <h2>{{ $t('auth.welcomeBack') }}</h2>
-              <ThemeToggle class="theme-toggle-inline" />
+              <div class="header-actions">
+                <LanguageIcon />
+                <ThemeToggle class="theme-toggle-inline" />
+              </div>
             </div>
           </template>
           <el-form :model="loginForm" :rules="rules" ref="loginFormRef" label-width="0" @submit.prevent="handleLogin">
@@ -74,6 +77,7 @@ import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import axios from 'axios'
 import ThemeToggle from '@/components/ThemeToggle.vue'
+import LanguageIcon from '@/components/LanguageIcon.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -221,7 +225,7 @@ const handleLogin = async () => {
 
 .login-card {
   width: 100%;
-  max-width: 400px;
+  max-width: 430px;
   border-radius: 10px;
   background: var(--card-bg);
   backdrop-filter: blur(10px);
@@ -343,5 +347,11 @@ const handleLogin = async () => {
 
 .theme-toggle-inline {
   margin-left: 12px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 </style>
