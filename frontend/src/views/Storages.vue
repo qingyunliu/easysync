@@ -39,7 +39,7 @@
           </div>
         </template>
 
-        <el-table :data="filteredNasStorages" style="width: 100%" v-loading="loading" :fit="false"
+        <el-table :data="filteredNasStorages" style="width: 100%; background-color: var(--card-bg)" v-loading="loading" :fit="false"
           :empty-text="$t('storage.noNasStorages')">
           <el-table-column prop="name" :label="$t('storage.name')" min-width="180" :resizable="true">
             <template #default="{ row }">
@@ -2081,6 +2081,13 @@ onUnmounted(() => {
 
 :deep(.el-table__header) {
   width: 100% !important;
+}
+
+:deep(.el-table__header th) {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
 }
 
 :deep(.el-table__body-wrapper) {

@@ -1447,6 +1447,17 @@ onUnmounted(() => {
   box-shadow: var(--card-shadow);
 }
 
+:deep(.el-table__header) {
+  width: 100% !important;
+}
+
+:deep(.el-table__header th) {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+}
+
 .pagination-container {
   text-align: right;
   border-top: 1px solid var(--border-color);

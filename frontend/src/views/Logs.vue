@@ -345,6 +345,17 @@ onMounted(() => {
   gap: 10px;
 }
 
+:deep(.el-table__header) {
+  width: 100% !important;
+}
+
+:deep(.el-table__header th) {
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-color);
+}
+
 .logs-card {
   margin-bottom: 20px;
 }

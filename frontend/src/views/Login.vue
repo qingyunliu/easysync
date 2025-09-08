@@ -41,7 +41,13 @@
             <el-form-item prop="captcha">
               <el-row :gutter="8">
                 <el-col :span="12">
-                  <el-input v-model="loginForm.captcha" maxlength="4" :placeholder="$t('auth.captcha')" />
+                  <el-input v-model="loginForm.captcha" maxlength="4" :placeholder="$t('auth.captcha')" class="custom-input">
+                    <template #prefix>
+                      <el-icon>
+                        <Key />
+                      </el-icon>
+                    </template>
+                  </el-input>
                 </el-col>
                 <el-col :span="12">
                   <img :src="captchaImg" @click="refreshCaptcha"
@@ -73,7 +79,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
-import { User, Lock } from '@element-plus/icons-vue'
+import { User, Lock, Key } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import axios from 'axios'
 import ThemeToggle from '@/components/ThemeToggle.vue'
@@ -257,6 +263,11 @@ const handleLogin = async () => {
 
 .custom-input :deep(.el-input__wrapper:hover) {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+:deep(.el-form-item__error) {
+  font-size: 12px;
+  top: 70%;
 }
 
 .login-button {
