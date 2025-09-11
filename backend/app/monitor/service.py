@@ -43,6 +43,9 @@ class MonitorService:
             # 检查告警规则
             self._check_alert_rules(node_id, metrics)
             
+            # 创建监控数据收集事件
+            self._create_monitor_event(node_id, metrics)
+            
             logger.info(f"Metrics saved for node: {node_id}")
             
             # 发送通知
@@ -159,6 +162,9 @@ class MonitorService:
                 data=system_metrics
             )
             
+            # 检查系统级告警规则
+            self._check_system_alert_rules(system_metrics)
+            
             logger.info(f"系统监控数据收集成功: {monitor_data.id}")
             return system_metrics
             
@@ -254,6 +260,124 @@ class MonitorService:
             logger.error(f"获取当前系统状态失败: {str(e)}")
             raise MonitorOperationError(f"获取当前系统状态失败: {str(e)}")
         
+    def _check_alert_rules(self, node_id: str, metrics: Dict[str, Any]) -> None:
+        """检查告警规则并触发告警
+        
+        Args:
+            node_id: 节点ID
+            metrics: 监控指标
+        """
+        try:
+            from backend.app.alerts.evaluator import AlertEvaluator
+            
+            # 创建监控数据对象
+            monitor_data = MonitorData(
+                node_id=node_id,
+                data=metrics,
+                timestamp=datetime.utcnow()
+            )
+            
+            # 使用告警评估器评估监控数据
+            alert_evaluator = AlertEvaluator()
+            triggered_alerts = alert_evaluator.evaluate_monitor_data(monitor_data)
+            
+            # 处理触发的告警
+            for alert_info in triggered_alerts:
+                policy = alert_info['policy']
+                triggered_at = alert_info['triggered_at']
+                
+                # 创建告警实例
+                alert_instance = alert_evaluator.create_alert_instance(
+                    policy, monitor_data=monitor_data, triggered_at=triggered_at
+                )
+                
+                if alert_instance:
+                    # 发送通知
+                    from backend.app.alerts.services import AlertService
+                    alert_service = AlertService()
+                    alert_service._send_notifications(policy, alert_instance)
+                    
+                    logger.info(f"Alert triggered: {policy.name} for node {node_id}")
+            
+        except Exception as e:
+            logger.error(f"Error checking alert rules for node {node_id}: {e}")
+    
+    def _check_system_alert_rules(self, system_metrics: Dict[str, Any]) -> None:
+        """检查系统级告警规则并触发告警
+        
+        Args:
+            system_metrics: 系统监控指标
+        """
+        try:
+            from backend.app.alerts.evaluator import AlertEvaluator
+            
+            # 创建系统监控数据对象
+            monitor_data = MonitorData(
+                node_id=None,  # 系统级别
+                client_id=None,  # 系统级别
+                data={'system': system_metrics},
+                timestamp=datetime.utcnow()
+            )
+            
+            # 使用告警评估器评估系统监控数据
+            alert_evaluator = AlertEvaluator()
+            triggered_alerts = alert_evaluator.evaluate_monitor_data(monitor_data)
+            
+            # 处理触发的告警
+            for alert_info in triggered_alerts:
+                policy = alert_info['policy']
+                triggered_at = alert_info['triggered_at']
+                
+                # 创建告警实例
+                alert_instance = alert_evaluator.create_alert_instance(
+                    policy, monitor_data=monitor_data, triggered_at=triggered_at
+                )
+                
+                if alert_instance:
+                    # 发送通知
+                    from backend.app.alerts.services import AlertService
+                    alert_service = AlertService()
+                    alert_service._send_notifications(policy, alert_instance)
+                    
+                    logger.info(f"System alert triggered: {policy.name}")
+            
+        except Exception as e:
+            logger.error(f"Error checking system alert rules: {e}")
+    
+    def _create_monitor_event(self, node_id: str, metrics: Dict[str, Any]) -> None:
+        """创建监控数据收集事件"""
+        try:
+            from backend.app.events.service import EventService
+            
+            event_service = EventService()
+            
+            # 获取节点信息
+            node = Node.query.get(node_id)
+            if not node:
+                return
+            
+            # 创建监控数据收集事件
+            event_service.create_event(
+                user_id=node.user_id,
+                event_type='monitor',
+                event_action='data_collect',
+                event_result='success',
+                message=f"节点 {node.name} 监控数据收集成功",
+                details={
+                    'node_id': node_id,
+                    'node_name': node.name,
+                    'metrics_summary': {
+                        'cpu_usage': metrics.get('cpu', {}).get('percent', 0),
+                        'memory_usage': metrics.get('memory', {}).get('percent', 0),
+                        'disk_usage': metrics.get('disk', {}).get('percent', 0)
+                    }
+                },
+                node_id=node_id
+            )
+            
+        except Exception as e:
+            logger.error(f"Error creating monitor event: {e}")
+    
     def _validate_metrics(self, metrics: Dict[str, Any]) -> None:
         """验证监控指标
         

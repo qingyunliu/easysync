@@ -1,4 +1,9 @@
 import logging
+import base64
+import hmac
+import hashlib
+import time
+import requests
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional
 from sqlalchemy import and_, or_, desc
@@ -896,46 +901,115 @@ class AlertService:
     def _send_email_notification(self, target_data: dict, content: dict):
         """发送邮件通知"""
         try:
-            # 这里实现邮件发送逻辑
-            # 可以使用SMTP或其他邮件服务
-            logger.info(f"发送邮件通知: {content['title']}")
-            # TODO: 实现实际的邮件发送
+            # 使用通知服务发送邮件
+            self.notification_service._send_email_notification(
+                email=target_data.get('email'),
+                subject=content['title'],
+                content=content['content']
+            )
+            logger.info(f"发送邮件通知成功: {content['title']}")
         except Exception as e:
             logger.error(f"发送邮件通知失败: {e}")
 
     def _send_sms_notification(self, target_data: dict, content: dict):
         """发送短信通知"""
         try:
-            # 这里实现短信发送逻辑
-            logger.info(f"发送短信通知: {content['content']}")
-            # TODO: 实现实际的短信发送
+            # 使用通知服务发送短信
+            self.notification_service._send_sms_notification(
+                phone=target_data.get('phone'),
+                params={
+                    'title': content['title'],
+                    'content': content['content']
+                }
+            )
+            logger.info(f"发送短信通知成功: {content['content']}")
         except Exception as e:
             logger.error(f"发送短信通知失败: {e}")
 
     def _send_dingtalk_notification(self, target_data: dict, content: dict):
         """发送钉钉通知"""
         try:
-            # 这里实现钉钉通知逻辑
-            logger.info(f"发送钉钉通知: {content['title']}")
-            # TODO: 实现实际的钉钉通知
+            # 使用通知服务发送钉钉通知
+            webhook_url = target_data.get('webhook_url')
+            secret = target_data.get('secret', '')
+            
+            # 构建钉钉消息
+            message = {
+                "msgtype": "text",
+                "text": {
+                    "content": f"{content['title']}\n\n{content['content']}"
+                }
+            }
+            
+            # 发送请求
+            
+            if secret:
+                timestamp = str(round(time.time() * 1000))
+                string_to_sign = f"{timestamp}\n{secret}"
+                sign = hmac.new(secret.encode('utf-8'), string_to_sign.encode('utf-8'), hashlib.sha256).digest()
+                sign = base64.b64encode(sign).decode('utf-8')
+                webhook_url += f"&timestamp={timestamp}&sign={sign}"
+            
+            response = requests.post(webhook_url, json=message, timeout=30)
+            response.raise_for_status()
+            
+            logger.info(f"发送钉钉通知成功: {content['title']}")
         except Exception as e:
             logger.error(f"发送钉钉通知失败: {e}")
 
     def _send_wechat_notification(self, target_data: dict, content: dict):
         """发送企业微信通知"""
         try:
-            # 这里实现企业微信通知逻辑
-            logger.info(f"发送企业微信通知: {content['title']}")
-            # TODO: 实现实际的企业微信通知
+            # 使用通知服务发送企业微信通知
+            webhook_url = target_data.get('webhook_url')
+            
+            # 构建企业微信消息
+            message = {
+                "msgtype": "text",
+                "text": {
+                    "content": f"{content['title']}\n\n{content['content']}"
+                }
+            }
+            
+            # 发送请求
+            response = requests.post(webhook_url, json=message, timeout=30)
+            response.raise_for_status()
+            
+            logger.info(f"发送企业微信通知成功: {content['title']}")
         except Exception as e:
             logger.error(f"发送企业微信通知失败: {e}")
 
     def _send_webhook_notification(self, target_data: dict, content: dict):
         """发送Webhook通知"""
         try:
-            # 这里实现Webhook通知逻辑
-            logger.info(f"发送Webhook通知: {content['title']}")
-            # TODO: 实现实际的Webhook通知
+            # 使用通知服务发送Webhook通知
+            webhook_url = target_data.get('webhook_url')
+            secret = target_data.get('secret', '')
+            
+            # 构建Webhook数据
+            data = {
+                'title': content['title'],
+                'content': content['content'],
+                'timestamp': datetime.utcnow().isoformat(),
+                'type': 'alert'
+            }
+            
+            # 发送请求
+            headers = {'Content-Type': 'application/json'}
+            
+            if secret:
+                
+                timestamp = str(round(time.time() * 1000))
+                string_to_sign = f"{timestamp}\n{secret}"
+                sign = hmac.new(secret.encode('utf-8'), string_to_sign.encode('utf-8'), hashlib.sha256).digest()
+                sign = base64.b64encode(sign).decode('utf-8')
+                headers['X-Signature'] = sign
+                headers['X-Timestamp'] = timestamp
+            
+            response = requests.post(webhook_url, json=data, headers=headers, timeout=30)
+            response.raise_for_status()
+            
+            logger.info(f"发送Webhook通知成功: {content['title']}")
         except Exception as e:
             logger.error(f"发送Webhook通知失败: {e}")
     

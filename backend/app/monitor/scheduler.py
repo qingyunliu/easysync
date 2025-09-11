@@ -70,6 +70,7 @@ class MonitorScheduler:
                 
                 for user in active_users:
                     try:
+                        # 收集系统监控数据（会自动触发告警检查）
                         self.monitor_service.collect_system_metrics(user.id)
                         logger.info(f"用户 {user.username} 的系统监控数据收集成功")
                     except Exception as e:

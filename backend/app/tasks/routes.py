@@ -8,6 +8,7 @@ import logging
 from .errors import TaskError, TaskNotFoundError, TaskOperationError, TaskValidationError, TaskStateError
 from backend.app.auth.services import AuditService
 from backend.app.notifications.services import NotificationService
+from backend.app.events.middleware import record_api_event
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ def get_task(task_id):
 
 @tasks_bp.route('', methods=['POST'])
 @jwt_required()
+@record_api_event('task', 'create')
 def create_task():
     try:
         data = request.get_json()
@@ -167,6 +169,7 @@ def create_task():
 
 @tasks_bp.route('/<string:task_id>/status', methods=['PUT'])
 @jwt_required()
+@record_api_event('task', 'update_status')
 def update_task_status(task_id):
     """更新任务状态"""
     user_id = get_jwt_identity()
@@ -226,6 +229,7 @@ def get_pending_tasks():
 
 @tasks_bp.route('/<string:task_id>/cancel', methods=['POST'])
 @jwt_required()
+@record_api_event('task', 'cancel')
 def cancel_task(task_id):
     """取消任务"""
     user_id = get_jwt_identity()
@@ -256,6 +260,7 @@ def cancel_task(task_id):
 
 @tasks_bp.route('/<string:task_id>/retry', methods=['POST'])
 @jwt_required()
+@record_api_event('task', 'retry')
 def retry_task(task_id):
     """重试任务"""
     user_id = get_jwt_identity()

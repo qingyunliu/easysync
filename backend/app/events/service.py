@@ -45,6 +45,7 @@ class EventService:
     
     def __init__(self):
         self.alert_evaluator = AlertEvaluator()
+        from backend.app.alerts.services import AlertService
         self.alert_service = AlertService()
     
     def create_event(self, user_id: str, event_type: str, event_action: str, 

@@ -111,6 +111,9 @@ class TaskService:
         # 发送状态变更通知
         self._send_task_notification(task, previous_status)
         
+        # 创建任务事件（用于告警触发）
+        self._create_task_event(task, previous_status)
+        
         db.session.commit()
         
         # 记录状态变化日志
@@ -522,6 +525,72 @@ class TaskService:
             
         except Exception as e:
             logger.error(f"发送任务通知失败: {str(e)}")
+    
+    def _create_task_event(self, task: Task, previous_status: str) -> None:
+        """创建任务事件用于告警触发"""
+        try:
+            from backend.app.events.service import EventService
+            
+            event_service = EventService()
+            current_status = task.status
+            
+            # 定义状态到事件动作的映射
+            status_to_action = {
+                'running': 'start',
+                'completed': 'complete',
+                'failed': 'fail',
+                'cancelled': 'cancel',
+                'paused': 'pause',
+                'resumed': 'resume'
+            }
+            
+            # 定义状态到事件结果的映射
+            status_to_result = {
+                'running': 'success',
+                'completed': 'success',
+                'failed': 'failed',
+                'cancelled': 'cancelled',
+                'paused': 'success',
+                'resumed': 'success'
+            }
+            
+            # 只有状态发生变化时才创建事件
+            if current_status != previous_status and current_status in status_to_action:
+                event_action = status_to_action[current_status]
+                event_result = status_to_result[current_status]
+                
+                # 构建事件消息
+                message = f"任务 {task.name} 状态从 {previous_status} 变更为 {current_status}"
+                if task.error:
+                    message += f"，错误信息: {task.error}"
+                
+                # 构建事件详情
+                details = {
+                    'task_id': task.id,
+                    'task_name': task.name,
+                    'task_type': task.type,
+                    'previous_status': previous_status,
+                    'current_status': current_status,
+                    'progress': task.progress,
+                    'error': task.error,
+                    'node_id': task.node_id,
+                    'user_id': task.user_id
+                }
+                
+                # 创建任务事件
+                event_service.create_task_event(
+                    user_id=task.user_id,
+                    event_action=event_action,
+                    event_result=event_result,
+                    message=message,
+                    details=details,
+                    node_id=task.node_id
+                )
+                
+                logger.info(f"Task event created: {task.id} - {event_action}.{event_result}")
+                
+        except Exception as e:
+            logger.error(f"创建任务事件失败: {str(e)}")
     
     def retry_failed_task(self, task_id: str, user_id: str) -> Task:
         """重试失败的任务"""

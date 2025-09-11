@@ -12,6 +12,7 @@ import uuid
 from ..utils.ssh_utils import SSHClient
 from ..utils import utils
 from backend.app.notifications.services import NotificationService
+from backend.app.events.middleware import record_client_event
 
 logger = logging.getLogger(__name__)
 notification_service = NotificationService()
@@ -30,6 +31,7 @@ def get_clients():
 
 @clients_bp.route('', methods=['POST'])
 @jwt_required()
+@record_client_event('create')
 def create_client():
     """创建新的服务器"""
     current_user_id = get_jwt_identity()
@@ -96,6 +98,7 @@ def create_client():
 
 @clients_bp.route('/<string:client_id>', methods=['PUT'])
 @jwt_required()
+@record_client_event('update', lambda client_id: client_id)
 def update_client(client_id):
     """更新服务器信息"""
     current_user_id = get_jwt_identity()
@@ -134,6 +137,7 @@ def update_client(client_id):
 
 @clients_bp.route('/<string:client_id>', methods=['DELETE'])
 @jwt_required()
+@record_client_event('delete', lambda client_id: client_id)
 def delete_client(client_id):
     """删除服务器"""
     current_user_id = get_jwt_identity()

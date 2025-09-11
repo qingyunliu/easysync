@@ -13,6 +13,7 @@ from .service import NodeService
 from .errors import NodeError, NodeNotFoundError, NodeUnhealthyError, NodeOperationError
 from backend.app.auth.services import AuditService
 from backend.app.notifications.services import NotificationService
+from backend.app.events.middleware import record_agent_event
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,7 @@ def handle_node_error(error):
 
 @nodes_bp.route('', methods=['POST'])
 @jwt_required()
+@record_agent_event('create')
 def create_node():
     """创建节点"""
     try:
@@ -265,6 +267,7 @@ def get_node(node_id):
 
 @nodes_bp.route('/<string:node_id>', methods=['PUT'])
 @jwt_required()
+@record_agent_event('update', lambda node_id: node_id)
 def update_node(node_id):
     """更新节点"""
     try:
@@ -351,6 +354,7 @@ def update_node(node_id):
 
 @nodes_bp.route('/<string:node_id>', methods=['DELETE'])
 @jwt_required()
+@record_agent_event('delete', lambda node_id: node_id)
 def delete_node(node_id):
     """删除节点"""
     current_user_id = get_jwt_identity()

@@ -13,6 +13,7 @@ from backend import db
 from backend.app.utils.email_utils import send_email
 from backend.app.auth.services import AuditService
 from backend.app.notifications.services import NotificationService
+from backend.app.events.middleware import record_api_event
 
 user_service = UserService()
 notification_service = NotificationService()
@@ -41,6 +42,7 @@ def validate_image(file):
         return False
 
 @users_bp.route('', methods=['POST'])
+@record_api_event('user', 'create')
 def create_user():
     """创建新用户"""
     data = request.get_json()
@@ -185,6 +187,7 @@ def get_current_user():
 
 @users_bp.route('/<string:user_id>', methods=['PUT'])
 @jwt_required()
+@record_api_event('user', 'update')
 def update_user(user_id):
     """更新用户信息"""
     data = request.get_json()
@@ -240,6 +243,7 @@ def update_user(user_id):
 
 @users_bp.route('/<string:user_id>', methods=['DELETE'])
 @jwt_required()
+@record_api_event('user', 'delete')
 def delete_user(user_id):
     """删除用户"""
     try:
