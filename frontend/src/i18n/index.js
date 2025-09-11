@@ -16,6 +16,17 @@ function getDefaultLocale() {
   return "en-US";
 }
 
+// 初始化侧边栏宽度
+function initSidebarWidth() {
+  const locale = getDefaultLocale();
+  const root = document.documentElement;
+  if (locale === "zh-CN") {
+    root.style.setProperty('--sidebar-width', '200px');
+  } else {
+    root.style.setProperty('--sidebar-width', '230px');
+  }
+}
+
 const i18n = createI18n({
   legacy: false, // 使用 Composition API
   locale: getDefaultLocale(),
@@ -28,6 +39,9 @@ const i18n = createI18n({
   silentTranslationWarn: process.env.NODE_ENV === "production",
 });
 
+// 初始化侧边栏宽度
+initSidebarWidth();
+
 // 语言切换函数
 export function setLocale(locale) {
   i18n.global.locale.value = locale;
@@ -35,6 +49,14 @@ export function setLocale(locale) {
 
   // 设置 HTML lang 属性
   document.documentElement.lang = locale;
+
+  // 根据语言动态设置侧边栏宽度
+  const root = document.documentElement;
+  if (locale === "zh-CN") {
+    root.style.setProperty('--sidebar-width', '200px');
+  } else {
+    root.style.setProperty('--sidebar-width', '230px');
+  }
 
   // 更新Element Plus的locale
   if (locale === "zh-CN") {

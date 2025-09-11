@@ -147,6 +147,14 @@ app.use(i18n);
 const currentLocale = localStorage.getItem("locale") || "zh-CN";
 const elementLocale = currentLocale === "zh-CN" ? zhCn : en;
 
+// 根据当前语言设置侧边栏宽度
+const root = document.documentElement;
+if (currentLocale === "zh-CN") {
+  root.style.setProperty('--sidebar-width', '200px');
+} else {
+  root.style.setProperty('--sidebar-width', '230px');
+}
+
 // 配置Element Plus
 app.use(ElementPlus, {
   locale: elementLocale,

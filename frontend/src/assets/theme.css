@@ -840,6 +840,7 @@ body {
   }
 }
 
+/* 英文语言下的侧边栏宽度设置 - 通过JavaScript动态控制 */
 html[lang="en-US"][data-theme="light"],
 html[lang="en-US"][data-theme="dark"] {
   --sidebar-width: 230px;
