@@ -646,7 +646,7 @@ class NotificationService:
         
         return "\n".join(content)
     
-    def _send_email_notification(self, email: str, subject: str, content: str):
+    def _send_email_notification_with_params(self, email: str, subject: str, content: str):
         """
         发送邮件通知
         
@@ -657,21 +657,21 @@ class NotificationService:
         """
         try:
             msg = MIMEMultipart()
-            msg['From'] = current_app.config['MAIL_USERNAME']
+            msg['From'] = current_app.config['SMTP_FROM']
             msg['To'] = email
             msg['Subject'] = subject
             
             msg.attach(MIMEText(content, 'plain'))
             
             with smtplib.SMTP(
-                current_app.config['MAIL_SERVER'],
-                current_app.config['MAIL_PORT']
+                current_app.config['SMTP_SERVER'],
+                current_app.config['SMTP_PORT']
             ) as server:
-                if current_app.config['MAIL_USE_TLS']:
+                if current_app.config['SMTP_USE_TLS']:
                     server.starttls()
                 server.login(
-                    current_app.config['MAIL_USERNAME'],
-                    current_app.config['MAIL_PASSWORD']
+                    current_app.config['SMTP_USER'],
+                    current_app.config['SMTP_PASSWORD']
                 )
                 server.send_message(msg)
             

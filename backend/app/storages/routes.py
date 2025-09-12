@@ -237,15 +237,15 @@ def delete_storage(storage_id):
 
         storage_name = storage.name
         storage_type = storage.type
+        
+        # 发送存储删除通知（在删除之前发送）
+        notification_service.notify_storage_deleted(
+            user_id=user_id,
+            storage_name=storage_name,
+            storage_type=storage_type
+        )
+        
         storage_service.delete_storage(storage_id)
-            
-        # 发送存储删除通知
-        if storage:
-            notification_service.notify_storage_deleted(
-                user_id=user_id,
-                storage_name=storage_name,
-                storage_type=storage_type
-            )
         
         AuditService.log_storage_operation(
             user_id=user_id,

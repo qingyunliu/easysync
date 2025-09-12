@@ -437,23 +437,59 @@ class StorageService:
             return False
         
         try:
-            # 记录存储信息用于通知
+            # 记录存储信息用于日志
             storage_name = storage.name
             storage_type = storage.type
             
+            # 检查是否有任务引用此存储
+            from backend.app.models.task import Task
+            related_tasks = Task.query.filter(
+                (Task.source_storage_id == storage_id) | 
+                (Task.target_storage_id == storage_id)
+            ).all()
+            
+            if related_tasks:
+                # 如果有相关任务，先处理这些任务
+                from backend.app.models.task import TaskLog
+                
+                for task in related_tasks:
+                    # 先删除任务相关的日志
+                    TaskLog.query.filter_by(task_id=task.id).delete()
+                    logger.info(f"Deleted logs for task {task.id}")
+                    
+                    if task.status in ['running', 'assigned']:
+                        # 如果任务正在运行，先取消
+                        task.status = 'cancelled'
+                        task.error = f'存储 {storage_name} 已删除，任务被取消'
+                    elif task.status in ['pending', 'paused']:
+                        # 如果任务未运行，直接取消
+                        task.status = 'cancelled'
+                        task.error = f'存储 {storage_name} 已删除，任务被取消'
+                    
+                    # 更新存储引用为 None（如果允许的话）
+                    if task.source_storage_id == storage_id:
+                        task.source_storage_id = None
+                    if task.target_storage_id == storage_id:
+                        # 目标存储不能为 None，需要特殊处理
+                        # 这里我们选择删除这些任务，因为它们无法继续
+                        db.session.delete(task)
+                        logger.info(f"Deleted task {task.id} due to storage deletion")
+                
+                # 提交任务更新
+                db.session.commit()
+                logger.info(f"Processed {len(related_tasks)} related tasks before deleting storage")
+            
+            # 删除存储
             db.session.delete(storage)
             db.session.commit()
-            
-            # 发送删除成功通知
-            self.notification_service.notify_storage_deleted(
-                user_id=g.user.id,
-                storage_name=storage_name
-            )
             
             logger.info(f"Storage deleted: {storage_id} - {storage_name}")
             return True
             
         except Exception as e:
+            # 回滚事务
+            db.session.rollback()
+            
             # 发送删除失败通知
             self.notification_service.notify_storage_error(
                 user_id=g.user.id,

@@ -170,6 +170,7 @@ class AlertPolicy(BaseModel):
     level = db.Column(db.String(20), default='warning', comment='告警级别: info, warning, error, critical')
     
     # 通知配置
+    notification_channels = db.Column(db.JSON, comment='通知渠道配置')
     notification_targets = db.Column(db.JSON, comment='通知目标配置')
     retry_count = db.Column(db.Integer, default=3, comment='重试次数')
     rate_limit = db.Column(db.Integer, default=300, comment='频率限制(秒)')
@@ -204,6 +205,7 @@ class AlertPolicy(BaseModel):
             'event_results': self.event_results,
             'monitored_resources': self.monitored_resources,
             'level': self.level,
+            'notification_channels': self.notification_channels,
             'notification_targets': self.notification_targets,
             'retry_count': self.retry_count,
             'rate_limit': self.rate_limit,

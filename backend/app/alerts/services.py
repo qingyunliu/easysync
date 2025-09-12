@@ -172,6 +172,7 @@ class AlertService:
                 event_results=data.get('event_results'),
                 monitored_resources=data.get('monitored_resources'),
                 level=data.get('level', 'warning'),
+                notification_channels=data.get('notification_channels'),
                 notification_targets=data.get('notification_targets'),
                 retry_count=data.get('retry_count', 3),
                 rate_limit=data.get('rate_limit', 300),
@@ -768,6 +769,183 @@ class AlertService:
                 logger.info(f"策略 {policy.id} 没有关联模板，使用默认通知内容")
                 notification_content = self._create_default_notification_content(policy, alert_instance)
             
+            # 获取通知渠道
+            notification_channels = policy.notification_channels or []
+            notification_targets = policy.notification_targets or []
+            
+            logger.info(f"策略 {policy.id} 的通知渠道: {notification_channels}")
+            logger.info(f"策略 {policy.id} 的通知目标: {notification_targets}")
+            
+            if not notification_channels or not notification_targets:
+                logger.warning(f"策略 {policy.id} 没有配置通知渠道或目标")
+                return
+            
+            # 获取渠道配置
+            channel_configs = self._get_channel_configs(notification_channels)
+            
+            # 获取目标配置
+            target_configs = self._get_target_configs(notification_targets)
+            
+            # 发送通知
+            for channel_config in channel_configs:
+                for target_config in target_configs:
+                    self._send_notification_via_channel(
+                        channel_config, target_config, notification_content
+                    )
+                    
+        except Exception as e:
+            logger.error(f"发送告警通知失败: {e}")
+    
+    def _get_channel_configs(self, channel_ids: list) -> list:
+        """获取渠道配置"""
+        try:
+            channels = NotificationChannel.query.filter(
+                NotificationChannel.id.in_(channel_ids),
+                NotificationChannel.enabled == True
+            ).all()
+            
+            return [channel.to_dict() for channel in channels]
+            
+        except Exception as e:
+            logger.error(f"获取渠道配置失败: {e}")
+            return []
+    
+    def _get_target_configs(self, target_ids: list) -> list:
+        """获取目标配置"""
+        try:
+            targets = NotificationTarget.query.filter(
+                NotificationTarget.id.in_(target_ids),
+                NotificationTarget.enabled == True
+            ).all()
+            
+            return [target.to_dict() for target in targets]
+            
+        except Exception as e:
+            logger.error(f"获取目标配置失败: {e}")
+            return []
+    
+    def _send_notification_via_channel(self, channel_config: dict, target_config: dict, content: dict):
+        """通过渠道发送通知"""
+        try:
+            channel_type = channel_config.get('channel_type')
+            target_type = target_config.get('target_type')
+            
+            # 检查渠道和目标类型是否匹配
+            if channel_type != target_type:
+                logger.warning(f"渠道类型 {channel_type} 与目标类型 {target_type} 不匹配")
+                return
+            
+            if channel_type == 'email':
+                self._send_email_via_channel(channel_config, target_config, content)
+            elif channel_type == 'sms':
+                self._send_sms_via_channel(channel_config, target_config, content)
+            elif channel_type == 'dingtalk':
+                self._send_dingtalk_via_channel(channel_config, target_config, content)
+            elif channel_type == 'webhook':
+                self._send_webhook_via_channel(channel_config, target_config, content)
+            else:
+                logger.warning(f"不支持的通知渠道类型: {channel_type}")
+                
+        except Exception as e:
+            logger.error(f"通过渠道发送通知失败: {e}")
+    
+    def _send_email_via_channel(self, channel_config: dict, target_config: dict, content: dict):
+        """通过邮件渠道发送通知"""
+        try:
+            # 从渠道配置中获取SMTP配置
+            smtp_config = channel_config.get('config', {})
+            email = target_config.get('target_config', {}).get('email')
+            
+            if not email:
+                logger.error("目标配置中缺少邮件地址")
+                return
+            
+            # 使用渠道的SMTP配置发送邮件
+            self.notification_service._send_email_with_smtp_config(
+                smtp_config, email, content['title'], content['content']
+            )
+            
+            logger.info(f"通过渠道 {channel_config.get('name')} 发送邮件成功: {email}")
+            
+        except Exception as e:
+            logger.error(f"通过邮件渠道发送失败: {e}")
+    
+    def _send_sms_via_channel(self, channel_config: dict, target_config: dict, content: dict):
+        """通过短信渠道发送通知"""
+        try:
+            # 从渠道配置中获取短信配置
+            sms_config = channel_config.get('config', {})
+            phone = target_config.get('target_config', {}).get('phone')
+            
+            if not phone:
+                logger.error("目标配置中缺少手机号码")
+                return
+            
+            # 使用渠道的短信配置发送
+            self.notification_service._send_sms_with_config(
+                sms_config, phone, content['content']
+            )
+            
+            logger.info(f"通过渠道 {channel_config.get('name')} 发送短信成功: {phone}")
+            
+        except Exception as e:
+            logger.error(f"通过短信渠道发送失败: {e}")
+    
+    def _send_dingtalk_via_channel(self, channel_config: dict, target_config: dict, content: dict):
+        """通过钉钉渠道发送通知"""
+        try:
+            # 从渠道配置中获取钉钉配置
+            dingtalk_config = channel_config.get('config', {})
+            webhook_url = dingtalk_config.get('webhook_url')
+            secret = dingtalk_config.get('secret')
+            
+            if not webhook_url:
+                logger.error("渠道配置中缺少钉钉Webhook URL")
+                return
+            
+            # 使用渠道的钉钉配置发送
+            self.notification_service._send_dingtalk_with_config(
+                webhook_url, secret, content['title'], content['content']
+            )
+            
+            logger.info(f"通过渠道 {channel_config.get('name')} 发送钉钉消息成功")
+            
+        except Exception as e:
+            logger.error(f"通过钉钉渠道发送失败: {e}")
+    
+    def _send_webhook_via_channel(self, channel_config: dict, target_config: dict, content: dict):
+        """通过Webhook渠道发送通知"""
+        try:
+            # 从渠道配置中获取Webhook配置
+            webhook_config = channel_config.get('config', {})
+            webhook_url = webhook_config.get('url')
+            secret = webhook_config.get('secret')
+            
+            if not webhook_url:
+                logger.error("渠道配置中缺少Webhook URL")
+                return
+            
+            # 使用渠道的Webhook配置发送
+            self.notification_service._send_webhook_with_config(
+                webhook_url, secret, content
+            )
+            
+            logger.info(f"通过渠道 {channel_config.get('name')} 发送Webhook成功")
+            
+        except Exception as e:
+            logger.error(f"通过Webhook渠道发送失败: {e}")
+    
+    def _send_notifications_old(self, policy: AlertPolicy, alert_instance: AlertInstance):
+        """发送告警通知（旧版本，保留兼容性）"""
+        try:
+            # 渲染通知内容
+            notification_content = self.render_policy_notification(policy.id, alert_instance)
+            
+            if not notification_content:
+                # 如果没有模板，创建默认通知内容
+                logger.info(f"策略 {policy.id} 没有关联模板，使用默认通知内容")
+                notification_content = self._create_default_notification_content(policy, alert_instance)
+            
             # 获取通知目标
             notification_targets = policy.notification_targets or []
             
@@ -901,13 +1079,19 @@ class AlertService:
     def _send_email_notification(self, target_data: dict, content: dict):
         """发送邮件通知"""
         try:
-            # 使用通知服务发送邮件
-            self.notification_service._send_email_notification(
-                email=target_data.get('email'),
-                subject=content['title'],
-                content=content['content']
+            # 从通知目标配置中获取邮件地址
+            email = target_data.get('email')
+            if not email:
+                logger.error("通知目标配置中缺少邮件地址")
+                return
+            
+            # 使用通知服务发送邮件 - 使用正确的方法名
+            self.notification_service._send_email_notification_with_params(
+                email,
+                content['title'],
+                content['content']
             )
-            logger.info(f"发送邮件通知成功: {content['title']}")
+            logger.info(f"发送邮件通知成功: {content['title']} -> {email}")
         except Exception as e:
             logger.error(f"发送邮件通知失败: {e}")
 
