@@ -326,12 +326,17 @@ class AlertService:
         # 根据策略类型创建测试实例
         if policy.policy_type == 'event':
             # 事件告警测试
+            event_action = policy.event_actions[0] if policy.event_actions else 'test'
+            metric_name = f"{policy.event_type}.{event_action}"
+            alert_type = f"{policy.event_type}_{event_action}" if policy.event_type else None
+            
             test_instance = AlertInstance(
                 policy_id=policy.id,
                 alert_name=f"测试事件告警 - {policy.name}",
+                alert_type=alert_type,
                 severity=policy.level,
                 status='firing',
-                metric_name=f"{policy.event_type}.{policy.event_actions[0] if policy.event_actions else 'test'}",
+                metric_name=metric_name,
                 current_value=0,
                 threshold_value=0,
                 labels={
@@ -350,12 +355,29 @@ class AlertService:
             )
         else:
             # 资源告警测试
+            metric_name = policy.alert_items[0] if policy.alert_items else 'test_metric'
+            # 推断告警类型
+            metric_lower = metric_name.lower()
+            if 'cpu' in metric_lower:
+                alert_type = 'cpu_high'
+            elif 'memory' in metric_lower:
+                alert_type = 'memory_high'
+            elif 'disk' in metric_lower:
+                alert_type = 'disk_high'
+            elif 'load' in metric_lower:
+                alert_type = 'load_high'
+            elif 'network' in metric_lower:
+                alert_type = 'network_high'
+            else:
+                alert_type = None
+            
             test_instance = AlertInstance(
                 policy_id=policy.id,
                 alert_name=f"测试资源告警 - {policy.name}",
+                alert_type=alert_type,
                 severity=policy.level,
                 status='firing',
-                metric_name=policy.alert_items[0] if policy.alert_items else 'test_metric',
+                metric_name=metric_name,
                 current_value=100.0,
                 threshold_value=80.0,
                 labels={

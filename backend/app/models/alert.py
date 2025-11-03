@@ -227,6 +227,7 @@ class AlertInstance(BaseModel):
     
     # 告警信息
     alert_name = db.Column(db.String(200), nullable=False, comment='告警名称')
+    alert_type = db.Column(db.String(50), nullable=True, index=True, comment='告警类型: cpu_high, memory_high, disk_high, load_high, network_high等')
     severity = db.Column(db.String(20), nullable=False, comment='告警级别')
     status = db.Column(db.String(20), default='firing', comment='告警状态: firing, resolved, suppressed')
     
@@ -254,6 +255,7 @@ class AlertInstance(BaseModel):
         data.update({
             'policy_id': self.policy_id,
             'alert_name': self.alert_name,
+            'alert_type': self.alert_type,
             'severity': self.severity,
             'status': self.status,
             'metric_name': self.metric_name,

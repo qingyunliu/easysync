@@ -18,6 +18,27 @@ class AlertEvaluator:
     def __init__(self):
         self.logger = logging.getLogger(__name__)
     
+    def _infer_alert_type(self, metric_name: str) -> Optional[str]:
+        """根据指标名称推断告警类型"""
+        if not metric_name:
+            return None
+        
+        metric_lower = metric_name.lower()
+        
+        if 'cpu' in metric_lower or 'cpu_percent' in metric_lower:
+            return 'cpu_high'
+        elif 'memory' in metric_lower or 'memory_percent' in metric_lower:
+            return 'memory_high'
+        elif 'disk' in metric_lower or 'disk_percent' in metric_lower:
+            return 'disk_high'
+        elif 'load' in metric_lower or 'load_average' in metric_lower:
+            return 'load_high'
+        elif 'network' in metric_lower:
+            return 'network_high'
+        else:
+            # 对于事件类型，使用 event_type 作为基础
+            return None  # 事件告警类型会在创建时单独处理
+    
     def evaluate_monitor_data(self, monitor_data: MonitorData) -> List[Dict[str, Any]]:
         """评估监控数据，返回触发的告警策略"""
         triggered_alerts = []
@@ -336,12 +357,17 @@ class AlertEvaluator:
                 db.session.commit()
                 return existing_instance
             
+            # 获取指标名称并推断告警类型
+            metric_name = policy.alert_items[0] if policy.alert_items else 'unknown'
+            alert_type = self._infer_alert_type(metric_name)
+            
             # 创建新的告警实例
             instance = AlertInstance(
                 policy_id=policy.id,
                 alert_name=policy.name,
+                alert_type=alert_type,
                 severity=policy.level,
-                metric_name=policy.alert_items[0] if policy.alert_items else 'unknown',
+                metric_name=metric_name,
                 current_value=self._get_metric_value(monitor_data, policy.alert_items[0]) if policy.alert_items else 0,
                 threshold_value=policy.trigger_rules.get(policy.alert_items[0], {}).get('threshold', 0) if policy.alert_items else 0,
                 starts_at=triggered_at,
@@ -393,12 +419,16 @@ class AlertEvaluator:
                 db.session.commit()
                 return existing_instance
             
-            # 创建新的告警实例
+            # 创建新的告警实例（事件告警类型使用事件类型）
+            metric_name = f"{event.event_type}.{event.event_action}"
+            alert_type = f"{event.event_type}_{event.event_action}" if event.event_type else None
+            
             instance = AlertInstance(
                 policy_id=policy.id,
                 alert_name=policy.name,
+                alert_type=alert_type,
                 severity=policy.level,
-                metric_name=f"{event.event_type}.{event.event_action}",
+                metric_name=metric_name,
                 current_value=0,  # 事件告警没有数值
                 threshold_value=0,
                 starts_at=triggered_at,
