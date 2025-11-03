@@ -681,6 +681,107 @@ class NotificationService:
             logger.error(f"发送邮件通知失败: {str(e)}")
             raise
     
+    def _send_email_with_smtp_config(self, smtp_config: dict, email: str, subject: str, content: str):
+        """
+        使用指定的SMTP配置发送邮件通知
+        
+        Args:
+            smtp_config: SMTP配置字典
+            email: 收件人邮箱
+            subject: 邮件主题
+            content: 邮件内容
+        """
+        try:
+            import smtplib
+            from email.mime.text import MIMEText
+            from email.mime.multipart import MIMEMultipart
+            
+            smtp_server = smtp_config.get('smtp_server', 'localhost')
+            smtp_port = smtp_config.get('smtp_port', 587)
+            smtp_user = smtp_config.get('username', '')
+            smtp_password = smtp_config.get('password', '')
+            smtp_use_tls = smtp_config.get('smtp_use_tls', False)
+            smtp_from = smtp_config.get('username', 'noreply@easysync.com')
+            to_email = email
+
+            msg = MIMEMultipart()
+            msg['From'] = smtp_from
+            msg['To'] = to_email
+            msg['Subject'] = subject + ' [EasySync]_' + str(datetime.now().timestamp())
+            msg.attach(MIMEText(content, 'plain'))
+
+            if smtp_use_tls:
+                with smtplib.SMTP(smtp_server, smtp_port) as server:
+                    server.starttls()
+                    server.login(smtp_user, smtp_password)
+                    server.sendmail(smtp_from, [to_email], msg.as_string()) 
+            else:
+                with smtplib.SMTP_SSL(smtp_server, smtp_port) as server:
+                    server.login(smtp_user, smtp_password)
+                    server.sendmail(smtp_from, [to_email], msg.as_string()) 
+            
+            logger.info(f"已发送邮件通知: {email}")
+            
+        except Exception as e:
+            logger.error(f"发送邮件通知失败: {e}")
+            raise
+    
+    def _send_sms_with_config(self, sms_config: dict, phone: str, content: str):
+        """
+        使用指定的短信配置发送短信通知
+        
+        Args:
+            sms_config: 短信配置字典
+            phone: 手机号码
+            content: 短信内容
+        """
+        try:
+            # 这里可以根据不同的短信提供商实现
+            # 目前使用默认的短信发送方法
+            self._send_sms_notification({'phone': phone}, {'content': content})
+            logger.info(f"已发送短信通知: {phone}")
+            
+        except Exception as e:
+            logger.error(f"发送短信通知失败: {e}")
+            raise
+    
+    def _send_dingtalk_with_config(self, webhook_url: str, secret: str, title: str, content: str):
+        """
+        使用指定的钉钉配置发送钉钉通知
+        
+        Args:
+            webhook_url: 钉钉Webhook URL
+            secret: 钉钉签名密钥
+            title: 消息标题
+            content: 消息内容
+        """
+        try:
+            # 使用现有的钉钉发送方法
+            self._send_dingtalk_notification({'webhook_url': webhook_url, 'secret': secret}, {'title': title, 'content': content})
+            logger.info(f"已发送钉钉通知")
+            
+        except Exception as e:
+            logger.error(f"发送钉钉通知失败: {e}")
+            raise
+    
+    def _send_webhook_with_config(self, webhook_url: str, secret: str, content: dict):
+        """
+        使用指定的Webhook配置发送Webhook通知
+        
+        Args:
+            webhook_url: Webhook URL
+            secret: 签名密钥
+            content: 通知内容
+        """
+        try:
+            # 使用现有的Webhook发送方法
+            self._send_webhook_notification(webhook_url, content)
+            logger.info(f"已发送Webhook通知")
+            
+        except Exception as e:
+            logger.error(f"发送Webhook通知失败: {e}")
+            raise
+    
     def _send_webhook_notification(self, webhook_url: str, data: Dict[str, Any]):
         """
         发送Webhook通知

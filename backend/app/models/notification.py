@@ -146,20 +146,11 @@ class NotificationChannel(BaseModel):
     
     def to_dict(self):
         data = super().to_dict()
-        # 隐藏敏感配置信息
-        safe_config = self.config.copy() if self.config else {}
-        if 'password' in safe_config:
-            safe_config['password'] = '******'
-        if 'secret' in safe_config:
-            safe_config['secret'] = '******'
-        if 'api_key' in safe_config:
-            safe_config['api_key'] = '******'
-            
         data.update({
             'name': self.name,
             'channel_type': self.channel_type,
             'enabled': self.enabled,
-            'config': safe_config,
+            'config': self.config,
             'retry_count': self.retry_count,
             'rate_limit': self.rate_limit,
             'timeout': self.timeout,
