@@ -3,14 +3,27 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 import psutil
 from datetime import datetime, timedelta
 from backend.app.models import Storage, Task, Notification, Client, Node
+from backend.app.utils.cache import CacheManager, cached
+from backend.app.utils.rate_limit import rate_limit
 from . import dashboard_bp
 
 @dashboard_bp.route('', methods=['GET'])
 @jwt_required()
+@rate_limit(limit=30, window=60)  # 每分钟最多30次
 def get_dashboard_data():
-    """获取仪表盘数据"""
+    """获取仪表盘数据（带缓存）"""
     try:
         current_user_id = get_jwt_identity()
+        cache_key = f"dashboard:user:{current_user_id}"
+        
+        # 尝试从缓存获取
+        cached_data = CacheManager.get(cache_key)
+        if cached_data is not None:
+            return jsonify({
+                'status': 'success',
+                'message': '仪表盘数据获取成功（缓存）',
+                'data': cached_data
+            })
         
         # 获取存储节点统计
         storages = Storage.query.filter_by(user_id=current_user_id).all()
@@ -86,10 +99,7 @@ def get_dashboard_data():
         ).limit(5).all()
         recent_notifications_data = [notification.to_dict() for notification in recent_notifications]
         
-        return jsonify({
-            'status': 'success',
-            'message': '仪表盘数据获取成功',
-            'data': {
+        data = {
                 'storages': {
                     'storageCount': storage_count,
                     'mountedCount': 0,
@@ -128,7 +138,15 @@ def get_dashboard_data():
                 },
                 'recent_tasks': recent_tasks_data,
                 'recent_notifications': recent_notifications_data
-            }
+        }
+        
+        # 缓存数据（5分钟过期）
+        CacheManager.set(cache_key, data, ttl=300)
+        
+        return jsonify({
+            'status': 'success',
+            'message': '仪表盘数据获取成功',
+            'data': data
         })
         
     except Exception as e:

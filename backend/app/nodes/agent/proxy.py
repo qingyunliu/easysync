@@ -35,10 +35,8 @@ def main():
     # 只有当用户明确指定了 --log-level 参数时才使用命令行值
     if args.log_level is not None:
         log_level = args.log_level
-        print(f"使用命令行指定的日志级别: {log_level}")
     else:
         log_level = config.get('log_level', 'INFO')
-        print(f"使用配置文件中的日志级别: {log_level}")
     
     # 设置日志配置
     log_config = {
@@ -48,6 +46,10 @@ def main():
     
     # 初始化日志系统
     init_logging(log_config)
+    
+    # 获取logger用于记录启动信息
+    logger = logging.getLogger(__name__)
+    logger.info(f"使用日志级别: {log_level}")
     
     # 注册信号处理
     signal.signal(signal.SIGINT, handle_signal)

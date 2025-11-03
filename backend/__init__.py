@@ -60,7 +60,7 @@ def create_app(config_name=None):
     
     # 配置 CORS
     # 从环境变量获取允许的源，默认为开发环境的设置
-    allowed_origins = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000').split(',')
+    allowed_origins = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173').split(',')
     
     # 配置 CORS
     CORS(app, 

@@ -13,11 +13,13 @@ from backend.app.utils.email_utils import send_email
 from datetime import datetime, timedelta
 import os
 from backend.app.notifications.services import NotificationService
+from backend.app.utils.rate_limit import rate_limit
 
 auth_service = AuthService()
 notification_service = NotificationService()
 
 @auth_bp.route('/captcha', methods=['GET'])
+@rate_limit(limit=10, window=60)  # 每分钟最多10次验证码请求
 def get_captcha():
     code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
     captcha_id = str(uuid.uuid4())
@@ -30,6 +32,7 @@ def get_captcha():
     return resp
 
 @auth_bp.route('', methods=['POST'])
+@rate_limit(limit=5, window=300)  # 每5分钟最多5次登录尝试
 def login():
     """用户登录"""
     data = request.get_json()
@@ -106,9 +109,7 @@ def login():
     from backend import db
     db.session.commit()
     
-    # 生成令牌
-    access_token = create_access_token(identity=user.id)
-    refresh_token = create_refresh_token(identity=user.id)
+    # 已生成令牌，无需重复生成
     
     # 发送用户登录通知
     notification_service.create_notification(

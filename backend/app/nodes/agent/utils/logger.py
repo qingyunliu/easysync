@@ -360,6 +360,8 @@ def _auto_init():
         if _log_manager is None:
             init_logging()
     except Exception as e:
-        print(f"Warning: Failed to auto-initialize logging: {e}")
+        # 使用标准logging作为后备，因为日志管理器初始化失败
+        import logging
+        logging.warning(f"Failed to auto-initialize logging: {e}")
 
 _auto_init()

@@ -1,6 +1,6 @@
-import { io } from "socket.io-client";
-import { ElMessage } from "element-plus";
-import { wsConfig } from "@/config";
+import { io } from 'socket.io-client';
+import { ElMessage } from 'element-plus';
+import { wsConfig } from '@/config';
 
 class SocketManager {
   constructor() {
@@ -18,13 +18,16 @@ class SocketManager {
       return;
     }
 
-    console.log("Connecting to WebSocket server with client ID:", clientId);
-    console.log("WebSocket URL:", wsConfig.url);
-    console.log("WebSocket Path:", wsConfig.path);
+    // 使用开发环境检查来限制日志输出
+    if (import.meta.env.DEV) {
+      console.debug('Connecting to WebSocket server with client ID:', clientId);
+      console.debug('WebSocket URL:', wsConfig.url);
+      console.debug('WebSocket Path:', wsConfig.path);
+    }
 
     this.socket = io(wsConfig.url, {
       path: wsConfig.path,
-      transports: ["websocket", "polling"], // 允许降级到轮询
+      transports: ['websocket', 'polling'], // 允许降级到轮询
       reconnection: true,
       reconnectionAttempts: this.maxReconnectAttempts,
       reconnectionDelay: this.reconnectDelay,
@@ -37,70 +40,75 @@ class SocketManager {
       },
     });
 
-    this.socket.on("connect", () => {
-      console.log("WebSocket connected");
+    this.socket.on('connect', () => {
+      if (import.meta.env.DEV) {
+        console.debug('WebSocket connected');
+      }
       this.connected = true;
       this.reconnectAttempts = 0;
 
       // 重新订阅之前的房间
-      this.subscriptions.forEach((clientId) => {
+      this.subscriptions.forEach(clientId => {
         this.subscribe(clientId);
       });
     });
 
-    this.socket.on("disconnect", () => {
-      console.log("WebSocket disconnected");
+    this.socket.on('disconnect', () => {
+      if (import.meta.env.DEV) {
+        console.debug('WebSocket disconnected');
+      }
       this.connected = false;
       try {
-        const msg =
-          window?.__app_i18n__?.global?.t?.("socket.disconnected") ||
-          "与服务器断开连接";
+        const msg = window?.__app_i18n__?.global?.t?.('socket.disconnected') || '与服务器断开连接';
         ElMessage.warning(msg);
       } catch (_) {
-        ElMessage.warning("与服务器断开连接");
+        ElMessage.warning('与服务器断开连接');
       }
     });
 
-    this.socket.on("connect_error", (error) => {
-      console.error("WebSocket connection error:", error);
+    this.socket.on('connect_error', error => {
+      console.error('WebSocket connection error:', error);
       this.reconnectAttempts++;
       if (this.reconnectAttempts >= this.maxReconnectAttempts) {
         try {
           const msg =
-            window?.__app_i18n__?.global?.t?.("socket.connectFailedRetry") ||
-            "连接服务器失败，请刷新页面重试";
+            window?.__app_i18n__?.global?.t?.('socket.connectFailedRetry') ||
+            '连接服务器失败，请刷新页面重试';
           ElMessage.error(msg);
         } catch (_) {
-          ElMessage.error("连接服务器失败，请刷新页面重试");
+          ElMessage.error('连接服务器失败，请刷新页面重试');
         }
       }
     });
 
-    this.socket.on("error", (error) => {
-      console.error("WebSocket error:", error);
+    this.socket.on('error', error => {
+      console.error('WebSocket error:', error);
       try {
         const prefix =
-          window?.__app_i18n__?.global?.t?.("socket.websocketError") ||
-          "WebSocket错误：";
+          window?.__app_i18n__?.global?.t?.('socket.websocketError') || 'WebSocket错误：';
         ElMessage.error(prefix + error.message);
       } catch (_) {
-        ElMessage.error("WebSocket错误：" + error.message);
+        ElMessage.error('WebSocket错误：' + error.message);
       }
     });
 
-    this.socket.on("subscribed", (data) => {
-      console.log("Subscribed to room:", data.room);
+    this.socket.on('subscribed', data => {
+      if (import.meta.env.DEV) {
+        console.debug('Subscribed to room:', data.room);
+      }
     });
 
-    this.socket.on("unsubscribed", (data) => {
-      console.log("Unsubscribed from room:", data.room);
+    this.socket.on('unsubscribed', data => {
+      if (import.meta.env.DEV) {
+        console.debug('Unsubscribed from room:', data.room);
+      }
     });
   }
 
   disconnect() {
     if (this.socket) {
       // 取消所有订阅
-      this.subscriptions.forEach((clientId) => {
+      this.subscriptions.forEach(clientId => {
         this.unsubscribe(clientId);
       });
       this.subscriptions.clear();
@@ -113,11 +121,11 @@ class SocketManager {
 
   subscribe(clientId) {
     if (!this.connected) {
-      console.warn("WebSocket not connected, cannot subscribe");
+      console.warn('WebSocket not connected, cannot subscribe');
       return;
     }
 
-    this.socket.emit("subscribe", { client_id: clientId });
+    this.socket.emit('subscribe', { client_id: clientId });
     this.subscriptions.add(clientId);
   }
 
@@ -126,7 +134,7 @@ class SocketManager {
       return;
     }
 
-    this.socket.emit("unsubscribe", { client_id: clientId });
+    this.socket.emit('unsubscribe', { client_id: clientId });
     this.subscriptions.delete(clientId);
   }
 
@@ -153,7 +161,7 @@ class SocketManager {
     if (this.socket && this.connected) {
       this.socket.emit(event, data);
     } else {
-      console.warn("WebSocket not connected, cannot emit event:", event);
+      console.warn('WebSocket not connected, cannot emit event:', event);
     }
   }
 

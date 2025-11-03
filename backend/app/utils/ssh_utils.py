@@ -1,7 +1,10 @@
 import paramiko
 import io
+import logging
 from typing import Optional, Tuple, Union
 from backend.app.models import Client, Node
+
+logger = logging.getLogger(__name__)
 
 class SSHClient:
     def __init__(self, client: Optional[Client] = None, node: Optional[Node] = None):
@@ -116,12 +119,12 @@ class SSHClient:
                     # 目录不存在，创建它
                     try:
                         sftp.mkdir(current_path)
-                        print(f"Created directory: {current_path}")
+                        logger.debug(f"Created directory: {current_path}")
                     except IOError as e:
-                        print(f"Failed to create directory {current_path}: {e}")
+                        logger.error(f"Failed to create directory {current_path}: {e}")
                         raise
         except Exception as e:
-            print(f"Error creating directory {path}: {e}")
+            logger.error(f"Error creating directory {path}: {e}")
             raise
 
     def write_file(self, remote_path: str, content: str):

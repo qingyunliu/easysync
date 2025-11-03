@@ -368,13 +368,17 @@ const initializeChildComponents = async () => {
         await sourceSelectorRef.value.setInitialState(extractedSourceConfig.value)
         break
       } catch (error) {
-        console.error(t('taskWizard.messages.sourceInitFailed', { current: retryCount + 1, max: maxRetries }), error)
+        if (import.meta.env.DEV) {
+          console.error(t('taskWizard.messages.sourceInitFailed', { current: retryCount + 1, max: maxRetries }), error)
+        }
       }
     } else {
-      console.log(t('taskWizard.messages.waitingForComponentMount', { current: retryCount + 1, max: maxRetries }), {
-        storageId: extractedSourceConfig.value?.storageId,
-        sourceSelectorRef: !!sourceSelectorRef.value
-      })
+      if (import.meta.env.DEV) {
+        console.debug(t('taskWizard.messages.waitingForComponentMount', { current: retryCount + 1, max: maxRetries }), {
+          storageId: extractedSourceConfig.value?.storageId,
+          sourceSelectorRef: !!sourceSelectorRef.value
+        })
+      }
     }
 
     retryCount++

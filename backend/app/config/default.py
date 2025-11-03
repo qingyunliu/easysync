@@ -16,7 +16,8 @@ class Config:
     JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES_DAYS', 7)))  # 默认7天，可通过环境变量配置
     
     # CORS配置
-    CORS_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', '*')
+    # 默认只允许本地开发端口，生产环境请通过环境变量严格配置
+    CORS_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')
     CORS_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
     CORS_ALLOW_HEADERS = ['Content-Type', 'Authorization']
     
@@ -89,8 +90,9 @@ class Config:
     # 邮件SMTP配置
     SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtpdm.aliyun.com')
     SMTP_PORT = int(os.environ.get('SMTP_PORT', 465))
-    SMTP_USER = os.environ.get('SMTP_USER', 'support@email.oneprocloud.com')
-    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD', '5gYwbReCqB3wQbXf24MJ')
+    SMTP_USER = os.environ.get('SMTP_USER', '')
+    # 不提供默认密码，必须通过环境变量传入
+    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')
     # 是否使用TLS
     SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
     SMTP_FROM = os.environ.get('SMTP_FROM', 'support@email.oneprocloud.com')
@@ -119,7 +121,19 @@ class ProductionConfig(Config):
     @classmethod
     def init_app(cls, app):
         Config.init_app(app)
-        
+
+        # 生产环境安全校验
+        secret_key = app.config.get('SECRET_KEY')
+        jwt_secret = app.config.get('JWT_SECRET_KEY')
+        cors_origins = app.config.get('CORS_ORIGINS')
+
+        if not secret_key or secret_key == 'dev':
+            raise ValueError('SECURITY: SECRET_KEY must be set in production and not use default')
+        if not jwt_secret or jwt_secret == 'jwt-secret-key':
+            raise ValueError('SECURITY: JWT_SECRET_KEY must be set in production and not use default')
+        if cors_origins == '*' or (isinstance(cors_origins, str) and cors_origins.strip() == '*'):
+            raise ValueError('SECURITY: CORS_ALLOWED_ORIGINS must not be * in production')
+
         # 生产环境日志处理
         import logging
         from logging.handlers import RotatingFileHandler
