@@ -822,7 +822,11 @@ def get_node_logs(node_id):
         
         with SSHClient(node=node) as ssh:
             # 获取日志内容
-            log_path = '/opt/easysync/proxy/logs/proxy.log'
+            if level == 'DEBUG':
+                log_path = '/opt/easysync/proxy/logs/agent.debug.log'
+            else:
+                log_path = '/opt/easysync/proxy/logs/agent.log'
+
             if level == 'ALL':
                 command = f'tail -n {lines} {log_path}'
             else:

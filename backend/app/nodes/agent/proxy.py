@@ -3,10 +3,32 @@ import sys
 import signal
 import logging
 import argparse
+import importlib
 from typing import Dict, Any
-from .core.agent import ProxyAgent
-from .config.settings import Settings
-from .utils.logger import init_logging
+
+
+def _resolve_package_imports():
+    package_root = __package__
+
+    if not package_root:
+        package_dir = os.path.dirname(os.path.abspath(__file__))
+        package_root = os.path.basename(package_dir)
+        parent_dir = os.path.dirname(package_dir)
+
+        if parent_dir not in sys.path:
+            sys.path.insert(0, parent_dir)
+
+        if package_dir not in sys.path:
+            sys.path.insert(0, package_dir)
+
+    core_agent = importlib.import_module(f"{package_root}.core.agent")
+    config_settings = importlib.import_module(f"{package_root}.config.settings")
+    utils_logger = importlib.import_module(f"{package_root}.utils.logger")
+
+    return core_agent.ProxyAgent, config_settings.Settings, utils_logger.init_logging
+
+
+ProxyAgent, Settings, init_logging = _resolve_package_imports()
 
 def parse_args():
     """解析命令行参数"""

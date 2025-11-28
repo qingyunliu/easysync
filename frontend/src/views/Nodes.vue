@@ -650,7 +650,7 @@
                         </el-tag>
                       </template>
                     </el-table-column>
-                    <el-table-column prop="module" :label="$t('nodes.module')" width="150" />
+                    <el-table-column prop="module" :label="$t('nodes.module')" width="180" />
                     <el-table-column prop="message" :label="$t('nodes.message')" show-overflow-tooltip />
                   </el-table>
                 </div>
@@ -2647,23 +2647,40 @@ const fetchLogs = async () => {
       }
     })
     if (response.data.status === 'success') {
-      // 解析日志字符串为数组
       const logEntries = response.data.data.log_content.split('\n')
-        .filter(line => line.trim()) // 过滤空行
+        .filter(line => line.trim())
         .map(line => {
-          // 解析日志行，格式如：2025-04-24 11:34:42,700 - agent.client - INFO - 心跳服务已停止
-          const match = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - ([\w.]+) - (\w+) - (.+)$/)
+          let match = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d{3})\s+(\d+)\s+([\w._]+)\s+(\w+)(?:\s+(\[[^\]]+\]))?\s*-\s*(?:[\w()]+\s*\[-\]\s*(?:-\s*)?)?(.+)$/)
+          if (match) {
+            let message = (match[6] || line).trim()
+            if (message.startsWith(']')) {
+              message = message.substring(1).trim()
+            }
+            return {
+              timestamp: match[1].replace('.', ','),
+              module: match[3],
+              level: match[4],
+              message: message
+            }
+          }
+          
+          match = line.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}[.,]\d{3})\s*-\s*([\w._]+)\s*-\s*(\w+)\s*-\s*(.+)$/)
           if (match) {
             return {
-              timestamp: match[1],
+              timestamp: match[1].replace('.', ','),
               module: match[2],
               level: match[3],
               message: match[4]
             }
           }
-          return null
+          
+          return {
+            timestamp: '',
+            module: '',
+            level: 'INFO',
+            message: line
+          }
         })
-        .filter(entry => entry !== null) // 过滤掉解析失败的行
 
       logs.value = logEntries
     }
