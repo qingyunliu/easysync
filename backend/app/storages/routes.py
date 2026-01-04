@@ -293,17 +293,39 @@ def test_temporary_connect():
     """测试临时连接"""
     try:
         data = request.get_json()
-        type = data.get('type')
+        storage_type = data.get('type')
         config = data.get('config', {})
+        node_id = data.get('node_id')
         
-        if not type:
+        if not storage_type:
             return jsonify({
                 'status': 'error',
                 'message': '存储类型不能为空'
             }), 400
         
-        # 测试连接
-        result = storage_realtime_service.test_connection_realtime(type, config)
+        if not node_id:
+            return jsonify({
+                'status': 'error',
+                'message': '请选择测试节点'
+            }), 400
+        
+        # 构建测试参数
+        params = {
+            'storage_config': {
+                'id': 'temp',  # 临时测试，使用临时ID
+                'name': '临时测试',
+                'type': storage_type,
+                'config': config
+            }
+        }
+        
+        # 执行实时命令测试连接
+        result = storage_realtime_service.command_service.execute_command_sync(
+            node_id=node_id,
+            command_type='test_connection',
+            params=params,
+            timeout=30
+        )
         
         return jsonify({
             'status': 'success',

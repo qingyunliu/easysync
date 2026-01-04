@@ -628,15 +628,16 @@ def install_node_agent(node_id):
                 raise Exception(f'解压失败: {stderr}')
             logger.debug(f'解压文件: {install_path}/easysync-proxy.tar.gz')
 
-            # 获取服务器IP地址
-            server_ip = request.host.split(':')[0]
+            # 获取服务器IP地址和端口（从前端传递，如果没有则使用默认值）
+            server_ip = data.get('server_ip', request.host.split(':')[0])
+            server_port = data.get('server_port', 5001)
             
             # 增加脚本可执行权限
             cmd = f'chmod +x {install_path}/install.sh'
             ssh.execute_command(cmd)
             
-            # 执行安装脚本，传递三个参数
-            install_cmd = f'{install_path}/install.sh {server_ip} {node_id} {current_user_id}'
+            # 执行安装脚本，传递四个参数：server_ip, server_port, node_id, user_id
+            install_cmd = f'{install_path}/install.sh {server_ip} {server_port} {node_id} {current_user_id}'
             stdout, stderr, exit_code = ssh.execute_command(install_cmd)
             if exit_code != 0:
                 raise Exception(f'安装失败: {stderr}')

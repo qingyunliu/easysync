@@ -1841,11 +1841,20 @@ const handleTestConnect = async () => {
 
     const response = await axios.post('/api/storages/test-connection', submitData)
     if (response.data.status == "success") {
-      const taskData = response.data.data
-      ElMessage.success(t('storage.connectionTestTaskCreated', { taskId: taskData.task_id }))
-
-      // 可选：自动跳转到任务页面
-      // router.push(`/tasks?task_id=${taskData.task_id}`)
+      // 检查返回的数据结构
+      const result = response.data.result || response.data.data
+      if (result && result.task_id) {
+        // 如果返回了 task_id，说明创建了任务
+        ElMessage.success(t('storage.connectionTestTaskCreated', { taskId: result.task_id }))
+        // 可选：自动跳转到任务页面
+        // router.push(`/tasks?task_id=${result.task_id}`)
+      } else if (result && result.status === 'success') {
+        // 实时测试成功
+        ElMessage.success(response.data.message || t('storage.testConnectionSuccess'))
+      } else {
+        // 测试失败
+        ElMessage.error(result?.message || response.data.message || t('storage.testConnectionFailed'))
+      }
     } else {
       ElMessage.error(response.data.message || t('storage.testConnectionFailed'))
     }

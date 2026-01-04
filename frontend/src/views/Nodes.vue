@@ -366,6 +366,12 @@
         <el-form :model="installForm" label-width="120px">
           <el-form-item :label="$t('nodes.installPath')"><el-input v-model="installForm.install_path"
               placeholder="/opt/easysync/proxy" /></el-form-item>
+          <el-form-item :label="$t('nodes.serverIp')" required>
+            <el-input v-model="installForm.server_ip" :placeholder="$t('nodes.serverIpPlaceholder')" />
+          </el-form-item>
+          <el-form-item :label="$t('nodes.serverPort')" required>
+            <el-input-number v-model="installForm.server_port" :min="1" :max="65535" :placeholder="$t('nodes.serverPortPlaceholder')" style="width: 100%" />
+          </el-form-item>
           <el-form-item :label="$t('nodes.configParams')"><el-input v-model="installForm.config" type="textarea"
               :rows="4" :placeholder="$t('nodes.enterJsonConfig')" /></el-form-item>
         </el-form>
@@ -742,6 +748,8 @@ const stats = computed(() => {
 
 const installForm = ref({
   install_path: '/opt/easysync/proxy',
+  server_ip: '',
+  server_port: 5001,
   config: '{}'
 })
 
@@ -1184,8 +1192,14 @@ const handleSubmit = async () => {
 // 安装Agent
 const installAgent = (row) => {
   currentNode.value = row
+  // 从当前窗口获取默认服务器地址和端口
+  const defaultHost = window.location.hostname
+  const defaultPort = window.location.port || '5001'
+  
   installForm.value = {
     install_path: '/opt/easysync/proxy',
+    server_ip: defaultHost,
+    server_port: parseInt(defaultPort) || 5001,
     config: JSON.stringify({
     })
   }
@@ -1197,6 +1211,11 @@ const confirmInstall = async () => {
   try {
     if (!currentNode.value) {
       ElMessage.error(t('nodes.noNodeSelected'))
+      return
+    }
+    // 验证必填字段
+    if (!installForm.value.server_ip || !installForm.value.server_port) {
+      ElMessage.error('请填写服务器IP和端口')
       return
     }
     await axios.post(`/api/nodes/${currentNode.value.id}/install`, installForm.value)

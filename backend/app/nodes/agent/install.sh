@@ -1,20 +1,26 @@
 #!/bin/bash
 
 # 检查参数数量
-if [ $# -lt 3 ]; then
-    echo "Usage: $0 <server_ip> <node_id> <user_id>"
-    echo "Example: $0 192.168.1.100 123 456"
+if [ $# -lt 4 ]; then
+    echo "Usage: $0 <server_ip> <server_port> <node_id> <user_id>"
+    echo "Example: $0 192.168.1.100 5001 123 456"
     exit 1
 fi
 
 # 获取参数
 SERVER_IP=$1
-NODE_ID=$2
-USER_ID=$3
+SERVER_PORT=$2
+NODE_ID=$3
+USER_ID=$4
 
 # 验证参数
 if [ -z "$SERVER_IP" ]; then
     echo "Error: Server IP cannot be empty"
+    exit 1
+fi
+
+if [ -z "$SERVER_PORT" ]; then
+    echo "Error: Server port cannot be empty"
     exit 1
 fi
 
@@ -46,7 +52,7 @@ cat > $INSTALL_DIR/config/config.json << EOF
 {
     "server": {
         "host": "${SERVER_IP}",
-        "port": 5001
+        "port": ${SERVER_PORT}
     },
     "node": {
         "id": "${NODE_ID}",
