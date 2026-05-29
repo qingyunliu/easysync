@@ -139,8 +139,8 @@ class S3Provider(StorageProvider):
         except MinioException as e:
             raise ValueError(f"获取统计信息失败: {str(e)}")
 
-    def list_buckets(self) -> List[Dict[str, Any]]:
-        """获取存储桶列表"""
+    def list_buckets(self, page: int = 1, page_size: int = 1000) -> Dict[str, Any]:
+        """获取存储桶列表（支持分页）"""
         try:
             buckets = self.client.list_buckets()
             ret = []
@@ -155,8 +155,26 @@ class S3Provider(StorageProvider):
                         "region": self.config.get('region', '')  # 使用配置中的region
                     }
                 )
-                
-            return ret
+            
+            # 实现分页
+            total_count = len(ret)
+            start_index = (page - 1) * page_size
+            end_index = start_index + page_size
+            paginated_buckets = ret[start_index:end_index]
+            
+            total_pages = (total_count + page_size - 1) // page_size
+            
+            return {
+                'buckets': paginated_buckets,
+                'pagination': {
+                    'page': page,
+                    'page_size': page_size,
+                    'total_count': total_count,
+                    'total_pages': total_pages,
+                    'has_next': page < total_pages,
+                    'has_prev': page > 1
+                }
+            }
 
         except MinioException as e:
             raise ValueError(f"获取存储桶列表失败: {str(e)}")

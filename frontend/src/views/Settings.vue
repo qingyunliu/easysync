@@ -84,7 +84,7 @@
             </el-icon>
             <span class="notify-title">{{ $t('settings.emailNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.email.editing" type="text" @click.stop="startEdit('email')">{{
+            <el-button v-if="!notifyStates.email.editing" type="link" @click.stop="startEdit('email')">{{
               $t('settings.edit')
               }}</el-button>
             <template v-else>
@@ -133,7 +133,7 @@
             </el-icon>
             <span class="notify-title">{{ $t('settings.smsNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.sms.editing" type="text" @click.stop="startEdit('sms')">{{
+            <el-button v-if="!notifyStates.sms.editing" type="link" @click.stop="startEdit('sms')">{{
               $t('settings.edit')
               }}</el-button>
             <template v-else>
@@ -183,7 +183,7 @@
             </el-icon>
             <span class="notify-title">{{ $t('settings.dingtalkNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.dingtalk.editing" type="text" @click.stop="startEdit('dingtalk')">{{
+            <el-button v-if="!notifyStates.dingtalk.editing" type="link" @click.stop="startEdit('dingtalk')">{{
               $t('settings.edit') }}</el-button>
             <template v-else>
               <el-button type="primary" size="small" @click.stop="saveEdit('dingtalk')" :loading="saving"
@@ -223,7 +223,7 @@
             </el-icon>
             <span class="notify-title">{{ $t('settings.webhookNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.webhook.editing" type="text" @click.stop="startEdit('webhook')">{{
+            <el-button v-if="!notifyStates.webhook.editing" type="link" @click.stop="startEdit('webhook')">{{
               $t('settings.edit') }}</el-button>
             <template v-else>
               <el-button type="primary" size="small" @click.stop="saveEdit('webhook')" :loading="saving"
@@ -273,7 +273,7 @@ import {
   Bell,
   ArrowDown
 } from '@element-plus/icons-vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -332,7 +332,7 @@ async function saveEdit(type) {
     }
     saving.value = true
     try {
-      await axios.put('/api/settings', settings.value)
+      await axios.put('/settings', settings.value)
       ElMessage.success(t('settings.messages.settingsSaved'))
       notifyStates[type].editing = false
       notifyStates[type].testPassed = false
@@ -513,7 +513,7 @@ const notifyRules = computed(() => {
 
 const fetchSettings = async () => {
   try {
-    const response = await axios.get('/api/settings')
+    const response = await axios.get('/settings')
     const data = response.data.data
     Object.assign(settings.value, data)
   } catch (error) {
@@ -524,7 +524,7 @@ const fetchSettings = async () => {
 const handleSubmit = async () => {
   try {
     saving.value = true
-    await axios.put('/api/settings', settings.value)
+    await axios.put('/settings', settings.value)
     ElMessage.success(t('settings.messages.settingsSaved'))
   } catch (error) {
     ElMessage.error(t('settings.messages.saveSettingsFailed'))
@@ -570,7 +570,7 @@ function handleTest(type) {
       config.webhook_url = settings.value.webhook_url
       config.webhook_secret = settings.value.webhook_secret
     }
-    axios.post('/api/notifications/test', config)
+    axios.post('/notifications/test', config)
       .then(() => {
         ElMessage.success(t('settings.messages.testNotificationSent'))
         notifyStates[type].testPassed = true
@@ -632,7 +632,7 @@ const handleNotifySubmit = () => {
     if (!valid) return
     saving.value = true
     try {
-      await axios.put('/api/settings', settings.value)
+      await axios.put('/settings', settings.value)
       ElMessage.success(t('settings.messages.notificationSettingsSaved'))
     } catch (error) {
       ElMessage.error(t('settings.messages.saveNotificationSettingsFailed'))

@@ -299,12 +299,12 @@
                             <Connection />
                           </el-icon>{{ $t('nodes.testConnection') }}
                         </el-dropdown-item>
-                        <el-dropdown-item :command="{ action: 'install', row }" :disabled="row.status === 'offline'">
+                        <el-dropdown-item :command="{ action: 'install', row }" :disabled="row.agent_status === 'active'">
                           <el-icon>
                             <Download />
                           </el-icon>{{ $t('nodes.installAgent') }}
                         </el-dropdown-item>
-                        <el-dropdown-item :command="{ action: 'uninstall', row }" :disabled="row.status === 'offline'">
+                        <el-dropdown-item :command="{ action: 'uninstall', row }" :disabled="row.agent_status !== 'active'">
                           <el-icon>
                             <Remove />
                           </el-icon>{{ $t('nodes.uninstallAgent') }}
@@ -330,7 +330,7 @@
       </el-card>
       <!-- 节点添加/编辑弹窗 -->
       <el-dialog :title="dialogType === 'add' ? $t('nodes.addNode') : $t('nodes.editNode')" v-model="dialogVisible"
-        width="500px">
+        width="500px" :close-on-click-modal="false">
         <el-form ref="formRef" :model="form" :rules="rules" label-width="100px">
           <el-form-item :label="$t('nodes.name')" prop="name"><el-input v-model="form.name"
               :placeholder="$t('nodes.enterNodeName')" /></el-form-item>
@@ -362,7 +362,7 @@
         </template>
       </el-dialog>
       <!-- 安装/卸载Agent弹窗 -->
-      <el-dialog :title="$t('nodes.installUninstallAgent')" v-model="installDialogVisible" width="500px">
+      <el-dialog :title="$t('nodes.installUninstallAgent')" v-model="installDialogVisible" width="500px" :close-on-click-modal="false">
         <el-form :model="installForm" label-width="120px">
           <el-form-item :label="$t('nodes.installPath')"><el-input v-model="installForm.install_path"
               placeholder="/opt/easysync/proxy" /></el-form-item>
@@ -666,7 +666,7 @@
         </div>
       </el-drawer>
       <!-- 批量分组弹窗 -->
-      <el-dialog :title="$t('nodes.batchGroup')" v-model="batchGroupDialogVisible" width="400px">
+      <el-dialog :title="$t('nodes.batchGroup')" v-model="batchGroupDialogVisible" width="400px" :close-on-click-modal="false">
         <el-input v-model="batchGroupName" :placeholder="$t('nodes.enterNewGroupName')" />
         <template #footer>
           <span class="dialog-footer">
@@ -676,7 +676,7 @@
         </template>
       </el-dialog>
       <!-- 批量打标签弹窗 -->
-      <el-dialog :title="$t('nodes.batchTag')" v-model="batchTagDialogVisible" width="400px">
+      <el-dialog :title="$t('nodes.batchTag')" v-model="batchTagDialogVisible" width="400px" :close-on-click-modal="false">
         <el-input v-model="batchTags" :placeholder="$t('nodes.enterNewTags')" />
         <template #footer>
           <span class="dialog-footer">
@@ -714,7 +714,7 @@ import {
   ArrowLeft
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -949,7 +949,7 @@ const showBatchGroupDialog = async () => {
       }
     )
     const nodeIds = multipleSelection.value.map(item => item.id)
-    await axios.post('/api/nodes/batch_group', { node_ids: nodeIds, group: groupName || '' })
+    await axios.post('/nodes/batch_group', { node_ids: nodeIds, group: groupName || '' })
     ElMessage.success(t('nodes.batchGroupSuccess'))
     fetchNodes()
     fetchGroups()
@@ -994,7 +994,7 @@ const showBatchTagDialog = async () => {
       }
     )
     const nodeIds = multipleSelection.value.map(item => item.id)
-    await axios.post('/api/nodes/batch_tags', { node_ids: nodeIds, tags: tags || '' })
+    await axios.post('/nodes/batch_tags', { node_ids: nodeIds, tags: tags || '' })
     ElMessage.success(t('nodes.batchTagSuccess'))
     fetchNodes()
     fetchTags()
@@ -1018,7 +1018,7 @@ const handleBatchDelete = async () => {
     })
 
     const nodeIds = multipleSelection.value.map(item => item.id)
-    await axios.post('/api/nodes/batch_delete', { node_ids: nodeIds })
+    await axios.post('/nodes/batch_delete', { node_ids: nodeIds })
 
     ElMessage.success(t('nodes.batchDeleteSuccess'))
     fetchNodes()
@@ -1032,7 +1032,7 @@ const handleBatchDelete = async () => {
 
 const fetchGroups = async () => {
   try {
-    const response = await axios.get('/api/nodes/groups')
+    const response = await axios.get('/nodes/groups')
     if (response.data.status === 'success') {
       groupList.value = response.data.data || []
     }
@@ -1043,7 +1043,7 @@ const fetchGroups = async () => {
 
 const fetchTags = async () => {
   try {
-    const response = await axios.get('/api/nodes/tags')
+    const response = await axios.get('/nodes/tags')
     if (response.data.status === 'success') {
       tagList.value = response.data.data || []
     }
@@ -1056,7 +1056,7 @@ const fetchTags = async () => {
 const fetchNodes = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/nodes')
+    const response = await axios.get('/nodes')
     nodes.value = response.data.data
   } catch (error) {
     nodes.value = []
@@ -1171,10 +1171,10 @@ const handleSubmit = async () => {
   try {
     await formRef.value.validate()
     if (dialogType.value === 'add') {
-      await axios.post('/api/nodes', form.value)
+      await axios.post('/nodes', form.value)
       ElMessage.success(t('nodes.addSuccess'))
     } else {
-      await axios.put(`/api/nodes/${form.value.id}`, form.value)
+      await axios.put(`/nodes/${form.value.id}`, form.value)
       ElMessage.success(t('nodes.updateSuccess'))
     }
     dialogVisible.value = false
@@ -1192,14 +1192,13 @@ const handleSubmit = async () => {
 // 安装Agent
 const installAgent = (row) => {
   currentNode.value = row
-  // 从当前窗口获取默认服务器地址和端口
+  // 从当前窗口获取默认服务器地址，但端口固定为后端端口5000
   const defaultHost = window.location.hostname
-  const defaultPort = window.location.port || '5001'
-  
+
   installForm.value = {
     install_path: '/opt/easysync/proxy',
     server_ip: defaultHost,
-    server_port: parseInt(defaultPort) || 5001,
+    server_port: 5000,  // 后端服务端口，不是前端端口
     config: JSON.stringify({
     })
   }
@@ -1218,7 +1217,7 @@ const confirmInstall = async () => {
       ElMessage.error('请填写服务器IP和端口')
       return
     }
-    await axios.post(`/api/nodes/${currentNode.value.id}/install`, installForm.value)
+    await axios.post(`/nodes/${currentNode.value.id}/install`, installForm.value)
     ElMessage.success(t('nodes.startInstallAgent'))
     installDialogVisible.value = false
     fetchNodes()
@@ -1233,7 +1232,7 @@ const uninstallAgent = async (row) => {
     await ElMessageBox.confirm(t('nodes.confirmUninstallAgent'), t('nodes.tip'), {
       type: 'warning'
     })
-    await axios.post(`/api/nodes/${row.id}/uninstall`)
+    await axios.post(`/nodes/${row.id}/uninstall`)
     ElMessage.success(t('nodes.startUninstallAgent'))
     fetchNodes()
   } catch (error) {
@@ -1249,7 +1248,7 @@ const handleDelete = async (row) => {
     await ElMessageBox.confirm(t('nodes.confirmDeleteNode'), t('nodes.tip'), {
       type: 'warning'
     })
-    await axios.delete(`/api/nodes/${row.id}`)
+    await axios.delete(`/nodes/${row.id}`)
     ElMessage.success(t('nodes.deleteSuccess'))
     fetchNodes()
   } catch (error) {
@@ -1263,7 +1262,7 @@ const handleDelete = async (row) => {
 const testConnection = async (row) => {
   try {
     row.testing = true
-    const response = await axios.post(`/api/nodes/${row.id}/test-connection`)
+    const response = await axios.post(`/nodes/${row.id}/test-connection`)
     if (response.data.status === 'success') {
       ElMessage.success(t('nodes.connectionTestSuccess'))
       // 更新本地状态
@@ -1281,7 +1280,7 @@ const testConnection = async (row) => {
 const getNodeInfo = async (row) => {
   try {
     row.fetching = true
-    const response = await axios.post(`/api/nodes/${row.id}/status`)
+    const response = await axios.post(`/nodes/${row.id}/status`)
     if (response.data.status === 'success') {
       ElMessage.success(t('nodes.getInfoSuccess'))
       fetchNodes()  // 刷新列表以更新信息
@@ -1338,7 +1337,7 @@ const handleNodeCommand = async (command) => {
 // 获取节点详情
 const fetchNodeDetail = async (nodeId) => {
   try {
-    const response = await axios.get(`/api/nodes/${nodeId}/detail`)
+    const response = await axios.get(`/nodes/${nodeId}/detail`)
     nodeDetail.value = response.data.data
     nodeDetail.value.os_type = response.data.data.os_type
   } catch (error) {
@@ -2564,7 +2563,7 @@ const handleDrawerClose = () => {
 // 刷新进程列表
 const refreshProcessList = async () => {
   try {
-    const response = await axios.get(`/api/nodes/${currentNode.value.id}/processes`)
+    const response = await axios.get(`/nodes/${currentNode.value.id}/processes`)
     if (response.data.status === 'success') {
       nodeDetail.value.process_list = response.data.data
     }
@@ -2659,7 +2658,7 @@ const fetchLogs = async () => {
 
   try {
     loadingLogs.value = true
-    const response = await axios.get(`/api/nodes/${currentNode.value.id}/logs`, {
+    const response = await axios.get(`/nodes/${currentNode.value.id}/logs`, {
       params: {
         lines: 100,
         level: logLevelFilter.value || 'ALL'

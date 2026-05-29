@@ -321,7 +321,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -376,7 +376,7 @@ onMounted(() => {
 const fetchChannels = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/notifications/channels')
+    const response = await axios.get('/notifications/channels')
     channels.value = response.data.channels || []
   } catch (error) {
     ElMessage.error(t('notification.channels.messages.getChannelsFailed'))
@@ -450,7 +450,7 @@ const handleChannelTypeChange = () => {
 const submitChannel = async () => {
   try {
     if (dialogMode.value === 'create') {
-      await axios.post('/api/notifications/channels', channelForm)
+      await axios.post('/notifications/channels', channelForm)
       ElMessage.success(t('notification.channels.messages.createSuccess'))
     } else {
       await axios.put(`/api/notifications/channels/${editingChannel.value.id}`, channelForm)

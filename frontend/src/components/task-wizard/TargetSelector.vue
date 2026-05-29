@@ -333,7 +333,7 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Icon } from '@iconify/vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -455,7 +455,7 @@ const overrideWarningText = computed(() => {
 // 方法
 const fetchStorages = async () => {
   try {
-    const response = await axios.get('/api/storages')
+    const response = await axios.get('/storages')
     if (response.data.status === 'success') {
       storages.value = response.data.storages || []
     } else {
@@ -510,7 +510,31 @@ const handleStorageChange = async (storageId) => {
 const fetchBuckets = async (storageId) => {
   try {
     obsLoading.value = true
-    const response = await axios.get(`/api/storages/${storageId}/buckets`)
+    
+    // 获取节点ID，优先使用绑定的节点，否则使用第一个在线节点
+    let targetNodeId = null
+    const storage = storages.value.find(s => s.id === storageId)
+    if (storage && storage.node_id) {
+      targetNodeId = storage.node_id
+    } else {
+      const nodesResponse = await axios.get('/nodes')
+      const availableNodes = (nodesResponse.data.data || []).filter(
+        node => node.status === 'online' && node.agent_status === 'running'
+      )
+      if (availableNodes.length > 0) {
+        targetNodeId = availableNodes[0].id
+      }
+    }
+    
+    // 加载存储桶列表，传递必要的参数
+    const response = await axios.get(`/storages/${storageId}/buckets`, {
+      params: {
+        node_id: targetNodeId,
+        page: 1,
+        page_size: 1000
+      }
+    })
+    
     if (response.data.status === 'success') {
       buckets.value = response.data.data.buckets || []
     }
@@ -614,7 +638,7 @@ const loadObsCurrentPage = async () => {
     const currentPath = obsPathSegments.value.join('/')
     const prefix = currentPath ? currentPath + '/' : ''
 
-    const response = await axios.get(`/api/storages/${selectedStorage.value.id}/objects`, {
+    const response = await axios.get(`/storages/${selectedStorage.value.id}/objects`, {
       params: {
         node_id: selectedStorage.value.node_id,
         bucket: obsForm.value.selectedBucket,
@@ -665,7 +689,7 @@ const loadNasCurrentPage = async () => {
     nasLoading.value = true
     const currentPath = nasPathSegments.value.join('/')
 
-    const response = await axios.get(`/api/storages/${selectedStorage.value.id}/files`, {
+    const response = await axios.get(`/storages/${selectedStorage.value.id}/files`, {
       params: {
         node_id: selectedStorage.value.node_id,
         path: currentPath,
@@ -703,7 +727,7 @@ const loadObsRoot = async (storageId, bucketName) => {
     // 重置分页
     obsPagination.value.currentPage = 1
 
-    const response = await axios.get(`/api/storages/${storageId}/objects`, {
+    const response = await axios.get(`/storages/${storageId}/objects`, {
       params: {
         node_id: selectedStorage.value.node_id,
         bucket: bucketName,
@@ -745,7 +769,7 @@ const navigateToObsPath = async (path) => {
     // 重置分页
     obsPagination.value.currentPage = 1
 
-    const response = await axios.get(`/api/storages/${selectedStorage.value.id}/objects`, {
+    const response = await axios.get(`/storages/${selectedStorage.value.id}/objects`, {
       params: {
         node_id: selectedStorage.value.node_id,
         bucket: obsForm.value.selectedBucket,
@@ -803,7 +827,7 @@ const loadNasRoot = async () => {
     // 重置分页
     nasPagination.value.currentPage = 1
 
-    const response = await axios.get(`/api/storages/${selectedStorage.value.id}/files`, {
+    const response = await axios.get(`/storages/${selectedStorage.value.id}/files`, {
       params: {
         node_id: selectedStorage.value.node_id,
         path: '',
@@ -843,7 +867,7 @@ const navigateToNasPath = async (path) => {
     // 重置分页
     nasPagination.value.currentPage = 1
 
-    const response = await axios.get(`/api/storages/${selectedStorage.value.id}/files`, {
+    const response = await axios.get(`/storages/${selectedStorage.value.id}/files`, {
       params: {
         node_id: selectedStorage.value.node_id,
         path: path,

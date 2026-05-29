@@ -7,7 +7,7 @@ from backend.app.utils.cache import CacheManager, cached
 from backend.app.utils.rate_limit import rate_limit
 from . import dashboard_bp
 
-@dashboard_bp.route('', methods=['GET'])
+@dashboard_bp.route('/data', methods=['GET'])
 @jwt_required()
 @rate_limit(limit=30, window=60)  # 每分钟最多30次
 def get_dashboard_data():

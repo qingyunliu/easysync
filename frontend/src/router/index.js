@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
+import { useUserStore } from "../stores/user";
 import Login from "../views/Login.vue";
 import Register from "../views/Register.vue";
 import Home from "../views/Home.vue";
@@ -185,6 +186,20 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   const access_token = localStorage.getItem("access_token");
+  const userStr = localStorage.getItem("user");
+
+  // 如果有 token 和用户信息，恢复到 userStore
+  if (access_token && userStr) {
+    const userStore = useUserStore();
+    if (!userStore.user) {
+      try {
+        const user = JSON.parse(userStr);
+        userStore.setUser(user);
+      } catch (e) {
+        console.error('恢复用户信息失败:', e);
+      }
+    }
+  }
 
   // 如果访问需要认证的页面但没有token
   if (to.meta.requiresAuth && !access_token) {

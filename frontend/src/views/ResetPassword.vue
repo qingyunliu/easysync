@@ -39,7 +39,7 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const route = useRoute()
 const router = useRouter()
@@ -77,7 +77,7 @@ const handleSubmit = async () => {
           ElMessage.error(t('auth.resetLinkInvalid'))
           return
         }
-        const res = await axios.post('/api/auth/reset_password', {
+        const res = await axios.post('/auth/reset_password', {
           token,
           password: form.value.password
         })

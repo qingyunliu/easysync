@@ -360,7 +360,7 @@
 
     <!-- 添加/编辑对话框 -->
     <el-dialog :title="dialogType === 'add' ? $t('clients.addClient') : $t('clients.editClient')"
-      v-model="dialogVisible" width="600px" class="client-dialog">
+      v-model="dialogVisible" width="600px" class="client-dialog" :close-on-click-modal="false">
       <el-form ref="formRef" :model="form" :rules="rules" label-width="100px" class="client-form">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -427,7 +427,7 @@
     </el-dialog>
 
     <!-- 安装Agent对话框 -->
-    <el-dialog :title="$t('clients.installAgent')" v-model="installDialogVisible" width="500px" class="install-dialog">
+    <el-dialog :title="$t('clients.installAgent')" v-model="installDialogVisible" width="500px" class="install-dialog" :close-on-click-modal="false">
       <el-form :model="installForm" label-width="120px">
         <el-form-item :label="$t('clients.installPath')">
           <el-input v-model="installForm.install_path" :placeholder="$t('clients.defaultInstallPath')" />
@@ -770,7 +770,7 @@ import {
   Hide
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -1047,7 +1047,7 @@ const fetchMonitorData = async (clientId) => {
 const fetchClients = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/clients')
+    const response = await axios.get('/clients')
     const data = response.data.data
     clients.value = Array.isArray(data) ? data : []
   } catch (error) {
@@ -1197,7 +1197,7 @@ const handleSubmit = async () => {
     }
 
     if (dialogType.value === 'add') {
-      const response = await axios.post('/api/clients', payload)
+      const response = await axios.post('/clients', payload)
       if (response.data.status === 'success') {
         ElMessage.success(t('clients.addSuccess'))
         dialogVisible.value = false
@@ -2195,7 +2195,7 @@ const handleBatchDelete = async () => {
     })
 
     const clientIds = multipleSelection.value.map(item => item.id)
-    await axios.post('/api/clients/batch_delete', { client_ids: clientIds })
+    await axios.post('/clients/batch_delete', { client_ids: clientIds })
 
     ElMessage.success(t('clients.batchDeleteSuccess'))
     fetchClients()
@@ -2241,7 +2241,7 @@ const showBatchGroupDialog = async () => {
     )
 
     const clientIds = multipleSelection.value.map(item => item.id)
-    await axios.post('/api/clients/batch_group', { client_ids: clientIds, group: groupName || '' })
+    await axios.post('/clients/batch_group', { client_ids: clientIds, group: groupName || '' })
 
     ElMessage.success(t('clients.batchGroupSuccess'))
     fetchClients()
@@ -2296,7 +2296,7 @@ const showBatchTagDialog = async () => {
     )
 
     const clientIds = multipleSelection.value.map(item => item.id)
-    await axios.post('/api/clients/batch_tags', { client_ids: clientIds, tags: tags || '' })
+    await axios.post('/clients/batch_tags', { client_ids: clientIds, tags: tags || '' })
 
     ElMessage.success(t('clients.batchTagSuccess'))
     fetchClients()
@@ -2311,7 +2311,7 @@ const showBatchTagDialog = async () => {
 // 获取所有分组
 const fetchGroups = async () => {
   try {
-    const response = await axios.get('/api/clients/groups')
+    const response = await axios.get('/clients/groups')
     if (response.data.status === 'success') {
       groupList.value = response.data.data || []
     }
@@ -2323,7 +2323,7 @@ const fetchGroups = async () => {
 // 获取所有标签
 const fetchTags = async () => {
   try {
-    const response = await axios.get('/api/clients/tags')
+    const response = await axios.get('/clients/tags')
     if (response.data.status === 'success') {
       tagList.value = response.data.data || []
     }

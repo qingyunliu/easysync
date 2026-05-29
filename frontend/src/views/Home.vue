@@ -237,7 +237,7 @@ import {
   Message,
   List,
 } from '@element-plus/icons-vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 import defaultAvatar from '@/assets/avatar/default-avatar.jpeg'
 import { useUserStore } from '@/stores/user'
 const userStore = useUserStore()
@@ -331,7 +331,7 @@ const handleCommand = async (command) => {
   } else if (command === 'logout') {
     try {
       // 调用退出登录API记录审计日志
-      await axios.post('/api/auth/logout')
+      await axios.post('/auth/logout')
     } catch (error) {
       console.warn(t('home.logMessages.logoutAuditFailed'), error)
     }

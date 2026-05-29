@@ -239,7 +239,7 @@
 
     <!-- 事件详情对话框 -->
     <el-dialog v-model="eventDetailVisible" :title="$t('events.eventDetails')" width="800px"
-      :before-close="handleCloseEventDetail">
+      :before-close="handleCloseEventDetail" :close-on-click-modal="false">
       <div v-if="selectedEvent" class="event-detail">
         <el-descriptions :column="2" border>
           <el-descriptions-item :label="$t('events.eventId')">{{ selectedEvent.id }}</el-descriptions-item>
@@ -280,7 +280,7 @@
     </el-dialog>
 
     <!-- 清理事件对话框 -->
-    <el-dialog v-model="cleanupDialogVisible" :title="$t('events.cleanupEvents')" width="500px">
+    <el-dialog v-model="cleanupDialogVisible" :title="$t('events.cleanupEvents')" width="500px" :close-on-click-modal="false">
       <div class="cleanup-form">
         <el-form :model="cleanupForm" label-width="120px">
           <el-form-item :label="$t('events.retentionDays')">
@@ -318,7 +318,7 @@ import {
   List,
   Clock
 } from '@element-plus/icons-vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 export default {
   name: 'Events',
@@ -378,7 +378,7 @@ export default {
           params.end_time = filters.time_range[1]
         }
 
-        const response = await axios.get('/api/events', { params })
+        const response = await axios.get('/events', { params })
         if (response.data.status === 'success') {
           events.value = response.data.events
           pagination.total = response.data.total
@@ -396,7 +396,7 @@ export default {
     // 获取事件统计
     const loadStatistics = async () => {
       try {
-        const response = await axios.get('/api/events/statistics')
+        const response = await axios.get('/events/statistics')
         if (response.data.status === 'success') {
           statistics.value = response.data
         }
@@ -408,7 +408,7 @@ export default {
     // 获取告警统计
     const loadAlertStatistics = async () => {
       try {
-        const response = await axios.get('/api/alerts/statistics')
+        const response = await axios.get('/alerts/statistics')
         if (response.data.status === 'success') {
           alertStatistics.value = response.data.data
         }
@@ -476,7 +476,7 @@ export default {
           params.end_time = filters.time_range[1]
         }
 
-        const response = await axios.get('/api/events/export', {
+        const response = await axios.get('/events/export', {
           params,
           responseType: 'blob'
         })
@@ -506,7 +506,7 @@ export default {
     const confirmCleanup = async () => {
       cleanupLoading.value = true
       try {
-        const response = await axios.post('/api/events/cleanup', cleanupForm)
+        const response = await axios.post('/events/cleanup', cleanupForm)
         if (response.data.status === 'success') {
           ElMessage.success(t('events.cleanupSuccess', { count: response.data.data.deleted_count }))
           cleanupDialogVisible.value = false

@@ -89,12 +89,36 @@ def create_node():
         db.session.add(node)
         db.session.commit()
         
+        # 自动安装 rclone
+        rclone_installed = False
+        rclone_install_msg = ''
+        try:
+            from backend.app.utils.rclone_manager import get_rclone_manager
+            rclone_manager = get_rclone_manager()
+            
+            if rclone_manager.is_package_available():
+                logger.info(f"开始为节点 {node.name} 安装 rclone")
+                rclone_installed, rclone_install_msg = rclone_manager.install_on_remote(node)
+                logger.info(f"rclone 安装结果: {rclone_install_msg}")
+            else:
+                rclone_install_msg = 'rclone 安装包不可用，跳过安装'
+                logger.warning(rclone_install_msg)
+        except Exception as e:
+            rclone_install_msg = f'rclone 安装失败: {str(e)}'
+            logger.error(rclone_install_msg)
+        
         # 发送节点创建通知
+        notification_content = f'节点 {node.name} ({ipaddress}) 已成功创建。'
+        if rclone_installed:
+            notification_content += f' {rclone_install_msg}'
+        elif rclone_install_msg:
+            notification_content += f' {rclone_install_msg}'
+            
         notification_service.create_notification(
             user_id=user_id,
             type='node_created',
             title=f'节点已创建: {node.name}',
-            content=f'节点 {node.name} ({ipaddress}) 已成功创建。',
+            content=notification_content,
             level='success'
         )
         
@@ -202,6 +226,101 @@ def test_connection(node_id):
             'status': 'error',
             'message': f'连接测试失败: {str(e)}'
         }), 400
+
+@nodes_bp.route('/<string:node_id>/install-rclone', methods=['POST'])
+def install_rclone(node_id):
+    """在节点上手动安装 rclone"""
+    try:
+        node = Node.query.get_or_404(node_id)
+        if str(node.user_id) != get_jwt_identity():
+            return jsonify({'status': 'error', 'message': '无权访问此节点'}), 403
+        
+        from backend.app.utils.rclone_manager import get_rclone_manager
+        rclone_manager = get_rclone_manager()
+        
+        if not rclone_manager.is_package_available():
+            return jsonify({
+                'status': 'error',
+                'message': 'rclone 安装包不可用',
+                'package_info': rclone_manager.get_package_info()
+            }), 400
+        
+        # 开始安装
+        success, message = rclone_manager.install_on_remote(node)
+        
+        if success:
+            # 记录审计日志
+            AuditService.log_node_operation(
+                user_id=node.user_id,
+                action='install_rclone',
+                node_id=node.id,
+                node_name=node.name,
+                details={'result': message},
+                result='success'
+            )
+            
+            return jsonify({
+                'status': 'success',
+                'message': message
+            }), 200
+        else:
+            AuditService.log_node_operation(
+                user_id=node.user_id,
+                action='install_rclone',
+                node_id=node.id,
+                node_name=node.name,
+                details={'error': message},
+                result='failed'
+            )
+            
+            return jsonify({
+                'status': 'error',
+                'message': message
+            }), 500
+            
+    except Exception as e:
+        logger.error(f"安装 rclone 失败: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'安装失败: {str(e)}'
+        }), 500
+
+@nodes_bp.route('/<string:node_id>/check-rclone', methods=['POST'])
+def check_rclone_status(node_id):
+    """检查节点上的 rclone 状态"""
+    try:
+        node = Node.query.get_or_404(node_id)
+        if str(node.user_id) != get_jwt_identity():
+            return jsonify({'status': 'error', 'message': '无权访问此节点'}), 403
+        
+        from backend.app.utils.rclone_manager import get_rclone_manager
+        rclone_manager = get_rclone_manager()
+        
+        is_installed, message, version = rclone_manager.check_remote_rclone(node)
+        
+        # 检查安装包是否可用
+        package_available = rclone_manager.is_package_available()
+        package_info = rclone_manager.get_package_info()
+        
+        return jsonify({
+            'status': 'success',
+            'data': {
+                'node_id': node_id,
+                'node_name': node.name,
+                'rclone_installed': is_installed,
+                'message': message,
+                'version': version,
+                'package_available': package_available,
+                'package_info': package_info
+            }
+        }), 200
+        
+    except Exception as e:
+        logger.error(f"检查 rclone 状态失败: {e}")
+        return jsonify({
+            'status': 'error',
+            'message': f'检查失败: {str(e)}'
+        }), 500
 
 @nodes_bp.route('/<string:node_id>/detail', methods=['GET'])
 def get_node_detail(node_id):

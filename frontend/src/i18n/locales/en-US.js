@@ -381,6 +381,11 @@ export default {
     storageMounted: 'Storage Mounted',
     storageUnmounted: 'Storage Unmounted',
     systemNotification: 'System Notification',
+    statuses: {
+      normal: 'Normal',
+      attention: 'Attention',
+      warning: 'Warning',
+    },
   },
 
   // Home
@@ -937,6 +942,7 @@ export default {
       failed: 'Failed',
       cancelled: 'Cancelled',
       paused: 'Paused',
+      stopped: 'Stopped',
     },
 
     // Priorities
@@ -952,6 +958,7 @@ export default {
       start: 'Start',
       pause: 'Pause',
       resume: 'Resume',
+      stop: 'Stop',
       cancel: 'Cancel',
       retry: 'Retry',
       more: 'More',
@@ -997,12 +1004,14 @@ export default {
       taskStarted: 'Task started successfully',
       taskPaused: 'Task paused successfully',
       taskResumed: 'Task resumed successfully',
+      taskStopped: 'Task stopped successfully',
       taskCancelled: 'Task cancelled successfully',
       taskRetried: 'Task retried successfully',
       batchOperationSuccess: 'Batch operation successful',
       batchOperationFailed: 'Batch operation failed',
       confirmDelete: 'Are you sure you want to delete the selected tasks?',
       confirmCancel: 'Are you sure you want to cancel the selected tasks?',
+      confirmStop: 'Are you sure you want to stop this task?',
       confirmRetry: 'Are you sure you want to retry the selected tasks?',
       confirmDeleteTask: 'Are you sure you want to delete this task? This action cannot be undone.',
       noTasksSelected: 'Please select tasks to operate',

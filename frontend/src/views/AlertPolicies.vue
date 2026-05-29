@@ -569,7 +569,7 @@
     </el-drawer>
 
     <!-- 通知对象选择器 -->
-    <el-dialog v-model="showNotificationSelector" :title="$t('alertPolicies.selectNotificationTargets')" width="600px">
+    <el-dialog v-model="showNotificationSelector" :title="$t('alertPolicies.selectNotificationTargets')" width="600px" :close-on-click-modal="false">
       <div class="selector-content">
         <el-input v-model="notificationSearchKeyword" :placeholder="$t('alertPolicies.searchNotificationTargets')"
           clearable>
@@ -606,7 +606,7 @@ import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -741,7 +741,7 @@ const filteredPolicies = computed(() => {
 const loadPolicies = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/alerts/policies')
+    const response = await axios.get('/alerts/policies')
     policies.value = response.data.policies || []
   } catch (error) {
     ElMessage.error(t('alertPolicies.messages.loadPoliciesFailed'))
@@ -758,13 +758,13 @@ const loadResources = async () => {
         apiUrl = '/api/clients'
         break
       case 'proxy_node':
-        apiUrl = '/api/nodes'
+        apiUrl = '/nodes'
         break
       case 'storage_node':
-        apiUrl = '/api/storages'
+        apiUrl = '/storages'
         break
       default:
-        apiUrl = '/api/nodes'
+        apiUrl = '/nodes'
     }
 
     const response = await axios.get(apiUrl)
@@ -776,7 +776,7 @@ const loadResources = async () => {
 
 const loadNotificationTargets = async () => {
   try {
-    const response = await axios.get('/api/notifications/targets')
+    const response = await axios.get('/notifications/targets')
     notificationTargets.value = response.data.targets || []
   } catch (error) {
     console.error(t('alertPolicies.logMessages.loadNotificationTargetsFailed'), error)
@@ -785,7 +785,7 @@ const loadNotificationTargets = async () => {
 
 const loadNotificationChannels = async () => {
   try {
-    const response = await axios.get('/api/notifications/channels')
+    const response = await axios.get('/notifications/channels')
     notificationChannels.value = response.data.channels || []
   } catch (error) {
     console.error(t('alertPolicies.logMessages.loadNotificationChannelsFailed'), error)
@@ -794,7 +794,7 @@ const loadNotificationChannels = async () => {
 
 const loadTemplates = async () => {
   try {
-    const response = await axios.get('/api/alerts/templates')
+    const response = await axios.get('/alerts/templates')
     templates.value = response.data.templates || []
   } catch (error) {
     console.error(t('alertPolicies.logMessages.loadTemplatesFailed'), error)
@@ -805,15 +805,15 @@ const loadTemplates = async () => {
 const loadAlertDefinitions = async () => {
   try {
     // 加载资源类型
-    const resourceTypesResponse = await axios.get('/api/alerts/resource-types')
+    const resourceTypesResponse = await axios.get('/alerts/resource-types')
     resourceTypes.value = resourceTypesResponse.data.resource_types || []
 
     // 加载事件类型
-    const eventTypesResponse = await axios.get('/api/alerts/event-types')
+    const eventTypesResponse = await axios.get('/alerts/event-types')
     eventTypes.value = eventTypesResponse.data.event_types || []
 
     // 加载事件结果
-    const eventResultsResponse = await axios.get('/api/alerts/event-results')
+    const eventResultsResponse = await axios.get('/alerts/event-results')
     eventResults.value = eventResultsResponse.data.event_results || []
 
   } catch (error) {
@@ -1124,7 +1124,7 @@ const savePolicy = async () => {
     const data = { ...policyForm }
 
     // 验证配置
-    const validationResponse = await axios.post('/api/alerts/policies/validate-configuration', {
+    const validationResponse = await axios.post('/alerts/policies/validate-configuration', {
       notification_channels: data.notification_channels,
       template_id: data.template_id,
       notification_targets: data.notification_targets
@@ -1157,7 +1157,7 @@ const savePolicy = async () => {
       await axios.put(`/api/alerts/policies/${editingPolicy.value.id}`, data)
       ElMessage.success(t('alertPolicies.messages.updateSuccess'))
     } else {
-      await axios.post('/api/alerts/policies', data)
+      await axios.post('/alerts/policies', data)
       ElMessage.success(t('alertPolicies.messages.createSuccess'))
     }
 

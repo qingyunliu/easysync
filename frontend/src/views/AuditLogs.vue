@@ -463,7 +463,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 import { DataAnalysis, Clock, Operation, ArrowDown, ArrowUp } from '@element-plus/icons-vue'
 
 const { t } = useI18n()
@@ -497,7 +497,7 @@ const activeDetailsCollapse = ref(['params']) // 默认展开第一个
 // 获取登录审计日志
 const fetchLoginLogs = async () => {
   try {
-    const res = await axios.get('/api/auth/audit-logs', {
+    const res = await axios.get('/auth/audit-logs', {
       params: {
         page: loginPage.value,
         per_page: loginPerPage.value,
@@ -514,7 +514,7 @@ const fetchLoginLogs = async () => {
 // 获取操作审计日志
 const fetchOperationLogs = async () => {
   try {
-    const res = await axios.get('/api/auth/operation-logs', {
+    const res = await axios.get('/auth/operation-logs', {
       params: {
         page: operationPage.value,
         per_page: operationPerPage.value,

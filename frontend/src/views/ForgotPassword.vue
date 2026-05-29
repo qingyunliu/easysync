@@ -41,7 +41,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Message } from '@element-plus/icons-vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const router = useRouter()
 const { t } = useI18n()
@@ -60,7 +60,7 @@ const handleSubmit = async () => {
     if (valid) {
       loading.value = true
       try {
-        const res = await axios.post('/api/auth/forgot_password', { email: form.value.email })
+        const res = await axios.post('/auth/forgot_password', { email: form.value.email })
         if (res.data.status === 'success') {
           router.push({ name: 'ResetMailSent', query: { email: form.value.email } })
         } else {

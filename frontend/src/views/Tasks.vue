@@ -207,7 +207,16 @@
 
         <el-table-column prop="progress" :label="$t('tasks.progress')" width="180">
           <template #default="{ row }">
-            <el-tooltip :content="getProgressTooltip(row)" placement="top" :disabled="!getProgressTooltip(row)">
+            <!-- 失败状态显示失败提示 -->
+            <el-tag v-if="row.status === 'failed'" type="danger" size="small">
+              {{ $t('tasks.statuses.failed') }}
+            </el-tag>
+            <!-- 停止状态显示停止提示 -->
+            <el-tag v-else-if="row.status === 'stopped'" type="info" size="small">
+              {{ $t('tasks.statuses.stopped') }}
+            </el-tag>
+            <!-- 其他状态显示进度条 -->
+            <el-tooltip v-else :content="getProgressTooltip(row)" placement="top" :disabled="!getProgressTooltip(row)">
               <div class="progress-container">
                 <el-progress :percentage="row.progress || 0" :status="getProgressStatus(row.status)" :stroke-width="6"
                   :show-text="false" />
@@ -243,13 +252,19 @@
         <el-table-column :label="$t('common.actions')" width="300" fixed="right">
           <template #default="{ row }">
             <el-button-group size="small">
-              <!-- 启动/停止按钮 -->
-              <el-button v-if="['pending', 'failed'].includes(row.status)" type="success" @click="handleStartTask(row)"
+              <!-- 启动按钮 -->
+              <el-button v-if="['pending', 'failed', 'stopped'].includes(row.status)" type="success" @click="handleStartTask(row)"
                 :icon="VideoPlay" :loading="loadingTasks.has(row.id)">
                 {{ $t('tasks.actions.start') }}
               </el-button>
 
-              <!-- 暂停/恢复按钮 -->
+              <!-- 重新启动按钮 (assigned状态) -->
+              <el-button v-if="row.status === 'assigned'" type="success" @click="handleStartTask(row)"
+                :icon="VideoPlay" :loading="loadingTasks.has(row.id)">
+                {{ $t('tasks.actions.retry') }}
+              </el-button>
+
+<!-- 暂停/恢复按钮 -->
               <el-button v-if="row.status === 'running'" type="warning" @click="handlePauseTask(row)" :icon="VideoPause"
                 :loading="loadingTasks.has(row.id)">
                 {{ $t('tasks.actions.pause') }}
@@ -258,6 +273,12 @@
               <el-button v-if="row.status === 'paused'" type="success" @click="handleResumeTask(row)" :icon="VideoPlay"
                 :loading="loadingTasks.has(row.id)">
                 {{ $t('tasks.actions.resume') }}
+              </el-button>
+
+              <!-- 停止按钮 -->
+              <el-button v-if="['running', 'assigned', 'paused'].includes(row.status)" type="danger"
+                @click="handleStopTask(row)" :icon="Close" :loading="loadingTasks.has(row.id)">
+                {{ $t('tasks.actions.stop') }}
               </el-button>
 
               <!-- 取消按钮 -->
@@ -432,7 +453,7 @@ import {
 } from '@element-plus/icons-vue'
 import TaskWizard from '@/components/task-wizard/TaskWizard.vue'
 import TaskDetail from '@/components/TaskDetail.vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -536,11 +557,11 @@ const onlineNodes = computed(() => {
 // 获取统计数据
 const fetchStatistics = async () => {
   try {
-    const response = await axios.get('/api/tasks/statistics')
+    const response = await axios.get('/tasks/statistics')
     taskStats.value = response.data.data
 
     // 获取在线节点数
-    const nodesResponse = await axios.get('/api/nodes')
+    const nodesResponse = await axios.get('/nodes')
     OnlineNodeStats.value = nodesResponse.data.data.filter(node => node.status === 'online').length
   } catch (error) {
     console.error(t('tasks.messages.fetchStatsFailed'), error)
@@ -574,7 +595,7 @@ const stopAutoRefresh = () => {
 const fetchTasks = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/tasks', {
+    const response = await axios.get('/tasks', {
       params: {
         page: currentPage.value,
         page_size: pageSize.value
@@ -594,7 +615,7 @@ const fetchTasks = async () => {
 
 const fetchNodes = async () => {
   try {
-    const response = await axios.get('/api/nodes')
+    const response = await axios.get('/nodes')
     if (response.data.status === 'success') {
       nodes.value = response.data.data || []
     }
@@ -605,7 +626,7 @@ const fetchNodes = async () => {
 
 const fetchClients = async () => {
   try {
-    const response = await axios.get('/api/clients')
+    const response = await axios.get('/clients')
     if (response.data.status === 'success') {
       clients.value = response.data.data || []
     }
@@ -616,7 +637,7 @@ const fetchClients = async () => {
 
 const fetchStorages = async () => {
   try {
-    const response = await axios.get('/api/storages')
+    const response = await axios.get('/storages')
     if (response.data.status === 'success') {
       storages.value = response.data.data || []
     }
@@ -630,7 +651,7 @@ const fetchTaskLogs = async () => {
 
   logsLoading.value = true
   try {
-    const response = await axios.get(`/api/tasks/${currentTaskId.value}/logs`, {
+    const response = await axios.get(`/tasks/${currentTaskId.value}/logs`, {
       params: {
         page: logsPagination.value.page,
         per_page: logsPagination.value.per_page
@@ -667,7 +688,7 @@ const fetchTaskLogs = async () => {
 // 清理日志功能
 const cleanupLogs = async (type = 'duplicate') => {
   try {
-    const response = await axios.post(`/api/tasks/${currentTaskId.value}/logs/cleanup`, {
+    const response = await axios.post(`/tasks/${currentTaskId.value}/logs/cleanup`, {
       type: type,
       days: 7
     })
@@ -810,7 +831,7 @@ const handleStartTask = async (task) => {
 
   loadingTasks.value.add(task.id)
   try {
-    await axios.post(`/api/tasks/${task.id}/start`)
+    await axios.post(`/tasks/${task.id}/start`)
     ElMessage.success(t('tasks.messages.taskStartSuccess'))
     fetchTasks()
   } catch (error) {
@@ -825,7 +846,7 @@ const handlePauseTask = async (task) => {
 
   loadingTasks.value.add(task.id)
   try {
-    await axios.post(`/api/tasks/${task.id}/pause`)
+    await axios.post(`/tasks/${task.id}/pause`)
     ElMessage.success(t('tasks.messages.taskPauseRequestSent'))
     fetchTasks()
   } catch (error) {
@@ -840,11 +861,32 @@ const handleResumeTask = async (task) => {
 
   loadingTasks.value.add(task.id)
   try {
-    await axios.post(`/api/tasks/${task.id}/resume`)
+    await axios.post(`/tasks/${task.id}/resume`)
     ElMessage.success(t('tasks.messages.taskResumeRequestSent'))
     fetchTasks()
   } catch (error) {
     ElMessage.error(error.response?.data?.message || t('tasks.messages.resumeFailed'))
+  } finally {
+    loadingTasks.value.delete(task.id)
+  }
+}
+
+const handleStopTask = async (task) => {
+  if (loadingTasks.value.has(task.id)) return
+
+  try {
+    await ElMessageBox.confirm(t('tasks.messages.confirmStop'), t('common.tip'), {
+      type: 'warning'
+    })
+
+    loadingTasks.value.add(task.id)
+    await axios.post(`/tasks/${task.id}/stop`)
+    ElMessage.success(t('tasks.messages.taskStopped'))
+    fetchTasks()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || t('tasks.messages.stopFailed'))
+    }
   } finally {
     loadingTasks.value.delete(task.id)
   }
@@ -859,7 +901,7 @@ const handleCancelTask = async (task) => {
     })
 
     loadingTasks.value.add(task.id)
-    const response = await axios.post(`/api/tasks/${task.id}/cancel`)
+    const response = await axios.post(`/tasks/${task.id}/cancel`)
 
     if (response.data.status === 'success') {
       // 根据任务状态显示不同的消息
@@ -894,7 +936,7 @@ const startCancelStatusPolling = (taskId) => {
   // 启动新的轮询
   const timer = setInterval(async () => {
     try {
-      const response = await axios.get(`/api/tasks/${taskId}`)
+      const response = await axios.get(`/tasks/${taskId}`)
       if (response.data.status === 'success') {
         const task = response.data.data
         if (task.status === 'cancelled') {
@@ -938,7 +980,7 @@ const handleDeleteTask = async (task) => {
     })
 
     const force = ['running', 'assigned'].includes(task.status)
-    await axios.delete(`/api/tasks/${task.id}${force ? '?force=true' : ''}`)
+    await axios.delete(`/tasks/${task.id}${force ? '?force=true' : ''}`)
     ElMessage.success(t('tasks.messages.deleteTaskSuccess'))
     fetchTasks()
   } catch (error) {
@@ -951,7 +993,7 @@ const handleDeleteTask = async (task) => {
 const handleDuplicateTask = async (task) => {
   try {
     // 获取任务的完整详情
-    const response = await axios.get(`/api/tasks/${task.id}`)
+    const response = await axios.get(`/tasks/${task.id}`)
     if (response.data.status === 'success') {
       const taskDetail = response.data.data
       // 验证任务数据是否完整
@@ -1061,7 +1103,7 @@ const handleDropdownCommand = (command, task) => {
 
 const handleViewDetail = async (task) => {
   try {
-    const response = await axios.get(`/api/tasks/${task.id}`)
+    const response = await axios.get(`/tasks/${task.id}`)
     if (response.data.status === 'success') {
       selectedTask.value = response.data.data
     } else {
@@ -1076,7 +1118,7 @@ const handleViewDetail = async (task) => {
 
 const handleRetryTask = async (task) => {
   try {
-    await axios.post(`/api/tasks/${task.id}/retry`)
+    await axios.post(`/tasks/${task.id}/retry`)
     ElMessage.success(t('tasks.messages.retryTaskSuccess'))
     fetchTasks()
   } catch (error) {
@@ -1094,7 +1136,7 @@ const batchCancel = async () => {
     })
 
     const taskIds = selectedTasks.value.map(task => task.id)
-    await axios.put('/api/tasks/batch/cancel', { task_ids: taskIds })
+    await axios.put('/tasks/batch/cancel', { task_ids: taskIds })
     ElMessage.success(t('tasks.messages.batchCancelSuccess'))
     fetchTasks()
   } catch (error) {
@@ -1113,7 +1155,7 @@ const batchRetry = async () => {
     })
 
     const taskIds = selectedTasks.value.map(task => task.id)
-    await axios.put('/api/tasks/batch/retry', { task_ids: taskIds })
+    await axios.put('/tasks/batch/retry', { task_ids: taskIds })
     ElMessage.success(t('tasks.messages.batchRetrySuccess'))
     fetchTasks()
   } catch (error) {
@@ -1132,7 +1174,7 @@ const batchDelete = async () => {
     })
 
     const taskIds = selectedTasks.value.map(task => task.id)
-    await axios.delete('/api/tasks/batch/delete', { data: { task_ids: taskIds } })
+    await axios.delete('/tasks/batch/delete', { data: { task_ids: taskIds } })
     ElMessage.success(t('tasks.messages.batchDeleteSuccess'))
     fetchTasks()
   } catch (error) {

@@ -606,6 +606,27 @@ def resume_task(task_id):
         logger.error(f"Error resuming task {task_id}: {e}")
         raise e
 
+@tasks_bp.route('/<string:task_id>/stop', methods=['POST'])
+@jwt_required()
+def stop_task(task_id):
+    """停止任务"""
+    try:
+        task = task_service.stop_task(task_id)
+        # 发送任务停止通知
+        notification_service.notify_task_stopped(
+            user_id=task.user_id,
+            task_name=task.name,
+            reason='用户手动停止'
+        )
+        return jsonify({
+            'status': 'success',
+            'message': f'Task {task_id} stopped',
+            'data': task.to_dict()
+        })
+    except Exception as e:
+        logger.error(f"Error stopping task {task_id}: {e}")
+        raise e
+
 @tasks_bp.route('/<string:task_id>', methods=['PUT'])
 @jwt_required()
 def update_task(task_id):

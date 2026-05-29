@@ -2,7 +2,7 @@ import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 from backend import db
-from backend.app.models import Task, TaskLog, TaskStatus, TaskPriority
+from backend.app.models import Task, TaskLog, TaskStatus, TaskPriority, Storage
 from backend.app.models import Node, NodeStatus
 from backend.app.notifications.services import NotificationService
 from .errors import TaskNotFoundError, TaskOperationError, TaskValidationError, TaskStateError
@@ -25,6 +25,21 @@ class TaskService:
         
         task_type = task_data.get('type')
         
+        # 获取存储配置
+        source_config = {}
+        target_config = {}
+        
+        # 如果是存储类型，从数据库中获取存储配置
+        if task_data.get('source_type') == 'storage' and task_data.get('source_storage_id'):
+            source_storage = Storage.query.get(task_data.get('source_storage_id'))
+            if source_storage:
+                source_config = source_storage.config
+        
+        if task_data.get('target_storage_id'):
+            target_storage = Storage.query.get(task_data.get('target_storage_id'))
+            if target_storage:
+                target_config = target_storage.config
+        
         # 构建任务对象，支持新的字段结构
         task = Task(
             name=task_data.get('name'),
@@ -41,9 +56,9 @@ class TaskService:
             source_path=task_data.get('source_path'),
             target_storage_id=task_data.get('target_storage_id'),
             target_path=task_data.get('target_path'),
-            # 兼容旧版本字段
-            source=task_data.get('source', {}),
-            target=task_data.get('target', {}),
+            # 兼容旧版本字段 - 从存储配置中填充
+            source=source_config,
+            target=target_config,
             options=task_data.get('options', {}),
         )
         
@@ -228,7 +243,7 @@ class TaskService:
         """
         task = self.get_task(task_id)
         
-        if task.status not in ['pending', 'failed']:
+        if task.status not in ['pending', 'failed', 'stopped']:
             raise TaskOperationError(f"Task cannot be started: {task_id}, current status: {task.status}")
         
         # 如果指定了节点，分配给该节点
@@ -293,7 +308,40 @@ class TaskService:
         
         logger.info(f"Task pause requested: {task_id}")
         return task
-    
+
+    def stop_task(self, task_id: str) -> Task:
+        """停止任务
+
+        Args:
+            task_id: 任务ID
+
+        Returns:
+            Task: 任务对象
+
+        Raises:
+            TaskNotFoundError: 任务不存在
+            TaskOperationError: 操作失败
+        """
+        task = self.get_task(task_id)
+
+        if task.status in ['completed', 'failed', 'cancelled', 'stopped']:
+            raise TaskOperationError(f"Task cannot be stopped: {task_id}, current status: {task.status}")
+
+        # 强制停止任务
+        task.status = 'stopped'
+        task.updated_at = datetime.utcnow()
+
+        db.session.commit()
+
+        # 记录停止日志
+        self._add_task_log(task.id, 'stopped', f"Task '{task.name}' stopped", {
+            'stopped_at': task.updated_at.isoformat(),
+            'reason': 'User requested stop'
+        })
+
+        logger.info(f"Task stopped: {task_id}")
+        return task
+
     def resume_task(self, task_id: str) -> Task:
         """恢复任务
         

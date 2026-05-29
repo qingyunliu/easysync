@@ -1394,7 +1394,21 @@ class NotificationService:
             content=f'同步任务 {task_name} 已恢复执行。',
             level='info'
         )
-    
+
+    def notify_task_stopped(self, user_id: int, task_name: str, reason: str = None) -> None:
+        """通知任务停止"""
+        content = f'同步任务 {task_name} 已停止。'
+        if reason:
+            content += f'\n原因: {reason}'
+
+        self.create_notification(
+            user_id=user_id,
+            type='task_stopped',
+            title=f'任务已停止: {task_name}',
+            content=content,
+            level='warning'
+        )
+
     def notify_task_cancelled(self, user_id: int, task_name: str, reason: str = None) -> None:
         """通知任务取消"""
         content = f'同步任务 {task_name} 已被取消。'

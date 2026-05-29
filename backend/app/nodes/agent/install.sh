@@ -44,8 +44,9 @@ mkdir -p $INSTALL_DIR
 mkdir -p $BACKUP_DIR
 mkdir -p $LOG_DIR
 
-# 安装 Python 依赖
-pip install -r requirements.txt
+# 安装 Python 依赖到系统
+echo "Installing Python dependencies..."
+pip3 install -r $INSTALL_DIR/requirements.txt
 
 # 设置配置文件
 cat > $INSTALL_DIR/config/config.json << EOF
@@ -133,7 +134,7 @@ After=network.target
 Type=simple
 User=root
 WorkingDirectory=$INSTALL_DIR
-ExecStart=/usr/bin/python3 $INSTALL_DIR/proxy.py --config /opt/easysync/proxy/config/config.json
+ExecStart=/usr/bin/python3 $INSTALL_DIR/proxy.py --config $INSTALL_DIR/config/config.json
 Restart=always
 RestartSec=10
 

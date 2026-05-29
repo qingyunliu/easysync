@@ -79,6 +79,7 @@ export default {
     inactive: '非活跃',
     online: '在线',
     offline: '离线',
+    dangerOperation: '危险操作',
     connected: '已连接',
     disconnected: '已断开',
     running: '运行中',
@@ -116,6 +117,8 @@ export default {
     custom: '自定义',
     hour: '小时',
     second: '秒',
+    minute: '分钟',
+    seconds: '秒',
     minute: '分钟',
     day: '天',
     week: '周',
@@ -378,6 +381,11 @@ export default {
     storageMounted: '存储挂载',
     storageUnmounted: '存储卸载',
     systemNotification: '系统通知',
+    statuses: {
+      normal: '正常',
+      attention: '注意',
+      warning: '警告',
+    },
   },
 
   // 首页模块
@@ -922,6 +930,7 @@ export default {
       failed: '失败',
       cancelled: '已取消',
       paused: '已暂停',
+      stopped: '已停止',
     },
 
     // 优先级
@@ -937,6 +946,7 @@ export default {
       start: '启动',
       pause: '暂停',
       resume: '恢复',
+      stop: '停止',
       cancel: '取消',
       retry: '重试',
       more: '更多',
@@ -1001,6 +1011,17 @@ export default {
       getTaskLogsFailed: '获取任务日志失败',
       pollTaskStatusFailed: '轮询任务状态失败:',
       fetchStatsFailed: '获取统计数据失败:',
+      getClientsFailed: '获取客户端列表失败',  // 新增
+      getStoragesFailed: '获取存储列表失败',  // 新增
+      getNodesFailed: '获取节点列表失败',  // 新增
+      taskStartSuccess: '任务启动成功',  // 新增
+      startFailed: '启动失败',  // 新增
+      pauseFailed: '暂停失败',  // 新增
+      taskPauseRequestSent: '暂停请求已发送',  // 新增
+      taskStopped: '任务已停止',  // 新增
+      stopFailed: '停止失败',  // 新增
+      confirmStop: '确定要停止此任务吗？',  // 新增
+      deleteTaskSuccess: '任务删除成功',  // 新增
     },
 
     // 验证规则
@@ -1405,6 +1426,7 @@ export default {
       getFileListFailed: '获取文件列表失败',
       getBucketListFailed: '获取存储桶列表失败',
       getObjectListFailed: '获取对象列表失败',
+      searchBuckets: '搜索存储桶',  // 新增：搜索存储桶
     },
   },
 

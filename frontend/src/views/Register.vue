@@ -80,7 +80,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { User, Message, Lock } from '@element-plus/icons-vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 import ThemeToggle from '@/components/ThemeToggle.vue'
 import LanguageIcon from '@/components/LanguageIcon.vue'
 
@@ -142,7 +142,7 @@ const handleRegister = async () => {
     if (valid) {
       loading.value = true
       try {
-        const response = await axios.post('/api/users', {
+        const response = await axios.post('/users', {
           username: registerForm.username,
           email: registerForm.email,
           password: registerForm.password

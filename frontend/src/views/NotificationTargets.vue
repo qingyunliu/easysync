@@ -324,7 +324,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -382,7 +382,7 @@ onMounted(() => {
 const fetchTargets = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/notifications/targets')
+    const response = await axios.get('/notifications/targets')
     targets.value = response.data.targets || []
   } catch (error) {
     ElMessage.error(t('notification.targets.messages.getTargetsFailed'))
@@ -408,7 +408,7 @@ const showTargetDetail = (target) => {
 
 const fetchAlertPolicies = async () => {
   try {
-    const response = await axios.get('/api/alerts/policies')
+    const response = await axios.get('/alerts/policies')
     alertPolicies.value = response.data.policies || []
   } catch (error) {
     console.error('获取告警策略失败:', error)
@@ -417,7 +417,7 @@ const fetchAlertPolicies = async () => {
 
 const fetchNotificationChannels = async () => {
   try {
-    const response = await axios.get('/api/notifications/channels')
+    const response = await axios.get('/notifications/channels')
     notificationChannels.value = response.data.channels || []
   } catch (error) {
     console.error('获取通知渠道失败:', error)
@@ -477,7 +477,7 @@ const handleTargetTypeChange = () => {
 const submitTarget = async () => {
   try {
     if (dialogMode.value === 'create') {
-      await axios.post('/api/notifications/targets', targetForm)
+      await axios.post('/notifications/targets', targetForm)
       ElMessage.success(t('notification.targets.messages.createSuccess'))
     } else {
       await axios.put(`/api/notifications/targets/${editingTarget.value.id}`, targetForm)

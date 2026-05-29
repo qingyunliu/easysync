@@ -1,7 +1,12 @@
 <template>
   <div class="profile-container">
     <div class="page-header">
-      <h2>{{ $t('profile.pageTitle') }}</h2>
+      <div class="header-left">
+        <el-button class="back-button" @click="goBack" :icon="ArrowLeft">
+          {{ $t('common.back') }}
+        </el-button>
+        <h2>{{ $t('profile.pageTitle') }}</h2>
+      </div>
     </div>
 
     <div class="content-wrapper">
@@ -100,20 +105,22 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { useUserStore } from '../stores/user'
 import defaultAvatar from '@/assets/avatar/default-avatar.jpeg'
-import { Document } from '@element-plus/icons-vue'
-import axios from 'axios'
+import { Document, ArrowLeft } from '@element-plus/icons-vue'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
+const router = useRouter()
 const userStore = useUserStore()
 const activeTab = ref('basic')
 const profileFormRef = ref(null)
 const passwordFormRef = ref(null)
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:50001"
+const API_BASE_URL = import.meta.env.VITE_API_URL || `http://127.0.0.1:50001`
 
 // 个人信息表单
 const profileForm = reactive({
@@ -183,7 +190,7 @@ const beforeAvatarUpload = (file) => {
 // 获取用户信息
 const fetchUserProfile = async () => {
   try {
-    const response = await axios.get("/api/users/me");
+    const response = await axios.get('/users/me');
 
     const userData = response.data.data
     Object.assign(profileForm, {
@@ -334,6 +341,11 @@ const handleChangePassword = async () => {
     }
   })
 }
+
+// 返回上一页
+const goBack = () => {
+  router.back()
+}
 </script>
 
 <style scoped>
@@ -345,6 +357,16 @@ const handleChangePassword = async () => {
 
 .page-header {
   margin-bottom: 24px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.back-button {
+  padding: 8px 16px;
 }
 
 .page-header h2 {

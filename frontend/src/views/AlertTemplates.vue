@@ -149,7 +149,7 @@
     <!-- 创建/编辑模板对话框 -->
     <el-dialog v-model="showCreateDialog"
       :title="editingTemplate ? $t('alertTemplates.editTemplate') : $t('alertTemplates.createTemplate')" width="35%"
-      @close="resetForm">
+      @close="resetForm" :close-on-click-modal="false">
       <el-form ref="templateFormRef" :model="templateForm" :rules="templateRules" label-width="120px">
         <el-row :gutter="20">
           <el-col :span="12">
@@ -247,7 +247,7 @@
     </el-dialog>
 
     <!-- 预览对话框 -->
-    <el-dialog v-model="showPreviewDialog" :title="$t('alertTemplates.templatePreview')" width="30%">
+    <el-dialog v-model="showPreviewDialog" :title="$t('alertTemplates.templatePreview')" width="30%" :close-on-click-modal="false">
       <div class="preview-dialog-content">
         <div class="preview-section">
           <h4>{{ $t('alertTemplates.title') }}:</h4>
@@ -373,7 +373,7 @@ import { ref, reactive, computed, onMounted, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Plus, Refresh, Search } from "@element-plus/icons-vue";
 import { useI18n } from "vue-i18n";
-import axios from "axios";
+import axios from "@/utils/axios.mjs";
 
 const { t } = useI18n();
 
@@ -463,7 +463,7 @@ const loadTemplates = async () => {
     if (filters.category) params.category = filters.category;
     if (filters.template_type) params.template_type = filters.template_type;
 
-    const response = await axios.get("/api/alerts/templates", { params });
+    const response = await axios.get('/alerts/templates', { params });
     templates.value = response.data.templates || [];
   } catch (error) {
     ElMessage.error(t('alertTemplates.loadTemplatesFailed'));
@@ -504,7 +504,7 @@ const previewTemplate = async (template) => {
     };
 
     const response = await axios.post(
-      `/api/alerts/templates/${template.id}/render`,
+      `/alerts/templates/${template.id}/render`,
       {
         variables: testVariables,
       }
@@ -533,12 +533,12 @@ const saveTemplate = async () => {
     const data = { ...templateForm };
     if (editingTemplate.value) {
       await axios.put(
-        `/api/alerts/templates/${editingTemplate.value.id}`,
+        `/alerts/templates/${editingTemplate.value.id}`,
         data
       );
       ElMessage.success(t('alertTemplates.updateSuccess'));
     } else {
-      await axios.post("/api/alerts/templates", data);
+      await axios.post('/alerts/templates', data);
       ElMessage.success(t('alertTemplates.createSuccess'));
     }
 
@@ -559,7 +559,7 @@ const deleteTemplate = async (template) => {
       { type: "warning" }
     );
 
-    await axios.delete(`/api/alerts/templates/${template.id}`);
+    await axios.delete(`/alerts/templates/${template.id}`);
     ElMessage.success(t('alertTemplates.deleteSuccess'));
     loadTemplates();
   } catch (error) {

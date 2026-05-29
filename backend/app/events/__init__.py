@@ -5,6 +5,6 @@
 
 from flask import Blueprint
 
-events_bp = Blueprint('events', __name__, url_prefix='/api/events')
+events_bp = Blueprint('events', __name__, url_prefix='')
 
 from . import routes

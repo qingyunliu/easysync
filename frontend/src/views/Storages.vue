@@ -380,7 +380,7 @@
                       40)
                   }) }}</span>
                 </el-tooltip>
-                <el-button v-if="currentPath.length > 40" type="text" size="small" @click="togglePathExpanded"
+                <el-button v-if="currentPath.length > 40" type="link" size="small" @click="togglePathExpanded"
                   class="path-expand-button">
                   <Icon :icon="pathExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'" :width="12" />
                 </el-button>
@@ -502,7 +502,7 @@
                     <span>{{ $t('storage.currentPath') }}: {{ pathExpanded ? currentPath : truncatePath(currentPath, 40)
                     }}</span>
                   </el-tooltip>
-                  <el-button v-if="currentPath.length > 40" type="text" size="small" @click="togglePathExpanded"
+                  <el-button v-if="currentPath.length > 40" type="link" size="small" @click="togglePathExpanded"
                     class="path-expand-button">
                     <Icon :icon="pathExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'" :width="12" />
                   </el-button>
@@ -585,7 +585,7 @@
 
     <!-- 存储编辑对话框 -->
     <el-dialog :title="dialogType === 'add' ? $t('storage.addStorage') : $t('storage.editStorage')"
-      v-model="dialogVisible" width="600px" :before-close="handleDialogClose">
+      v-model="dialogVisible" width="600px" :before-close="handleDialogClose" :close-on-click-modal="false">
       <el-form :model="form" :rules="formRules" ref="formRef" label-width="120px" class="storage-form">
         <el-form-item :label="$t('storage.storageName')" prop="name">
           <el-input v-model="form.name" :placeholder="$t('storage.enterStorageName')" />
@@ -745,9 +745,9 @@ import { ref, onMounted, computed, onUnmounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Icon } from '@iconify/vue'
-import { Refresh } from '@element-plus/icons-vue'
+import { Refresh, InfoFilled } from '@element-plus/icons-vue'
 import StorageActions from '@/components/StorageActions.vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -960,7 +960,7 @@ const togglePathExpanded = () => {
 const fetchStorages = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/storages');
+    const response = await axios.get('/storages');
     storages.value = response.data.storages
   } catch (error) {
     ElMessage.error(t('storage.getStorageListFailed'))
@@ -1086,7 +1086,7 @@ const showEditDialog = (row) => {
 const getStorageInfo = async (row) => {
   try {
     row.fetching = true
-    const response = await axios.get(`/api/storages/${row.id}/info`)
+    const response = await axios.get(`/storages/${row.id}/info`)
     storageStats.value = response.data.data
     ElMessage.success(t('storage.getInfoSuccess'))
   } catch (error) {
@@ -1106,7 +1106,7 @@ const handleNameClick = async (row) => {
     }
 
     // 检查绑定的节点是否在线
-    const nodesResponse = await axios.get('/api/nodes')
+    const nodesResponse = await axios.get('/nodes')
     const boundNode = nodesResponse.data.data.find(node => node.id === row.node_id)
 
     if (!boundNode) {
@@ -1180,7 +1180,7 @@ const fetchNASDetails = async () => {
     }
 
     loadingNASStats.value = true
-    const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
+    const response = await axios.get(`/storages/${currentStorage.value.id}/stats`)
 
     if (response.data.status === 'task_created') {
       ElMessage.info(t('storage.statsTaskCreated', { taskId: response.data.task_id }))
@@ -1207,7 +1207,7 @@ const refreshNASStats = async () => {
     }
 
     refreshingStats.value = true
-    const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
+    const response = await axios.get(`/storages/${currentStorage.value.id}/stats`)
 
     if (response.data.status === 'task_created') {
       ElMessage.info(t('storage.statsTaskCreated', { taskId: response.data.task_id }))
@@ -1234,7 +1234,7 @@ const handleFileDownload = async (file) => {
       return
     }
 
-    const response = await axios.post(`/api/storages/${currentStorage.value.id}/download`, {
+    const response = await axios.post(`/storages/${currentStorage.value.id}/download`, {
       params: {
         node_id: currentStorage.value.node_id,
         path: file.path,
@@ -1273,7 +1273,7 @@ const fetchFiles = async () => {
     }
 
     loadingFiles.value = true
-    const response = await axios.get(`/api/storages/${currentStorage.value.id}/files`, {
+    const response = await axios.get(`/storages/${currentStorage.value.id}/files`, {
       params: {
         node_id: currentStorage.value.node_id,
         path: currentPath.value,
@@ -1321,7 +1321,7 @@ const fetchBuckets = async () => {
     }
 
     loadingBuckets.value = true
-    const response = await axios.get(`/api/storages/${currentStorage.value.id}/buckets`, {
+    const response = await axios.get(`/storages/${currentStorage.value.id}/buckets`, {
       params: {
         page: bucketPage.value,
         page_size: bucketPageSize.value
@@ -1386,7 +1386,7 @@ const fetchObjects = async () => {
     }
 
     loadingObjects.value = true
-    const response = await axios.get(`/api/storages/${currentStorage.value.id}/objects`, {
+    const response = await axios.get(`/storages/${currentStorage.value.id}/objects`, {
       params: {
         node_id: currentStorage.value.node_id,
         bucket: currentBucket.value,
@@ -1487,7 +1487,7 @@ const handleCurrentChange = (val) => {
 // 处理下载
 const handleS3Download = async (row) => {
   try {
-    const response = await axios.get(`/api/storages/${currentStorage.value.id}/download`, {
+    const response = await axios.get(`/storages/${currentStorage.value.id}/download`, {
       params: {
         bucket: currentBucket.value,
         key: row.key
@@ -1722,10 +1722,10 @@ const handleSubmit = async () => {
     }
 
     if (dialogType.value === 'add') {
-      const response = await axios.post('/api/storages', submitData)
+      const response = await axios.post('/storages', submitData)
       ElMessage.success(t('storage.addStorageSuccess'))
     } else {
-      const response = await axios.put(`/api/storages/${form.value.id}`, submitData)
+      const response = await axios.put(`/storages/${form.value.id}`, submitData)
       ElMessage.success(t('storage.updateStorageSuccess'))
     }
     dialogVisible.value = false
@@ -1744,7 +1744,7 @@ const handleSubmit = async () => {
 // 获取可用节点列表（只显示在线且Agent已安装的节点）
 const fetchAvailableNodes = async () => {
   try {
-    const response = await axios.get('/api/nodes')
+    const response = await axios.get('/nodes')
     const allNodes = response.data.data || []
 
     // 过滤出在线且Agent已安装的节点
@@ -1839,7 +1839,7 @@ const handleTestConnect = async () => {
     // 显示加载状态
     ElMessage.info(t('storage.creatingConnectionTestTask', { nodeName: selectedNode.name, ipAddress: selectedNode.ipaddress }))
 
-    const response = await axios.post('/api/storages/test-connection', submitData)
+    const response = await axios.post('/storages/test-connection', submitData)
     if (response.data.status == "success") {
       // 检查返回的数据结构
       const result = response.data.result || response.data.data
@@ -1910,7 +1910,7 @@ const refreshStats = async () => {
     })
 
     refreshingStats.value = true
-    const response = await axios.get(`/api/storages/${currentStorage.value.id}/stats`)
+    const response = await axios.get(`/storages/${currentStorage.value.id}/stats`)
 
     if (response.data.status === 'task_created') {
       ElMessage.info(t('storage.statsTaskCreated', { taskId: response.data.task_id }))

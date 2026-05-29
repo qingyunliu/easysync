@@ -6,17 +6,21 @@ load_dotenv()
 
 class Config:
     # 基础配置
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev'
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-2025'
+    
+    # 数据库配置 - 优先使用环境变量，否则使用SQLite
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///easysync.db'
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_pre_ping': True,
+    }
     
     # JWT配置
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key'
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES_HOURS', 1)))  # 默认1小时
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES_DAYS', 7)))  # 默认7天，可通过环境变量配置
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY') or 'jwt-secret-key-2025'
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES_HOURS', 1)))
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES_DAYS', 7)))
     
     # CORS配置
-    # 默认只允许本地开发端口，生产环境请通过环境变量严格配置
     CORS_ORIGINS = os.environ.get('CORS_ALLOWED_ORIGINS', 'http://localhost:5173,http://127.0.0.1:5173')
     CORS_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
     CORS_ALLOW_HEADERS = ['Content-Type', 'Authorization']
@@ -37,65 +41,11 @@ class Config:
     LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     LOG_FILE = 'easysync.log'
     
-    # 数据库配置
-    SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI', 'mysql+pymysql://root:123456@localhost:3306/easysync')
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_ENGINE_OPTIONS = {
-        'pool_size': 10,
-        'pool_recycle': 3600,
-        'pool_pre_ping': True,
-        'connect_args': {
-            'connect_timeout': 10,
-            'read_timeout': 10,
-            'write_timeout': 10
-        }
-    }
-    
-    # Redis配置
+    # Redis配置 - 可选
     REDIS_URL = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
     
-    # Celery配置
-    CELERY_BROKER_URL = REDIS_URL
-    CELERY_RESULT_BACKEND = REDIS_URL
-
-    # 配置文件目录
-    CONFIG_DIR = os.environ.get('CONFIG_DIR', '/tmp/easysync')
-    
-    # 同步配置
-    SYNC_TEMP_DIR = os.environ.get('SYNC_TEMP_DIR', '/tmp/easysync')
-    MAX_CONCURRENT_TASKS = int(os.environ.get('MAX_CONCURRENT_TASKS', 5))
-    SYNC_CHUNK_SIZE = int(os.environ.get('SYNC_CHUNK_SIZE', 1024 * 1024))  # 1MB
-    
-    # 存储配置
-    OBS_CONFIG_PATH = os.environ.get('OBS_CONFIG_PATH', '/etc/easysync/rclone.conf')
-    NFS_MOUNT_BASE = os.environ.get('NFS_MOUNT_BASE', '/mnt/easysync')
-
-    # EasySync Agent 配置
-    EASYSYNC_AGENT_VERSION = os.environ.get('EASYSYNC_AGENT_VERSION', '1.0.0')
-    EASYSYNC_AGENT_INSTALL_PATH = os.environ.get('EASYSYNC_AGENT_INSTALL_PATH', '/opt/easysync/agent')
-    EASYSYNC_AGENT_CONFIG_PATH = os.environ.get('EASYSYNC_AGENT_CONFIG_PATH', '/opt/easysync/agent/config.yaml')
-    EASYSYNC_AGENT_LOG_PATH = os.environ.get('EASYSYNC_AGENT_LOG_PATH', '/var/log/easysync/')
-    EASYSYNC_AGENT_BACKUP_PATH = os.environ.get('EASYSYNC_AGENT_BACKUP_PATH', '/opt/easysync/agent/backup')
-    
-    # EasySync Proxy 配置
-    EASYSYNC_PROXY_VERSION = os.environ.get('EASYSYNC_PROXY_VERSION', '1.0.0')
-    EASYSYNC_PROXY_INSTALL_PATH = os.environ.get('EASYSYNC_PROXY_INSTALL_PATH', '/opt/easysync/proxy')
-    EASYSYNC_PROXY_CONFIG_PATH = os.environ.get('EASYSYNC_PROXY_CONFIG_PATH', '/opt/easysync/proxy/config/config.json')
-    EASYSYNC_PROXY_LOG_PATH = os.environ.get('EASYSYNC_PROXY_LOG_PATH', '/var/log/easysync/')
-    EASYSYNC_PROXY_BACKUP_PATH = os.environ.get('EASYSYNC_PROXY_BACKUP_PATH', '/opt/easysync/proxy/backup')
-    
-    # 监控配置
-    PROMETHEUS_METRICS_PORT = int(os.environ.get('PROMETHEUS_METRICS_PORT', 9090))
-    
-    # 邮件SMTP配置
-    SMTP_SERVER = os.environ.get('SMTP_SERVER', 'smtpdm.aliyun.com')
-    SMTP_PORT = int(os.environ.get('SMTP_PORT', 465))
-    SMTP_USER = os.environ.get('SMTP_USER', '')
-    # 不提供默认密码，必须通过环境变量传入
-    SMTP_PASSWORD = os.environ.get('SMTP_PASSWORD')
-    # 是否使用TLS
-    SMTP_USE_TLS = os.environ.get('SMTP_USE_TLS', 'true').lower() == 'true'
-    SMTP_FROM = os.environ.get('SMTP_FROM', 'support@email.oneprocloud.com')
+    # 配置目录
+    CONFIG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'config')
     
     # 通知配置文件
     NOTIFICATION_CONFIG_FILE = os.environ.get('NOTIFICATION_CONFIG_FILE', os.path.join(CONFIG_DIR, 'notification_config.json'))
@@ -107,16 +57,16 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('SQLALCHEMY_DATABASE_URI', 'mysql+pymysql://root:123456@localhost:3306/easysync_dev')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'sqlite:///easysync_dev.db'
 
 class TestingConfig(Config):
     TESTING = True
-    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL', 'mysql+pymysql://root:123456@localhost:3306/easysync_test')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('TEST_DATABASE_URL', 'sqlite:///easysync_test.db')
 
 class ProductionConfig(Config):
     # 生产环境使用更严格的token过期时间
-    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES_MINUTES', 30)))  # 生产环境30分钟
-    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES_DAYS', 3)))  # 生产环境3天
+    JWT_ACCESS_TOKEN_EXPIRES = timedelta(minutes=int(os.environ.get('JWT_ACCESS_TOKEN_EXPIRES_MINUTES', 30)))
+    JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=int(os.environ.get('JWT_REFRESH_TOKEN_EXPIRES_DAYS', 3)))
     
     @classmethod
     def init_app(cls, app):
@@ -127,9 +77,9 @@ class ProductionConfig(Config):
         jwt_secret = app.config.get('JWT_SECRET_KEY')
         cors_origins = app.config.get('CORS_ORIGINS')
 
-        if not secret_key or secret_key == 'dev':
+        if not secret_key or secret_key == 'dev-secret-key-2025':
             raise ValueError('SECURITY: SECRET_KEY must be set in production and not use default')
-        if not jwt_secret or jwt_secret == 'jwt-secret-key':
+        if not jwt_secret or jwt_secret == 'jwt-secret-key-2025':
             raise ValueError('SECURITY: JWT_SECRET_KEY must be set in production and not use default')
         if cors_origins == '*' or (isinstance(cors_origins, str) and cors_origins.strip() == '*'):
             raise ValueError('SECURITY: CORS_ALLOWED_ORIGINS must not be * in production')

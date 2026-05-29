@@ -236,7 +236,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick, markRaw } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
@@ -248,7 +248,7 @@ import SourceSelector from './SourceSelector.vue'
 import TargetSelector from './TargetSelector.vue'
 import TaskParameters from './TaskParameters.vue'
 import TaskConfirmation from './TaskConfirmation.vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -279,25 +279,25 @@ const steps = ref([
   {
     title: t('taskWizard.steps.selectSource'),
     description: t('taskWizard.steps.selectSourceDesc'),
-    icon: FolderOpened,
+    icon: markRaw(FolderOpened),
     iconClass: 'step-icon-source'
   },
   {
     title: t('taskWizard.steps.selectTarget'),
     description: t('taskWizard.steps.selectTargetDesc'),
-    icon: FolderAdd,
+    icon: markRaw(FolderAdd),
     iconClass: 'step-icon-target'
   },
   {
     title: t('taskWizard.steps.configureParameters'),
     description: t('taskWizard.steps.configureParametersDesc'),
-    icon: Setting,
+    icon: markRaw(Setting),
     iconClass: 'step-icon-settings'
   },
   {
     title: t('taskWizard.steps.confirmConfig'),
     description: t('taskWizard.steps.confirmConfigDesc'),
-    icon: Check,
+    icon: markRaw(Check),
     iconClass: 'step-icon-confirm'
   }
 ])
@@ -606,7 +606,7 @@ const createTask = async () => {
     const taskData = buildTaskData()
 
     // 调用API创建任务
-    const response = await axios.post('/api/tasks', taskData)
+    const response = await axios.post('/tasks', taskData)
 
     if (response.data.status === 'success') {
       ElMessage.success(t('taskWizard.messages.taskCreatedSuccess'))

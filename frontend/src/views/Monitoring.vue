@@ -204,7 +204,7 @@
       <template #header>
         <div class="card-header">
           <span>{{ $t('monitoring.alertStatistics') }}</span>
-          <el-button type="text" @click="$router.push('/monitoring/alerts')">
+          <el-button type="link" @click="$router.push('/monitoring/alerts')">
             {{ $t('monitoring.viewDetails') }}
             <el-icon>
               <ArrowRight />
@@ -262,7 +262,7 @@ import {
   ArrowRight
 } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -322,7 +322,7 @@ onUnmounted(() => {
 // 方法
 const fetchSystemStatus = async () => {
   try {
-    const response = await axios.get('/api/monitor/system/status')
+    const response = await axios.get('/monitor/system/status')
     Object.assign(systemStatus, response.data)
   } catch (error) {
     console.error('获取系统状态失败:', error)
@@ -332,7 +332,7 @@ const fetchSystemStatus = async () => {
 
 const fetchAlertStats = async () => {
   try {
-    const response = await axios.get('/api/alerts/statistics', {
+    const response = await axios.get('/alerts/statistics', {
       params: { range: '24h' }
     })
     Object.assign(alertStats, response.data)
@@ -588,7 +588,7 @@ const updateCharts = async () => {
     const startTime = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString() // 24小时前
 
     // 从API获取系统监控数据
-    const response = await axios.get('/api/monitor/system/metrics', {
+    const response = await axios.get('/monitor/system/metrics', {
       params: {
         start_time: startTime,
         end_time: endTime,
@@ -640,7 +640,7 @@ const updateCharts = async () => {
 
 const updateCurrentStatus = async () => {
   try {
-    const response = await axios.get('/api/monitor/system/current')
+    const response = await axios.get('/monitor/system/current')
 
     if (response.data.status === 'success') {
       const currentData = response.data.data

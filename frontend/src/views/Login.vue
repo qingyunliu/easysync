@@ -1,368 +1,222 @@
 <template>
   <div class="login-container">
-    <div class="login-background">
-      <div class="login-content">
-        <div class="login-header">
-          <div class="login-logo">
-            <img src="/src/assets/logo/easysync-login-page.svg">
-            <p>{{ $t('auth.dataSyncPlatform') }}</p>
-          </div>
+    <el-card class="login-card">
+      <template #header>
+        <div class="card-header">
+          <h2>EasySync 登录</h2>
         </div>
-        <el-card class="login-card" shadow="hover">
-          <template #header>
-            <div class="card-header">
-              <h2>{{ $t('auth.welcomeBack') }}</h2>
-              <div class="header-actions">
-                <LanguageIcon />
-                <ThemeToggle class="theme-toggle-inline" />
-              </div>
-            </div>
-          </template>
-          <el-form :model="loginForm" :rules="rules" ref="loginFormRef" label-width="0" @submit.prevent="handleLogin">
-            <el-form-item prop="username">
-              <el-input v-model="loginForm.username" :placeholder="$t('auth.username')" class="custom-input">
-                <template #prefix>
-                  <el-icon>
-                    <User />
-                  </el-icon>
-                </template>
-              </el-input>
-            </el-form-item>
-            <el-form-item prop="password">
-              <el-input v-model="loginForm.password" type="password" :placeholder="$t('auth.password')" show-password
-                class="custom-input">
-                <template #prefix>
-                  <el-icon>
-                    <Lock />
-                  </el-icon>
-                </template>
-              </el-input>
-            </el-form-item>
-            <el-form-item prop="captcha">
-              <el-row :gutter="8">
-                <el-col :span="12">
-                  <el-input v-model="loginForm.captcha" maxlength="4" :placeholder="$t('auth.captcha')" class="custom-input">
-                    <template #prefix>
-                      <el-icon>
-                        <Key />
-                      </el-icon>
-                    </template>
-                  </el-input>
-                </el-col>
-                <el-col :span="12">
-                  <img :src="captchaImg" @click="refreshCaptcha"
-                    style="height: 40px; cursor: pointer; border-radius: 4px; border:1px solid var(--border-color); background:var(--bg-color);"
-                    :title="$t('auth.clickToRefresh')" />
-                </el-col>
-              </el-row>
-            </el-form-item>
-            <el-form-item>
-              <el-button type="primary" native-type="submit" :loading="loading" class="login-button">
-                {{ $t('auth.login') }}
-              </el-button>
-            </el-form-item>
-            <div class="register-link">
-              <span>{{ $t('auth.noAccount') }}</span>
-              <router-link to="/register">{{ $t('auth.registerNow') }}</router-link>
-              <span class="forgot-link-sep">|</span>
-              <router-link to="/forgot_password" class="forgot-link">{{ $t('auth.forgotPasswordLink') }}</router-link>
-            </div>
-          </el-form>
-        </el-card>
-      </div>
-    </div>
+      </template>
+
+      <el-form
+        ref="loginForm"
+        :model="formData"
+        :rules="formRules"
+        label-width="80px"
+        @submit.prevent="handleLogin"
+      >
+        <el-form-item label="用户名" prop="username">
+          <el-input
+            v-model="formData.username"
+            placeholder="请输入用户名"
+            clearable
+            @keyup.enter="handleLogin"
+          />
+        </el-form-item>
+
+        <el-form-item label="密码" prop="password">
+          <el-input
+            v-model="formData.password"
+            type="password"
+            placeholder="请输入密码"
+            show-password
+            @keyup.enter="handleLogin"
+          />
+        </el-form-item>
+
+        <el-form-item label="验证码" prop="captcha">
+          <div class="captcha-container">
+            <el-input
+              v-model="formData.captcha"
+              placeholder="请输入验证码"
+              style="width: 200px"
+              @keyup.enter="handleLogin"
+            />
+            <img
+              :src="captchaImg"
+              alt="验证码"
+              class="captcha-img"
+              @click="refreshCaptcha"
+            />
+          </div>
+        </el-form-item>
+
+        <el-form-item>
+          <el-button type="primary" :loading="loading" @click="handleLogin">
+            {{ loading ? '登录中...' : '登录' }}
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
-import { User, Lock, Key } from '@element-plus/icons-vue'
+import axios from '@/utils/axios.mjs'
 import { useUserStore } from '@/stores/user'
-import axios from 'axios'
-import ThemeToggle from '@/components/ThemeToggle.vue'
-import LanguageIcon from '@/components/LanguageIcon.vue'
 
 const router = useRouter()
-const userStore = useUserStore()
-const loginFormRef = ref(null)
+const loginForm = ref(null)
 const loading = ref(false)
+const userStore = useUserStore()  // 添加userStore
 
+// 验证码相关
 const captchaId = ref('')
 const captchaImg = ref('')
 
-function refreshCaptcha() {
-  axios.get('/api/auth/captcha', { responseType: 'blob', withCredentials: true }).then(res => {
-    captchaId.value = res.headers['captcha-id']
-    captchaImg.value = URL.createObjectURL(res.data)
-  })
-}
-
-onMounted(() => {
-  refreshCaptcha()
-})
-
-const loginForm = reactive({
+// 表单数据
+const formData = reactive({
   username: '',
   password: '',
   captcha: ''
 })
 
-const { t } = useI18n()
-
-const rules = {
+// 表单验证规则
+const formRules = {
   username: [
-    { required: true, message: t('auth.usernameInvalid'), trigger: 'blur' },
-    { min: 3, max: 50, message: t('auth.usernameTooShort'), trigger: 'blur' }
+    { required: true, message: '请输入用户名', trigger: 'blur' }
   ],
   password: [
-    { required: true, message: t('auth.passwordInvalid'), trigger: 'blur' },
-    { min: 6, max: 50, message: t('auth.passwordTooShort'), trigger: 'blur' }
+    { required: true, message: '请输入密码', trigger: 'blur' }
   ],
   captcha: [
-    { required: true, message: t('auth.captchaInvalid'), trigger: 'blur' },
-    { len: 4, message: t('auth.captchaInvalid'), trigger: 'blur' }
+    { required: true, message: '请输入验证码', trigger: 'blur' }
   ]
 }
 
-const handleLogin = async () => {
-  if (!loginFormRef.value) return
-  await loginFormRef.value.validate(async (valid) => {
-    if (valid) {
-      loading.value = true
-      try {
-        const response = await axios.post('/api/auth', {
-          username: loginForm.username,
-          password: loginForm.password,
-          captcha: loginForm.captcha,
-          captcha_id: captchaId.value
-        }, { withCredentials: true })
-        if (response.data.status === 'success') {
-          // 只保存token
-          localStorage.setItem('access_token', response.data.data.access_token)
-          localStorage.setItem('refresh_token', response.data.data.refresh_token)
-          // 设置axios默认请求头
-          axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.data.access_token}`
-          ElMessage.success({
-            message: t('auth.loginSuccess'),
-            duration: 3000
-          })
-          setTimeout(() => {
-            router.push({ name: 'Dashboard' })
-          }, 3000)
-        }
-      } catch (error) {
-        ElMessage.error(error.response?.data?.msg || error.response?.data?.message || t('auth.loginFailed'))
-        refreshCaptcha()
-        loginForm.captcha = ''
-      } finally {
-        loading.value = false
-      }
+// 刷新验证码
+function refreshCaptcha() {
+  console.log('刷新验证码，请求路径: /auth/captcha')
+  axios.get('/auth/captcha', { responseType: 'blob', withCredentials: true })
+    .then(res => {
+      console.log('验证码响应状态:', res.status)
+      console.log('验证码响应头:', res.headers)
+      captchaId.value = res.headers['captcha-id']
+      captchaImg.value = URL.createObjectURL(res.data)
+      console.log('验证码ID:', captchaId.value)
+      console.log('验证码图片已更新')
+    })
+    .catch(err => {
+      console.error('刷新验证码失败:', err)
+      alert('刷新验证码失败，请检查网络连接')
+    })
+}
+
+// 登录处理
+function handleLogin() {
+  if (!loginForm.value) return
+
+  loginForm.value.validate((valid) => {
+    if (!valid) {
+      return false
     }
+
+    loading.value = true
+
+    const loginData = {
+      username: formData.username,
+      password: formData.password,
+      captcha: formData.captcha,
+      captcha_id: captchaId.value
+    }
+
+    console.log('登录数据:', loginData)
+
+    axios.post('/auth/login', loginData, { withCredentials: true })
+      .then(res => {
+        console.log('登录成功:', res.data)
+        
+        // 保存 token 和用户信息
+        if (res.data.data && res.data.data.access_token) {
+          localStorage.setItem('access_token', res.data.data.access_token)
+          localStorage.setItem('refresh_token', res.data.data.refresh_token)
+          localStorage.setItem('user', JSON.stringify(res.data.data.user))
+          
+          // 更新 userStore
+          userStore.setUser(res.data.data.user)
+        }
+        
+        // 直接跳转到首页，不弹出提示
+        router.push('/dashboard')
+      })
+      .catch(err => {
+        console.error('登录失败:', err)
+        const errorMsg = err.response?.data?.msg || err.response?.data?.message || '未知错误'
+
+        // 根据错误类型显示不同的提示
+        let displayMsg = errorMsg
+        if (errorMsg.includes('验证码')) {
+          displayMsg = '验证码输入错误，请重新输入'
+        }
+
+        alert('登录失败：' + displayMsg)
+        refreshCaptcha()
+      })
+      .finally(() => {
+        loading.value = false
+      })
   })
 }
+
+// 组件挂载时加载验证码
+onMounted(() => {
+  refreshCaptcha()
+})
 </script>
 
 <style scoped>
 .login-container {
-  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: var(--login-bg-gradient);
-  overflow: hidden;
-}
-
-.login-background {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.login-background::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('@/assets/login-bg.jpg') center/cover;
-  opacity: 0.1;
-  z-index: 0;
-}
-
-.login-content {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  max-width: 1200px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.login-header {
-  width: 100%;
-  text-align: center;
-  margin-bottom: 40px;
-  color: white;
-  animation: fadeInDown 1s ease;
-}
-
-.login-logo {
-  width: 35%;
-  margin: 0 auto;
-}
-
-.login-logo img {
-  width: 280px;
-}
-
-.login-logo p {
-  font-size: 18px;
-  opacity: 0.9;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .login-card {
-  width: 100%;
-  max-width: 430px;
-  border-radius: 10px;
-  background: var(--card-bg);
-  backdrop-filter: blur(10px);
-  animation: fadeInUp 1s ease;
-  border: 1px solid var(--border-color);
+  width: 450px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 }
 
 .card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  text-align: center;
 }
 
 .card-header h2 {
   margin: 0;
-  color: #409EFF;
-  font-size: 24px;
+  color: #333;
 }
 
-.custom-input {
-  margin-bottom: 20px;
-}
-
-.custom-input :deep(.el-input__wrapper) {
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-}
-
-.custom-input :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-}
-
-:deep(.el-form-item__error) {
-  font-size: 12px;
-  top: 70%;
-}
-
-.login-button {
-  width: 100%;
-  height: 44px;
-  font-size: 16px;
-  border-radius: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  transition: all 0.3s ease;
-}
-
-.login-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.register-link {
-  text-align: center;
-  margin-top: 20px;
-  color: #666;
-}
-
-.register-link a {
-  color: #409EFF;
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.register-link a:hover {
-  color: #66b1ff;
-  text-decoration: underline;
-}
-
-.forgot-link {
-  color: #409EFF;
-  margin-left: 8px;
-  text-decoration: none;
-  font-weight: 500;
-  transition: all 0.3s ease;
-}
-
-.forgot-link:hover {
-  color: #66b1ff;
-  text-decoration: underline;
-}
-
-.forgot-link-sep {
-  margin: 0 6px;
-  color: #bbb;
-}
-
-@keyframes fadeInDown {
-  from {
-    opacity: 0;
-    transform: translateY(-20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.el-form-item .el-row {
-  width: 100%;
-}
-
-.theme-toggle-bar {
-  position: absolute;
-  top: 32px;
-  right: 48px;
-  z-index: 10;
-}
-
-.theme-toggle-inline {
-  margin-left: 12px;
-}
-
-.header-actions {
+.captcha-container {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.captcha-img {
+  cursor: pointer;
+  height: 40px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  transition: opacity 0.2s;
+}
+
+.captcha-img:hover {
+  opacity: 0.8;
+}
+
+.el-button {
+  width: 100%;
 }
 </style>

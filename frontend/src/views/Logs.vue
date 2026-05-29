@@ -79,7 +79,7 @@
     </el-card>
 
     <!-- 日志详情对话框 -->
-    <el-dialog v-model="detailDialogVisible" :title="$t('logs.logDetail')" width="70%" destroy-on-close>
+    <el-dialog v-model="detailDialogVisible" :title="$t('logs.logDetail')" width="70%" destroy-on-close :close-on-click-modal="false">
       <div v-loading="detailLoading">
         <el-descriptions :column="2" border>
           <el-descriptions-item :label="$t('logs.taskName')">{{ currentLog && currentLog.task_name
@@ -134,7 +134,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useI18n } from 'vue-i18n'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -159,7 +159,7 @@ const filterForm = reactive({
 // 获取任务列表
 const fetchTasks = async () => {
   try {
-    const response = await axios.get('/api/tasks')
+    const response = await axios.get('/tasks')
     tasks.value = response.data
   } catch (error) {
     ElMessage.error(t('logs.getTasksFailed'))
@@ -179,7 +179,7 @@ const fetchLogs = async () => {
       end_date: filterForm.date_range && filterForm.date_range[1] || undefined
     }
 
-    const response = await axios.get('/api/tasks/logs', { params })
+    const response = await axios.get('/tasks/logs', { params })
     logs.value = response.data.items
     total.value = response.data.total
   } catch (error) {
@@ -219,7 +219,7 @@ const handleExport = async () => {
       end_date: filterForm.date_range && filterForm.date_range[1] || undefined
     }
 
-    const response = await axios.get('/api/tasks/logs/export', {
+    const response = await axios.get('/tasks/logs/export', {
       params,
       responseType: 'blob'
     })

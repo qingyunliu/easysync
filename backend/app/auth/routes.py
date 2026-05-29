@@ -31,7 +31,7 @@ def get_captcha():
     resp.headers['Access-Control-Expose-Headers'] = 'Captcha-Id'
     return resp
 
-@auth_bp.route('', methods=['POST'])
+@auth_bp.route('/login', methods=['POST'])
 @rate_limit(limit=5, window=300)  # 每5分钟最多5次登录尝试
 def login():
     """用户登录"""

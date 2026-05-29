@@ -15,29 +15,29 @@
         <template #dropdown>
           <el-dropdown-menu>
             <el-dropdown-item @click="handleTestConnection">
-              <el-button type="text" :loading="storage.testingRealtime" :disabled="storage.status === 'error'">
+              <div class="dropdown-item-content">
                 <Icon icon="mdi:flash" />&nbsp;{{ $t('storage.actions.testConnection') }}
-              </el-button>
+              </div>
             </el-dropdown-item>
             <el-dropdown-item @click="handleGetInfo">
-              <el-button type="text" :loading="storage.fetchingRealtime" :disabled="storage.status === 'error'">
+              <div class="dropdown-item-content">
                 <Icon icon="mdi:flash-circle" />&nbsp;{{ $t('storage.actions.getInfo') }}
-              </el-button>
+              </div>
             </el-dropdown-item>
             <el-dropdown-item v-if="storage.type === 'nas'" @click="handleBrowseFiles">
-              <el-button type="text" :loading="storage.browsing" :disabled="storage.status === 'error'">
+              <div class="dropdown-item-content">
                 <Icon icon="mdi:folder-open" />&nbsp;{{ $t('storage.actions.browseFiles') }}
-              </el-button>
+              </div>
             </el-dropdown-item>
             <el-dropdown-item v-if="storage.type === 's3'" @click="handleBrowseBuckets">
-              <el-button type="text" :loading="storage.browsing" :disabled="storage.status === 'error'">
+              <div class="dropdown-item-content">
                 <Icon icon="mdi:bucket" />&nbsp;{{ $t('storage.actions.browseBuckets') }}
-              </el-button>
+              </div>
             </el-dropdown-item>
             <el-dropdown-item v-if="storage.type === 's3'" @click="handleBrowseBucketObjects">
-              <el-button type="text" :loading="storage.browsing" :disabled="storage.status === 'error'">
+              <div class="dropdown-item-content">
                 <Icon icon="mdi:files" />&nbsp;{{ $t('storage.actions.browseObjects') }}
-              </el-button>
+              </div>
             </el-dropdown-item>
           </el-dropdown-menu>
         </template>
@@ -50,7 +50,7 @@
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -85,7 +85,7 @@ const handleDelete = async () => {
     await ElMessageBox.confirm(t('storage.deleteConfirm'), t('common.tip'), {
       type: 'warning'
     })
-    await axios.delete(`/api/storages/${props.storage.id}`)
+    await axios.delete(`/storages/${props.storage.id}`)
     ElMessage.success(t('storage.deleteSuccess'))
     emit('refresh')
   } catch (error) {
@@ -99,7 +99,7 @@ const handleDelete = async () => {
 const handleTestConnection = async () => {
   try {
     // 检查是否有可用的测试节点
-    const nodesResponse = await axios.get('/api/nodes')
+    const nodesResponse = await axios.get('/nodes')
     const availableNodes = (nodesResponse.data.data || []).filter(
       node => node.status === 'online' && node.agent_status === 'running'
     )
@@ -114,7 +114,7 @@ const handleTestConnection = async () => {
 
     props.storage.testingRealtime = true
 
-    const response = await axios.post(`/api/storages/${props.storage.id}/test-connection`, {
+    const response = await axios.post(`/storages/${props.storage.id}/test-connection`, {
       node_id: testNode.id
     })
 
@@ -140,7 +140,7 @@ const handleGetInfo = async () => {
     let targetNodeId = props.storage.node_id
 
     if (!targetNodeId) {
-      const nodesResponse = await axios.get('/api/nodes')
+      const nodesResponse = await axios.get('/nodes')
       const availableNodes = (nodesResponse.data.data || []).filter(
         node => node.status === 'online' && node.agent_status === 'running'
       )
@@ -155,7 +155,7 @@ const handleGetInfo = async () => {
 
     props.storage.fetchingRealtime = true
 
-    const response = await axios.get(`/api/storages/${props.storage.id}/stats`, {
+    const response = await axios.get(`/storages/${props.storage.id}/stats`, {
       params: { node_id: targetNodeId }
     })
 
@@ -187,7 +187,7 @@ const handleBrowseBucketObjects = async () => {
     let bucket = props.storage.config.bucket
 
     if (!targetNodeId) {
-      const nodesResponse = await axios.get('/api/nodes')
+      const nodesResponse = await axios.get('/nodes')
       const availableNodes = (nodesResponse.data.data || []).filter(
         node => node.status === 'online' && node.agent_status === 'running'
       )
@@ -202,7 +202,7 @@ const handleBrowseBucketObjects = async () => {
 
     props.storage.browsing = true
 
-    const response = await axios.get(`/api/storages/${props.storage.id}/objects`, {
+    const response = await axios.get(`/storages/${props.storage.id}/objects`, {
       params: {
         node_id: targetNodeId,
         bucket: bucket,
@@ -241,7 +241,7 @@ const handleBrowseFiles = async () => {
     let targetNodeId = props.storage.node_id
 
     if (!targetNodeId) {
-      const nodesResponse = await axios.get('/api/nodes')
+      const nodesResponse = await axios.get('/nodes')
       const availableNodes = (nodesResponse.data.data || []).filter(
         node => node.status === 'online' && node.agent_status === 'running'
       )
@@ -256,7 +256,7 @@ const handleBrowseFiles = async () => {
 
     props.storage.browsing = true
 
-    const response = await axios.get(`/api/storages/${props.storage.id}/files`, {
+    const response = await axios.get(`/storages/${props.storage.id}/files`, {
       params: {
         node_id: targetNodeId,
         path: '',
@@ -294,7 +294,7 @@ const handleBrowseBuckets = async () => {
     let targetNodeId = props.storage.node_id
 
     if (!targetNodeId) {
-      const nodesResponse = await axios.get('/api/nodes')
+      const nodesResponse = await axios.get('/nodes')
       const availableNodes = (nodesResponse.data.data || []).filter(
         node => node.status === 'online' && node.agent_status === 'running'
       )
@@ -309,7 +309,7 @@ const handleBrowseBuckets = async () => {
 
     props.storage.browsing = true
 
-    const response = await axios.get(`/api/storages/${props.storage.id}/buckets`, {
+    const response = await axios.get(`/storages/${props.storage.id}/buckets`, {
       params: {
         node_id: targetNodeId,
         page: 1,
@@ -371,6 +371,20 @@ const handleBrowseBuckets = async () => {
 
 :deep(.el-dropdown-menu .el-dropdown-menu__item) {
   text-align: left;
+}
+
+.dropdown-item-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 8px 16px;
+  white-space: nowrap;
+}
+
+.dropdown-item-content .iconify {
+  margin-right: 8px;
+  font-size: 18px;
+  flex-shrink: 0;
 }
 
 :deep(.el-button--text) {

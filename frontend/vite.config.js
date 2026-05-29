@@ -1,6 +1,6 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import path from "path";
+import { defineConfig } from "vite"
+import vue from "@vitejs/plugin-vue"
+import path from "path"
 
 export default defineConfig({
   plugins: [vue()],
@@ -13,14 +13,16 @@ export default defineConfig({
     host: true,
     port: 3000,
     proxy: {
-      "^/api/.*": {
-        target: process.env.VITE_API_URL,
+      // 代理所有API请求到后端
+      "/api": {
+        target: "http://localhost:5000",
         changeOrigin: true,
         secure: false,
         ws: true,
       },
-      "^/ws/.*": {
-        target: process.env.VITE_WS_URL,
+      // 代理WebSocket请求
+      "/ws": {
+        target: "http://localhost:5000",
         changeOrigin: true,
         ws: true,
       },
@@ -31,4 +33,4 @@ export default defineConfig({
     assetsDir: "assets",
     sourcemap: true,
   },
-});
+})

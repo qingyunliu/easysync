@@ -18,7 +18,7 @@
             }})</span>
           </div>
           <div class="header-actions">
-            <el-button type="text" size="small" @click="markAllAsRead" v-if="unreadCount > 0">
+            <el-button type="link" size="small" @click="markAllAsRead" v-if="unreadCount > 0">
               {{ $t('notifications.markAllRead') }}
             </el-button>
           </div>
@@ -55,7 +55,7 @@
               </div>
 
               <div class="item-actions">
-                <el-button v-if="!notification.is_read" type="text" size="small"
+                <el-button v-if="!notification.is_read" type="link" size="small"
                   @click.stop="markAsRead(notification.id)">
                   <el-icon>
                     <Check />
@@ -69,7 +69,7 @@
         <el-divider style="margin: 12px 0;" />
 
         <div class="notification-footer">
-          <el-button type="text" size="small" @click="viewAll" class="view-all-btn">
+          <el-button type="link" size="small" @click="viewAll" class="view-all-btn">
             {{ $t('notifications.viewAll') }}
           </el-button>
         </div>
@@ -93,7 +93,7 @@ import {
   CircleClose,
   Notification
 } from '@element-plus/icons-vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 const router = useRouter()
@@ -179,7 +179,7 @@ const formatRelativeTime = (dateStr) => {
 const fetchNotifications = async () => {
   loading.value = true
   try {
-    const response = await axios.get('/api/notifications/list', {
+    const response = await axios.get('/notifications/list', {
       params: { limit: 10 }
     })
     notifications.value = response.data.data || []

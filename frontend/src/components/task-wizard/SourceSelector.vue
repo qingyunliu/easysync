@@ -46,6 +46,17 @@
       <div class="tree-header">
         <h4>{{ $t('sourceSelector.selectDirectoriesFiles') }}</h4>
         <div class="tree-actions">
+          <!-- 搜索框 -->
+          <el-input
+            v-if="selectedStorage.type === 's3' || selectedStorage.type === 'obs'"
+            v-model="bucketSearchKeyword"
+            :placeholder="$t('sourceSelector.searchBuckets')"
+            prefix-icon="Search"
+            size="small"
+            clearable
+            class="bucket-search-input"
+            @input="filterBuckets"
+          />
           <el-button @click="refreshTree" :loading="loading" size="small">
             <Icon icon="mdi:refresh" />
             {{ $t('sourceSelector.refresh') }}
@@ -146,7 +157,7 @@
               <el-icon>
                 <component :is="group.icon" />
               </el-icon>
-              <span>{{ $t(group.titleKey) }}</span>
+              <span>{{ group.title }}</span>
               <el-badge :value="group.items.length" class="group-badge" />
             </div>
             <div class="group-items">
@@ -207,7 +218,7 @@ import { useI18n } from 'vue-i18n'
 import { ElMessage } from 'element-plus'
 import { Icon } from '@iconify/vue'
 import { InfoFilled, FolderOpened, Folder, Document } from '@element-plus/icons-vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -229,6 +240,8 @@ const emit = defineEmits(['update:modelValue', 'change'])
 const storages = ref([])
 const loading = ref(false)
 const treeData = ref([])
+const originalTreeData = ref([]) // 原始完整的树数据（用于搜索过滤）
+const bucketSearchKeyword = ref('') // 存储桶搜索关键词
 const selectedItems = ref([]) // 智能压缩后的选择项
 const originalSelectedItems = ref([]) // 原始完整的选择项（用于详细视图）
 const nasTreeRef = ref(null)
@@ -328,7 +341,7 @@ const groupedSelection = computed(() => {
 // 方法
 const fetchStorages = async () => {
   try {
-    const response = await axios.get('/api/storages')
+    const response = await axios.get('/storages')
     if (response.data.status === 'success') {
       storages.value = response.data.storages || []
     } else {
@@ -393,7 +406,7 @@ const loadRootDirectory = async (storage) => {
 
 const loadNasRoot = async () => {
   try {
-    const response = await axios.get(`/api/storages/${selectedStorage.value.id}/files`, {
+    const response = await axios.get(`/storages/${selectedStorage.value.id}/files`, {
       params: {
         node_id: selectedStorage.value.node_id,
         path: '',
@@ -422,17 +435,45 @@ const loadNasRoot = async () => {
 
 const loadObsRoot = async () => {
   try {
-    const response = await axios.get(`/api/storages/${selectedStorage.value.id}/buckets`)
+    // 获取节点ID，优先使用绑定的节点，否则使用第一个在线节点
+    let targetNodeId = selectedStorage.value.node_id
+
+    if (!targetNodeId) {
+      const nodesResponse = await axios.get('/nodes')
+      const availableNodes = (nodesResponse.data.data || []).filter(
+        node => node.status === 'online' && node.agent_status === 'running'
+      )
+
+      if (availableNodes.length === 0) {
+        ElMessage.error(t('storage.noAvailableTestNodes'))
+        return
+      }
+
+      targetNodeId = availableNodes[0].id
+    }
+
+    // 加载存储桶列表，传递必要的参数
+    const response = await axios.get(`/storages/${selectedStorage.value.id}/buckets`, {
+      params: {
+        node_id: targetNodeId,
+        page: 1,
+        page_size: 1000  // 增大分页大小，避免桶列表不全
+      }
+    })
 
     if (response.data.status === 'success') {
       const buckets = response.data.data.buckets || []
-      treeData.value = buckets.map(bucket => ({
+      const bucketTree = buckets.map(bucket => ({
         name: bucket.name,
         key: bucket.name,
         type: 'bucket',
-        creationDate: bucket.creationDate,
+        creationDate: bucket.created_at,
         isLeaf: false
       }))
+      
+      // 保存原始数据用于搜索过滤
+      originalTreeData.value = bucketTree
+      treeData.value = bucketTree
     } else {
       ElMessage.error(response.data.message || t('storage.errors.fetchBucketsFailed'))
     }
@@ -449,7 +490,7 @@ const loadNasNode = async (node, resolve) => {
   }
 
   try {
-    const response = await axios.get(`/api/storages/${selectedStorage.value.id}/files`, {
+    const response = await axios.get(`/storages/${selectedStorage.value.id}/files`, {
       params: {
         node_id: selectedStorage.value.node_id,
         path: node.data.path,
@@ -489,7 +530,7 @@ const loadObsNode = async (node, resolve) => {
   // 如果是存储桶，加载对象列表
   if (node.data.type === 'bucket') {
     try {
-      const response = await axios.get(`/api/storages/${selectedStorage.value.id}/objects`, {
+      const response = await axios.get(`/storages/${selectedStorage.value.id}/objects`, {
         params: {
           node_id: selectedStorage.value.node_id,
           bucket: node.data.name,
@@ -523,7 +564,7 @@ const loadObsNode = async (node, resolve) => {
     // 如果是目录，加载子对象
     try {
       const prefix = node.data.key.replace(node.data.bucket + '/', '') + '/'
-      const response = await axios.get(`/api/storages/${selectedStorage.value.id}/objects`, {
+      const response = await axios.get(`/storages/${selectedStorage.value.id}/objects`, {
         params: {
           node_id: selectedStorage.value.node_id,
           bucket: node.data.bucket,
@@ -846,6 +887,38 @@ const collapseAll = () => {
   } else {
     ElMessage.error(t('common.treeNotFound'))
   }
+}
+
+// 过滤存储桶
+const filterBuckets = () => {
+  const keyword = bucketSearchKeyword.value.trim().toLowerCase()
+  
+  if (!keyword) {
+    // 如果搜索关键词为空，恢复原始数据
+    treeData.value = originalTreeData.value
+    return
+  }
+  
+  // 递归过滤树节点
+  const filterNodes = (nodes) => {
+    if (!nodes) return []
+    
+    return nodes.filter(node => {
+      const matchesName = node.name && node.name.toLowerCase().includes(keyword)
+      
+      if (node.children && node.children.length > 0) {
+        // 递归过滤子节点
+        const filteredChildren = filterNodes(node.children)
+        node.children = filteredChildren
+        // 如果当前节点匹配或子节点有匹配项，保留该节点
+        return matchesName || filteredChildren.length > 0
+      }
+      
+      return matchesName
+    })
+  }
+  
+  treeData.value = filterNodes(originalTreeData.value)
 }
 
 const updateModelValue = () => {

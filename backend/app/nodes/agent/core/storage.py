@@ -140,16 +140,30 @@ storage_class = STANDARD
         source_secret_key = source_config_inner.get('secret_key')
         source_region = source_config_inner.get('region', 'cn-north-4')
         source_endpoint = source_config_inner.get('endpoint', 'obs.cn-north-4.myhuaweicloud.com')
-        
+        source_bucket = source_config_inner.get('bucket', '')
+
         # 获取目标OBS配置
         target_access_key = target_config_inner.get('access_key')
         target_secret_key = target_config_inner.get('secret_key')
         target_region = target_config_inner.get('region', 'cn-north-4')
         target_endpoint = target_config_inner.get('endpoint', 'obs.cn-north-4.myhuaweicloud.com')
-        
+        target_bucket = target_config_inner.get('bucket', '')
+
+        # 处理 endpoint 格式，统一使用 bucket.endpoint 格式
+        # 对于S3兼容存储，推荐使用 bucket.endpoint 格式
+        if source_bucket and source_endpoint:
+            # 检查 endpoint 是否已经包含 bucket 名称
+            if not source_endpoint.startswith(source_bucket + '.'):
+                source_endpoint = f"{source_bucket}.{source_endpoint}"
+
+        if target_bucket and target_endpoint:
+            # 检查 endpoint 是否已经包含 bucket 名称
+            if not target_endpoint.startswith(target_bucket + '.'):
+                target_endpoint = f"{target_bucket}.{target_endpoint}"
+
         # 创建临时配置文件
         config_path = tempfile.mktemp(suffix='.conf')
-        
+
         # 生成INI格式的配置内容，包含两个远程存储
         config_content = f"""[{source_remote_name}]
 type = s3
@@ -171,12 +185,13 @@ endpoint = {target_endpoint}
 acl = private
 storage_class = STANDARD
 """
-        
+
         with open(config_path, 'w') as f:
             f.write(config_content)
-            
+
         self.logger.debug(f"创建双远程存储rclone配置文件: {config_path}")
-        self.logger.debug(f"源远程存储: {source_remote_name}, 目标远程存储: {target_remote_name}")
+        self.logger.debug(f"源远程存储: {source_remote_name}, endpoint: {source_endpoint}")
+        self.logger.debug(f"目标远程存储: {target_remote_name}, endpoint: {target_endpoint}")
         return config_path, source_remote_name, target_remote_name
             
     def mount(self, storage_config: Dict[str, Any]) -> str:

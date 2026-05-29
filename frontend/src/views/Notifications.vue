@@ -162,7 +162,7 @@
                 <div class="notification-right">
                   <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
                   <el-dropdown @command="(cmd) => handleNotificationAction(cmd, notification)" trigger="click">
-                    <el-button type="text" size="small">
+                    <el-button type="link" size="small">
                       <el-icon>
                         <MoreFilled />
                       </el-icon>
@@ -270,7 +270,7 @@ import {
   CircleCloseFilled,
   QuestionFilled
 } from '@element-plus/icons-vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t, locale } = useI18n()
 
@@ -362,7 +362,7 @@ onMounted(() => {
 const fetchNotifications = async () => {
   try {
     loading.value = true
-    const response = await axios.get('/api/notifications/list', {
+    const response = await axios.get('/notifications/list', {
       params: { limit: 1000 }
     })
 

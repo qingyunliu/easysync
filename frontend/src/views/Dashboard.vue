@@ -70,7 +70,7 @@
           <template #header>
             <div class="card-header">
               <span>{{ $t('dashboard.clients') }}</span>
-              <el-button type="text" @click="$router.push('/clients')">{{ $t('dashboard.viewAll') }}</el-button>
+              <el-button type="link" @click="$router.push('/clients')">{{ $t('dashboard.viewAll') }}</el-button>
             </div>
           </template>
           <div class="resource-content">
@@ -103,7 +103,7 @@
           <template #header>
             <div class="card-header">
               <span>{{ $t('dashboard.nodes') }}</span>
-              <el-button type="text" @click="$router.push('/nodes')">{{ $t('dashboard.viewAll') }}</el-button>
+              <el-button type="link" @click="$router.push('/nodes')">{{ $t('dashboard.viewAll') }}</el-button>
             </div>
           </template>
           <div class="resource-content">
@@ -136,7 +136,7 @@
           <template #header>
             <div class="card-header">
               <span>{{ $t('dashboard.storages') }}</span>
-              <el-button type="text" @click="$router.push('/storages')">{{ $t('dashboard.viewAll') }}</el-button>
+              <el-button type="link" @click="$router.push('/storages')">{{ $t('dashboard.viewAll') }}</el-button>
             </div>
           </template>
           <div class="resource-content">
@@ -170,7 +170,7 @@
       <template #header>
         <div class="card-header">
           <span>{{ $t('dashboard.tasks') }}</span>
-          <el-button type="text" @click="$router.push('/tasks')">{{ $t('dashboard.viewAll') }}</el-button>
+          <el-button type="link" @click="$router.push('/tasks')">{{ $t('dashboard.viewAll') }}</el-button>
         </div>
       </template>
       <div class="task-content">
@@ -235,10 +235,10 @@
             <el-badge v-if="unreadNotificationCount > 0" :value="unreadNotificationCount" class="notification-badge" />
           </div>
           <div class="header-actions">
-            <el-button type="text" @click="markAllAsRead" v-if="unreadNotificationCount > 0" size="small">
+            <el-button type="link" @click="markAllAsRead" v-if="unreadNotificationCount > 0" size="small">
               {{ $t('dashboard.markAllAsRead') }}
             </el-button>
-            <el-button type="text" @click="$router.push('/notifications')" size="small">
+            <el-button type="link" @click="$router.push('/notifications')" size="small">
               {{ $t('dashboard.viewAll') }}
             </el-button>
           </div>
@@ -280,12 +280,12 @@
             </div>
 
             <div class="notification-actions">
-              <el-button v-if="!notification.is_read" type="text" size="small" @click.stop="markAsRead(notification.id)"
+              <el-button v-if="!notification.is_read" type="link" size="small" @click.stop="markAsRead(notification.id)"
                 class="mark-read-btn">
                 {{ $t('dashboard.markAsRead') }}
               </el-button>
               <el-dropdown @command="handleNotificationAction" trigger="click">
-                <el-button type="text" size="small">
+                <el-button type="link" size="small">
                   <el-icon>
                     <MoreFilled />
                   </el-icon>
@@ -303,7 +303,7 @@
         </div>
 
         <div v-if="recentNotifications.length > 0" class="notification-footer">
-          <el-button type="text" @click="loadMoreNotifications" :loading="loadingMore" class="load-more-btn">
+          <el-button type="link" @click="loadMoreNotifications" :loading="loadingMore" class="load-more-btn">
             {{ $t('dashboard.loadMore') }}
           </el-button>
         </div>
@@ -332,7 +332,7 @@ import {
 import {
   DataLine as Memory
 } from '@element-plus/icons-vue'
-import axios from 'axios'
+import axios from '@/utils/axios.mjs'
 
 const { t } = useI18n()
 
@@ -391,7 +391,7 @@ const unreadNotificationCount = computed(() => {
 // 获取仪表盘数据
 const fetchDashboardData = async () => {
   try {
-    const response = await axios.get('/api/dashboard')
+    const response = await axios.get('/dashboard/data')
     stats.value = response.data.data
     recentTasks.value = response.data.data.recent_tasks
     recentNotifications.value = response.data.data.recent_notifications
@@ -501,13 +501,13 @@ const getNotificationColor = (level) => {
 
 const getNotificationTagType = (level) => {
   const typeMap = {
-    'info': '',
+    'info': 'info',
     'success': 'success',
     'warning': 'warning',
     'error': 'danger',
     'critical': 'danger'
   }
-  return typeMap[level] || ''
+  return typeMap[level] || 'info'
 }
 
 const getNotificationLevelText = (level) => {
@@ -589,7 +589,7 @@ const handleNotificationAction = async ({ action, id }) => {
 const loadMoreNotifications = async () => {
   loadingMore.value = true
   try {
-    const response = await axios.get('/api/notifications/list', {
+    const response = await axios.get('/notifications/list', {
       params: {
         offset: recentNotifications.value.length,
         limit: 10
@@ -635,11 +635,11 @@ const calculateSuccessRate = () => {
 // 获取系统状态样式
 const getSystemStatusClass = (status) => {
   switch (status) {
-    case t('dashboard.statuses.normal'):
+    case 'normal':
       return 'success'
-    case t('dashboard.statuses.attention'):
+    case 'attention':
       return 'warning'
-    case t('dashboard.statuses.warning'):
+    case 'warning':
       return 'danger'
     default:
       return 'info'
