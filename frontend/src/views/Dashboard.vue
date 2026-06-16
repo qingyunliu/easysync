@@ -70,7 +70,7 @@
           <template #header>
             <div class="card-header">
               <span>{{ $t('dashboard.clients') }}</span>
-              <el-button type="link" @click="$router.push('/clients')">{{ $t('dashboard.viewAll') }}</el-button>
+              <el-button type="text" @click="$router.push('/clients')">{{ $t('dashboard.viewAll') }}</el-button>
             </div>
           </template>
           <div class="resource-content">
@@ -103,7 +103,7 @@
           <template #header>
             <div class="card-header">
               <span>{{ $t('dashboard.nodes') }}</span>
-              <el-button type="link" @click="$router.push('/nodes')">{{ $t('dashboard.viewAll') }}</el-button>
+              <el-button type="text" @click="$router.push('/nodes')">{{ $t('dashboard.viewAll') }}</el-button>
             </div>
           </template>
           <div class="resource-content">
@@ -136,7 +136,7 @@
           <template #header>
             <div class="card-header">
               <span>{{ $t('dashboard.storages') }}</span>
-              <el-button type="link" @click="$router.push('/storages')">{{ $t('dashboard.viewAll') }}</el-button>
+              <el-button type="text" @click="$router.push('/storages')">{{ $t('dashboard.viewAll') }}</el-button>
             </div>
           </template>
           <div class="resource-content">
@@ -170,7 +170,7 @@
       <template #header>
         <div class="card-header">
           <span>{{ $t('dashboard.tasks') }}</span>
-          <el-button type="link" @click="$router.push('/tasks')">{{ $t('dashboard.viewAll') }}</el-button>
+          <el-button type="text" @click="$router.push('/tasks')">{{ $t('dashboard.viewAll') }}</el-button>
         </div>
       </template>
       <div class="task-content">
@@ -235,10 +235,10 @@
             <el-badge v-if="unreadNotificationCount > 0" :value="unreadNotificationCount" class="notification-badge" />
           </div>
           <div class="header-actions">
-            <el-button type="link" @click="markAllAsRead" v-if="unreadNotificationCount > 0" size="small">
+            <el-button type="text" @click="markAllAsRead" v-if="unreadNotificationCount > 0" size="small">
               {{ $t('dashboard.markAllAsRead') }}
             </el-button>
-            <el-button type="link" @click="$router.push('/notifications')" size="small">
+            <el-button type="text" @click="$router.push('/notifications')" size="small">
               {{ $t('dashboard.viewAll') }}
             </el-button>
           </div>
@@ -280,12 +280,12 @@
             </div>
 
             <div class="notification-actions">
-              <el-button v-if="!notification.is_read" type="link" size="small" @click.stop="markAsRead(notification.id)"
+              <el-button v-if="!notification.is_read" type="text" size="small" @click.stop="markAsRead(notification.id)"
                 class="mark-read-btn">
                 {{ $t('dashboard.markAsRead') }}
               </el-button>
               <el-dropdown @command="handleNotificationAction" trigger="click">
-                <el-button type="link" size="small">
+                <el-button type="text" size="small">
                   <el-icon>
                     <MoreFilled />
                   </el-icon>
@@ -303,7 +303,7 @@
         </div>
 
         <div v-if="recentNotifications.length > 0" class="notification-footer">
-          <el-button type="link" @click="loadMoreNotifications" :loading="loadingMore" class="load-more-btn">
+          <el-button type="text" @click="loadMoreNotifications" :loading="loadingMore" class="load-more-btn">
             {{ $t('dashboard.loadMore') }}
           </el-button>
         </div>

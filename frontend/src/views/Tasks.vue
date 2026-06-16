@@ -143,15 +143,9 @@
       </div>
 
       <div class="toolbar-right">
-        <el-button-group>
-          <el-button :type="autoRefresh ? 'primary' : 'default'" @click="toggleAutoRefresh"
-            :icon="autoRefresh ? VideoPause : Refresh">
-            {{ autoRefresh ? $t('tasks.pauseRefresh') : $t('tasks.enableRefresh') }}
-          </el-button>
-          <el-button @click="fetchTasks" :icon="Refresh">
-            {{ $t('tasks.refresh') }}
-          </el-button>
-        </el-button-group>
+        <el-button @click="fetchTasks" :icon="Refresh">
+          {{ $t('tasks.refresh') }}
+        </el-button>
       </div>
     </div>
 
@@ -161,7 +155,7 @@
         {{ $t('tasks.selectedTasks', { count: selectedTasks.length }) }}
       </div>
       <div class="batch-actions">
-        <el-button size="small" @click="batchCancel">{{ $t('tasks.batchCancel') }}</el-button>
+
         <el-button size="small" @click="batchRetry">{{ $t('tasks.batchRetry') }}</el-button>
         <el-button size="small" type="danger" @click="batchDelete">{{ $t('tasks.batchDelete') }}</el-button>
       </div>
@@ -205,24 +199,53 @@
           </template>
         </el-table-column>
 
-        <el-table-column prop="progress" :label="$t('tasks.progress')" width="180">
+        <el-table-column prop="progress" :label="$t('tasks.progress')" width="220">
           <template #default="{ row }">
-            <!-- 失败状态显示失败提示 -->
-            <el-tag v-if="row.status === 'failed'" type="danger" size="small">
-              {{ $t('tasks.statuses.failed') }}
-            </el-tag>
-            <!-- 停止状态显示停止提示 -->
-            <el-tag v-else-if="row.status === 'stopped'" type="info" size="small">
-              {{ $t('tasks.statuses.stopped') }}
-            </el-tag>
-            <!-- 其他状态显示进度条 -->
-            <el-tooltip v-else :content="getProgressTooltip(row)" placement="top" :disabled="!getProgressTooltip(row)">
-              <div class="progress-container">
-                <el-progress :percentage="row.progress || 0" :status="getProgressStatus(row.status)" :stroke-width="6"
-                  :show-text="false" />
-                <span class="progress-text">{{ row.progress || 0 }}%</span>
-              </div>
-            </el-tooltip>
+            <div class="progress-cell">
+              <!-- 失败状态显示失败提示 -->
+              <el-tag v-if="row.status === 'failed'" type="danger" size="small">
+                {{ $t('tasks.statuses.failed') }}
+              </el-tag>
+              <!-- 停止状态显示停止提示 -->
+              <el-tag v-else-if="row.status === 'stopped'" type="info" size="small">
+                {{ $t('tasks.statuses.stopped') }}
+              </el-tag>
+              <!-- 已完成状态显示已完成提示 -->
+              <el-tag v-else-if="row.status === 'completed'" type="success" size="small">
+                {{ $t('tasks.statuses.completed') }}
+              </el-tag>
+              <!-- 暂停状态显示暂停提示 -->
+              <el-tag v-else-if="['paused', 'pause_requested'].includes(row.status)" type="warning" size="small">
+                {{ $t('tasks.statuses.paused') }}
+              </el-tag>
+              <!-- 其他状态显示进度条 -->
+              <el-tooltip v-else :content="getProgressTooltip(row)" placement="top" :disabled="!getProgressTooltip(row)">
+                <div class="progress-container">
+                  <el-progress :percentage="row.progress || 0" :status="getProgressStatus(row.status)" :stroke-width="6"
+                    :show-text="false" />
+                  <span class="progress-text">{{ row.progress || 0 }}%</span>
+                  <!-- 添加查看日志链接 -->
+                  <el-link
+                    type="primary"
+                    size="small"
+                    style="margin-left: 8px; font-size: 12px;"
+                    @click.stop="handleViewLogs(row)">
+                    查看日志
+                  </el-link>
+                </div>
+              </el-tooltip>
+            </div>
+            <!-- 日志查看按钮 -->
+            <div class="log-button-container">
+              <el-button
+                type="primary"
+                link
+                size="small"
+                @click="handleViewLogs(row)"
+                :icon="Document">
+                {{ $t('tasks.actions.viewLogs') }}
+              </el-button>
+            </div>
           </template>
         </el-table-column>
 
@@ -253,15 +276,9 @@
           <template #default="{ row }">
             <el-button-group size="small">
               <!-- 启动按钮 -->
-              <el-button v-if="['pending', 'failed', 'stopped'].includes(row.status)" type="success" @click="handleStartTask(row)"
+              <el-button v-if="['pending', 'failed', 'stopped', 'paused', 'pause_requested'].includes(row.status)" type="success" @click="handleStartTask(row)"
                 :icon="VideoPlay" :loading="loadingTasks.has(row.id)">
                 {{ $t('tasks.actions.start') }}
-              </el-button>
-
-              <!-- 重新启动按钮 (assigned状态) -->
-              <el-button v-if="row.status === 'assigned'" type="success" @click="handleStartTask(row)"
-                :icon="VideoPlay" :loading="loadingTasks.has(row.id)">
-                {{ $t('tasks.actions.retry') }}
               </el-button>
 
 <!-- 暂停/恢复按钮 -->
@@ -270,7 +287,7 @@
                 {{ $t('tasks.actions.pause') }}
               </el-button>
 
-              <el-button v-if="row.status === 'paused'" type="success" @click="handleResumeTask(row)" :icon="VideoPlay"
+              <el-button v-if="['paused', 'pause_requested'].includes(row.status)" type="success" @click="handleResumeTask(row)" :icon="VideoPlay"
                 :loading="loadingTasks.has(row.id)">
                 {{ $t('tasks.actions.resume') }}
               </el-button>
@@ -281,11 +298,7 @@
                 {{ $t('tasks.actions.stop') }}
               </el-button>
 
-              <!-- 取消按钮 -->
-              <el-button v-if="['running', 'assigned', 'paused'].includes(row.status)" type="danger"
-                @click="handleCancelTask(row)" :icon="Close" :loading="loadingTasks.has(row.id)">
-                {{ $t('tasks.actions.cancel') }}
-              </el-button>
+
 
               <!-- 重试按钮 -->
               <el-button v-if="row.status === 'failed'" type="warning" @click="handleRetryTask(row)"
@@ -301,11 +314,6 @@
               </el-button>
               <template #dropdown>
                 <el-dropdown-menu>
-                  <el-dropdown-item command="logs">
-                    <el-icon>
-                      <Document />
-                    </el-icon>{{ $t('tasks.actions.viewLogs') }}
-                  </el-dropdown-item>
                   <el-dropdown-item command="detail">
                     <el-icon>
                       <InfoFilled />
@@ -338,8 +346,13 @@
     </div>
 
     <!-- 任务创建向导对话框 -->
-    <el-dialog :title="copyFromTask ? $t('tasks.copyTask') : $t('tasks.createTask')" v-model="taskWizardVisible"
-      width="60vw" :before-close="handleWizardClose" :close-on-click-modal="false" :close-on-press-escape="false">
+    <el-dialog 
+      :title="copyFromTask ? $t('tasks.copyTask') : $t('tasks.createTask')" 
+      v-model="taskWizardVisible"
+      :width="dialogWidth"
+      :before-close="handleWizardClose" 
+      :close-on-click-modal="false" 
+      :close-on-press-escape="false">
       <TaskWizard v-model:visible="taskWizardVisible" :copy-from-task="copyFromTask" @created="handleTaskCreated" />
     </el-dialog>
 
@@ -553,6 +566,18 @@ const onlineNodes = computed(() => {
   return nodes.value.filter(node => node.status === 'online')
 })
 
+// 对话框宽度 - 响应式设计
+const dialogWidth = computed(() => {
+  const screenWidth = window.innerWidth
+  if (screenWidth >= 1400) {
+    return '50vw'  // 大屏幕：50%
+  } else if (screenWidth >= 1024) {
+    return '60vw'  // 中等屏幕：60%
+  } else {
+    return '80vw'  // 小屏幕：80%
+  }
+})
+
 // API 方法
 // 获取统计数据
 const fetchStatistics = async () => {
@@ -594,6 +619,10 @@ const stopAutoRefresh = () => {
 
 const fetchTasks = async () => {
   loading.value = true
+  
+  // 保存当前选中的任务ID
+  const selectedTaskIds = selectedTasks.value.map(t => t.id)
+  
   try {
     const response = await axios.get('/tasks', {
       params: {
@@ -604,6 +633,9 @@ const fetchTasks = async () => {
     if (response.data.status === 'success') {
       tasks.value = response.data.data || []
       totalTasks.value = response.data.total || 0
+      
+      // 恢复选择状态
+      selectedTasks.value = tasks.value.filter(t => selectedTaskIds.includes(t.id))
     }
     fetchStatistics()
   } catch (error) {
@@ -841,6 +873,7 @@ const handleStartTask = async (task) => {
   }
 }
 
+// 重新运行已完成任务
 const handlePauseTask = async (task) => {
   if (loadingTasks.value.has(task.id)) return
 
@@ -875,9 +908,15 @@ const handleStopTask = async (task) => {
   if (loadingTasks.value.has(task.id)) return
 
   try {
-    await ElMessageBox.confirm(t('tasks.messages.confirmStop'), t('common.tip'), {
-      type: 'warning'
-    })
+    await ElMessageBox.confirm(
+      t('tasks.messages.confirmStop') + ' ' + t('tasks.messages.stopCanRestart'),
+      t('common.tip'),
+      {
+        type: 'warning',
+        confirmButtonText: t('common.confirm'),
+        cancelButtonText: t('common.cancel')
+      }
+    )
 
     loadingTasks.value.add(task.id)
     await axios.post(`/tasks/${task.id}/stop`)
@@ -892,84 +931,7 @@ const handleStopTask = async (task) => {
   }
 }
 
-const handleCancelTask = async (task) => {
-  if (loadingTasks.value.has(task.id)) return
 
-  try {
-    await ElMessageBox.confirm(t('tasks.messages.confirmCancel'), t('common.tip'), {
-      type: 'warning'
-    })
-
-    loadingTasks.value.add(task.id)
-    const response = await axios.post(`/tasks/${task.id}/cancel`)
-
-    if (response.data.status === 'success') {
-      // 根据任务状态显示不同的消息
-      if (task.status === 'running' || task.status === 'assigned') {
-        ElMessage.success(t('tasks.messages.taskCancelRequestSent'))
-        // 对于运行中的任务，启动轮询检查取消状态
-        startCancelStatusPolling(task.id)
-      } else {
-        ElMessage.success(t('tasks.messages.taskCancelled'))
-      }
-    }
-
-    fetchTasks()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('tasks.messages.cancelFailed'))
-    }
-  } finally {
-    loadingTasks.value.delete(task.id)
-  }
-}
-
-// 取消状态轮询
-const cancelPollingTimers = ref(new Map())
-
-const startCancelStatusPolling = (taskId) => {
-  // 清除之前的轮询
-  if (cancelPollingTimers.value.has(taskId)) {
-    clearInterval(cancelPollingTimers.value.get(taskId))
-  }
-
-  // 启动新的轮询
-  const timer = setInterval(async () => {
-    try {
-      const response = await axios.get(`/tasks/${taskId}`)
-      if (response.data.status === 'success') {
-        const task = response.data.data
-        if (task.status === 'cancelled') {
-          ElMessage.success(t('tasks.messages.taskSuccessfullyCancelled'))
-          clearInterval(timer)
-          cancelPollingTimers.value.delete(taskId)
-          fetchTasks()
-        } else if (task.status === 'cancel_requested') {
-          // 继续轮询
-        } else if (task.status === 'running') {
-          // 如果状态又变回running，说明取消失败
-          ElMessage.warning(t('tasks.messages.taskCancelFailedStatusRestored'))
-          clearInterval(timer)
-          cancelPollingTimers.value.delete(taskId)
-          fetchTasks()
-        }
-      }
-    } catch (error) {
-      console.error(t('tasks.messages.pollTaskStatusFailed'), error)
-    }
-  }, 2000) // 每2秒检查一次
-
-  cancelPollingTimers.value.set(taskId, timer)
-
-  // 30秒后自动停止轮询
-  setTimeout(() => {
-    if (cancelPollingTimers.value.has(taskId)) {
-      clearInterval(cancelPollingTimers.value.get(taskId))
-      cancelPollingTimers.value.delete(taskId)
-      ElMessage.warning(t('tasks.messages.taskCancelStatusCheckTimeout'))
-    }
-  }, 30000)
-}
 
 const handleDeleteTask = async (task) => {
   try {
@@ -1084,9 +1046,6 @@ const getStorageConfigFromTask = (task) => {
 
 const handleDropdownCommand = (command, task) => {
   switch (command) {
-    case 'logs':
-      handleViewLogs(task)
-      break
     case 'detail':
       handleViewDetail(task)
       break
@@ -1127,24 +1086,7 @@ const handleRetryTask = async (task) => {
 }
 
 // 批量操作
-const batchCancel = async () => {
-  if (selectedTasks.value.length === 0) return
 
-  try {
-    await ElMessageBox.confirm(t('tasks.messages.confirmCancel'), t('common.tip'), {
-      type: 'warning'
-    })
-
-    const taskIds = selectedTasks.value.map(task => task.id)
-    await axios.put('/tasks/batch/cancel', { task_ids: taskIds })
-    ElMessage.success(t('tasks.messages.batchCancelSuccess'))
-    fetchTasks()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.message || t('tasks.messages.batchCancelFailed'))
-    }
-  }
-}
 
 const batchRetry = async () => {
   if (selectedTasks.value.length === 0) return
@@ -1204,7 +1146,9 @@ const getStatusType = (status) => {
     completed: 'success',
     failed: 'danger',
     cancelled: 'info',
-    cancel_requested: 'info'
+    cancel_requested: 'info',
+    paused: 'warning',
+    pause_requested: 'warning'
   }
   return types[status] || 'info'
 }
@@ -1218,7 +1162,9 @@ const getStatusText = (status) => {
     completed: t('tasks.statuses.completed'),
     failed: t('tasks.statuses.failed'),
     cancelled: t('tasks.statuses.cancelled'),
-    cancel_requested: t('tasks.statuses.cancelled')
+    cancel_requested: t('tasks.statuses.cancelled'),
+    paused: t('tasks.statuses.paused'),
+    pause_requested: t('tasks.statuses.paused')
   }
   return texts[status] || status
 }
@@ -1233,7 +1179,9 @@ const getStatusIcon = (status) => {
     completed: CircleCheck,
     failed: CircleClose,
     cancelled: Warning,
-    cancel_requested: Warning
+    cancel_requested: Warning,
+    paused: VideoPause,
+    pause_requested: VideoPause
   }
   return icons[status] || Clock
 }
@@ -1358,11 +1306,7 @@ onUnmounted(() => {
   stopAutoRefresh()
   stopLogsAutoRefresh()
 
-  // 清理取消状态轮询定时器
-  cancelPollingTimers.value.forEach((timer) => {
-    clearInterval(timer)
-  })
-  cancelPollingTimers.value.clear()
+
 })
 </script>
 
@@ -1752,5 +1696,27 @@ onUnmounted(() => {
   border-radius: 4px;
   padding: 2px 4px;
   margin: 0 -4px;
+}
+
+.progress-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.log-button-container {
+  margin-top: 2px;
+}
+
+.log-button-container .el-button {
+  padding: 0;
+  height: 20px;
+  line-height: 20px;
+  font-size: 12px;
+}
+
+.log-button-container .el-button:hover {
+  color: #409EFF;
+  text-decoration: underline;
 }
 </style>

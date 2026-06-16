@@ -466,6 +466,7 @@ const loadObsRoot = async () => {
       const bucketTree = buckets.map(bucket => ({
         name: bucket.name,
         key: bucket.name,
+        bucket: bucket.name,
         type: 'bucket',
         creationDate: bucket.created_at,
         isLeaf: false
@@ -924,29 +925,46 @@ const filterBuckets = () => {
 const updateModelValue = () => {
   // 使用压缩算法优化选择路径
   const compressed = compressSelectedPaths(selectedItems.value)
+  
+  // 检查是否为虚拟托管样式（path_style: false）
+  const isVirtualHostedStyle = selectedStorage.value?.config?.path_style === false
 
   const value = {
     storageId: form.value.selectedStorageId,
     storageName: selectedStorage.value?.name || '',
     storageType: selectedStorage.value?.type || '',
     // 为了UI显示，使用压缩后的数据
-    selectedPaths: selectedItems.value.map(item => ({
-      name: item.name,
-      path: item.path || item.key,
-      type: item.type,
-      size: item.size,
-      bucket: item.bucket,
-      recursive: item.recursive || false,
-      displayName: item.displayName
-    })),
+    selectedPaths: selectedItems.value.map(item => {
+      // 对于虚拟托管样式，如果选择了存储桶根目录，则路径为空字符串
+      let itemPath = item.path || item.key
+      if (isVirtualHostedStyle && item.type === 'bucket' && itemPath === item.bucket) {
+        itemPath = ''
+      }
+      return {
+        name: item.name,
+        path: itemPath,
+        type: item.type,
+        size: item.size,
+        bucket: item.bucket,
+        recursive: item.recursive || false,
+        displayName: item.displayName
+      }
+    }),
     // 新增：原始完整的选择路径（用于详细显示和后端处理）
-    originalSelectedPaths: originalSelectedItems.value.map(item => ({
-      name: item.name,
-      path: item.path || item.key,
-      type: item.type,
-      size: item.size,
-      bucket: item.bucket
-    })),
+    originalSelectedPaths: originalSelectedItems.value.map(item => {
+      // 对于虚拟托管样式，如果选择了存储桶根目录，则路径为空字符串
+      let itemPath = item.path || item.key
+      if (isVirtualHostedStyle && item.type === 'bucket' && itemPath === item.bucket) {
+        itemPath = ''
+      }
+      return {
+        name: item.name,
+        path: itemPath,
+        type: item.type,
+        size: item.size,
+        bucket: item.bucket
+      }
+    }),
     // 新增：压缩后的路径信息，供后端使用
     compressedPaths: {
       included: compressed.included,

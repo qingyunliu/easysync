@@ -60,6 +60,7 @@ class TaskService:
             source=source_config,
             target=target_config,
             options=task_data.get('options', {}),
+            auto_start=task_data.get('auto_start', False)  # 自动启动选项,
         )
         
         db.session.add(task)
@@ -120,6 +121,9 @@ class TaskService:
         # 处理任务完成
         if task.status in ['completed', 'failed']:
             task.completed_at = datetime.utcnow()
+            # 如果任务完成，自动设置进度为100%
+            if task.status == 'completed':
+                task.progress = 100
         elif task.status == 'running' and previous_status != 'running':
             task.started_at = datetime.utcnow()
         
@@ -243,7 +247,7 @@ class TaskService:
         """
         task = self.get_task(task_id)
         
-        if task.status not in ['pending', 'failed', 'stopped']:
+        if task.status not in ['pending', 'failed', 'stopped', 'paused', 'pause_requested']:
             raise TaskOperationError(f"Task cannot be started: {task_id}, current status: {task.status}")
         
         # 如果指定了节点，分配给该节点
@@ -327,19 +331,19 @@ class TaskService:
         if task.status in ['completed', 'failed', 'cancelled', 'stopped']:
             raise TaskOperationError(f"Task cannot be stopped: {task_id}, current status: {task.status}")
 
-        # 强制停止任务
-        task.status = 'stopped'
+        # 强制停止任务 - 使用cancel_requested状态，让代理节点可以停止进程
+        task.status = 'cancel_requested'
         task.updated_at = datetime.utcnow()
 
         db.session.commit()
 
         # 记录停止日志
-        self._add_task_log(task.id, 'stopped', f"Task '{task.name}' stopped", {
-            'stopped_at': task.updated_at.isoformat(),
+        self._add_task_log(task.id, 'cancel_requested', f"Task '{task.name}' stop requested", {
+            'cancel_requested_at': task.updated_at.isoformat(),
             'reason': 'User requested stop'
         })
 
-        logger.info(f"Task stopped: {task_id}")
+        logger.info(f"Task stop requested: {task_id}")
         return task
 
     def resume_task(self, task_id: str) -> Task:
@@ -393,16 +397,22 @@ class TaskService:
         if not force and task.status in ['running', 'assigned']:
             raise TaskOperationError(f"Cannot delete running task: {task_id}. Use force=True to force delete.")
         
-        # 如果任务正在运行，先取消
+        # 如果任务正在运行，先调用stop_task停止任务
+        # 这会设置状态为'cancel_requested'，代理节点会检测到并停止rclone进程
         if task.status in ['running', 'assigned']:
-            task.status = 'cancel_requested'
-            db.session.commit()
+            self.stop_task(task_id)
             
-            # 记录取消日志
-            self._add_task_log(task.id, 'cancel_requested', f"Task '{task.name}' cancel requested before deletion", {
-                'cancel_requested_at': datetime.utcnow().isoformat(),
-                'reason': 'Task deletion'
-            })
+            # 等待代理节点处理取消请求（最多等待5秒）
+            import time
+            max_wait = 5
+            waited = 0
+            while waited < max_wait:
+                time.sleep(0.5)
+                waited += 0.5
+                # 检查任务是否已被取消
+                task = self.get_task(task_id)
+                if task.status == 'cancelled':
+                    break
         
         # 删除相关日志
         TaskLog.query.filter_by(task_id=task_id).delete()
@@ -792,15 +802,15 @@ class TaskService:
                 raise TaskValidationError("source_storage_id is required when source_type is 'storage'")
         
         # 验证路径字段
-        if not data.get('source_path'):
-            raise TaskValidationError("source_path is required")
+        # source_path 可以为空字符串（虚拟托管样式）
+        # 不再强制要求 source_path 必须存在
         
         # 验证目标端字段
         if not data.get('target_storage_id'):
             raise TaskValidationError("target_storage_id is required")
         
-        if not data.get('target_path'):
-            raise TaskValidationError("target_path is required")
+        # target_path 可以为空字符串（虚拟托管样式）
+        # 不再强制要求 target_path 必须存在
             
     def _validate_status_update(self, task: Task, status: Dict[str, Any]) -> bool:
         """验证状态更新

@@ -921,16 +921,33 @@ const updateTargetPath = () => {
   let targetPath = ''
 
   if (selectedStorage.value?.type === 's3') {
+    // 检查是否为虚拟托管样式（path_style: false）
+    const isVirtualHostedStyle = selectedStorage.value?.config?.path_style === false
+    
     if (obsForm.value.mode === 'create') {
-      targetPath = obsForm.value.bucketName
-      if (obsForm.value.targetPath) {
-        targetPath += '/' + obsForm.value.targetPath
+      // 虚拟托管样式：不包含 bucket 名称在路径中
+      // 路径样式：包含 bucket 名称在路径中
+      if (!isVirtualHostedStyle) {
+        targetPath = obsForm.value.bucketName
+        if (obsForm.value.targetPath) {
+          targetPath += '/' + obsForm.value.targetPath
+        }
+      } else {
+        // 虚拟托管样式：只使用用户指定的目标路径
+        targetPath = obsForm.value.targetPath || ''
       }
     } else {
       if (obsForm.value.selectedBucket) {
-        targetPath = obsForm.value.selectedBucket
-        if (obsForm.value.targetPath) {
-          targetPath += '/' + obsForm.value.targetPath
+        // 虚拟托管样式：不包含 bucket 名称在路径中
+        // 路径样式：包含 bucket 名称在路径中
+        if (!isVirtualHostedStyle) {
+          targetPath = obsForm.value.selectedBucket
+          if (obsForm.value.targetPath) {
+            targetPath += '/' + obsForm.value.targetPath
+          }
+        } else {
+          // 虚拟托管样式：只使用用户指定的目标路径
+          targetPath = obsForm.value.targetPath || ''
         }
       }
     }
@@ -946,11 +963,10 @@ const updateModelValue = (targetPath = '') => {
   let finalTargetPath = targetPath
   if (!finalTargetPath) {
     if (selectedStorage.value?.type === 's3') {
-      if (obsForm.value.mode === 'create') {
-        finalTargetPath = obsForm.value.bucketName + (obsForm.value.targetPath ? '/' + obsForm.value.targetPath : '')
-      } else {
-        finalTargetPath = obsForm.value.selectedBucket + (obsForm.value.targetPath ? '/' + obsForm.value.targetPath : '')
-      }
+      // 对于虚拟托管样式的endpoint（如 bucket.endpoint.com），
+      // bucket名称已经包含在endpoint中，路径中不需要再包含bucket名称
+      // 只使用用户指定的目标路径
+      finalTargetPath = obsForm.value.targetPath || ''
     } else {
       finalTargetPath = nasForm.value.targetPath
     }

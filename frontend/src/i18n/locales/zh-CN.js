@@ -949,6 +949,7 @@ export default {
       stop: '停止',
       cancel: '取消',
       retry: '重试',
+      restart: '重新运行',
       more: '更多',
       viewLogs: '查看日志',
       detail: '详情',
@@ -1016,11 +1017,14 @@ export default {
       getNodesFailed: '获取节点列表失败',  // 新增
       taskStartSuccess: '任务启动成功',  // 新增
       startFailed: '启动失败',  // 新增
+      taskRestartSuccess: '任务重新运行成功',  // 新增
+      restartFailed: '重新运行失败',  // 新增
       pauseFailed: '暂停失败',  // 新增
       taskPauseRequestSent: '暂停请求已发送',  // 新增
       taskStopped: '任务已停止',  // 新增
       stopFailed: '停止失败',  // 新增
-      confirmStop: '确定要停止此任务吗？',  // 新增
+      confirmStop: '确定要停止此任务吗？',
+      stopCanRestart: '停止后可以重新运行',  // 新增
       deleteTaskSuccess: '任务删除成功',  // 新增
     },
 
@@ -1214,6 +1218,8 @@ export default {
     enableCompressionDesc: '传输时压缩数据以减少带宽',
     checksumVerification: '校验文件完整性',
     checksumVerificationDesc: '传输后校验文件完整性',
+    noCreateEmptyDirs: '不创建空目录',
+    noCreateEmptyDirsDesc: '不在目标端创建空目录，提高同步效率',
     bandwidthLimit: '带宽限制',
     bandwidthLimitPlaceholder: '0表示无限制',
     maxConnections: '并发连接数',

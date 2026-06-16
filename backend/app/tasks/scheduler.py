@@ -111,10 +111,15 @@ class TaskScheduler:
                 if not online_nodes:
                     logger.warning("No online nodes available for task dispatch")
                     return
-                    
-                # 为每个任务分配最合适的节点
+                
+                # 为每个任务分配最合适的节点（只自动分配 auto_start=True 的任务）
                 for task in pending_tasks:
                     try:
+                        # 只自动分配设置了 auto_start 的任务
+                        if not task.auto_start:
+                            logger.info(f"Task {task.id} does not have auto_start enabled, skipping auto dispatch")
+                            continue
+                            
                         best_node = self._find_best_node(task, online_nodes)
                         if best_node:
                             self.task_service.assign_task(task.id, best_node.id)
@@ -181,6 +186,11 @@ class TaskScheduler:
                 
                 for task in timeout_tasks:
                     try:
+                        # 检查任务是否真的超时（增加活动检测）
+                        if not self._is_task_stuck(task):
+                            logger.info(f"Task {task.id} is still active, skip timeout marking")
+                            continue
+                        
                         # 将超时任务标记为失败
                         task.status = 'failed'
                         task.error = 'Task timeout'
@@ -195,6 +205,51 @@ class TaskScheduler:
                         
         except Exception as e:
             logger.error(f"Error in check_timeout_tasks: {e}")
+    
+    def _is_task_stuck(self, task: Task) -> bool:
+        """检查任务是否真的卡住（而不是仍在正常传输）"""
+        try:
+            # 1. 检查任务详情中的最后更新时间
+            if task.details and isinstance(task.details, dict):
+                last_update_str = task.details.get('last_update')
+                if last_update_str:
+                    last_update = datetime.fromisoformat(last_update_str)
+                    time_since_update = datetime.utcnow() - last_update
+                    
+                    # 如果最近5分钟内有进度更新，任务仍在运行
+                    if time_since_update.total_seconds() < 300:
+                        return False
+            
+            # 2. 检查代理节点是否在线
+            if task.assigned_node:
+                node = Node.query.get(task.assigned_node)
+                if node and node.status == 'online':
+                    # 代理节点在线，任务可能仍在运行
+                    return False
+            
+            # 3. 检查任务传输进度
+            if task.details and isinstance(task.details, dict):
+                transferred_size = task.details.get('transferred_size', 0)
+                total_size = task.details.get('total_size', 0)
+                
+                # 如果有传输数据，任务可能在运行
+                if transferred_size > 0:
+                    return False
+            
+            # 4. 检查任务运行时长（保守策略）
+            # 只有运行超过2小时才认为真的超时
+            if task.started_at:
+                runtime = datetime.utcnow() - task.started_at
+                if runtime.total_seconds() < 7200:  # 2小时
+                    return False
+            
+            # 所有检查都通过，任务确实卡住了
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error checking if task {task.id} is stuck: {e}")
+            # 出错时保守处理，认为任务仍在运行
+            return False
             
     def _check_node_health(self):
         """检查节点健康状态"""

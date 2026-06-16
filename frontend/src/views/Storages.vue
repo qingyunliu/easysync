@@ -380,7 +380,7 @@
                       40)
                   }) }}</span>
                 </el-tooltip>
-                <el-button v-if="currentPath.length > 40" type="link" size="small" @click="togglePathExpanded"
+                <el-button v-if="currentPath.length > 40" type="text" size="small" @click="togglePathExpanded"
                   class="path-expand-button">
                   <Icon :icon="pathExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'" :width="12" />
                 </el-button>
@@ -502,7 +502,7 @@
                     <span>{{ $t('storage.currentPath') }}: {{ pathExpanded ? currentPath : truncatePath(currentPath, 40)
                     }}</span>
                   </el-tooltip>
-                  <el-button v-if="currentPath.length > 40" type="link" size="small" @click="togglePathExpanded"
+                  <el-button v-if="currentPath.length > 40" type="text" size="small" @click="togglePathExpanded"
                     class="path-expand-button">
                     <Icon :icon="pathExpanded ? 'mdi:chevron-up' : 'mdi:chevron-down'" :width="12" />
                   </el-button>

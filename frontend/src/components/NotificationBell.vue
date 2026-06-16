@@ -18,7 +18,7 @@
             }})</span>
           </div>
           <div class="header-actions">
-            <el-button type="link" size="small" @click="markAllAsRead" v-if="unreadCount > 0">
+            <el-button type="text" size="small" @click="markAllAsRead" v-if="unreadCount > 0">
               {{ $t('notifications.markAllRead') }}
             </el-button>
           </div>
@@ -55,7 +55,7 @@
               </div>
 
               <div class="item-actions">
-                <el-button v-if="!notification.is_read" type="link" size="small"
+                <el-button v-if="!notification.is_read" type="text" size="small"
                   @click.stop="markAsRead(notification.id)">
                   <el-icon>
                     <Check />
@@ -69,7 +69,7 @@
         <el-divider style="margin: 12px 0;" />
 
         <div class="notification-footer">
-          <el-button type="link" size="small" @click="viewAll" class="view-all-btn">
+          <el-button type="text" size="small" @click="viewAll" class="view-all-btn">
             {{ $t('notifications.viewAll') }}
           </el-button>
         </div>

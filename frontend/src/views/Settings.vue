@@ -84,7 +84,7 @@
             </el-icon>
             <span class="notify-title">{{ $t('settings.emailNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.email.editing" type="link" @click.stop="startEdit('email')">{{
+            <el-button v-if="!notifyStates.email.editing" type="text" @click.stop="startEdit('email')">{{
               $t('settings.edit')
               }}</el-button>
             <template v-else>
@@ -133,7 +133,7 @@
             </el-icon>
             <span class="notify-title">{{ $t('settings.smsNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.sms.editing" type="link" @click.stop="startEdit('sms')">{{
+            <el-button v-if="!notifyStates.sms.editing" type="text" @click.stop="startEdit('sms')">{{
               $t('settings.edit')
               }}</el-button>
             <template v-else>
@@ -183,7 +183,7 @@
             </el-icon>
             <span class="notify-title">{{ $t('settings.dingtalkNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.dingtalk.editing" type="link" @click.stop="startEdit('dingtalk')">{{
+            <el-button v-if="!notifyStates.dingtalk.editing" type="text" @click.stop="startEdit('dingtalk')">{{
               $t('settings.edit') }}</el-button>
             <template v-else>
               <el-button type="primary" size="small" @click.stop="saveEdit('dingtalk')" :loading="saving"
@@ -223,7 +223,7 @@
             </el-icon>
             <span class="notify-title">{{ $t('settings.webhookNotification') }}</span>
             <span class="flex-spacer"></span>
-            <el-button v-if="!notifyStates.webhook.editing" type="link" @click.stop="startEdit('webhook')">{{
+            <el-button v-if="!notifyStates.webhook.editing" type="text" @click.stop="startEdit('webhook')">{{
               $t('settings.edit') }}</el-button>
             <template v-else>
               <el-button type="primary" size="small" @click.stop="saveEdit('webhook')" :loading="saving"

@@ -204,7 +204,7 @@
       <template #header>
         <div class="card-header">
           <span>{{ $t('monitoring.alertStatistics') }}</span>
-          <el-button type="link" @click="$router.push('/monitoring/alerts')">
+          <el-button type="text" @click="$router.push('/monitoring/alerts')">
             {{ $t('monitoring.viewDetails') }}
             <el-icon>
               <ArrowRight />

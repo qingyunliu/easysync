@@ -528,8 +528,8 @@ const canProceed = computed(() => {
       return wizardData.value.source.storageId &&
         wizardData.value.source.selectedPaths.length > 0
     case 1:
-      return wizardData.value.target.storageId &&
-        wizardData.value.target.targetPath
+      // 目标端只需要选择了存储，路径可以为空（虚拟托管样式）
+      return wizardData.value.target.storageId
     case 2:
       return wizardData.value.parameters.taskName.trim()
     default:
@@ -541,7 +541,6 @@ const canCreate = computed(() => {
   return wizardData.value.source.storageId &&
     wizardData.value.source.selectedPaths.length > 0 &&
     wizardData.value.target.storageId &&
-    wizardData.value.target.targetPath &&
     wizardData.value.parameters.taskName.trim()
 })
 
@@ -761,8 +760,8 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 /* 科技感主容器 */
 .task-wizard {
   position: relative;
-  padding: 30px;
-  max-width: 1400px;
+  padding: 20px;
+  max-width: 1000px;
   margin: 0 auto;
   background: var(--bg-color);
   overflow: hidden;
@@ -988,7 +987,7 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 30px;
+  padding: 20px;
   background: var(--cyber-glass-bg);
   border: 1px solid var(--cyber-glass-border);
   border-radius: 16px;
@@ -1184,7 +1183,7 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 .panel-header {
   display: flex;
   align-items: center;
-  padding: 24px 30px;
+  padding: 16px 20px;
   border-bottom: 1px solid var(--border-color);
   background: linear-gradient(135deg, rgba(64, 158, 255, 0.05) 0%, rgba(103, 194, 58, 0.05) 100%);
 }
@@ -1263,7 +1262,7 @@ watch(() => props.copyFromTask, (newTask, oldTask) => {
 }
 
 .panel-content {
-  padding: 30px;
+  padding: 20px;
 }
 
 /* 科技感底部导航 */

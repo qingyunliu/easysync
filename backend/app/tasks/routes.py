@@ -5,6 +5,7 @@ from backend.app.models import Task, TaskLog
 from . import tasks_bp
 from .service import TaskService
 import logging
+from datetime import datetime
 from .errors import TaskError, TaskNotFoundError, TaskOperationError, TaskValidationError, TaskStateError
 from backend.app.auth.services import AuditService
 from backend.app.notifications.services import NotificationService
@@ -104,7 +105,7 @@ def create_task():
             'name': name,
             'description': data.get('description', ''),
             'type': type,
-            'priority': data.get('priority', 2),
+            'priority': data.get('priority',2),
             'user_id': user_id,
             'node_id': data.get('node_id'),
             'source_type': data.get('source_type'),
@@ -113,7 +114,8 @@ def create_task():
             'source_path': data.get('source_path'),
             'target_storage_id': data.get('target_storage_id'),
             'target_path': data.get('target_path'),
-            'options': data.get('options', {})
+            'options': data.get('options', {}),
+            'auto_start': data.get('auto_start', False)  # 自动启动选项
         }
             
         task = task_service.create_task(task_data)
@@ -350,6 +352,47 @@ def start_task(task_id):
         'status': 'error',
         'message': '任务启动失败'
     }), 500
+
+@tasks_bp.route('/<string:task_id>/restart', methods=['POST'])
+@jwt_required()
+def restart_task(task_id):
+    """重新运行已完成任务"""
+    current_user_id = get_jwt_identity()
+    task = Task.query.get_or_404(task_id)
+    if task.user_id != current_user_id:
+        return jsonify({'error': '任务不属于当前用户'}), 403
+    
+    try:
+        # 重置任务状态
+        task.status = 'pending'
+        task.progress = 0
+        task.error = None
+        task.started_at = None
+        task.completed_at = None
+        task.updated_at = datetime.utcnow()
+        db.session.commit()
+        
+        # 启动任务
+        if task_service.start_task(task_id):
+            # 发送任务启动通知
+            notification_service.notify_task_started(
+                user_id=current_user_id,
+                task_name=task.name
+            )
+            return jsonify({
+                'status': 'success',
+                'message': '任务重新运行成功'
+            })
+        return jsonify({
+            'status': 'error',
+            'message': '任务重新运行失败'
+        }), 500
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({
+            'status': 'error',
+            'message': f'重新运行失败: {str(e)}'
+        }), 500
 
 @tasks_bp.route('/<string:task_id>/logs', methods=['GET'])
 @jwt_required()

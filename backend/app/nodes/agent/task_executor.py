@@ -230,6 +230,8 @@ class TaskExecutor:
         self.create_rclone_config(remote_name, config)
         
         # 返回rclone路径格式
+        # 对于虚拟托管样式的endpoint（如 bucket.endpoint.com），
+        # bucket名称已经包含在endpoint中，路径中不需要再包含bucket名称
         return f"{remote_name}:{task_path}"
     
     def prepare_local_storage(self, storage_config: Dict[str, Any], task_path: str) -> str:

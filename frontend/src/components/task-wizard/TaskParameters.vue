@@ -112,6 +112,18 @@
                   </div>
                 </el-checkbox>
               </div>
+
+              <div class="option-item">
+                <el-checkbox v-model="form.syncOptions.no_create_empty_dirs" @change="updateModelValue">
+                  <div class="option-content">
+                    <Icon icon="mdi:folder-off" class="option-icon" />
+                    <div class="option-text">
+                      <div class="option-title">{{ $t('taskParameters.noCreateEmptyDirs') }}</div>
+                      <div class="option-desc">{{ $t('taskParameters.noCreateEmptyDirsDesc') }}</div>
+                    </div>
+                  </div>
+                </el-checkbox>
+              </div>
             </div>
 
             <el-divider />
@@ -263,6 +275,7 @@ const props = defineProps({
         delete: false,
         compress: false,
         checksum: true,
+        no_create_empty_dirs: false,
         bandwidth_limit: 0,
         max_connections: 1
       },

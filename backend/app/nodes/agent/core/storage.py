@@ -149,17 +149,38 @@ storage_class = STANDARD
         target_endpoint = target_config_inner.get('endpoint', 'obs.cn-north-4.myhuaweicloud.com')
         target_bucket = target_config_inner.get('bucket', '')
 
-        # 处理 endpoint 格式，统一使用 bucket.endpoint 格式
-        # 对于S3兼容存储，推荐使用 bucket.endpoint 格式
+        # 处理 endpoint 格式
+        # 根据 path_style 配置决定使用哪种访问样式
+        # path_style: True → 路径样式（华为云OBS）
+        # path_style: False → 虚拟托管样式（阿里云OSS）
+        source_path_style = source_config_inner.get('path_style', False)
+        target_path_style = target_config_inner.get('path_style', False)
+
+        # 虚拟托管样式：bucket.endpoint
+        # 路径样式：endpoint:bucket
         if source_bucket and source_endpoint:
-            # 检查 endpoint 是否已经包含 bucket 名称
-            if not source_endpoint.startswith(source_bucket + '.'):
-                source_endpoint = f"{source_bucket}.{source_endpoint}"
+            if not source_path_style:
+                # 虚拟托管样式：bucket.endpoint
+                if not source_endpoint.startswith(source_bucket + '.'):
+                    source_endpoint = f"{source_bucket}.{source_endpoint}"
+            else:
+                # 路径样式：保持原样，在命令中指定 bucket
+                pass
 
         if target_bucket and target_endpoint:
-            # 检查 endpoint 是否已经包含 bucket 名称
-            if not target_endpoint.startswith(target_bucket + '.'):
-                target_endpoint = f"{target_bucket}.{target_endpoint}"
+            if not target_path_style:
+                # 虚拟托管样式：bucket.endpoint
+                if not target_endpoint.startswith(target_bucket + '.'):
+                    target_endpoint = f"{target_bucket}.{target_endpoint}"
+            else:
+                # 路径样式：保持原样，在命令中指定 bucket
+                pass
+
+        # 判断是否需要 region 配置
+        # 虚拟托管样式（endpoint 包含 bucket 名称）不需要 region
+        # 路径样式需要 region
+        source_use_region = source_path_style
+        target_use_region = target_path_style
 
         # 创建临时配置文件
         config_path = tempfile.mktemp(suffix='.conf')
@@ -167,21 +188,29 @@ storage_class = STANDARD
         # 生成INI格式的配置内容，包含两个远程存储
         config_content = f"""[{source_remote_name}]
 type = s3
-provider = Other
 access_key_id = {source_access_key}
-secret_access_key = {source_secret_key}
-region = {source_region}
-endpoint = {source_endpoint}
+secret_access_key = {source_secret_key}"""
+
+        # 根据 path_style 决定是否添加 region
+        if source_use_region:
+            config_content += f"\nregion = {source_region}"
+
+        config_content += f"\nendpoint = {source_endpoint}"
+        config_content += f"""
 acl = private
 storage_class = STANDARD
 
 [{target_remote_name}]
 type = s3
-provider = Other
 access_key_id = {target_access_key}
-secret_access_key = {target_secret_key}
-region = {target_region}
-endpoint = {target_endpoint}
+secret_access_key = {target_secret_key}"""
+
+        # 根据 path_style 决定是否添加 region
+        if target_use_region:
+            config_content += f"\nregion = {target_region}"
+
+        config_content += f"\nendpoint = {target_endpoint}"
+        config_content += f"""
 acl = private
 storage_class = STANDARD
 """
@@ -820,14 +849,74 @@ storage_class = STANDARD
             
             try:
                 # 构建源端路径
-                source_full_path = f"{source_remote_name}:"
-                if source_path:
-                    source_full_path = f"{source_remote_name}:{source_path}"
+                # 重新解析源配置以获取 bucket 名称和 path_style
+                source_bucket = ''
+                source_path_style = False
+                try:
+                    if isinstance(source_config, str):
+                        source_config_dict = json.loads(source_config)
+                    else:
+                        source_config_dict = source_config
+                    
+                    if 'config' in source_config_dict:
+                        source_bucket = source_config_dict.get('config', {}).get('bucket', '')
+                        source_path_style = source_config_dict.get('config', {}).get('path_style', False)
+                    else:
+                        source_bucket = source_config_dict.get('bucket', '')
+                        source_path_style = source_config_dict.get('path_style', False)
+                except:
+                    pass
+                
+                if source_path_style:
+                    # 路径样式：在路径中指定 bucket
+                    if source_path:
+                        if source_path == source_bucket:
+                            source_full_path = f"{source_remote_name}:{source_bucket}"
+                        else:
+                            source_full_path = f"{source_remote_name}:{source_bucket}/{source_path}"
+                    else:
+                        source_full_path = f"{source_remote_name}:{source_bucket}"
+                else:
+                    # 虚拟托管样式：endpoint 已包含 bucket 名称
+                    if source_path and source_path != source_bucket:
+                        source_full_path = f"{source_remote_name}:{source_path}"
+                    else:
+                        source_full_path = f"{source_remote_name}:"
                 
                 # 构建目标端路径
-                target_full_path = f"{target_remote_name}:"
-                if target_path:
-                    target_full_path = f"{target_remote_name}:{target_path}"
+                # 重新解析目标配置以获取 bucket 名称和 path_style
+                target_bucket = ''
+                target_path_style = False
+                try:
+                    if isinstance(target_config, str):
+                        target_config_dict = json.loads(target_config)
+                    else:
+                        target_config_dict = target_config
+                    
+                    if 'config' in target_config_dict:
+                        target_bucket = target_config_dict.get('config', {}).get('bucket', '')
+                        target_path_style = target_config_dict.get('config', {}).get('path_style', False)
+                    else:
+                        target_bucket = target_config_dict.get('bucket', '')
+                        target_path_style = target_config_dict.get('path_style', False)
+                except:
+                    pass
+                
+                if target_path_style:
+                    # 路径样式：在路径中指定 bucket
+                    if target_path:
+                        if target_path == target_bucket:
+                            target_full_path = f"{target_remote_name}:{target_bucket}"
+                        else:
+                            target_full_path = f"{target_remote_name}:{target_bucket}/{target_path}"
+                    else:
+                        target_full_path = f"{target_remote_name}:{target_bucket}"
+                else:
+                    # 虚拟托管样式：endpoint 已包含 bucket 名称
+                    if target_path and target_path != target_bucket:
+                        target_full_path = f"{target_remote_name}:{target_path}"
+                    else:
+                        target_full_path = f"{target_remote_name}:"
                 
                 self.logger.info(f"OBS -> OBS 同步路径: {source_full_path} -> {target_full_path}")
                 

@@ -9,7 +9,7 @@
           <component :is="isCollapsed ? Expand : Fold" />
         </el-icon>
       </div>
-      <el-menu default-active="1" class="el-menu-vertical" background-color="transparent" text-color="#fff"
+      <el-menu :default-active="$route.path" class="el-menu-vertical" background-color="transparent" text-color="#fff"
         active-text-color="#00f2fe" router :collapse="isCollapsed" :collapse-transition="true">
         <!-- 控制台 -->
         <div class="menu-group-title" v-if="!isCollapsed">{{ $t('nav.dashboard') }}</div>

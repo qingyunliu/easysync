@@ -162,7 +162,7 @@
                 <div class="notification-right">
                   <span class="notification-time">{{ formatTime(notification.created_at) }}</span>
                   <el-dropdown @command="(cmd) => handleNotificationAction(cmd, notification)" trigger="click">
-                    <el-button type="link" size="small">
+                    <el-button type="text" size="small">
                       <el-icon>
                         <MoreFilled />
                       </el-icon>

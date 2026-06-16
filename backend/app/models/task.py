@@ -47,6 +47,7 @@ class Task(BaseModel):
     error = db.Column(db.String(500), nullable=True)
     progress = db.Column(db.Integer, default=0)
     details = db.Column(db.JSON, nullable=True)
+    auto_start = db.Column(db.Boolean, default=False)  # 是否自动启动
     node_id = db.Column(db.String(36), db.ForeignKey('nodes.id'), nullable=True)
     retry_count = db.Column(db.Integer, default=0, comment='重试次数')
 
