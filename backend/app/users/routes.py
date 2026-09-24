@@ -241,6 +241,32 @@ def update_user(user_id):
         )
         return jsonify({'error': '用户信息更新失败'}), 500
 
+@users_bp.route('/<string:user_id>/password', methods=['PUT'])
+@jwt_required()
+@record_api_event('user', 'change_password')
+def change_user_password(user_id):
+    """修改当前用户密码"""
+    current_user_id = str(get_jwt_identity())
+    if current_user_id != str(user_id):
+        return jsonify({'message': '无权修改其他用户密码'}), 403
+
+    data = request.get_json() or {}
+    current_password = data.get('current_password')
+    new_password = data.get('new_password')
+    if not current_password or not new_password:
+        return jsonify({'message': '当前密码和新密码不能为空'}), 400
+    if len(new_password) < 6:
+        return jsonify({'message': '新密码长度不能少于6位'}), 400
+
+    user = User.query.get(user_id)
+    if not user or not user.check_password(current_password):
+        return jsonify({'message': '当前密码错误'}), 400
+
+    user.set_password(new_password)
+    db.session.commit()
+    return jsonify({'status': 'success', 'message': '密码修改成功'}), 200
+
+
 @users_bp.route('/<string:user_id>', methods=['DELETE'])
 @jwt_required()
 @record_api_event('user', 'delete')

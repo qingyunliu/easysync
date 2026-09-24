@@ -1207,7 +1207,7 @@ const handleSubmit = async () => {
         fetchClients()
       }
     } else {
-      const response = await axios.put(`/api/clients/${form.value.id}`, payload)
+      const response = await axios.put(`/clients/${form.value.id}`, payload)
       if (response.data.status === 'success') {
         ElMessage.success(t('clients.updateSuccess'))
         dialogVisible.value = false
@@ -1242,7 +1242,7 @@ const confirmInstall = async () => {
       ElMessage.error(t('clients.noClientSelected'))
       return
     }
-    await axios.post(`/api/clients/${currentClient.value.id}/install`, installForm.value)
+    await axios.post(`/clients/${currentClient.value.id}/install`, installForm.value)
     ElMessage.success(t('clients.startInstallAgent'))
     installDialogVisible.value = false
     fetchClients()
@@ -1257,7 +1257,7 @@ const uninstallAgent = async (row) => {
     await ElMessageBox.confirm(t('clients.confirmUninstallAgent'), t('clients.tip'), {
       type: 'warning'
     })
-    await axios.post(`/api/clients/${row.id}/uninstall`)
+    await axios.post(`/clients/${row.id}/uninstall`)
     ElMessage.success(t('clients.startUninstallAgent'))
     fetchClients()
   } catch (error) {
@@ -1273,7 +1273,7 @@ const handleDelete = async (row) => {
     await ElMessageBox.confirm(t('clients.confirmDeleteClient'), t('clients.tip'), {
       type: 'warning'
     })
-    await axios.delete(`/api/clients/${row.id}`)
+    await axios.delete(`/clients/${row.id}`)
     ElMessage.success(t('clients.deleteSuccess'))
     fetchClients()
   } catch (error) {
@@ -1287,7 +1287,7 @@ const handleDelete = async (row) => {
 const testConnection = async (row) => {
   try {
     row.testing = true
-    const response = await axios.post(`/api/clients/${row.id}/test-connection`)
+    const response = await axios.post(`/clients/${row.id}/test-connection`)
     if (response.data.status === 'success') {
       ElMessage.success(t('clients.connectionTestSuccess'))
       // 更新本地状态
@@ -1305,7 +1305,7 @@ const testConnection = async (row) => {
 const getClientInfo = async (row) => {
   try {
     row.fetching = true
-    const response = await axios.post(`/api/clients/${row.id}/status`)
+    const response = await axios.post(`/clients/${row.id}/status`)
     if (response.data.status === 'success') {
       ElMessage.success(t('clients.getInfoSuccess'))
       fetchClients()  // 刷新列表以更新信息

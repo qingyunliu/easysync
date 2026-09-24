@@ -4,7 +4,7 @@ from datetime import datetime
 from flask import request, jsonify, current_app, g
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend import db
-from backend.app.models import Node, AuditLog, MonitorData
+from backend.app.models import Node, AuditLog, MonitorData, Task, Storage
 from backend.app.utils.ssh_utils import SSHClient
 from backend.app.utils import utils
 from . import nodes_bp
@@ -398,7 +398,7 @@ def update_node(node_id):
         port = data.get('port')
         auth_type = data.get('auth_type')
         password = data.get('password')
-        auth_key = data.get('key')
+        auth_key = data.get('ssh_key')  # 修改为匹配前端的字段名
         config = data.get('config', {})
         group = data.get('group')
         tags = data.get('tags')
@@ -496,6 +496,12 @@ def delete_node(node_id):
 
         # 删除相关监控数据
         MonitorData.query.filter_by(node_id=node.id).delete()
+
+        # 删除相关任务
+        Task.query.filter_by(node_id=node.id).delete()
+
+        # 删除相关存储配置
+        Storage.query.filter_by(node_id=node.id).delete()
 
         node_name = node.name
         node_ip = node.ipaddress

@@ -161,6 +161,8 @@ function handleLogin() {
         }
 
         alert('登录失败：' + displayMsg)
+        // 用户确认错误提示后清空验证码，避免手动逐字删除
+        formData.captcha = ''
         refreshCaptcha()
       })
       .finally(() => {

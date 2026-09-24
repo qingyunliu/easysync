@@ -317,7 +317,7 @@ const handleChangePassword = async () => {
     if (valid) {
       try {
         const response = await axios.put(
-          `/api/users/${profileForm.id}/password`,
+          `/users/${profileForm.id}/password`,
           {
             current_password: passwordForm.currentPassword,
             new_password: passwordForm.newPassword
