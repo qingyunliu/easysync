@@ -377,6 +377,32 @@
       :title="`${$t('tasks.taskLogs')}${logsAutoRefresh ? ` (${$t('tasks.autoRefresh')}: ${logsRefreshCountdown}s)` : ''}`"
       v-model="logsDialogVisible" width="1000px" :before-close="handleLogsDialogClose">
       <div class="logs-container">
+        <div v-if="taskLogSummary" class="task-log-summary">
+          <div class="summary-header">
+            <div>
+              <div class="summary-title">{{ phaseLabel(taskLogSummary.phase) }}</div>
+              <div class="summary-subtitle">{{ taskLogSummary.latestMessage || '任务正在执行' }}</div>
+            </div>
+            <el-tag :type="taskLogSummary.error ? 'danger' : taskLogSummary.status === 'completed' ? 'success' : 'warning'">
+              {{ taskLogSummary.error ? '失败' : taskLogSummary.status === 'completed' ? '已完成' : '运行中' }}
+            </el-tag>
+          </div>
+          <el-progress :percentage="Math.round(taskLogSummary.progress || 0)" :status="taskLogSummary.error ? 'exception' : taskLogSummary.status === 'completed' ? 'success' : undefined" />
+          <div class="summary-metrics">
+            <div><strong>{{ taskLogSummary.transferredFiles || 0 }}<span v-if="taskLogSummary.totalFiles"> / {{ taskLogSummary.totalFiles }}</span></strong><small>文件</small></div>
+            <div><strong>{{ formatLogBytes(taskLogSummary.transferredBytes) }}<span v-if="taskLogSummary.totalBytes"> / {{ formatLogBytes(taskLogSummary.totalBytes) }}</span></strong><small>容量</small></div>
+            <div><strong>{{ taskLogSummary.speedText || formatLogBytes(taskLogSummary.speedBytes) + '/s' }}</strong><small>速度</small></div>
+            <div><strong>{{ formatDuration(taskLogSummary.etaSeconds) }}</strong><small>预计剩余</small></div>
+            <div><strong>{{ formatDuration(taskLogSummary.elapsedSeconds) }}</strong><small>运行时长</small></div>
+          </div>
+          <div v-if="taskLogSummary.currentFile" class="current-file">当前文件：{{ taskLogSummary.currentFile }}</div>
+          <div class="phase-steps">
+            <div v-for="step in taskPhaseSteps" :key="step.key" :class="['phase-step', `phase-${step.state}`]">
+              <span class="phase-dot"></span><span>{{ step.label }}</span>
+            </div>
+          </div>
+          <el-alert v-if="taskLogSummary.error" :title="taskLogSummary.error" type="error" :closable="false" show-icon />
+        </div>
         <div class="logs-toolbar">
           <div class="logs-toolbar-left">
             <el-button-group>
@@ -467,6 +493,7 @@ import {
 import TaskWizard from '@/components/task-wizard/TaskWizard.vue'
 import TaskDetail from '@/components/TaskDetail.vue'
 import axios from '@/utils/axios.mjs'
+import { buildTaskLogSummary, classifyTaskLog, getTaskPhaseSteps } from '@/utils/task-log-view-model.mjs'
 
 const { t } = useI18n()
 
@@ -509,6 +536,7 @@ const copyFromTask = ref(null) // 新增：要复制的任务
 
 // 日志
 const taskLogs = ref([])
+const taskLogSummary = ref(null)
 const logsLoading = ref(false)
 const logLevel = ref('all')
 const currentTaskId = ref(null)
@@ -551,15 +579,41 @@ const filteredTasks = computed(() => {
 })
 
 const filteredLogs = computed(() => {
-  if (logLevel.value === 'all') {
-    return taskLogs.value
-  } else if (logLevel.value === 'progress') {
-    return taskLogs.value.filter(log => log.message && log.message.includes("$t('tasks.logMessages.syncProgress')"))
-  } else if (logLevel.value === 'error') {
-    return taskLogs.value.filter(log => log.status === 'error')
-  }
+  if (logLevel.value === 'all') return taskLogs.value
+  if (logLevel.value === 'progress') return taskLogs.value.filter(log => classifyTaskLog(log) === 'progress')
+  if (logLevel.value === 'error') return taskLogs.value.filter(log => classifyTaskLog(log) === 'error')
   return taskLogs.value.filter(log => log.status === logLevel.value)
 })
+
+const taskPhaseSteps = computed(() => getTaskPhaseSteps(
+  taskLogSummary.value?.status,
+  taskLogSummary.value?.phase
+))
+
+const formatLogBytes = (bytes) => {
+  const value = Number(bytes || 0)
+  if (!value) return '0 B'
+  const units = ['B', 'KB', 'MB', 'GB', 'TB']
+  const index = Math.min(Math.floor(Math.log(value) / Math.log(1024)), units.length - 1)
+  return `${(value / 1024 ** index).toFixed(index ? 1 : 0)} ${units[index]}`
+}
+
+const formatDuration = (seconds) => {
+  const value = Number(seconds || 0)
+  const hours = Math.floor(value / 3600)
+  const minutes = Math.floor((value % 3600) / 60)
+  const remainder = value % 60
+  if (hours) return `${hours}h ${minutes}m`
+  if (minutes) return `${minutes}m ${remainder}s`
+  return `${remainder}s`
+}
+
+const phaseLabel = (phase) => ({
+  initializing: '初始化', connecting: '连接存储', scanning: '扫描与分析',
+  transferring: '传输文件', verifying: '校验数据', completed: '已完成',
+  failed: '执行失败', paused: '已暂停'
+}[phase] || '处理中')
+
 
 // 在线节点
 const onlineNodes = computed(() => {
@@ -691,20 +745,10 @@ const fetchTaskLogs = async () => {
     })
     if (response.data.status === 'success') {
       const allLogs = response.data.data || []
+      taskLogs.value = allLogs
 
-      // 优化日志显示：对于进度日志，只保留最新的一条
-      const progressLogs = allLogs.filter(log => log.message && log.message.includes("$t('tasks.logMessages.syncProgress')"))
-      const otherLogs = allLogs.filter(log => !log.message || !log.message.includes("$t('tasks.logMessages.syncProgress')"))
-
-      // 如果有进度日志，只取最新的一条
-      const latestProgressLog = progressLogs.length > 0
-        ? progressLogs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0]
-        : null
-
-      // 合并日志，进度日志放在最前面
-      taskLogs.value = latestProgressLog
-        ? [latestProgressLog, ...otherLogs]
-        : otherLogs
+      const task = tasks.value.find(item => item.id === currentTaskId.value) || {}
+      taskLogSummary.value = buildTaskLogSummary(task, allLogs)
 
       logsPagination.value.total = response.data.total || 0
       logsPagination.value.page = response.data.page || 1
@@ -849,6 +893,7 @@ const handleLogsDialogClose = () => {
   logsDialogVisible.value = false
   stopLogsAutoRefresh()
   currentTaskId.value = null
+  taskLogSummary.value = null
 }
 
 const handleTaskCreated = (task) => {
@@ -1501,6 +1546,37 @@ onUnmounted(() => {
   font-size: 12px;
   overflow-x: auto;
 }
+
+.task-log-summary {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 8px;
+  background: var(--card-bg, #fff);
+}
+
+.summary-header, .summary-metrics, .phase-steps {
+  display: flex;
+  align-items: center;
+}
+
+.summary-header { justify-content: space-between; margin-bottom: 12px; }
+.summary-title { font-size: 18px; font-weight: 600; color: var(--text-color); }
+.summary-subtitle { margin-top: 4px; color: var(--text-secondary); font-size: 12px; }
+.summary-metrics { justify-content: space-between; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+.summary-metrics > div { min-width: 100px; }
+.summary-metrics strong { display: block; color: var(--text-color); font-size: 15px; }
+.summary-metrics small { color: var(--text-secondary); font-size: 12px; }
+.current-file { margin-top: 12px; padding: 8px 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-secondary); background: var(--background-color, #f5f7fa); border-radius: 4px; font-size: 12px; }
+.phase-steps { justify-content: space-between; margin: 16px 0 0; gap: 8px; }
+.phase-step { display: flex; align-items: center; gap: 5px; color: var(--text-secondary); font-size: 12px; white-space: nowrap; }
+.phase-dot { width: 8px; height: 8px; border-radius: 50%; background: #c0c4cc; }
+.phase-completed { color: #67c23a; }
+.phase-completed .phase-dot { background: #67c23a; }
+.phase-active { color: #409eff; font-weight: 600; }
+.phase-active .phase-dot { background: #409eff; box-shadow: 0 0 0 4px rgba(64, 158, 255, .15); }
+.phase-error { color: #f56c6c; }
+.phase-error .phase-dot { background: #f56c6c; }
 
 .logs-container {
   height: 500px;

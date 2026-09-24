@@ -948,62 +948,12 @@ class TaskService:
         })
     
     def get_task_execution_summary(self, task_id: str) -> Dict[str, Any]:
-        """获取任务执行摘要
-        
-        Args:
-            task_id: 任务ID
-            
-        Returns:
-            Dict: 执行摘要
-        """
+        """获取任务执行摘要。"""
+        from .task_log_summary import build_execution_summary
+
         task = self.get_task(task_id)
         logs = self.get_task_logs(task_id)
-        
-        # 统计各状态的日志数量
-        status_counts = {}
-        error_logs = []
-        progress_logs = []
-        step_logs = []
-        
-        for log in logs:
-            status = log.status
-            if status not in status_counts:
-                status_counts[status] = 0
-            status_counts[status] += 1
-            
-            if status == 'error':
-                error_logs.append(log)
-            elif '同步进度' in log.message:
-                progress_logs.append(log)
-            elif status.startswith('step_'):
-                step_logs.append(log)
-        
-        # 计算执行时间
-        execution_time = None
-        if task.started_at and task.completed_at:
-            execution_time = (task.completed_at - task.started_at).total_seconds()
-        elif task.started_at:
-            execution_time = (datetime.utcnow() - task.started_at).total_seconds()
-        
-        return {
-            'task_id': task_id,
-            'task_name': task.name,
-            'task_type': task.type,
-            'status': task.status,
-            'progress': task.progress,
-            'execution_time': execution_time,
-            'created_at': task.created_at.isoformat(),
-            'started_at': task.started_at.isoformat() if task.started_at else None,
-            'completed_at': task.completed_at.isoformat() if task.completed_at else None,
-            'log_summary': {
-                'total_logs': len(logs),
-                'status_counts': status_counts,
-                'error_count': len(error_logs),
-                'progress_count': len(progress_logs),
-                'step_count': len(step_logs)
-            },
-            'latest_logs': [log.to_dict() for log in logs[-5:]]  # 最近5条日志
-        } 
+        return build_execution_summary(task, logs)
 
     def cleanup_old_progress_logs(self, task_id: str = None, days: int = 7):
         """清理过期的进度日志
