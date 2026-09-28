@@ -74,6 +74,7 @@ const userStore = useUserStore()  // 添加userStore
 // 验证码相关
 const captchaId = ref('')
 const captchaImg = ref('')
+let captchaRequestSequence = 0
 
 // 表单数据
 const formData = reactive({
@@ -97,11 +98,19 @@ const formRules = {
 
 // 刷新验证码
 function refreshCaptcha() {
+  const requestSequence = ++captchaRequestSequence
   console.log('刷新验证码，请求路径: /auth/captcha')
-  axios.get('/auth/captcha', { responseType: 'blob', withCredentials: true })
+  axios.get('/auth/captcha', {
+    responseType: 'blob',
+    withCredentials: true,
+    params: { _: Date.now() }
+  })
     .then(res => {
+      // Ignore an older response when multiple refresh requests overlap.
+      if (requestSequence !== captchaRequestSequence) return
       console.log('验证码响应状态:', res.status)
       console.log('验证码响应头:', res.headers)
+      if (captchaImg.value) URL.revokeObjectURL(captchaImg.value)
       captchaId.value = res.headers['captcha-id']
       captchaImg.value = URL.createObjectURL(res.data)
       console.log('验证码ID:', captchaId.value)
@@ -127,7 +136,7 @@ function handleLogin() {
     const loginData = {
       username: formData.username,
       password: formData.password,
-      captcha: formData.captcha,
+      captcha: formData.captcha.trim(),
       captcha_id: captchaId.value
     }
 

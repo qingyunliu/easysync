@@ -21,7 +21,8 @@ notification_service = NotificationService()
 @auth_bp.route('/captcha', methods=['GET'])
 @rate_limit(limit=10, window=60)  # 每分钟最多10次验证码请求
 def get_captcha():
-    code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=4))
+    # Avoid visually ambiguous characters such as 0/O and 1/I/L.
+    code = ''.join(random.choices('ABCDEFGHJKLMNPQRSTUVWXYZ23456789', k=4))
     captcha_id = str(uuid.uuid4())
     session['captcha_' + captcha_id] = code.lower()
     image = ImageCaptcha(width=150, height=50)
@@ -38,7 +39,7 @@ def login():
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
-    captcha = data.get('captcha', '').lower()
+    captcha = data.get('captcha', '').strip().lower()
     captcha_id = data.get('captcha_id')
     # 校验验证码
     if not captcha_id or not captcha:
