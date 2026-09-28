@@ -20,7 +20,8 @@ def app():
         'TEST_DATABASE_URL',
         'sqlite:///:memory:'
     )
-    os.environ['SQLALCHEMY_DATABASE_URI'] = test_db_uri
+    # Never let tests fall back to the live instance/easysync.db database.
+    os.environ['TEST_DATABASE_URL'] = test_db_uri
     
     app = create_app('testing')
     app.config['TESTING'] = True

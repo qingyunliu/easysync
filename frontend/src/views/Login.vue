@@ -152,7 +152,7 @@ function handleLogin() {
       })
       .catch(err => {
         console.error('登录失败:', err)
-        const errorMsg = err.response?.data?.msg || err.response?.data?.message || '未知错误'
+        const errorMsg = err.response?.data?.msg || err.response?.data?.message || err.response?.data?.error || '未知错误'
 
         // 根据错误类型显示不同的提示
         let displayMsg = errorMsg

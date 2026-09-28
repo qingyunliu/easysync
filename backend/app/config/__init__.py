@@ -1,10 +1,10 @@
 # 配置文件初始化
-from .default import Config
+from .default import Config, DevelopmentConfig, TestingConfig, ProductionConfig
 
 # 配置字典
 config = {
     'default': Config,
-    'development': Config,
-    'production': Config,
-    'testing': Config
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'testing': TestingConfig
 } 
