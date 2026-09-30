@@ -195,17 +195,20 @@ def agent_update_task_status(node_id, task_id):
     if not task or task.node_id != node_id:    
         return jsonify({'status': 'error', 'message': '任务不存在或不属于该节点'}), 404
     
-    # 检查任务是否已被请求取消
+    # 检查任务是否已被请求取消或暂停
     new_status = data.get('status')
     
     # 允许从 cancel_requested 更新为 cancelled
     if task.status == 'cancel_requested' and new_status == 'cancelled':
         task.status = new_status
-    # 防止其他状态覆盖取消状态
-    elif task.status in ['cancel_requested', 'cancelled'] and new_status not in ['cancelled']:
+    # 允许从 pause_requested 更新为 paused
+    elif task.status == 'pause_requested' and new_status == 'paused':
+        task.status = new_status
+    # 防止其他状态覆盖取消/暂停状态
+    elif task.status in ['cancel_requested', 'cancelled', 'pause_requested', 'paused'] and new_status not in ['cancelled', 'paused']:
         return jsonify({
             'status': 'success', 
-            'message': '任务已被取消，状态更新被忽略',
+            'message': f'任务状态为 {task.status}，状态更新被忽略',
             'task_status': task.status
         })
     # 正常状态更新

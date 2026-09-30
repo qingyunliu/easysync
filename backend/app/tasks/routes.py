@@ -356,21 +356,31 @@ def start_task(task_id):
 @tasks_bp.route('/<string:task_id>/restart', methods=['POST'])
 @jwt_required()
 def restart_task(task_id):
-    """重新运行已完成任务"""
+    """重新运行已完成任务（增量同步）"""
     current_user_id = get_jwt_identity()
     task = Task.query.get_or_404(task_id)
     if task.user_id != current_user_id:
         return jsonify({'error': '任务不属于当前用户'}), 403
     
     try:
-        # 重置任务状态
+        # 检查任务当前状态
+        if task.status not in ['completed', 'failed', 'stopped']:
+            return jsonify({
+                'status': 'error',
+                'message': f'只有已完成、失败或停止的任务才能重新运行，当前状态: {task.status}'
+            }), 400
+        
+        # 重置任务状态和详情
         task.status = 'pending'
         task.progress = 0
         task.error = None
         task.started_at = None
         task.completed_at = None
+        task.details = None  # 清除旧的同步详情
         task.updated_at = datetime.utcnow()
         db.session.commit()
+        
+        logger.info(f"Task {task_id} reset to pending, calling start_task...")
         
         # 启动任务
         if task_service.start_task(task_id):
@@ -381,7 +391,7 @@ def restart_task(task_id):
             )
             return jsonify({
                 'status': 'success',
-                'message': '任务重新运行成功'
+                'message': '增量同步已开始'
             })
         return jsonify({
             'status': 'error',
@@ -389,6 +399,7 @@ def restart_task(task_id):
         }), 500
     except Exception as e:
         db.session.rollback()
+        logger.error(f"Restart task {task_id} failed: {e}")
         return jsonify({
             'status': 'error',
             'message': f'重新运行失败: {str(e)}'

@@ -356,6 +356,12 @@ const fetchStorages = async () => {
 const handleStorageChange = async (storageId) => {
   if (!storageId) return
 
+  // 【修复】如果 storageId 与当前选中的存储相同，且树数据已加载，不重新加载
+  if (selectedStorage.value?.id === storageId && treeData.value.length > 0) {
+    // 已加载过该存储的树数据，跳过重新加载
+    return
+  }
+
   // 在复制任务时，不清空已选择的项目
   const isCopyMode = props.modelValue && props.modelValue.selectedPaths && props.modelValue.selectedPaths.length > 0
   if (!isCopyMode) {
@@ -1233,9 +1239,17 @@ const getProviderText = (provider) => {
   return texts[provider] || '未知'
 }
 
-// 监听props变化 - 在复制任务时避免重置状态
+// 监听props变化 - 主要用于复制任务场景
 watch(() => props.modelValue, (newValue, oldValue) => {
-  // 如果是复制任务模式，避免重置已设置的状态
+  // 【修复】如果 storageId 没有变化，不触发任何处理
+  // el-tree 的勾选状态由组件自己管理，watch 不应该干预
+  if (oldValue && newValue.storageId === oldValue.storageId) {
+    // storageId 相同，说明是同一存储内的操作（如勾选文件）
+    // 此时 el-tree 已经正确管理了勾选状态，不需要 watch 干预
+    return
+  }
+  
+  // 只有当 storageId 真正改变时才处理（如切换存储、复制任务初始化）
   if (newValue.storageId && newValue.storageId !== form.value.selectedStorageId) {
     form.value.selectedStorageId = newValue.storageId
     if (newValue.storageId) {
@@ -1243,7 +1257,7 @@ watch(() => props.modelValue, (newValue, oldValue) => {
     }
   }
 
-  // 在复制任务模式下，如果selectedPaths有内容，保持选中状态
+  // 复制任务模式：从外部设置选中项
   if (newValue.selectedPaths && newValue.selectedPaths.length > 0) {
 
     // 检查是否需要更新选中项

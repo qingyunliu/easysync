@@ -950,6 +950,7 @@ export default {
       cancel: '取消',
       retry: '重试',
       restart: '重新运行',
+      incrementalSync: '增量同步',
       more: '更多',
       viewLogs: '查看日志',
       detail: '详情',
@@ -1026,6 +1027,12 @@ export default {
       confirmStop: '确定要停止此任务吗？',
       stopCanRestart: '停止后可以重新运行',  // 新增
       deleteTaskSuccess: '任务删除成功',  // 新增
+      // 增量同步
+      confirmIncrementalSync: '确定要进行增量同步吗？系统将只同步新增或变化的文件。',
+      incrementalSyncStarted: '增量同步已开始',
+      incrementalSyncFailed: '增量同步启动失败',
+      retryTaskSuccess: '任务重试成功',
+      retryFailed: '任务重试失败',
     },
 
     // 验证规则

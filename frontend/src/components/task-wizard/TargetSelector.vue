@@ -737,6 +737,7 @@ const loadObsRoot = async (storageId, bucketName) => {
       }
     })
 
+    // 【修复】正确处理 API 响应
     if (response.data.status === 'success') {
       const data = response.data.data
       const objects = data.objects || []
@@ -753,9 +754,25 @@ const loadObsRoot = async (storageId, bucketName) => {
       if (data.pagination) {
         obsPagination.value.total = data.pagination.total_count || 0
       }
+      
+      // 空存储桶是正常情况，不需要显示错误
+      if (objects.length === 0) {
+        obsPagination.value.total = 0
+      }
+    } else {
+      // 只有 API 返回 error 状态时才显示错误
+      const errorMsg = response.data.message || '获取对象列表失败'
+      ElMessage.error(errorMsg)
+      // 清空列表
+      obsCurrentItems.value = []
+      obsPagination.value.total = 0
     }
   } catch (error) {
-    ElMessage.error('获取对象列表失败')
+    // 网络错误或其他异常
+    const errorMsg = error.response?.data?.message || error.message || '获取对象列表失败'
+    ElMessage.error(errorMsg)
+    obsCurrentItems.value = []
+    obsPagination.value.total = 0
   } finally {
     obsLoading.value = false
   }
@@ -779,6 +796,7 @@ const navigateToObsPath = async (path) => {
       }
     })
 
+    // 【修复】正确处理 API 响应
     if (response.data.status === 'success') {
       const data = response.data.data
       const objects = data.objects || []
@@ -795,9 +813,24 @@ const navigateToObsPath = async (path) => {
       if (data.pagination) {
         obsPagination.value.total = data.pagination.total_count || 0
       }
+      
+      // 空目录是正常情况
+      if (objects.length === 0) {
+        obsPagination.value.total = 0
+      }
+    } else {
+      // 只有 API 返回 error 状态时才显示错误
+      const errorMsg = response.data.message || '获取对象列表失败'
+      ElMessage.error(errorMsg)
+      obsCurrentItems.value = []
+      obsPagination.value.total = 0
     }
   } catch (error) {
-    ElMessage.error('获取对象列表失败')
+    // 网络错误或其他异常
+    const errorMsg = error.response?.data?.message || error.message || '获取对象列表失败'
+    ElMessage.error(errorMsg)
+    obsCurrentItems.value = []
+    obsPagination.value.total = 0
   } finally {
     obsLoading.value = false
   }

@@ -305,6 +305,12 @@
                 :icon="RefreshRight" :loading="loadingTasks.has(row.id)">
                 {{ $t('tasks.actions.retry') }}
               </el-button>
+
+              <!-- 增量同步按钮 -->
+              <el-button v-if="row.status === 'completed'" type="primary" @click="handleIncrementalSync(row)"
+                :icon="Refresh" :loading="loadingTasks.has(row.id)">
+                {{ $t('tasks.actions.incrementalSync') }}
+              </el-button>
             </el-button-group>
 
             <!-- 更多操作下拉菜单 -->
@@ -1082,6 +1088,26 @@ const handleRetryTask = async (task) => {
     fetchTasks()
   } catch (error) {
     ElMessage.error(error.response?.data?.message || t('tasks.messages.retryFailed'))
+  }
+}
+
+const handleIncrementalSync = async (task) => {
+  try {
+    await ElMessageBox.confirm(
+      t('tasks.messages.confirmIncrementalSync'),
+      t('common.tip'),
+      { type: 'info' }
+    )
+    loadingTasks.value.add(task.id)
+    await axios.post(`/tasks/${task.id}/restart`)
+    ElMessage.success(t('tasks.messages.incrementalSyncStarted'))
+    fetchTasks()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error(error.response?.data?.message || t('tasks.messages.incrementalSyncFailed'))
+    }
+  } finally {
+    loadingTasks.value.delete(task.id)
   }
 }
 

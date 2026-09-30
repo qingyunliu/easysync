@@ -961,6 +961,8 @@ export default {
       stop: 'Stop',
       cancel: 'Cancel',
       retry: 'Retry',
+      restart: 'Restart',
+      incrementalSync: 'Incremental Sync',
       more: 'More',
       viewLogs: 'View Logs',
       detail: 'Detail',
@@ -1026,6 +1028,12 @@ export default {
       getTaskLogsFailed: 'Failed to get task logs',
       pollTaskStatusFailed: 'Failed to poll task status:',
       fetchStatsFailed: 'Failed to fetch statistics:',
+      // Incremental Sync
+      confirmIncrementalSync: 'Are you sure you want to perform incremental sync? Only new or changed files will be synced.',
+      incrementalSyncStarted: 'Incremental sync started',
+      incrementalSyncFailed: 'Failed to start incremental sync',
+      retryTaskSuccess: 'Task retry successful',
+      retryFailed: 'Task retry failed',
     },
 
     // Validation Rules
